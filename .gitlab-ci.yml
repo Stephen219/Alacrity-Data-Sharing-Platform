@@ -1,0 +1,119 @@
+default:
+  tags:
+    - comsc-ci
+
+image: node:20-alpine
+
+stages:
+  - lint
+  - test
+  - build
+  - deploy
+  - dev
+
+variables:
+  CI_DEBUG_TRACE: "false"
+
+# 1. Linting - Frontend
+lint-frontend:
+  stage: lint
+  script:
+    - echo "Installing dependencies..."
+    - cd alacrity_frontend
+    - npm ci
+    - echo "Running lint..."
+    - npm run lint --fix
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - alacrity_frontend/**/*
+
+# 2. Linting - Backend (Pylint)
+lint-backend:
+  stage: lint
+  image: python:3.10
+  before_script:
+    - pip install pylint
+  script:
+    - echo "Running Pylint..."
+    - pylint alacrity_backend --exit-zero  # Allow non-zero exit codes to avoid failing CI
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - alacrity_backend/**/*.py
+
+# 3. Testing - Frontend
+test-frontend:
+  stage: test
+  script:
+    - cd alacrity_frontend
+    - npm ci
+    - echo "Running frontend tests..."
+    - npm run test
+  artifacts:
+    paths:
+      - test-reports/
+    expire_in: 1 week
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - alacrity_frontend/**/*
+
+# 4. Testing - Backend (Python Tests)
+test-backend:
+  stage: test
+  image: python:3.10
+  before_script:
+    - cd alacrity_backend
+    - pip install -r requirements.txt
+  script:
+    - echo "Running backend tests..."
+    - python manage.py test  # Use pytest if needed: pytest --cov=.
+  artifacts:
+    paths:
+      - test-reports/
+    expire_in: 1 week
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - alacrity_backend/**/*
+
+# 5. Build - Frontend
+build-frontend:
+  stage: build
+  script:
+    - cd alacrity_frontend
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - alacrity_frontend/.next/
+    expire_in: 1 week
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - alacrity_frontend/**/*
+
+# 6. Dev - Frontend
+dev:
+  stage: dev
+  script:
+    - cd alacrity_frontend
+    - npm ci
+    - npm run dev &
+    - sleep 40
+    - wget --spider --quiet http://localhost:3000 || { echo "Dev server not running"; exit 1; }
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - alacrity_frontend/**/*
+
+# 7. Deployment (Not functional yet)
+# deploy:
+#   stage: deploy
+#   script:
+#     - echo "Deploying..."
+#   rules:
+#     - if: '$CI_COMMIT_BRANCH == "main"'
+#   environment:
+#     name: production
