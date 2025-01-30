@@ -91,8 +91,8 @@ DATABASES = {
         'NAME': 'project_db',
         'USER': 'root',
         'PASSWORD': 'Foundation,219',
-        # 'HOST': 'localhost',
-        'HOST': 'db',
+        'HOST': 'localhost',
+        # 'HOST': 'db', # if building with docker
         'PORT': '3306',
     }
 }
