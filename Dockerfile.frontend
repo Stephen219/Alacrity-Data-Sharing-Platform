@@ -1,0 +1,18 @@
+
+FROM node:18
+
+# Set the working directory
+WORKDIR /app
+
+
+COPY alacrity_frontend/package.json alacrity_frontend/package-lock.json ./
+RUN npm install
+
+
+COPY alacrity_frontend /app
+
+
+EXPOSE 3000
+
+# Start the Next.js development server
+CMD ["npm", "run", "dev"]

@@ -1,0 +1,5 @@
+Django==4.1
+mysqlclient==2.1.1  # This package allows Django to interact with MariaDB
+djangorestframework==3.13
+pymysql
+django-cors-headers
