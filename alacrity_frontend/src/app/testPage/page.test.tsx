@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import FormPage from './page';
+import '@testing-library/jest-dom';
 
 test('renders FormPage', () => {
   render(<FormPage />);

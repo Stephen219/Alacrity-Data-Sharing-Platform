@@ -17,7 +17,7 @@ const FormPage = () => {
       const result = await axios.post(BACKEND_URL + 'api/submit_form/', { name, message });
       setResponse(result.data.success ? 'Form submitted successfully!' + result.data.name : 'Submission failed.');
     } catch (error) {
-      setResponse('Error: ' + error.message);
+      setResponse('Error: ' + (error as Error).message);
     }
   };
 

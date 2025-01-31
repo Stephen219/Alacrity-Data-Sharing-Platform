@@ -1,3 +1,7 @@
+# Attempt to run this if have docker installed and navigate in the setiings.py and change the database settings to the following:
+# host: db (this is the name of the service in the docker-compose.yml file)
+# instead of localhost
+
 version: '3.8'
 
 services:
