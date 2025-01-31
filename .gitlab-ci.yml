@@ -5,22 +5,18 @@ default:
 image: node:20-alpine
 
 stages:
-  - lint-frontend
-  - lint-backend
-  - test-frontend
-  - test-backend
-  - dev-frontend
-  - build-frontend
-  - deploy
-  #in herw we can add more stages like deploy, etc   but for now we will stick to these stages
-  
+  - lint # Linting for both frontend and backend
+  - test # Testing for both frontend and backend
+  - build # Build frontend
+  - deploy 
+  - dev # Development server for frontend
 
 variables:
   CI_DEBUG_TRACE: "false"
 
 # 1. Linting - Frontend
 lint-frontend:
-  stage: lint-frontend
+  stage: lint
   script:
     - echo "Installing dependencies..."
     - cd alacrity_frontend
@@ -34,13 +30,13 @@ lint-frontend:
 
 # 2. Linting - Backend (Pylint)
 lint-backend:
-  stage: lint-backend
+  stage: lint
   image: python:3.10
   before_script:
     - pip install pylint
   script:
     - echo "Running Pylint..."
-    - pylint alacrity_backend --exit-zero  # Allow non-zero exit codes to avoid failing CI
+    - pylint alacrity_backend --exit-zero  # Allow non-zero exit codes to avoid failing CI for now
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       changes:
@@ -48,7 +44,7 @@ lint-backend:
 
 # 3. Testing - Frontend
 test-frontend:
-  stage: test-frontend
+  stage: test
   script:
     - cd alacrity_frontend
     - npm ci
@@ -65,7 +61,7 @@ test-frontend:
 
 # 4. Testing - Backend (Python Tests)
 test-backend:
-  stage: test-backend
+  stage: test
   image: python:3.10
   before_script:
     - cd alacrity_backend
@@ -84,7 +80,7 @@ test-backend:
 
 # 5. Build - Frontend
 build-frontend:
-  stage: build-frontend
+  stage: build
   script:
     - cd alacrity_frontend
     - npm ci
