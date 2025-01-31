@@ -108,12 +108,12 @@ dev:
       changes:
         - alacrity_frontend/**/*
 
-# 7. Deployment (Not functional yet)
-deploy:
-  stage: deploy
-  script:
-    - echo "Deploying..."
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-  environment:
-    name: production
+# # 7. Deployment (Not functional yet)
+# deploy:
+#   stage: deploy
+#   script:
+#     - echo "Deploying..."
+#   rules:
+#     - if: '$CI_COMMIT_BRANCH == "main"'
+#   environment:
+#     name: production
