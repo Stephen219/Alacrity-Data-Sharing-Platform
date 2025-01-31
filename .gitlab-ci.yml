@@ -96,7 +96,7 @@ build-frontend:
 
 # 6. Dev - Frontend
 dev:
-  stage: dev-frontend
+  stage: dev
   script:
     - cd alacrity_frontend
     - npm ci
