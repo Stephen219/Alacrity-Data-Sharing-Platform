@@ -5,18 +5,22 @@ default:
 image: node:20-alpine
 
 stages:
-  - lint
-  - test
-  - build
+  - lint-frontend
+  - lint-backend
+  - test-frontend
+  - test-backend
+  - dev-frontend
+  - build-frontend
   - deploy
-  - dev
+  #in herw we can add more stages like deploy, etc   but for now we will stick to these stages
+  
 
 variables:
   CI_DEBUG_TRACE: "false"
 
 # 1. Linting - Frontend
 lint-frontend:
-  stage: lint
+  stage: lint-frontend
   script:
     - echo "Installing dependencies..."
     - cd alacrity_frontend
@@ -30,7 +34,7 @@ lint-frontend:
 
 # 2. Linting - Backend (Pylint)
 lint-backend:
-  stage: lint
+  stage: lint-backend
   image: python:3.10
   before_script:
     - pip install pylint
@@ -44,7 +48,7 @@ lint-backend:
 
 # 3. Testing - Frontend
 test-frontend:
-  stage: test
+  stage: test-frontend
   script:
     - cd alacrity_frontend
     - npm ci
@@ -61,7 +65,7 @@ test-frontend:
 
 # 4. Testing - Backend (Python Tests)
 test-backend:
-  stage: test
+  stage: test-backend
   image: python:3.10
   before_script:
     - cd alacrity_backend
@@ -80,7 +84,7 @@ test-backend:
 
 # 5. Build - Frontend
 build-frontend:
-  stage: build
+  stage: build-frontend
   script:
     - cd alacrity_frontend
     - npm ci
