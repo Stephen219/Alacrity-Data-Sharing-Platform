@@ -76,8 +76,22 @@ test-frontend:
     - ls -l coverage/lcov-report
     - cat coverage/lcov-report/index.html
     - COVERAGE=$(grep -oE '[0-9]+\.[0-9]+' coverage/lcov-report/index.html | head -1)
+    - COVERAGE_BRANCH=$(grep -oP '(?<=<span class="strong">)[0-9]+\.[0-9]+(?=% </span>\s*<span class="quiet">Branches)' coverage/lcov-report/index.html | head -1)
+    - COVERAGE_FUNCTION=$(grep -oP '(?<=<span class="strong">)[0-9]+\.[0-9]+(?=% </span>\s*<span class="quiet">Functions)' coverage/lcov-report/index.html | head -1)
     # - COVERAGE=$(grep -oE '[0-9]+\.[0-9]+' coverage/lcov-report/index.html | head -1)
     # - COVERAGE=$(grep -oP '(?<=<span class="strong">)[0-9]+\.[0-9]+(?=% </span>\s*<span class="quiet">Statements)' coverage/lcov-report/index.html | head -1)
+    #  Extract Statement Coverage from HTML
+    - COVERAGE_STATEMENT=$(grep -oP '(?<=<span class="strong">)[0-9]+\.[0-9]+(?=% </span>\s*<span class="quiet">Statements)' coverage/lcov-report/index.html | head -1)
+
+    - echo "Branch coverage:"
+    - echo  $COVERAGE_BRANCH%
+
+    - echo "Function coverage:"
+    - echo  $COVERAGE_FUNCTION%
+
+    - echo "Statement coverage:"
+    - echo  $COVERAGE_STATEMENT%
+
     - echo "Statementghjkl;s coverage:"
     - echo  $COVERAGE%
     - COVERAGE_INT=$(printf "%.0f" "$COVERAGE") 

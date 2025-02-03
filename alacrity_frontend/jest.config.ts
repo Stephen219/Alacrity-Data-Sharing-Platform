@@ -34,13 +34,13 @@ const config: Config = {
     "\\\\node_modules\\\\"
   ],
 
-  // Minimum coverage thresholds
+
   coverageThreshold: {
     global: {
-      branches: 20,
-      functions: 20,
-      lines: 20,
-      statements: 20
+      branches: 41,
+      functions: 41,
+      lines: 41,
+      statements: 41.34
     }
   },
 
