@@ -28,8 +28,8 @@ cd alacrity_backend
 2. Set up a virtual environment and activate it:
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
+python -m venv venv
+source venv/Scripts/activate
 ```
 
 3. Install dependencies:
@@ -43,6 +43,11 @@ pip install -r requirements.txt
 ```bash
 python manage.py runserver
 ```
+##  Note 
+remember to migrate your d aftter any changes
+
+
+
 
 ### Frontend Setup
 To run the frontend manually:
