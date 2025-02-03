@@ -75,21 +75,22 @@ test-frontend:
     - ls -al coverage/lcov-report
     - ls -l coverage/lcov-report
     - cat coverage/lcov-report/index.html
-    - COVERAGE_STATEMENT=$(grep -oE 'data-value="[0-9]+(\.[0-9]+)?%"' coverage/lcov-report/index.html | head -1 | grep -oE '[0-9]+(\.[0-9]+)?')
-    - COVERAGE_BRANCH=$(grep -oE 'data-value="[0-9]+(\.[0-9]+)?%"' coverage/lcov-report/index.html | sed -n '2p' | grep -oE '[0-9]+(\.[0-9]+)?')
-    - COVERAGE_FUNCTION=$(grep -oE 'data-value="[0-9]+(\.[0-9]+)?%"' coverage/lcov-report/index.html | sed -n '3p' | grep -oE '[0-9]+(\.[0-9]+)?')
-    - COVERAGE_LINES=$(grep -oE 'data-value="[0-9]+(\.[0-9]+)?%"' coverage/lcov-report/index.html | sed -n '4p' | grep -oE '[0-9]+(\.[0-9]+)?')
-
-    - echo "Branch coverage:"
-    - echo  $COVERAGE_BRANCH%
-    - echo "Function coverage:"
-    - echo  $COVERAGE_FUNCTION%
-    - echo "Statement coverage:"
+    -    # Extract coverage values using the first four lines in the coverage report
+    - COVERAGE_STATEMENT=$(grep -oE 'data-value="[0-9.]+' coverage/lcov-report/index.html | head -1 | cut -d'"' -f2)
+    - COVERAGE_BRANCH=$(grep -oE 'data-value="[0-9.]+' coverage/lcov-report/index.html | sed -n '2p' | cut -d'"' -f2)
+    - COVERAGE_FUNCTION=$(grep -oE 'data-value="[0-9.]+' coverage/lcov-report/index.html | sed -n '3p' | cut -d'"' -f2)
+    - COVERAGE_LINES=$(grep -oE 'data-value="[0-9.]+' coverage/lcov-report/index.html | sed -n '4p' | cut -d'"' -f2)
+    
+    # Print extracted values
     - echo  $COVERAGE_STATEMENT%
-    - echo "Lines coverage:"
+    - echo  "Branch coverage:"
+
+    - echo " $COVERAGE_BRANCH%
+    
+    - echo  $COVERAGE_FUNCTION%
     - echo  $COVERAGE_LINES%
     - COVERAGE=$(grep -oE 'data-value="[0-9]+(\.[0-9]+)?%"' coverage/lcov-report/index.html | head -1 | grep -oE '[0-9]+(\.[0-9]+)?')
-    
+
     
 
 
