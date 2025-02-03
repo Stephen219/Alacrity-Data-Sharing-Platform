@@ -74,6 +74,7 @@ test-frontend:
     - echo "Checking test coverage..."
     - ls -al coverage/lcov-report
     - ls -l coverage/lcov-report
+    - cat coverage/lcov-report/index.html
     - COVERAGE=$(grep -oE '[0-9]+\.[0-9]+' coverage/lcov-report/index.html | head -1)
     # - COVERAGE=$(grep -oE '[0-9]+\.[0-9]+' coverage/lcov-report/index.html | head -1)
     # - COVERAGE=$(grep -oP '(?<=<span class="strong">)[0-9]+\.[0-9]+(?=% </span>\s*<span class="quiet">Statements)' coverage/lcov-report/index.html | head -1)
