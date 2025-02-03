@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
-    "test_exact_coverage": "jest --coverage --coverageReporters=json"
+    "test_exact_coverage": "jest --coverage --coverageReporters=json",
+    "shenzi": "jest --coverage --coverageReporters=json-summary && node scripts/parse-coverage.js",
+    "tired": "jest-coverage-cli"
   },
   "dependencies": {
     "axios": "^1.7.9",

@@ -28,6 +28,24 @@ const config: Config = {
   // Enable coverage collection
   collectCoverage: true,
   coverageDirectory: 'coverage',
+  coverageReporters: ['json', 'lcov', 'text', 'clover'],
+  
+
+
+
+  // Collect coverage from src folder
+
+
+
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/**/types.ts',
+    '!src/**/types.tsx',
+    '!src/**/types/**',
+    '!src/**/types/**/*'
+  ],
+  
 
   // Ignore node_modules from coverage
   coveragePathIgnorePatterns: [
