@@ -73,9 +73,12 @@ test-frontend:
     - npm run test -- --coverage
     - echo "Checking test coverage..."
     - COVERAGE=$(grep -oP '(?<=<span class="strong">)[0-9]+\.[0-9]+(?=% </span>\s*<span class="quiet">Statements)' coverage/lcov-report/index.html | head -1)
-    - echo "Statements coverage: $COVERAGE%"
+    - echo "Statementghjkl;s coverage:"
+    - echo  $COVERAGE%
     - COVERAGE_INT=$(printf "%.0f" "$COVERAGE") 
-    - echo "Statements fghjklkjhgfcdxcgvhbjnkmlcoverage (int): $COVERAGE_INT"
+    - echo "Statement coverage (int):"
+    - echo "Statementghjkl;s coverage:"
+    - echo  $COVERAGE_INT
   
     - if [ "$COVERAGE_INT" -lt 20 ]; then echo ; exit 1; fi
   artifacts:
