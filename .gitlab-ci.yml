@@ -72,7 +72,11 @@ test-frontend:
     - echo "Running frontend tests..."
     - npm run test -- --coverage
     - echo "Checking test coverage..."
-    - COVERAGE=$(grep -oP '(?<=<span class="strong">)[0-9]+\.[0-9]+(?=% </span>\s*<span class="quiet">Statements)' coverage/lcov-report/index.html | head -1)
+    - ls -al coverage/lcov-report
+    - ls -l coverage/lcov-report
+    - COVERAGE=$(grep -oE '[0-9]+\.[0-9]+' coverage/lcov-report/index.html | head -1)
+    # - COVERAGE=$(grep -oE '[0-9]+\.[0-9]+' coverage/lcov-report/index.html | head -1)
+    # - COVERAGE=$(grep -oP '(?<=<span class="strong">)[0-9]+\.[0-9]+(?=% </span>\s*<span class="quiet">Statements)' coverage/lcov-report/index.html | head -1)
     - echo "Statementghjkl;s coverage:"
     - echo  $COVERAGE%
     - COVERAGE_INT=$(printf "%.0f" "$COVERAGE") 
