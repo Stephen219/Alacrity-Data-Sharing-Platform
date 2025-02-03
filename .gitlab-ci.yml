@@ -75,7 +75,7 @@ test-frontend:
     - ls -al coverage/lcov-report
     - ls -l coverage/lcov-report
     - cat coverage/lcov-report/index.html
-    -    # Extract coverage values using the first four lines in the coverage report
+    
     - COVERAGE_STATEMENT=$(grep -oE 'data-value="[0-9.]+' coverage/lcov-report/index.html | head -1 | cut -d'"' -f2)
     - COVERAGE_BRANCH=$(grep -oE 'data-value="[0-9.]+' coverage/lcov-report/index.html | sed -n '2p' | cut -d'"' -f2)
     - COVERAGE_FUNCTION=$(grep -oE 'data-value="[0-9.]+' coverage/lcov-report/index.html | sed -n '3p' | cut -d'"' -f2)
