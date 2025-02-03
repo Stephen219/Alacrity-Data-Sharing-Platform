@@ -75,20 +75,11 @@ test-frontend:
     - ls -al coverage/lcov-report
     - ls -l coverage/lcov-report
     - cat coverage/lcov-report/index.html
-    - COVERAGE=$(grep -oE '[0-9]+\.[0-9]+' coverage/lcov-report/index.html | head -1)
-    - COVERAGE_BRANCH=$(grep -oE '(?<=<span class="strong">)[0-9]+\.[0-9]+(?=% </span>\s*<span class="quiet">Branches)' coverage/lcov-report/index.html | head -1)
-    - COVERAGE_FUNCTION=$(grep -oE '(?<=<span class="strong">)[0-9]+\.[0-9]+(?=% </span>\s*<span class="quiet">Functions)' coverage/lcov-report/index.html | head -1)
-    - COVERAGE_STATEMENT=$(grep -oE '(?<=<span class="strong">)[0-9]+\.[0-9]+(?=% </span>\s*<span class="quiet">Statements)' coverage/lcov-report/index.html | head -1)
-   
-    - echo "Total coverage:"
-    - echo $COVERAGE%
-    - echo "Branch coverage:"
-    - echo $COVERAGE_BRANCH%
-    - echo "Function coverage:"
-    - echo $COVERAGE_FUNCTION%
-    - echo "Statement coverage:"
-    - echo $COVERAGE_STATEMENT%
-
+    - COVERAGE_STATEMENT=$(grep -oE '<td data-value="[0-9]+\.[0-9]+' coverage/lcov-report/index.html | head -1 | grep -oE '[0-9]+\.[0-9]+')
+    - COVERAGE_BRANCH=$(grep -oE '<td data-value="[0-9]+\.[0-9]+' coverage/lcov-report/index.html | sed -n '2p' | grep -oE '[0-9]+\.[0-9]+')
+    - COVERAGE_FUNCTION=$(grep -oE '<td data-value="[0-9]+\.[0-9]+' coverage/lcov-report/index.html | sed -n '3p' | grep -oE '[0-9]+\.[0-9]+')
+    - COVERAGE_LINES=$(grep -oE '<td data-value="[0-9]+\.[0-9]+' coverage/lcov-report/index.html | sed -n '4p' | grep -oE '[0-9]+\.[0-9]+')
+    
 
 
 
