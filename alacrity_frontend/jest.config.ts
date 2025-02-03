@@ -213,11 +213,64 @@
 // export default config;
 
 
+// import type { Config } from 'jest'
+// import nextJest from 'next/jest'
+
+// const createJestConfig = nextJest({
+//   // Provide the path to your Next.js app to load next.config.js and .env files in your test environment
+//   dir: './',
+// })
+
+// const config: Config = {
+//   testEnvironment: 'jsdom',
+//   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
+//   moduleNameMapper: {
+//     '^@/(.*)$': '<rootDir>/src/$1',
+//   },
+//   transform: {
+//     '^.+\\.(ts|tsx)$': ['ts-jest', {
+//       tsconfig: './tsconfig.json'
+//     }]
+//   },
+//   testMatch: [
+//     "**/__tests__/**/*.[jt]s?(x)",
+//     "**/?(*.)+(spec|test).[jt]s?(x)"
+//   ],
+
+//   // collectCoverage: true,
+//   coverageDirectory: 'coverage',
+
+//   coveragePathIgnorePatterns: [
+//         "\\\\node_modules\\\\"
+//       ],
+
+//   clearMocks: true,
+
+
+  
+
+
+
+
+
+
+
+
+
+//   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+//   testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/']
+// }
+
+// // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
+// export default createJestConfig(config)
+
+
+
+
 import type { Config } from 'jest'
 import nextJest from 'next/jest'
 
 const createJestConfig = nextJest({
-  // Provide the path to your Next.js app to load next.config.js and .env files in your test environment
   dir: './',
 })
 
@@ -237,29 +290,28 @@ const config: Config = {
     "**/?(*.)+(spec|test).[jt]s?(x)"
   ],
 
-  // collectCoverage: true,
+  // Enable coverage collection
+  collectCoverage: true,
   coverageDirectory: 'coverage',
 
+  // Ignore node_modules from coverage
   coveragePathIgnorePatterns: [
-        "\\\\node_modules\\\\"
-      ],
+    "\\\\node_modules\\\\"
+  ],
+
+  // Minimum coverage thresholds
+  coverageThreshold: {
+    global: {
+      branches: 60,
+      functions: 60,
+      lines: 60,
+      statements: 60
+    }
+  },
 
   clearMocks: true,
-
-
-  
-
-
-
-
-
-
-
-
-
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/']
 }
 
-// createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
 export default createJestConfig(config)
