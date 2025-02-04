@@ -34,6 +34,7 @@ const config: Config = {
 
 
   // Collect coverage from src folder
+  // please add any file you wish to be excluded here   start with !
 
 
 
@@ -55,10 +56,10 @@ const config: Config = {
 
   coverageThreshold: {
     global: {
-      branches: 18,
-      functions: 16,
-      lines: 14,
-      statements: 1.34
+      branches: 50,
+      functions: 40,
+      lines: 40,
+      statements: 40
     }
   },
 
