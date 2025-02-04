@@ -66,21 +66,28 @@ lint-backend:
 # 3. Testing - Frontend 
 test-frontend:
   stage: test
-  before_script:
-    - apt-get update && apt-get install -y jq  # Install jq for JSON parsing
+  #TODO: fix this thing    it is the most redundant thing and i need it refactored
   script:
     - cd alacrity_frontend
+    # FIXME : i am not sure if this is the right way to do it
     - npm ci
     - echo "Running frontend tests..."
-    # - npm run test -- --coverage
+    - npm run test -- --coverage
     - npm run test -- --coverage --coverageReporters=json-summary
-    - echo  $(jq '.total.statements.pct' coverage/coverage-summary.json)
-    - echo  $(jq '.total.functions.pct' coverage/coverage-summary.json)
-    - echo  $(jq '.total.branches.pct' coverage/coverage-summary.json)
-    - echo  $(jq '.total.lines.pct' coverage/coverage-summary.json)
-    - COVERAGE_INT=$(jq '.total.lines.pct' coverage/coverage-summary.json)
-  
-    - if [ "$COVERAGE_INT" -lt 20 ]; then echo ; exit 1; fi
+    - echo "Extracting Coverage Metrics..."
+    - STATEMENTS_COVERAGE=$(grep -o '"statements":{"total":[0-9]*,"covered":[0-9]*,"skipped":[0-9]*,"pct":[0-9.]*' coverage/coverage-summary.json | awk -F':' '{print $NF}')
+    - FUNCTIONS_COVERAGE=$(grep -o '"functions":{"total":[0-9]*,"covered":[0-9]*,"skipped":[0-9]*,"pct":[0-9.]*' coverage/coverage-summary.json | awk -F':' '{print $NF}')
+    - BRANCHES_COVERAGE=$(grep -o '"branches":{"total":[0-9]*,"covered":[0-9]*,"skipped":[0-9]*,"pct":[0-9.]*' coverage/coverage-summary.json | awk -F':' '{print $NF}')
+    - LINES_COVERAGE=$(grep -o '"lines":{"total":[0-9]*,"covered":[0-9]*,"skipped":[0-9]*,"pct":[0-9.]*' coverage/coverage-summary.json | awk -F':' '{print $NF}')
+    - echo $STATEMENTS_COVERAGE%
+    - echo  $FUNCTIONS_COVERAGE%
+    - echo  $BRANCHES_COVERAGE%
+    - echo  $LINES_COVERAGE%
+    - if [ "$STATEMENTS_COVERAGE" -lt 20 ]; then echo ; exit 1; fi   # 20 for this branch to go in 
+    - if [ "$FUNCTIONS_COVERAGE" -lt 20 ]; then echo ; exit 1; fi
+    - if [ "$BRANCHES_COVERAGE" -lt 20 ]; then echo ; exit 1; fi
+    - if [ "$LINES_COVERAGE" -lt 20 ]; then echo ; exit 1; fi
+    - echo "Coverage Metrics extracted successfully!"
   artifacts:
     paths:
       - alacrity_frontend/coverage/
@@ -97,9 +104,18 @@ test-backend:
   before_script:
     - cd alacrity_backend
     - pip install -r requirements.txt
+    - pip install coverage
   script:
     - echo "Running backend tests..."
-    - python manage.py test  # Use pytest if needed: pytest --cov=.
+    - coverage run --source=alacrity_backend --omit="alacrity_backend/tests/*,alacrity_backend/migrations/*" manage.py test
+    - coverage report
+    - COVERAGE_PERCENT=$(coverage report | tail -n 1 | awk '{print $NF}' | sed 's/%//')
+    - echo $COVERAGE_PERCENT%
+    - echo $COVERAGE_PERCENT
+    - echo "Generating coverage report..."
+    - if [ $(echo "$COVERAGE_PERCENT < 50" | bc) -eq 1 ]; then echo "Coverage is below 50%. Exiting..."; exit 1; fi
+  
+    
   artifacts:
     paths:
       - test-reports/

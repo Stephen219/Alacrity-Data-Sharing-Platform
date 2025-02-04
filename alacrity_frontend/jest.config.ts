@@ -29,7 +29,7 @@ const config: Config = {
   collectCoverage: true,
   coverageDirectory: 'coverage',
   coverageReporters: ['json', 'lcov', 'text', 'clover'],
-  
+
 
 
 
@@ -39,10 +39,10 @@ const config: Config = {
 
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
-    '!src/**/*.d.ts',
-    '!src/**/types.ts',
-    '!src/**/types.tsx',
-    '!src/**/types/**',
+    '!src/config.ts',
+
+    '!src/setupTests.ts',
+    '!src/page.tsx',
     '!src/**/types/**/*'
   ],
   
