@@ -83,10 +83,10 @@ test-frontend:
     - echo  $FUNCTIONS_COVERAGE%
     - echo  $BRANCHES_COVERAGE%
     - echo  $LINES_COVERAGE%
-    - if [ "$STATEMENTS_COVERAGE" -lt 20 ]; then echo ; exit 1; fi   # 20 for this branch to go in 
-    - if [ "$FUNCTIONS_COVERAGE" -lt 20 ]; then echo ; exit 1; fi
-    - if [ "$BRANCHES_COVERAGE" -lt 20 ]; then echo ; exit 1; fi
-    - if [ "$LINES_COVERAGE" -lt 20 ]; then echo ; exit 1; fi
+    - if [ "$STATEMENTS_COVERAGE" -lt 40 ]; then echo ; exit 1; fi   # 20 for this branch to go in 
+    - if [ "$FUNCTIONS_COVERAGE" -lt 40 ]; then echo ; exit 1; fi
+    - if [ "$BRANCHES_COVERAGE" -lt 40 ]; then echo ; exit 1; fi
+    - if [ "$LINES_COVERAGE" -lt 40 ]; then echo ; exit 1; fi
     - echo "Coverage Metrics extracted successfully!"
   artifacts:
     paths:
