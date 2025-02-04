@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "jest"
+    "test": "jest",
+    "test_exact_coverage": "jest --coverage --coverageReporters=json",
+    "git": "git add . && git commit -m\"still working\" && git push",
+    "tired": "jest-coverage-cli"
   },
   "dependencies": {
     "axios": "^1.7.9",
