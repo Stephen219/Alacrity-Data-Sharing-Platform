@@ -1,4 +1,6 @@
 /alacrity_backend/venv
 /alacrity_backend/alacrity_backend/__pycache__
 /alacrity_backend/alacrity_backend/migrations
-
+/venv
+alacrity_backend/htmlcov
+alacrity_backend/.coverage
