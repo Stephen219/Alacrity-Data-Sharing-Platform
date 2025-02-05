@@ -3,3 +3,4 @@ mysqlclient
 djangorestframework
 pymysql
 django-cors-headers
+nanoid
