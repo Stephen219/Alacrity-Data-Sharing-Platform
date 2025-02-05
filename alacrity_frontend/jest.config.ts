@@ -24,6 +24,11 @@ const config: Config = {
     "**/__tests__/**/*.[jt]s?(x)",
     "**/?(*.)+(spec|test).[jt]s?(x)"
   ],
+  transformIgnorePatterns: [
+    "/node_modules/(?!lucide-react)" // Force Jest to transform lucide-react
+  ],
+ 
+  
 
   // Enable coverage collection
   collectCoverage: true,
