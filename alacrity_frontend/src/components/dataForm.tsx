@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown, Info } from "lucide-react";
 import { BACKEND_URL } from "@/config";
 import { nanoid } from "nanoid";
+import { minioClient } from "@/libs/MinioClient";
 
 
 
@@ -59,19 +60,17 @@ const DatasetForm = () => {
     return fileUrl; 
   };
 
-  const uploadFileToMinio = async (file: File) => {
-    try {
-      const fileName = nanoid() + '-' + file.name; 
-      const fileStream = file.stream();
-      
-      // no idea what am doing here
-      const result = await minioClient.putObject('umbwa', fileName, fileStream);
-      return result;
-    } catch (error) {
-      console.error("File upload to MinIO failed:", error);
-      throw new Error("File upload failed");
-    }
-  };
+  // const uploadToMinIO = async (file: File) => {
+  //   return new Promise((resolve, reject) => {
+  //     const fileName = `${nanoid()}-${file.name}`; // Unique file name
+  //     minioClient.putObject('umbwa', fileName, file, (err, etag) => {
+  //       if (err) {
+  //         reject(err);
+  //       }
+  //       resolve(`https://edc1-31-205-218-136.ngrok-free.app/buckets/umbwa/admin/prefix/${fileName}`);
+  //     });
+  //   });
+  // };
 
 
   /**
@@ -95,11 +94,19 @@ const DatasetForm = () => {
     formData.append("fileUrl", generateFileUrl(file!));
     if (file) formData.append("file", file);
 
+  
+
+   
+
+
+
     try {
       const response = await fetch(`${BACKEND_URL}/api/submit_form/`, {
         method: "POST",
         body: formData,
       });
+
+
 
       if (!response.ok) {
         const data = await response.json();
@@ -113,6 +120,10 @@ const DatasetForm = () => {
         
         throw new Error(data.message);
         }
+
+       
+
+        
 
       alert("Dataset uploaded successfully!");
       
