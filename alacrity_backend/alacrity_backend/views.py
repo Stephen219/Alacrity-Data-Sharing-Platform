@@ -3,53 +3,80 @@
 
 
 
-from rest_framework.response import Response
-from rest_framework.decorators import api_view
-from rest_framework import status
-from minio import Minio
-from django.conf import settings
-import uuid  # For unique file names
+# from rest_framework.response import Response
+# from rest_framework.decorators import api_view
+# from rest_framework import status
+# from minio import Minio
+# from django.conf import settings
+# import uuid  # For unique file names
 
-# Initialize MinIO Client
-minio_client = Minio(
-    settings.MINIO_ENDPOINT.replace("https://", "").replace("http://", ""),  
-    access_key=settings.MINIO_ACCESS_KEY,
-    secret_key=settings.MINIO_SECRET_KEY,
-    secure=True  # Set to False if MinIO is running without SSL
-)
+# # Initialize MinIO Client
+# minio_client = Minio(
+#     settings.MINIO_ENDPOINT.replace("https://", "").replace("http://", ""),  
+#     access_key=settings.MINIO_ACCESS_KEY,
+#     secret_key=settings.MINIO_SECRET_KEY,
+#     secure=True  # Set to False if MinIO is running without SSL
+# )
+
+# @api_view(['POST'])
+# def submit_form(request):
+#     if request.FILES:  # Check if a file is uploaded
+#         data = request.data
+#         file = request.FILES.get("file")  # Ensure this matches the form key in React
+
+#         if not file:
+#             return Response({"error": "No file uploaded."}, status=status.HTTP_400_BAD_REQUEST)
+
+#         # Generate a unique file name
+#         file_extension = file.name.split(".")[-1]
+#         unique_filename = f"{uuid.uuid4()}.{file_extension}"
+
+#         try:
+#             # Upload file to MinIO
+#             minio_client.put_object(
+#                 bucket_name="umbwa",
+#                 object_name=unique_filename,
+#                 data=file,
+#                 length=file.size,
+#                 content_type=file.content_type
+#             )
+
+#             # Generate file URL
+#             file_url = f"{settings.MINIO_ENDPOINT}/buckets/{settings.MINIO_BUCKET_NAME}/admin/prefix/{unique_filename}"
+#             print(f"File uploaded successfully: {file_url}")
+
+#             # Return response with MinIO file URL
+#             return Response({"message": "File uploaded successfully!", "fileUrl": file_url}, status=status.HTTP_200_OK)
+
+#         except Exception as e:
+#             print("MinIO Upload Error:", str(e))
+#             return Response({"error": "Failed to upload file to MinIO."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#     return Response({"error": "No data received."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .models import Test    
 
 @api_view(['POST'])
 def submit_form(request):
-    if request.FILES:  # Check if a file is uploaded
-        data = request.data
-        file = request.FILES.get("file")  # Ensure this matches the form key in React
+    
+    name = request.data.get('name')
+    message = request.data.get('message')
 
-        if not file:
-            return Response({"error": "No file uploaded."}, status=status.HTTP_400_BAD_REQUEST)
+    print (name , message)
+    print (name , message)
+    print (name , message)
+    new_entry = Test.objects.create(name=name, message=message)
+    print(f"Inserted: {new_entry.name}, {new_entry.message}")
 
-        # Generate a unique file name
-        file_extension = file.name.split(".")[-1]
-        unique_filename = f"{uuid.uuid4()}.{file_extension}"
+    
+    if not name or not message:
+        return Response({"error": "Both name and message are required."}, status=400)
+    
+    new_entry = Test.objects.create(name=name, message=message)
+    print(f"Inserted: {new_entry.name}, {new_entry.message}")
 
-        try:
-            # Upload file to MinIO
-            minio_client.put_object(
-                bucket_name="umbwa",
-                object_name=unique_filename,
-                data=file,
-                length=file.size,
-                content_type=file.content_type
-            )
-
-            # Generate file URL
-            file_url = f"{settings.MINIO_ENDPOINT}/buckets/{settings.MINIO_BUCKET_NAME}/admin/prefix/{unique_filename}"
-            print(f"File uploaded successfully: {file_url}")
-
-            # Return response with MinIO file URL
-            return Response({"message": "File uploaded successfully!", "fileUrl": file_url}, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            print("MinIO Upload Error:", str(e))
-            return Response({"error": "Failed to upload file to MinIO."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    return Response({"error": "No data received."}, status=status.HTTP_400_BAD_REQUEST)
+    return Response({"success": True, "name": name, "message": message})
