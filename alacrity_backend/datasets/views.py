@@ -48,7 +48,7 @@ def create_dataset(request):
             print(errors)
 
         # Check if the category is empty
-        valid_category = ["category1", "category2", "category3", "category4", "category5"]
+        valid_category = ["category5", "category6", "category7", "category4", "category5"]
         # TODO get the required categories from the database
         if not category:
             errors['category'] = 'Category is required'
@@ -78,7 +78,7 @@ def create_dataset(request):
         
         # If there are errors, return the errors
         if errors:
-            return JsonResponse(errors, status=400)
+            return JsonResponse(errors, status=500)
         
         # Create the dataset
         dataset = Dataset(title=title, category=category, link=link, description=description)

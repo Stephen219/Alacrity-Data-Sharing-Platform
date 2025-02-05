@@ -80,10 +80,12 @@ const DatasetForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
+  
+    // Validate form before proceeding
     if (!validateForm()) return
-
+  
     setLoading(true)
+  
     const formData = new FormData()
     formData.append("title", title)
     formData.append("description", description)
@@ -91,27 +93,27 @@ const DatasetForm = () => {
     formData.append("tags", tags.join(","))
     formData.append("fileUrl", generateFileUrl(file!))
     if (file) formData.append("file", file)
-
+  
     try {
       const response = await fetch(`${BACKEND_URL}datasets/create_dataset/`, {
         method: "POST",
         body: formData,
       })
-
+  
       if (!response.ok) {
         const data = await response.json()
-        
-        if (data.errors) {
-          setErrors(data.errors)
-        } else {
-          setServerError("An error occurred while uploading. Please try again.")
-        }
-
-        throw new Error(data.message)
+  
+        // Set server-side errors if available
+        const errorMessage = data.errors
+          ? "An error occurred while uploading. Please try again."
+          : "An unknown error occurred."
+  
+        setServerError(errorMessage)
+        return
       }
-
+  
+      // Clear form and reset state on success
       alert("Dataset uploaded successfully!")
-
       setTitle("")
       setDescription("")
       setCategory("")
@@ -119,18 +121,15 @@ const DatasetForm = () => {
       setFile(null)
       setAgreedToTerms(false)
       setErrors({})
+  
     } catch (error) {
-      if (error instanceof Error) {
-        setServerError(error.message)
-      } else {
-        setServerError("An unknown error occurred.")
-      }
-      // console.error("Upload error:", error)
-      alert("An error occurred while uploading. Please try again.")
+      // Catch and set server error message
+      setServerError(error instanceof Error ? error.message : "An unknown error occurred.")
     } finally {
       setLoading(false)
     }
   }
+  
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
