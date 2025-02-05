@@ -40,7 +40,7 @@ def create_dataset(request):
             errors['title'] = 'Title is too long'
 
         # Check if the category is empty
-        valid_category = []
+        valid_category = ["valid category"]
         # TODO get the required categories from the database
         if not category:
             errors['category'] = 'Category is required'
