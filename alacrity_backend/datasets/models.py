@@ -6,11 +6,16 @@ from nanoid import generate
 def generate_id():
     return generate(size=10)
 
+
+print(generate_id())
+print(generate_id)
+
+
 ## This is the model for the dataset table in the database holding the dataset information.
 class Dataset(models.Model):
-    id = models.CharField(max_length=10, primary_key=True, default=generate_id, editable=False)
-   #orgid = models.ForeignKey(Organization, on_delete=models.CASCADE) this is the foreign key to the organization table it will be uncommented when the organization table is created
-   #uploaderid = models.ForeignKey(User, on_delete=models.CASCADE) this is the foreign key to the user table it will be uncommented when the user table is created 
+    dataset_id = models.CharField(max_length=10, primary_key=True, default=generate_id() , editable=False)
+    # orgid = models.ForeignKey(Organization, on_delete=models.CASCADE)  # Foreign key to the Organization table, uncomment when Organization model is created
+    # uploaderid = models.ForeignKey(User, on_delete=models.CASCADE)  # Foreign key to the User table, uncomment when User model is created
     title = models.CharField(
         max_length=100, 
         validators=[
@@ -37,7 +42,4 @@ class Dataset(models.Model):
 
         
     def __str__(self):
-        return self.name
-
-
-# TODO add organisation and user id to the dataset
+        return self.title  # Corrected from self.name to self.title

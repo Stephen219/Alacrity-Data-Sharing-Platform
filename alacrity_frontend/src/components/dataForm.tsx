@@ -93,7 +93,7 @@ const DatasetForm = () => {
     if (file) formData.append("file", file)
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/submit_form/`, {
+      const response = await fetch(`${BACKEND_URL}datasets/create_dataset/`, {
         method: "POST",
         body: formData,
       })

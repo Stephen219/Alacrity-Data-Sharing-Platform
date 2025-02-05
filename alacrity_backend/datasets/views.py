@@ -21,13 +21,19 @@ def is_valid_url(url):
 def create_dataset(request):
     if request.method == 'POST':
         # Get the data from the request
-        data = json.loads(request.body)
+        data = request.POST
+
+        print(data)
 
         # extract the data from the request
         title = data.get('title')
+        print(title)    
         category = data.get('category')
-        link = data.get('link')
+        print(category) 
+        link = data.get('fileUrl')
+        print(link)
         description = data.get('description')
+        print(description)
         # TODO: Add organization and user id to the dataset
 
         # validating the data 
@@ -36,30 +42,39 @@ def create_dataset(request):
         # Check if the title is empty
         if not title:
             errors['title'] = 'Title is required'
+            print(errors)
         elif len(title) > 100:
             errors['title'] = 'Title is too long'
+            print(errors)
 
         # Check if the category is empty
-        valid_category = ["valid category"]
+        valid_category = ["category1", "category2", "category3", "category4", "category5"]
         # TODO get the required categories from the database
         if not category:
             errors['category'] = 'Category is required'
+            print(errors)   
         elif category not in valid_category:
             errors['category'] = f'Category must be one of the following: {", ".join(valid_category)}.'
+            print(errors)   
         
         # validate the link
         if not link:
             errors['link'] = 'Link is required'
+            print(errors)   
         elif not is_valid_url(link):
             errors['link'] = 'Invalid link'
+            print(errors)   
         
         # validate the description
         if not description:
             errors['description'] = 'Description is required'
+            print(errors)
         elif len(description) < 10:
             errors['description'] = 'Description is too short'
+            print(errors)   
         elif len(description) > 255:
             errors['description'] = 'Description is too long'
+            print(errors)   
         
         # If there are errors, return the errors
         if errors:
