@@ -107,7 +107,7 @@ test-backend:
     - pip install coverage
   script:
     - echo "Running backend tests..."
-    - coverage run --source=alacrity_backend --omit="alacrity_backend/tests/*,alacrity_backend/migrations/*" manage.py test
+    - coverage run --omit="alacrity_backend/tests/*,alacrity_backend/migrations/*, datasets/migrations/*, datasets/tests/*" manage.py test
     - coverage report
     - COVERAGE_PERCENT=$(coverage report | tail -n 1 | awk '{print $NF}' | sed 's/%//')
     - echo $COVERAGE_PERCENT%
