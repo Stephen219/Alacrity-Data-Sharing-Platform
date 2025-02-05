@@ -4,12 +4,15 @@ alacrity_backend/alacrity_backend/__pycache__
 
 /alacrity_backend/datasets/migrations
 alacrity_backend/datasets/__pycache__
-/alacrity_backend/datasets/htmlcov/*
+alacrity_backend/datasets/htmlcov
 
 
 
 # Ignore all __pycache__ directories
 **/__pycache__/
+**/migrations/
+**/htmlcov/
+**.coverage
 
 # Ignore compiled Python files
 *.pyc
