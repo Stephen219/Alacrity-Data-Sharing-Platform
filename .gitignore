@@ -10,3 +10,4 @@ alacrity_backend/datasets/__pycache__
 
 # Ignore compiled Python files
 *.pyc
+/alacrity_backend/datasets/htmlcov

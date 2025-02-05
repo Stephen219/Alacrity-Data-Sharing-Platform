@@ -90,11 +90,13 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'project_db',
-        'USER': 'root', # if using the school laptop you can change this to any cridentials you want
-        'PASSWORD': 'comsc', # if using the school laptop you can change this to any cridentials you want
+        'USER': 'root',
+        'PASSWORD': 'comsc',
         'HOST': 'localhost',
-        # 'HOST': 'db', # if building with docker
         'PORT': '3306',
+        'TEST': {
+            'NAME': 'test_project_db',  # Unique test database name
+        }
     }
 }
 

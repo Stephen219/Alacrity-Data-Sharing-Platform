@@ -1,6 +1,6 @@
 from django.urls import path
-from . import views
+from .views import create_dataset
 
 urlpatterns = [
-    path('create_dataset/', views.create_dataset, name='create_dataset'),
+    path('create_dataset/',create_dataset, name='create_dataset'),
 ]

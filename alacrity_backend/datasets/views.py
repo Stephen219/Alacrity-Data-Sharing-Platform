@@ -1,5 +1,7 @@
 from django.shortcuts import render
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 from .models import Dataset
 from urllib.parse import urlparse
 import json
@@ -14,7 +16,8 @@ def is_valid_url(url):
     except:
         return False
 # Create your views here.
-
+@csrf_exempt
+@require_http_methods(["POST"])
 def create_dataset(request):
     if request.method == 'POST':
         # Get the data from the request
