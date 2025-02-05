@@ -6,14 +6,9 @@ from nanoid import generate
 def generate_id():
     return generate(size=10)
 
-
-print(generate_id())
-print(generate_id)
-
-
 ## This is the model for the dataset table in the database holding the dataset information.
 class Dataset(models.Model):
-    dataset_id = models.CharField(max_length=10, primary_key=True, default=generate_id() , editable=False)
+    dataset_id = models.CharField(max_length=10, primary_key=True, default=generate_id , editable=False)
     # orgid = models.ForeignKey(Organization, on_delete=models.CASCADE)  # Foreign key to the Organization table, uncomment when Organization model is created
     # uploaderid = models.ForeignKey(User, on_delete=models.CASCADE)  # Foreign key to the User table, uncomment when User model is created
     title = models.CharField(

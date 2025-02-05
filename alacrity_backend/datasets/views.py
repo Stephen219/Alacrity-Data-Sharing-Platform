@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_protect
+from rest_framework.decorators import api_view
 from django.views.decorators.http import require_http_methods
 from .models import Dataset
 from urllib.parse import urlparse
@@ -16,8 +17,8 @@ def is_valid_url(url):
     except:
         return False
 # Create your views here.
-@csrf_exempt
-@require_http_methods(["POST"])
+@csrf_protect
+@api_view(['POST'])
 def create_dataset(request):
     if request.method == 'POST':
         # Get the data from the request
@@ -46,17 +47,6 @@ def create_dataset(request):
         elif len(title) > 100:
             errors['title'] = 'Title is too long'
             print(errors)
-
-        # Check if the category is empty
-        valid_category = ["category5", "category6", "category7", "category4", "category5"]
-        # TODO get the required categories from the database
-        if not category:
-            errors['category'] = 'Category is required'
-            print(errors)   
-        elif category not in valid_category:
-            errors['category'] = f'Category must be one of the following: {", ".join(valid_category)}.'
-            print(errors)   
-        
         # validate the link
         if not link:
             errors['link'] = 'Link is required'
