@@ -32,13 +32,14 @@ python -m venv venv
 source venv/Scripts/activate
 ```
 
-3. Install dependencies:
+3. Create a local database known as 'project_db'
+4. Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Run the Django development server:
+5. Run the Django development server:
 
 ```bash
 python manage.py runserver

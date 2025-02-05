@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'alacrity_backend',
+    'datasets',
 ]
 
 MIDDLEWARE = [
@@ -89,8 +90,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'project_db',
-        'USER': 'root',
-        'PASSWORD': 'Foundation,219',
+        'USER': 'root', # if using the school laptop you can change this to any cridentials you want
+        'PASSWORD': 'comsc', # if using the school laptop you can change this to any cridentials you want
         'HOST': 'localhost',
         # 'HOST': 'db', # if building with docker
         'PORT': '3306',
