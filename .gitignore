@@ -1,4 +1,13 @@
 /alacrity_backend/venv
-/alacrity_backend/alacrity_backend/__pycache__
+alacrity_backend/alacrity_backend/__pycache__
 /alacrity_backend/alacrity_backend/migrations
 
+/alacrity_backend/datasets/migrations
+alacrity_backend/datasets/__pycache__
+
+# Ignore all __pycache__ directories
+**/__pycache__/
+
+# Ignore compiled Python files
+*.pyc
+/alacrity_backend/datasets/htmlcov

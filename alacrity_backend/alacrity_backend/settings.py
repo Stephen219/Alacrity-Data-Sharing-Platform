@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'alacrity_backend',
+    'datasets',
 ]
 
 MIDDLEWARE = [
@@ -90,10 +91,12 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'project_db',
         'USER': 'root',
-        'PASSWORD': 'Foundation,219',
+        'PASSWORD': 'comsc',
         'HOST': 'localhost',
-        # 'HOST': 'db', # if building with docker
         'PORT': '3306',
+        'TEST': {
+            'NAME': 'test_project_db',  # Unique test database name
+        }
     }
 }
 
