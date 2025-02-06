@@ -1,7 +1,5 @@
 
 
-
-
 "use client"
 import { useState } from "react"
 
@@ -93,6 +91,8 @@ const DatasetForm = () => {
         body: formData,
       })
       const data = await response.json()
+      setServerError("");
+      setServerMessage("");
 
       if (!response.ok) {
         

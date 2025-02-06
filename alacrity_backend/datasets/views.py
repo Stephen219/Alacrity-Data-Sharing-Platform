@@ -77,7 +77,7 @@ def create_dataset(request):
             dataset.save()
         except Exception as e:
             print(e)
-            return JsonResponse({'error': "An gat error occurred while creating the dataset"}, status=500)
+            return JsonResponse({'error': "An error occurred while creating the dataset"}, status=500)
         
         
         return JsonResponse({'message': 'Dataset created successfully'}, status=201)
