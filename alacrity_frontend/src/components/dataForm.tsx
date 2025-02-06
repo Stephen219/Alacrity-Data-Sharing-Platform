@@ -24,6 +24,7 @@ const DatasetForm = () => {
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
   const [loading, setLoading] = useState(false)
   const [serverError, setServerError] = useState("")
+  const [serverMessage, setServerMessage] = useState("")
 
   /**
    * this function validates the form fields and sets the errors state
@@ -35,7 +36,7 @@ const DatasetForm = () => {
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {}
     if (!title.trim()) newErrors.title = "Title is required"
-    if (!description.trim() 
+    if (!description.trim() || description.length < 100
     ) newErrors.description = "Description is required and must be at least 100 characters"
     if (!category) newErrors.category = "Please select a category"
     if (tags.length === 0) newErrors.tags = "At least one tag is required"
@@ -72,7 +73,7 @@ const DatasetForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Validate form before proceeding
+
     if (!validateForm()) return
 
     setLoading(true)
@@ -84,28 +85,43 @@ const DatasetForm = () => {
     formData.append("tags", tags.join(","))
     formData.append("fileUrl", generateFileUrl(file!))
     if (file) formData.append("file", file)
+      
 
     try {
       const response = await fetch(`${BACKEND_URL}datasets/create_dataset/`, {
         method: "POST",
         body: formData,
       })
+      const data = await response.json()
 
       if (!response.ok) {
-        const data = await response.json()
+        
 
-        // Set server-side errors if available
-        const errorMessage = data.errors
-          ? "An error occurred while uploading. Please try again."
-          : "An unknown error occurred."
+        if (data.error) {
+          setServerError(data.error) 
+        }
+        else {
+          setServerError("An error occurred while uploading. Please try again.")
+        }
 
-        setServerError("An error occurred while uploading. Please try again.")
-        console.log(errorMessage)
         return
+      
+      }
+      setServerError("");
+
+      if (data.message)
+      {
+        setServerMessage(data.message)
+
+      }
+      
+      else {
+        setServerError("")
+        setServerMessage("Dataset uploaded successfully!"); // this is the message that should be displayed when the dataset is uploaded successfully
       }
 
 
-      alert("Dataset uploaded successfully!")// tecchnically this should be a redirect
+      
       setTitle("")
       setDescription("")
       setCategory("")
@@ -139,6 +155,15 @@ const DatasetForm = () => {
             <p className="text-red-500 text-sm">{serverError}</p>
             </div>
           </div>}
+
+          {serverMessage && <div className="bg-green-200 px-6 py-4 mx-2 my-4 rounded-md text-lg flex items-center mx-auto max-w-lg">
+        <svg viewBox="0 0 24 24" className="text-green-600 w-5 h-5 sm:w-5 sm:h-5 mr-3">
+            <path fill="currentColor"
+                d="M12,0A12,12,0,1,0,24,12,12.014,12.014,0,0,0,12,0Zm6.927,8.2-6.845,9.289a1.011,1.011,0,0,1-1.43.188L5.764,13.769a1,1,0,1,1,1.25-1.562l4.076,3.261,6.227-8.451A1,1,0,1,1,18.927,8.2Z">
+            </path>
+        </svg>
+        <span className="text-green-800">{serverMessage}</span>
+    </div>}
 
 
           <div className="space-y-2 relative">

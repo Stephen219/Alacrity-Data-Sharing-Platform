@@ -20,11 +20,11 @@ def is_valid_url(url):
 @csrf_protect
 @api_view(['POST'])
 def create_dataset(request):
-    if request.method == 'POST':
+    if request.method == 'POST':    #
         # Get the data from the request
-        data = request.POST
-
-        print(data)
+        
+        data = request.data # if any error   use data2 = request.dat  // removed post because i need the file
+        file = request.FILES.get('file')
 
         # extract the data from the request
         title = data.get('title')
@@ -70,9 +70,16 @@ def create_dataset(request):
         if errors:
             return JsonResponse(errors, status=500)
         
-        # Create the dataset
+        
         dataset = Dataset(title=title, category=category, link=link, description=description)
-        dataset.save()
+
+        try:
+            dataset.save()
+        except Exception as e:
+            print(e)
+            return JsonResponse({'error': "An gat error occurred while creating the dataset"}, status=500)
+        
+        
         return JsonResponse({'message': 'Dataset created successfully'}, status=201)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
