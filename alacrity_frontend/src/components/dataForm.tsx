@@ -35,7 +35,8 @@ const DatasetForm = () => {
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {}
     if (!title.trim()) newErrors.title = "Title is required"
-    if (!description.trim()) newErrors.description = "Description is required"
+    if (!description.trim() 
+    ) newErrors.description = "Description is required and must be at least 100 characters"
     if (!category) newErrors.category = "Please select a category"
     if (tags.length === 0) newErrors.tags = "At least one tag is required"
     if (!file) newErrors.file = "Please select a file to upload"
@@ -54,22 +55,12 @@ const DatasetForm = () => {
    * @returns  {string} fileUrl
    */
   const generateFileUrl = (file: File) => {
-    const fileId ="gyfhksp"
+    const fileId = "gyfhksp"
     const fileUrl = `https://ex/files/${fileId}-${file.name}` // TODO: Tthis should be a read/write URL
     return fileUrl
   }
 
-  // const uploadToMinIO = async (file: File) => {
-  //   return new Promise((resolve, reject) => {
-  //     const fileName = `${nanoid()}-${file.name}`; // Unique file name
-  //     minioClient.putObject('umbwa', fileName, file, (err, etag) => {
-  //       if (err) {
-  //         reject(err);
-  //       }
-  //       resolve(`https://edc1-31-205-218-136.ngrok-free.app/buckets/umbwa/admin/prefix/${fileName}`);
-  //     });
-  //   });
-  // };
+
 
   /**
    * this function handles the form submission and sends the data to the backend
@@ -80,12 +71,12 @@ const DatasetForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-  
+
     // Validate form before proceeding
     if (!validateForm()) return
-  
+
     setLoading(true)
-  
+
     const formData = new FormData()
     formData.append("title", title)
     formData.append("description", description)
@@ -93,27 +84,28 @@ const DatasetForm = () => {
     formData.append("tags", tags.join(","))
     formData.append("fileUrl", generateFileUrl(file!))
     if (file) formData.append("file", file)
-  
+
     try {
       const response = await fetch(`${BACKEND_URL}datasets/create_dataset/`, {
         method: "POST",
         body: formData,
       })
-  
+
       if (!response.ok) {
         const data = await response.json()
-  
+
         // Set server-side errors if available
         const errorMessage = data.errors
           ? "An error occurred while uploading. Please try again."
           : "An unknown error occurred."
-  
-        setServerError(errorMessage)
+
+        setServerError("An error occurred while uploading. Please try again.")
+        console.log(errorMessage)
         return
       }
-  
-      // Clear form and reset state on success
-      alert("Dataset uploaded successfully!")
+
+
+      alert("Dataset uploaded successfully!")// tecchnically this should be a redirect
       setTitle("")
       setDescription("")
       setCategory("")
@@ -121,7 +113,7 @@ const DatasetForm = () => {
       setFile(null)
       setAgreedToTerms(false)
       setErrors({})
-  
+
     } catch (error) {
       // Catch and set server error message
       setServerError(error instanceof Error ? error.message : "An unknown error occurred.")
@@ -129,7 +121,7 @@ const DatasetForm = () => {
       setLoading(false)
     }
   }
-  
+
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
@@ -138,7 +130,16 @@ const DatasetForm = () => {
           <h2 className="text-3xl font-bold text-gray-900">Add a new dataset</h2>
         </div>
         <form className="p-6 space-y-6" onSubmit={handleSubmit}>
-          {serverError && <p className="text-red-500 text-sm">{serverError}</p>}
+        {serverError && <div className="flex items-center p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400" role="alert">
+            <svg className="shrink-0 inline w-4 h-4 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z" />
+            </svg>
+            <span className="sr-only">Error</span>
+            <div>
+            <p className="text-red-500 text-sm">{serverError}</p>
+            </div>
+          </div>}
+
 
           <div className="space-y-2 relative">
             <label htmlFor="title" className="flex items-center text-sm font-medium text-gray-700">
@@ -169,7 +170,7 @@ const DatasetForm = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-[#FF6B00] focus:border-[#FF6B00]"
               placeholder="Enter dataset title"
             />
-            
+
             <div>{errors.title && <p className="text-red-500 text-xs" role="alert" data-testid="title-error" id="title-error">{errors.title}</p>}</div>
           </div>
 

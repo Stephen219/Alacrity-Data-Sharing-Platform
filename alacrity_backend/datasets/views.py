@@ -62,7 +62,7 @@ def create_dataset(request):
         elif len(description) < 10:
             errors['description'] = 'Description is too short'
             print(errors)   
-        elif len(description) > 255:
+        elif len(description) > 2555:
             errors['description'] = 'Description is too long'
             print(errors)   
         
