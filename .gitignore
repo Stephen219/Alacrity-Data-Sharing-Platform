@@ -5,6 +5,7 @@ alacrity_backend/alacrity_backend/__pycache__
 /alacrity_backend/datasets/migrations
 alacrity_backend/datasets/__pycache__
 alacrity_backend/datasets/htmlcov
+alacrity_frontend/node_modules
 
 
 
