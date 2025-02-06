@@ -15,16 +15,13 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
-from .views import submit_form
+from django.urls import path, include
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('datasets/', include('datasets.urls')),
 ]
 
-
-urlpatterns = [
-    path('api/submit_form/', submit_form, name='submit_form'),
-]
 
 

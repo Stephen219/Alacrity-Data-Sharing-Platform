@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'alacrity_backend',
+    'datasets',
 ]
 
 MIDDLEWARE = [
@@ -91,11 +92,11 @@ DATABASES = {
         'NAME': 'project_db',
         'USER': 'root',
         'PASSWORD': 'comsc',
-
-        
         'HOST': 'localhost',
-        # 'HOST': 'db', # if building with docker
         'PORT': '3306',
+        'TEST': {
+            'NAME': 'test_project_db',  # Unique test database name
+        }
     }
 }
 
@@ -107,6 +108,17 @@ CORS_ALLOWED_ORIGINS = [
 
 import pymysql
 pymysql.install_as_MySQLdb()
+
+
+
+
+
+
+# MINIO_ENDPOINT = "https://d8cf-31-205-218-136.ngrok-free.app/"  
+# MINIO_ACCESS_KEY = "minioadmin"
+# MINIO_SECRET_KEY = "minioadmin"  
+# MINIO_BUCKET_NAME = "umbwa"
+# MINIO_BUCKET_URL = f"{MINIO_ENDPOINT}/{MINIO_BUCKET_NAME}"
 
 
 
