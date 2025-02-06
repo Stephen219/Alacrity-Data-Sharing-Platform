@@ -1,11 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import Home from "@/app/page";
-import { useRouter } from "next/router";
 import userEvent from "@testing-library/user-event";
 
-jest.mock("next/router", () => ({
-  useRouter: jest.fn(),
-}));
 
 describe("Home Page", () => {
   beforeEach(() => {
