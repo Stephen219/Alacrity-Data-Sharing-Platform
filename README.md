@@ -46,6 +46,14 @@ python manage.py runserver
 ```
 ##  Note 
 remember to migrate your d aftter any changes
+```python
+python manage.py makemigrations 
+    # if this fails run python manage.py makemigrations app_name  python manage.py makemigrations alacrity_backend
+python manage.py migrate
+```
+
+6. The backend will be accessible at `localhost:8000`.
+
 
 
 
@@ -73,7 +81,7 @@ npm run dev
 
 
 ## Database Setup
-To set up the database, ensure you have MySQL installed on your machine. Create a new database and update the database settings in the `alacrity_backend/settings.py` file.
+To set up the database, ensure you have MySQL installed on your machine. Create a new database and name it project_db update the database settings in the `alacrity_backend/settings.py` file.
 
 
 
@@ -84,6 +92,7 @@ To set up the database, ensure you have MySQL installed on your machine. Create 
 ├── backend/        # Django backend
 ├── docker-compose.yml  # Docker setup
 └── README.md       # Project documentation
+├── .gitlab-ci.yml   # GitLab CI pipeline configuration
 ```
 
 ## Features
@@ -99,7 +108,15 @@ We welcome contributions! To contribute:
 2. Create a feature branch (`git checkout -b feature-name`).
 3. Commit your changes (`git commit -m "Add new feature"`).
 4. Push to your branch (`git push origin feature-name`).
-5. Open a Pull Request.
+
+5. Open a merge request.
+ else
+1. Clone the repository.
+2. pick an issue from the issue tab
+3. Create a merge request from the issue and this should create a new branch for you
+4. pull development branch in your local machine
+5. checkout to the branch created by the merge request
+6. make changes and push to the branch
 
 ## License
 This project is licensed under the MIT License.
