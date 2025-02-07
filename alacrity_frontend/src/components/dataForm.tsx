@@ -449,7 +449,8 @@ const DatasetForm = () => {
             <UploadIcon  />
             <LoadingSpinner />
             <p className="mt-2 text-lg font-semibold xl:pl-8 xl:pr-8 xl:m-6 xl:text-2xl">Uploading your Data...</p>
-            <p className="mt-2 text-sm font-light xl:mb-5 xl:text-xl">This should not take long</p>
+
+            <p className="mt-2 text-sm font-light xl:mb-5 xl:text-xl">This shoudn&apos;t take that long</p>
             {/* <button
               onClick={handleCancel}
               className="mt-4 px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
