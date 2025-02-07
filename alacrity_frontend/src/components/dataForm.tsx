@@ -1,7 +1,7 @@
 
 
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 import { BACKEND_URL } from "@/config"
 
@@ -23,6 +23,7 @@ const DatasetForm = () => {
   const [loading, setLoading] = useState(false)
   const [serverError, setServerError] = useState("")
   const [serverMessage, setServerMessage] = useState("")
+  const [visible, setVisible] = useState({ error: true, message: true });
 
   /**
    * this function validates the form fields and sets the errors state
@@ -83,7 +84,7 @@ const DatasetForm = () => {
     formData.append("tags", tags.join(","))
     formData.append("fileUrl", generateFileUrl(file!))
     if (file) formData.append("file", file)
-      
+
 
     try {
       const response = await fetch(`${BACKEND_URL}datasets/create_dataset/`, {
@@ -95,33 +96,26 @@ const DatasetForm = () => {
       setServerMessage("");
 
       if (!response.ok) {
-        
-
         if (data.error) {
-          setServerError(data.error) 
+          setServerError(data.error)
         }
         else {
           setServerError("An error occurred while uploading. Please try again.")
         }
 
         return
-      
       }
       setServerError("");
 
-      if (data.message)
-      {
+      if (data.message) {
         setServerMessage(data.message)
 
       }
-      
+
       else {
         setServerError("")
-        setServerMessage("Dataset uploaded successfully!"); // this is the message that should be displayed when the dataset is uploaded successfully
+        setServerMessage("Dataset uploaded successfully!");
       }
-
-
-      
       setTitle("")
       setDescription("")
       setCategory("")
@@ -139,6 +133,7 @@ const DatasetForm = () => {
   }
 
 
+
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-3xl bg-white rounded-xl shadow-lg">
@@ -146,24 +141,24 @@ const DatasetForm = () => {
           <h2 className="text-3xl font-bold text-gray-900">Add a new dataset</h2>
         </div>
         <form className="p-6 space-y-6" onSubmit={handleSubmit}>
-        {serverError && <div className="flex items-center p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400" role="alert">
+          {serverError && <div className="flex items-center p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400" role="alert">
             <svg className="shrink-0 inline w-4 h-4 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
               <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z" />
             </svg>
             <span className="sr-only">Error</span>
             <div>
-            <p className="text-red-500 text-sm">{serverError}</p>
+              <p className="text-red-500 text-sm">{serverError}</p>
             </div>
           </div>}
 
-          {serverMessage && <div className="bg-green-200 px-6 py-4 mx-2 my-4 rounded-md text-lg flex items-center mx-auto max-w-lg">
-        <svg viewBox="0 0 24 24" className="text-green-600 w-5 h-5 sm:w-5 sm:h-5 mr-3">
-            <path fill="currentColor"
+          {serverMessage && <div className="bg-green-200 px-6 py-1 mx-2 my-4 rounded-md text-md flex items-center mx-auto max-w-lg">
+            <svg viewBox="0 0 24 24" className="text-green-600 w-5 h-5 sm:w-5 sm:h-5 mr-3">
+              <path fill="currentColor"
                 d="M12,0A12,12,0,1,0,24,12,12.014,12.014,0,0,0,12,0Zm6.927,8.2-6.845,9.289a1.011,1.011,0,0,1-1.43.188L5.764,13.769a1,1,0,1,1,1.25-1.562l4.076,3.261,6.227-8.451A1,1,0,1,1,18.927,8.2Z">
-            </path>
-        </svg>
-        <span className="text-green-800">{serverMessage}</span>
-    </div>}
+              </path>
+            </svg>
+            <span className="text-green-800">{serverMessage}</span>
+          </div>}
 
 
           <div className="space-y-2 relative">
