@@ -109,10 +109,11 @@ CORS_ALLOWED_ORIGINS = [
 
 ################################  file storage config  ##############################################################
 
-MINIO_URL = "http://localhost:9000" 
+# MINIO_URL = "http://localhost:9000" 
+MINIO_URL = "https://6f05-131-251-254-121.ngrok-free.app/"
 MINIO_ACCESS_KEY = "minioadmin"
 MINIO_SECRET_KEY = "minioadmin"
-MINIO_BUCKET_NAME = "umbwa"
+MINIO_BUCKET_NAME = "alacrity"
 
 
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
@@ -124,6 +125,7 @@ AWS_SECRET_ACCESS_KEY = MINIO_SECRET_KEY
 AWS_STORAGE_BUCKET_NAME = MINIO_BUCKET_NAME
 AWS_S3_ENDPOINT_URL = MINIO_URL
 AWS_S3_CUSTOM_DOMAIN = f"{MINIO_URL}/{MINIO_BUCKET_NAME}"
+# AWS_S3_CUSTOM_DOMAIN = MINIO_URL
 AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
 
 AWS_S3_REGION_NAME = 'us-east-1'  
