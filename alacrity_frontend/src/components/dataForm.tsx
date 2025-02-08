@@ -2,7 +2,7 @@
 
 
 "use client"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 
 import LoadingSpinner from "@/components/ui/Loader"
 import UploadIcon from "./ui/Upload"
@@ -146,13 +146,13 @@ const DatasetForm = () => {
     }
   }
 
-  const handleCancel = useCallback(() => {
-    setLoading(false)
-    setShowOverlay(false)
+  // const handleCancel = useCallback(() => {
+  //   setLoading(false)
+  //   setShowOverlay(false)
 
-    // stop the upload process
+  //   // stop the upload process
     
-  }, [])
+  // }, [])
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
