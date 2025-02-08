@@ -6,7 +6,7 @@ import { buttonVariants } from "./ui/button";
 
 // TO-DO: Replace with actual authentication logic
 const getUserRole = (): "organisation" | "researcher" | null => {
-  return "researcher";
+  return "organisation";
 };
 
 const Navbar = () => {
