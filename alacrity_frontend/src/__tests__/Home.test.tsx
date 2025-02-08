@@ -23,7 +23,7 @@ describe("Home Page", () => {
   test("renders the 'Upload Data' link", () => {
     const uploadLink = screen.getByRole("link", { name: /upload data/i });
     expect(uploadLink).toBeInTheDocument();
-    expect(uploadLink).toHaveAttribute("href", "/uploadData");
+    expect(uploadLink).toHaveAttribute("href", "/datasets");
   });
 
   test("renders the 'Approve Access' button", () => {
@@ -33,7 +33,7 @@ describe("Home Page", () => {
 
   test("clicking 'Upload Data' should navigate correctly", async () => {
     const uploadLink = screen.getByRole("link", { name: /upload data/i });
-    expect(uploadLink).toHaveAttribute("href", "/uploadData");
+    expect(uploadLink).toHaveAttribute("href", "/datasets");
   });
 
   test("clicking 'Approve Access' triggers button interaction", async () => {
