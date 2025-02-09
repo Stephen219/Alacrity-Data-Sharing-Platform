@@ -109,7 +109,7 @@ export default function SignUp() {
         const data = await response.json();
         setServerMessage(data.message);
         setServerError("");
-        router.push("/sign-in");
+        router.push("/auth/sign-in");
     } catch (error) {
         console.error("Signup error:", error);
         setServerError(error instanceof Error ? error.message : "An error occurred. Please try again later.");

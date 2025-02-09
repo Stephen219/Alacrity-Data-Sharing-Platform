@@ -5,19 +5,22 @@ import MaxWidthWrapper from "./MaxWidthWrapper";
 import NavItems from "./NavItems";
 import Link from "next/link";
 import { buttonVariants } from "./ui/button";
-import { usePathname } from "next/navigation"; // Now it works because the file is a client component
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 // TO-DO: Replace with actual authentication logic
 const getUserRole = (): "organisation" | "researcher" | null => {
-  return null; // Simulating that the user is not logged in
+  return "organisation"; // Simulating that the user is not logged in
 };
 
 const Navbar = () => {
   const userRole = getUserRole();
-  const pathname = usePathname(); // Now it works for client components
+  const pathname = usePathname(); // This is the pathname from the client
+  const [isSignUpPage, setIsSignUpPage] = useState(false);
 
-  // Check if the user is on the sign-up page
-  const isSignUpPage = pathname === "/sign-up";
+  useEffect(() => {
+    setIsSignUpPage(pathname === "/auth/sign-up");
+  }, [pathname]); // Correctly use pathname in the dependency array
 
   return (
     <div className="bg-white sticky top-0 inset-x-0 z-50 h-16">
@@ -42,14 +45,14 @@ const Navbar = () => {
                   // Not signed in, show only Sign-In button and Sign-Up button unless on Sign-Up page
                   <>
                     <Link
-                      href="/sign-in"
+                      href="/auth/sign-in"
                       className={buttonVariants({ variant: "ghost" })}
                     >
                       Sign In
                     </Link>
                     {!isSignUpPage && (
                       <Link
-                        href="/sign-up"
+                        href="/auth/sign-up"
                         className={buttonVariants({ variant: "default" })}
                       >
                         Sign Up

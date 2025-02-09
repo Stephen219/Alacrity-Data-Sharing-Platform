@@ -100,6 +100,8 @@ def create_dataset(request):
     
 
 
+### This view is for the sign up of the user testing whether the user is able to sign up or not
+## delete please pretty please lol
 
 @csrf_exempt
 @api_view(['POST'])
