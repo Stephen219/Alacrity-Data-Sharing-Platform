@@ -103,7 +103,45 @@ DATABASES = {
 
 CORS_ALLOWED_ORIGINS = [
     FRONTEND_URL, 
+    "http://127.0.0.1:3000",
 ]
+
+
+################################  file storage config  ##############################################################
+
+# MINIO_URL = "http://localhost:9000" 
+MINIO_URL = "https://6f05-131-251-254-121.ngrok-free.app/"
+MINIO_ACCESS_KEY = "minioadmin"
+MINIO_SECRET_KEY = "minioadmin"
+MINIO_BUCKET_NAME = "alacrity"
+
+
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+
+AWS_ACCESS_KEY_ID = MINIO_ACCESS_KEY
+
+AWS_SECRET_ACCESS_KEY = MINIO_SECRET_KEY
+AWS_STORAGE_BUCKET_NAME = MINIO_BUCKET_NAME
+AWS_S3_ENDPOINT_URL = MINIO_URL
+AWS_S3_CUSTOM_DOMAIN = f"{MINIO_URL}/{MINIO_BUCKET_NAME}"
+# AWS_S3_CUSTOM_DOMAIN = MINIO_URL
+AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
+
+AWS_S3_REGION_NAME = 'us-east-1'  
+##########################################***####################################################
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 import pymysql
@@ -111,19 +149,6 @@ pymysql.install_as_MySQLdb()
 
 
 
-
-
-
-# MINIO_ENDPOINT = "https://d8cf-31-205-218-136.ngrok-free.app/"  
-# MINIO_ACCESS_KEY = "minioadmin"
-# MINIO_SECRET_KEY = "minioadmin"  
-# MINIO_BUCKET_NAME = "umbwa"
-# MINIO_BUCKET_URL = f"{MINIO_ENDPOINT}/{MINIO_BUCKET_NAME}"
-
-
-
-# Password validation
-# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {

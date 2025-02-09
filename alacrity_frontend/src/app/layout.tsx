@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter} from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import Navbar from "@/components/Navbar"
+import ConditionalNavbar from "@/components/ConditionalNavbar";
 
 const inter = Inter({subsets: ["latin"]})
 
@@ -24,7 +24,7 @@ export default function RootLayout({
         )}>
           {/* Ensures the screen always takes up the whole space */}
         <main className="relative flex flex-col min-h-screen">
-          <Navbar/>
+          <ConditionalNavbar/>
           {/* Ensures children fills up as much content as possible */}
           <div className="flex-grow flex-1">{children}</div>
           {/* Footer here to be at very bottom */}

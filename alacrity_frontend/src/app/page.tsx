@@ -17,7 +17,7 @@ export default function Home() {
         on-platform analysis.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 mt-6">
-          <Link href="/uploadData" className={buttonVariants()}>Upload Data</Link>
+          <Link href="/datasets" className={buttonVariants()}>Upload Data</Link>
           <Button variant="ghost">Approve Access &rarr;</Button>
         </div>
       </div>

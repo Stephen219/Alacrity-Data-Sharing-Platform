@@ -9,7 +9,11 @@ import { usePathname } from "next/navigation"; // Now it works because the file 
 
 // TO-DO: Replace with actual authentication logic
 const getUserRole = (): "organisation" | "researcher" | null => {
+<<<<<<< HEAD
   return null; // Simulating that the user is not logged in
+=======
+  return "organisation";
+>>>>>>> development
 };
 
 const Navbar = () => {

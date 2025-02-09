@@ -6,6 +6,9 @@ from django.views.decorators.http import require_http_methods
 from .models import Dataset
 from urllib.parse import urlparse
 import json
+import uuid
+from django.core.files.storage import default_storage
+import re
 
 
 # this view creates the datases in the database, in future it will be updated to include the organization and user id by checking in the user who is logged in while making the request
@@ -22,19 +25,30 @@ def is_valid_url(url):
 def create_dataset(request):
     if request.method == 'POST':    #
         # Get the data from the request
-        
         data = request.data # if any error   use data2 = request.dat  // removed post because i need the file
         file = request.FILES.get('file')
+        if not file:
+            return JsonResponse({'error': 'No file uploaded'}, status=400)
+        file_extension = file.name.split(".")[-1]
+        file1 = file.name.split(".")[0]
+        unique_filename = f"{uuid.uuid4()}_{file1}.{file_extension}"
+        file_name = default_storage.save(unique_filename, file)
+        file_url = default_storage.url(file_name)
+        print(f"File uploaded successfully: {type(file_url)}") 
+        cleaned_minio_url = re.sub(r'^https?://', '', file_url)
+        print(cleaned_minio_url)
+        data['fileUrl'] = file_url
+    
 
         # extract the data from the request
         title = data.get('title')
-        print(title)    
+          
         category = data.get('category')
-        print(category) 
+       
         link = data.get('fileUrl')
-        print(link)
+       
         description = data.get('description')
-        print(description)
+      
         # TODO: Add organization and user id to the dataset
 
         # validating the data 
@@ -62,7 +76,7 @@ def create_dataset(request):
         elif len(description) < 10:
             errors['description'] = 'Description is too short'
             print(errors)   
-        elif len(description) > 2555:
+        elif len(description) > 255545678:
             errors['description'] = 'Description is too long'
             print(errors)   
         

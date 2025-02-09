@@ -1,7 +1,11 @@
 
 
+
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+
+import LoadingSpinner from "@/components/ui/Loader"
+import UploadIcon from "./ui/Upload"
 
 import { BACKEND_URL } from "@/config"
 
@@ -23,6 +27,29 @@ const DatasetForm = () => {
   const [loading, setLoading] = useState(false)
   const [serverError, setServerError] = useState("")
   const [serverMessage, setServerMessage] = useState("")
+  const [visible, setVisible] = useState({ error: false, message: false })
+  const [progress, setProgress] = useState({ error: 100, message: 100 })
+  const [showOverlay, setShowOverlay] = useState(false)
+
+  useEffect(() => {
+    if (serverError || serverMessage) {
+      setVisible({ error: !!serverError, message: !!serverMessage })
+      setProgress({ error: 100, message: 100 })
+      const timer = setInterval(() => {
+        setProgress((prev) => ({
+          error: serverError ? Math.max(prev.error - 100 / 150, 0) : 0,
+          message: serverMessage ? Math.max(prev.message - 100 / 150, 0) : 0,
+        }))
+      }, 100)
+      const hideTimer = setTimeout(() => {
+        setVisible({ error: false, message: false })
+      }, 15000)
+      return () => {
+        clearInterval(timer)
+        clearTimeout(hideTimer)
+      }
+    }
+  }, [serverError, serverMessage])
 
   /**
    * this function validates the form fields and sets the errors state
@@ -34,8 +61,8 @@ const DatasetForm = () => {
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {}
     if (!title.trim()) newErrors.title = "Title is required"
-    if (!description.trim() || description.length < 100
-    ) newErrors.description = "Description is required and must be at least 100 characters"
+    if (!description.trim() || description.length < 100)
+      newErrors.description = "Description is required and must be at least 100 characters"
     if (!category) newErrors.category = "Please select a category"
     if (tags.length === 0) newErrors.tags = "At least one tag is required"
     if (!file) newErrors.file = "Please select a file to upload"
@@ -48,18 +75,6 @@ const DatasetForm = () => {
     return Object.keys(newErrors).length === 0
   }
 
-  /**
-   *
-   * @param file this function generates a unique URL for the file
-   * @returns  {string} fileUrl
-   */
-  const generateFileUrl = (file: File) => {
-    const fileId = "gyfhksp"
-    const fileUrl = `https://ex/files/${fileId}-${file.name}` // TODO: Tthis should be a read/write URL
-    return fileUrl
-  }
-
-
 
   /**
    * this function handles the form submission and sends the data to the backend
@@ -71,19 +86,23 @@ const DatasetForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-
     if (!validateForm()) return
 
+    setServerError("")
+    setServerMessage("")
+
+
     setLoading(true)
+    setShowOverlay(true)
+
 
     const formData = new FormData()
     formData.append("title", title)
     formData.append("description", description)
     formData.append("category", category)
     formData.append("tags", tags.join(","))
-    formData.append("fileUrl", generateFileUrl(file!))
+    formData.append("fileUrl","")
     if (file) formData.append("file", file)
-      
 
     try {
       const response = await fetch(`${BACKEND_URL}datasets/create_dataset/`, {
@@ -91,37 +110,26 @@ const DatasetForm = () => {
         body: formData,
       })
       const data = await response.json()
-      setServerError("");
-      setServerMessage("");
+      // setServerError("")
+      // setServerMessage("")
 
       if (!response.ok) {
-        
-
         if (data.error) {
-          setServerError(data.error) 
-        }
-        else {
+          setServerError(data.error)
+        } else {
           setServerError("An error occurred while uploading. Please try again.")
         }
 
         return
-      
       }
-      setServerError("");
+      setServerError("")
 
-      if (data.message)
-      {
+      if (data.message) {
         setServerMessage(data.message)
-
-      }
-      
-      else {
+      } else {
         setServerError("")
-        setServerMessage("Dataset uploaded successfully!"); // this is the message that should be displayed when the dataset is uploaded successfully
+        setServerMessage("Dataset uploaded successfully!")
       }
-
-
-      
       setTitle("")
       setDescription("")
       setCategory("")
@@ -129,43 +137,81 @@ const DatasetForm = () => {
       setFile(null)
       setAgreedToTerms(false)
       setErrors({})
-
     } catch (error) {
       // Catch and set server error message
       setServerError(error instanceof Error ? error.message : "An unknown error occurred.")
     } finally {
       setLoading(false)
+      setShowOverlay(false)
     }
   }
 
+  // const handleCancel = useCallback(() => {
+  //   setLoading(false)
+  //   setShowOverlay(false)
+
+  //   // stop the upload process
+    
+  // }, [])
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-3xl bg-white rounded-xl shadow-lg">
+      <div className="w-full max-w-3xl bg-white rounded-xl shadow-lg xl:px-10 xl:py-8 xl:rounded-2xl xl:max-w-6xl xl:min-h-[90vh] md:mb-9">
+     
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-3xl font-bold text-gray-900">Add a new dataset</h2>
         </div>
-        <form className="p-6 space-y-6" onSubmit={handleSubmit}>
-        {serverError && <div className="flex items-center p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400" role="alert">
-            <svg className="shrink-0 inline w-4 h-4 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z" />
-            </svg>
-            <span className="sr-only">Error</span>
-            <div>
-            <p className="text-red-500 text-sm">{serverError}</p>
+        <div className="fixed top-4 right-4 z-50 space-y-2">
+          {serverError && visible.error && (
+            <div
+              className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-md relative overflow-hidden"
+              role="alert"
+            >
+              <div className="flex justify-between items-center">
+                <p>{serverError}</p>
+                <button
+                  onClick={() => setVisible((prev) => ({ ...prev, error: false }))}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <svg width="39" height="39" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" transform="rotate(0 0 0)">
+                  <path d="M6.21967 7.28033C5.92678 6.98744 5.92678 6.51256 6.21967 6.21967C6.51256 5.92678 6.98744 5.92678 7.28033 6.21967L11.999 10.9384L16.7176 6.2198C17.0105 5.92691 17.4854 5.92691 17.7782 6.2198C18.0711 6.51269 18.0711 6.98757 17.7782 7.28046L13.0597 11.999L17.7782 16.7176C18.0711 17.0105 18.0711 17.4854 17.7782 17.7782C17.4854 18.0711 17.0105 18.0711 16.7176 17.7782L11.999 13.0597L7.28033 17.7784C6.98744 18.0713 6.51256 18.0713 6.21967 17.7784C5.92678 17.4855 5.92678 17.0106 6.21967 16.7177L10.9384 11.999L6.21967 7.28033Z" fill="#343C54"/>
+                  </svg>
+                </button>
+              </div>
+              <div
+                className="absolute bottom-0 left-0 h-1 bg-red-500 transition-all duration-100 ease-linear"
+                style={{ width: `${progress.error}%` }}
+              />
             </div>
-          </div>}
+          )}
+          {serverMessage && visible.message && (
+            <div
+              className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-md relative overflow-hidden"
+              role="alert"
+            >
+              <div className="flex justify-between items-center">
+                <p>{serverMessage}</p>
+                <button
+                  onClick={() => setVisible((prev) => ({ ...prev, message: false }))}
+                  className="text-green-500 hover:text-green-700"
 
-          {serverMessage && <div className="bg-green-200 px-6 py-4 mx-2 my-4 rounded-md text-lg flex items-center mx-auto max-w-lg">
-        <svg viewBox="0 0 24 24" className="text-green-600 w-5 h-5 sm:w-5 sm:h-5 mr-3">
-            <path fill="currentColor"
-                d="M12,0A12,12,0,1,0,24,12,12.014,12.014,0,0,0,12,0Zm6.927,8.2-6.845,9.289a1.011,1.011,0,0,1-1.43.188L5.764,13.769a1,1,0,1,1,1.25-1.562l4.076,3.261,6.227-8.451A1,1,0,1,1,18.927,8.2Z">
-            </path>
-        </svg>
-        <span className="text-green-800">{serverMessage}</span>
-    </div>}
 
+                >
 
+                  <svg width="39" height="39" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" transform="rotate(0 0 0)">
+                  <path d="M6.21967 7.28033C5.92678 6.98744 5.92678 6.51256 6.21967 6.21967C6.51256 5.92678 6.98744 5.92678 7.28033 6.21967L11.999 10.9384L16.7176 6.2198C17.0105 5.92691 17.4854 5.92691 17.7782 6.2198C18.0711 6.51269 18.0711 6.98757 17.7782 7.28046L13.0597 11.999L17.7782 16.7176C18.0711 17.0105 18.0711 17.4854 17.7782 17.7782C17.4854 18.0711 17.0105 18.0711 16.7176 17.7782L11.999 13.0597L7.28033 17.7784C6.98744 18.0713 6.51256 18.0713 6.21967 17.7784C5.92678 17.4855 5.92678 17.0106 6.21967 16.7177L10.9384 11.999L6.21967 7.28033Z" fill="#343C54"/>
+                  </svg>
+                  
+                </button>
+              </div>
+              <div
+                className="absolute bottom-0 left-0 h-1 bg-green-500 transition-all duration-100 ease-linear"
+                style={{ width: `${progress.message}%` }}
+              />
+            </div>
+          )}
+        </div>
+        <form className="p-7 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-2 relative">
             <label htmlFor="title" className="flex items-center text-sm font-medium text-gray-700">
               Title <span className="text-red-500 ml-1">*</span>
@@ -196,7 +242,13 @@ const DatasetForm = () => {
               placeholder="Enter dataset title"
             />
 
-            <div>{errors.title && <p className="text-red-500 text-xs" role="alert" data-testid="title-error" id="title-error">{errors.title}</p>}</div>
+            <div>
+              {errors.title && (
+                <p className="text-red-500 text-xs" role="alert" data-testid="title-error" id="title-error">
+                  {errors.title}
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2 relative">
@@ -384,16 +436,33 @@ const DatasetForm = () => {
             disabled={loading}
             id="submit-button"
             data-testid="submitting-button"
-            className="w-full px-4 py-2 text-white bg-[#FF6B00] rounded-md hover:bg-[#FF6B00]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6B00]"
+            className="w-full px-4 py-2 text-white bg-[#FF6B00] rounded-md hover:bg-[#FF6B00]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6B00] disabled:opacity-50 md:mb-6 md:mt-4 md:pb-4 md:pt-4"
           >
             {loading ? "Uploading..." : "Upload Data"}
           </button>
         </form>
       </div>
+      {showOverlay && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 xl:p-4">
+          <div className="bg-gray-200 p-6 rounded-lg shadow-2xl flex flex-col items-center space-y-4 ">
+            <h1 className="text-2xl font-semibold xl:mt-5 xl:text-5xl xl:mb-3">Alacrity</h1>
+            <UploadIcon  />
+            <LoadingSpinner />
+            <p className="mt-2 text-lg font-semibold xl:pl-8 xl:pr-8 xl:m-6 xl:text-2xl">Uploading your Data...</p>
+
+            <p className="mt-2 text-sm font-light xl:mb-5 xl:text-xl">This shoudn&apos;t take that long</p>
+            {/* <button
+              onClick={handleCancel}
+              className="mt-4 px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+            >
+              Cancel
+            </button> */}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 export default DatasetForm
-
 
