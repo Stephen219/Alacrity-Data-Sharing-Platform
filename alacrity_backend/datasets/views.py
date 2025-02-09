@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from rest_framework.decorators import api_view
 from django.views.decorators.http import require_http_methods
 from .models import Dataset
@@ -87,15 +87,12 @@ def create_dataset(request):
 
 
 
-
-# sign-up form test
+@csrf_exempt
 @api_view(['POST'])
 def sign_up(request):
     if request.method == 'POST':
         data = request.data
-        print(data)
+        print("Received Data:", data)  # Debugging
         return JsonResponse({'message': 'User created successfully'}, status=201)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
-
-    

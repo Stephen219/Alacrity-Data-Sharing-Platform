@@ -77,9 +77,19 @@ export default function SignUp() {
       return;
     }
 
+    // Prepare form data to be sent to the server as JSON
+    const payload = {
+        email: formData.email,
+        password: formData.password,
+        firstname: formData.firstname,
+        surname: formData.surname,
+        phonenumber: formData.phonenumber,
+        field: formData.field
+      };
+
     setLoading(true); // Set loading state to true when form is submitted
 
-    console.log("Form Data being sent:", formData);
+    console.log("Form Data being sent:", payload);
 
     try {
       const response = await fetch(`${BACKEND_URL}datasets/sign_up/`, {
@@ -87,23 +97,25 @@ export default function SignUp() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
-      if (response.ok) {
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || `HTTP error! status: ${response.status}`);
+    }
+
+        const data = await response.json();
         setServerMessage(data.message);
         setServerError("");
-        router.push("/sign-in"); // Now using the router declared at the top level
-      } else {
-        setServerError(data.message);
-        setServerMessage("");
-      }
+        router.push("/sign-in");
     } catch (error) {
-      setServerError("An error occurred. Please try again later.");
-      setServerMessage("");
+        console.error("Signup error:", error);
+        setServerError(error instanceof Error ? error.message : "An error occurred. Please try again later.");
+        setServerMessage("");
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
   };
 
