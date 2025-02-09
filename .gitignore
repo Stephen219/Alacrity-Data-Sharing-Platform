@@ -18,3 +18,4 @@ alacrity_frontend/node_modules
 # Ignore compiled Python files
 *.pyc
 /alacrity_backend/datasets/htmlcov
+/alacrity_frontend/node_modules
