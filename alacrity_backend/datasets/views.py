@@ -83,3 +83,19 @@ def create_dataset(request):
         return JsonResponse({'message': 'Dataset created successfully'}, status=201)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+
+
+
+
+# sign-up form test
+@api_view(['POST'])
+def sign_up(request):
+    if request.method == 'POST':
+        data = request.data
+        print(data)
+        return JsonResponse({'message': 'User created successfully'}, status=201)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    

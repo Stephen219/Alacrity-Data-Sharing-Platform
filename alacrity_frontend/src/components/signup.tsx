@@ -1,10 +1,11 @@
 "use client";
 import { useState } from "react";
-import { Button } from "@/components/ui/button"; // Importing the Button component
+import { Button } from "@/components/ui/button";
 import { BACKEND_URL } from "@/config";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation"; // Changed from next/router
 
 export default function SignUp() {
+    const router = useRouter(); // 
   // State to store form data
   const [formData, setFormData] = useState({
     email: "",
@@ -76,15 +77,12 @@ export default function SignUp() {
       return;
     }
 
-    const router = useRouter(); // Initialize the router
     setLoading(true); // Set loading state to true when form is submitted
 
-    // Print the form data to console for debugging
     console.log("Form Data being sent:", formData);
 
-    // Send the form data to the server
     try {
-      const response = await fetch(`${BACKEND_URL}/signup`, {
+      const response = await fetch(`${BACKEND_URL}datasets/sign_up/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -92,12 +90,11 @@ export default function SignUp() {
         body: JSON.stringify(formData),
       });
 
-      // Handle server response
       const data = await response.json();
       if (response.ok) {
         setServerMessage(data.message);
         setServerError("");
-        router.push("/login");
+        router.push("/sign-in"); // Now using the router declared at the top level
       } else {
         setServerError(data.message);
         setServerMessage("");
@@ -106,7 +103,7 @@ export default function SignUp() {
       setServerError("An error occurred. Please try again later.");
       setServerMessage("");
     } finally {
-      setLoading(false); // Set loading state to false after form submission
+      setLoading(false);
     }
   };
 
