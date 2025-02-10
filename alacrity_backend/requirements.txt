@@ -6,7 +6,7 @@ django-cors-headers
 nanoid
 
 # dotenv
-pip install python-dotenv
+python-dotenv
 
 
 # storage for files
