@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'alacrity_backend',
     'datasets',
+    'storages',
 ]
 
 MIDDLEWARE = [
@@ -91,7 +92,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'project_db',
         'USER': 'root',
-        'PASSWORD': 'Foundation,219',
+        'PASSWORD': 'comsc',
         'HOST': 'localhost',
         'PORT': '3306',
         'TEST': {
@@ -110,7 +111,7 @@ CORS_ALLOWED_ORIGINS = [
 ################################  file storage config  ##############################################################
 
 # MINIO_URL = "http://localhost:9000" 
-MINIO_URL = "https://6f05-131-251-254-121.ngrok-free.app/"
+MINIO_URL = "https://6f05-131-251-254-121.ngrok-free.app"
 MINIO_ACCESS_KEY = "minioadmin"
 MINIO_SECRET_KEY = "minioadmin"
 MINIO_BUCKET_NAME = "alacrity"
