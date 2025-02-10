@@ -2,11 +2,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { BACKEND_URL } from "@/config";
-import { useRouter } from "next/navigation"; // Changed from next/router
+import { useRouter } from "next/navigation";
 
 export default function SignUp() {
-    const router = useRouter(); // 
-  // State to store form data
+  const router = useRouter();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -21,29 +20,22 @@ export default function SignUp() {
   const [serverMessage, setServerMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Handle and validate form submission before they are sent to the server
+  // Existing validation and submission handlers remain the same
   const validateForm = () => {
     const { email, password, firstname, surname, phonenumber, field, confirmPassword } = formData;
-
-    // Email regex pattern for basic validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    // Password regex pattern for at least one uppercase, one lowercase, one digit, and one special character
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
 
-    // Check if all fields are filled
     if (!email || !password || !firstname || !surname || !phonenumber || !field || !confirmPassword) {
       setServerError("All fields must be filled.");
       return false;
     }
 
-    // Validate email format
     if (!emailRegex.test(email)) {
       setServerError("Please enter a valid email address.");
       return false;
     }
 
-    // Validate password length and complexity
     if (!passwordRegex.test(password)) {
       setServerError(
         "Password must be at least 8 characters, contain uppercase, lowercase, a number, and a special character."
@@ -51,45 +43,36 @@ export default function SignUp() {
       return false;
     }
 
-    // Validate phone number
     const phoneRegex = /^[0-9]{11}$/;
     if (!phoneRegex.test(phonenumber)) {
       setServerError("Phone number must be numeric and 11 characters long.");
       return false;
     }
 
-    // Check if password and confirm password match
     if (password !== formData.confirmPassword) {
       setServerError("Passwords do not match.");
       return false;
     }
 
-    // Clear the error message if everything is valid
     setServerError("");
     setServerMessage("Form is valid!");
     return true;
   };
 
-  // Handle form submission
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
-    // Prepare form data to be sent to the server as JSON
     const payload = {
-        email: formData.email,
-        password: formData.password,
-        firstname: formData.firstname,
-        surname: formData.surname,
-        phonenumber: formData.phonenumber,
-        field: formData.field
-      };
+      email: formData.email,
+      password: formData.password,
+      firstname: formData.firstname,
+      surname: formData.surname,
+      phonenumber: formData.phonenumber,
+      field: formData.field
+    };
 
-    setLoading(true); // Set loading state to true when form is submitted
-
-    console.log("Form Data being sent:", payload);
+    setLoading(true);
 
     try {
       const response = await fetch(`${BACKEND_URL}datasets/sign_up/`, {
@@ -100,103 +83,142 @@ export default function SignUp() {
         body: JSON.stringify(payload),
       });
 
-      
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         throw new Error(errorData?.message || `HTTP error! status: ${response.status}`);
-    }
+      }
 
-        const data = await response.json();
-        setServerMessage(data.message);
-        setServerError("");
-        router.push("/auth/sign-in");
+      const data = await response.json();
+      setServerMessage(data.message);
+      setServerError("");
+      router.push("/auth/sign-in");
     } catch (error) {
-        console.error("Signup error:", error);
-        setServerError(error instanceof Error ? error.message : "An error occurred. Please try again later.");
-        setServerMessage("");
+      console.error("Signup error:", error);
+      setServerError(error instanceof Error ? error.message : "An error occurred. Please try again later.");
+      setServerMessage("");
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
-  // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-screen px-4 space-y-8">
-      <div className="flex flex-col items-center text-center">
-        <h1 className="text-5xl font-extrabold text-gray-800">ALACRITY</h1> {/* Bolder and bigger heading */}
-        <span className="text-lg font-light">Join us today and get access to quick data</span>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8">
+        <div className="text-center mb-8">
+          <h1 className="text-5xl font-extrabold text-black mb-2">
+            ALACRITY
+          </h1>
+          <p className="text-gray-600 text-lg">Join us today and get access to quick data</p>
+        </div>
+
+        <form className="space-y-6" onSubmit={handleFormSubmit}>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="relative">
+              <label className="text-sm font-medium text-gray-700 mb-1 block">First Name</label>
+              <input
+                type="text"
+                name="firstname"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                onChange={handleInputChange}
+                placeholder="John"
+              />
+            </div>
+            <div className="relative">
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Surname</label>
+              <input
+                type="text"
+                name="surname"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                onChange={handleInputChange}
+                placeholder="Doe"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="relative">
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Phone Number</label>
+              <input
+                type="tel"
+                name="phonenumber"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                onChange={handleInputChange}
+                placeholder="12345678901"
+              />
+            </div>
+
+            <div className="relative">
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Email</label>
+              <input
+                type="email"
+                name="email"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                onChange={handleInputChange}
+                placeholder="john.doe@example.com"
+              />
+            </div>
+
+            <div className="relative">
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Password</label>
+              <input
+                type="password"
+                name="password"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                onChange={handleInputChange}
+                placeholder="••••••••"
+              />
+            </div>
+
+            <div className="relative">
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Confirm Password</label>
+              <input
+                type="password"
+                name="confirmPassword"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                onChange={handleInputChange}
+                placeholder="••••••••"
+              />
+            </div>
+
+            <div className="relative">
+              <label className="text-sm font-medium text-gray-700 mb-1 block">Field</label>
+              <input
+                type="text"
+                name="field"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                onChange={handleInputChange}
+                placeholder="Your field of expertise"
+              />
+            </div>
+          </div>
+
+          <div className="pt-4">
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={loading}
+            >
+              {loading ? "Signing Up..." : "Sign Up"}
+            </Button>
+          </div>
+
+          {serverError && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
+              {serverError}
+            </div>
+          )}
+          {serverMessage && (
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 text-green-600 rounded-lg text-sm">
+              {serverMessage}
+            </div>
+          )}
+        </form>
       </div>
-      <form className="flex flex-col w-full max-w-full md:max-w-md space-y-4" onSubmit={handleFormSubmit}>
-        {/* Form inputs go here */}
-        <div className="flex flex-row space-x-4">
-          <input
-            type="text"
-            name="firstname"
-            placeholder="First Name"
-            className="w-full p-2 border border-gray-300 rounded-md"
-            onChange={handleInputChange}
-            autoFocus
-          />
-          <input
-            type="text"
-            name="surname"
-            placeholder="Surname"
-            className="w-full p-2 border border-gray-300 rounded-md"
-            onChange={handleInputChange}
-          />
-        </div>
-        <div className="flex flex-col space-y-4">
-          <input
-            type="tel"
-            name="phonenumber"
-            placeholder="Phone Number"
-            className="w-full p-2 border border-gray-300 rounded-md"
-            onChange={handleInputChange}
-          />
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            className="w-full p-2 border border-gray-300 rounded-md"
-            onChange={handleInputChange}
-          />
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            className="w-full p-2 border border-gray-300 rounded-md"
-            onChange={handleInputChange}
-          />
-          {/* Confirm Password */}
-          <input
-            type="password"
-            name="confirmPassword"
-            placeholder="Confirm Password"
-            className="w-full p-2 border border-gray-300 rounded-md"
-            onChange={handleInputChange}
-          />
-          <input
-            type="text"
-            name="field"
-            placeholder="Field"
-            className="w-full p-2 border border-gray-300 rounded-md"
-            onChange={handleInputChange}
-          />
-        </div>
-
-        {/* Sign-Up Button */}
-        <Button type="submit" className="w-full p-2" disabled={loading}>
-          {loading ? "Signing Up..." : "Sign Up"}
-        </Button>
-
-        {serverError && <p className="text-red-500">{serverError}</p>}
-        {serverMessage && <p className="text-green-500">{serverMessage}</p>}
-      </form>
     </div>
   );
 }
