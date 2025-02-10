@@ -18,3 +18,12 @@ alacrity_frontend/node_modules
 # Ignore compiled Python files
 *.pyc
 /alacrity_backend/datasets/htmlcov
+# Ignore the virtual environment
+/alacrity_backend/venv/
+# all log files
+*.log
+/venv
+
+
+/alacrity_backend/.env
+/alacrity_backend/alacrity_backend/.env

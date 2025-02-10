@@ -7,7 +7,9 @@ from .models import Dataset
 from urllib.parse import urlparse
 import json
 import uuid
+from storages.backends.s3boto3 import S3Boto3Storage
 from django.core.files.storage import default_storage
+default_storage = S3Boto3Storage()  
 import re
 
 

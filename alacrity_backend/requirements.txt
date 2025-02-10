@@ -4,3 +4,16 @@ djangorestframework
 pymysql
 django-cors-headers
 nanoid
+
+# dotenv
+pip install python-dotenv
+
+
+# storage for files
+pip install django-storages
+pip install boto3
+pip install django-storages[boto3]
+
+
+
+
