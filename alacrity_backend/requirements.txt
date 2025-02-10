@@ -10,9 +10,15 @@ pip install python-dotenv
 
 
 # storage for files
-pip install django-storages
-pip install boto3
-pip install django-storages[boto3]
+django-storages
+boto3
+django-storages[boto3]
+minio
+
+# for minio
+django-minio-storage
+
+
 
 
 
