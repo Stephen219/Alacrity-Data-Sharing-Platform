@@ -2,7 +2,11 @@ import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import SignInForm from "@/components/SignInForm";
 import SignInPage from "@/app/auth/sign-in/page";
+import mockRouter from 'next-router-mock';
 import "@testing-library/jest-dom";
+
+
+jest.mock('next/router', () => jest.requireActual('next-router-mock'))
 
 jest.mock("next/image", () => {
     const MockImage = ({ src, alt }: { src: string; alt?: string }) => {
@@ -11,8 +15,19 @@ jest.mock("next/image", () => {
     MockImage.displayName = "MockNextImage";
     return MockImage;
   });  
+  jest.mock("next/navigation", () => ({
+  useRouter() {
+    return {
+      prefetch: () => null
+    };
+  }
+}));
+
 
 describe("SignInForm Component", () => {
+
+
+  
   test("renders the SignInForm component correctly", () => {
     render(<SignInForm />);
     
@@ -50,6 +65,7 @@ describe("SignInForm Component", () => {
     
     const signInButton = screen.getByRole("button", { name: /sign in/i });
     fireEvent.click(signInButton);
+
     
     expect(signInButton).toBeInTheDocument();
   });

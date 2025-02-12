@@ -1,13 +1,9 @@
-
-
-
 "use client"
 import { useState, useEffect } from "react"
-
 import LoadingSpinner from "@/components/ui/Loader"
 import UploadIcon from "./ui/Upload"
-
 import { BACKEND_URL } from "@/config"
+import { fetchWithAuth } from "@/libs/auth"
 
 /**
  * This component is a form for adding a new dataset. It has fields for title, description, category, tags, and file upload.
@@ -85,17 +81,11 @@ const DatasetForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
     if (!validateForm()) return
-
     setServerError("")
     setServerMessage("")
-
-
-    setLoading(true)
+    setLoading(true) 
     setShowOverlay(true)
-
-
     const formData = new FormData()
     formData.append("title", title)
     formData.append("description", description)
@@ -103,20 +93,18 @@ const DatasetForm = () => {
     formData.append("tags", tags.join(","))
     formData.append("fileUrl","")
     if (file) formData.append("file", file)
-
     try {
-      const response = await fetch(`${BACKEND_URL}datasets/create_dataset/`, {
+      const response = await fetchWithAuth(`${BACKEND_URL}datasets/create_dataset/`, {
         method: "POST",
-        body: formData,
-      })
+        body: formData
+      });
       const data = await response.json()
-      // setServerError("")
-      // setServerMessage("")
 
       if (!response.ok) {
         if (data.error) {
           setServerError(data.error)
         } else {
+          console.log(data)
           setServerError("An error occurred while uploading. Please try again.")
         }
 
@@ -138,13 +126,14 @@ const DatasetForm = () => {
       setAgreedToTerms(false)
       setErrors({})
     } catch (error) {
-      // Catch and set server error message
       setServerError(error instanceof Error ? error.message : "An unknown error occurred.")
     } finally {
       setLoading(false)
       setShowOverlay(false)
     }
   }
+
+ 
 
   // const handleCancel = useCallback(() => {
   //   setLoading(false)
