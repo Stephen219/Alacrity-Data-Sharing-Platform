@@ -1,8 +1,9 @@
-
-'use client';
-import React, { useEffect, useState } from "react";
+"use client"
+import { useEffect, useState } from "react";
 import { useAuth } from "@/libs/auth";
 import { useRouter } from "next/navigation";
+
+
 /**
  * Higher-Order Component (HOC) for Access Control
  * 
@@ -15,8 +16,16 @@ import { useRouter } from "next/navigation";
  * @returns {React.FC} - A protected component with role-based access control.
  */
 
-export function withAccessControl(Component: React.ComponentType, allowedRoles: string[]) {
-    return function ProtectedRoute(props: unknown) {
+
+ // NOTE: 12/02/2025   IF THIS COMPONENT IS NOT WORKING REVERT TO THE CHANGES IN THE COMMIT   I CHANGED TO FIX THE TYPE ERROR IN THE  TYPE SCRIPT FILE
+ // https://git.cardiff.ac.uk/c2051028/alacrity/-/commit/832b405089ebd4d6bf9d4aa4c09db2729a702d50?page=2#4f8cef0316e03de62b2fe26fb3e18d5ce8265499  
+
+
+export function withAccessControl<T extends object>(
+    Component: React.ComponentType<T>,
+    allowedRoles: string[]
+) {
+    return function ProtectedRoute(props: T) { 
         const { user, loading } = useAuth();
         const router = useRouter();
         const [mounted, setMounted] = useState(false);

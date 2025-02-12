@@ -152,6 +152,26 @@ export function scheduleTokenRefresh() {
 }
 
 
+
+
+
+
+
+type User = {
+    username: string;
+    email: string;
+    role: string;
+    phone_number: string;
+    address: string;
+  };
+  
+  type AuthContextType = {
+    user: User | null;
+    loading: boolean;
+  };
+  
+
+
 /**
  * React hook that provides authentication state (user info and loading status).
  * Redirects to login if no valid session is found.
@@ -159,10 +179,43 @@ export function scheduleTokenRefresh() {
  * @returns {{ user: any | null; loading: boolean }} - The current user and loading state.
  */
 
+// FIXME   THIS FUNCTION IS WOIRKING BUT TYPESCRIPT IS COMPLAINING ABOUT THE RETURN TYPE
+// export function useAuth() {
+//     const [user, setUser] = useState<unknown | null>(null);
+//     const [loading, setLoading] = useState(true); 
+//     const router = useRouter();
 
-export function useAuth() {
-    const [user, setUser] = useState<unknown | null>(null);
-    const [loading, setLoading] = useState(true); 
+//     useEffect(() => {
+//         const token = localStorage.getItem("access_token");
+//         if (!token) {
+//             router.push("/login");
+//         } else {
+//             scheduleTokenRefresh();
+
+//             const storedUser = localStorage.getItem("user");
+//             if (storedUser) {
+//                 setUser(JSON.parse(storedUser));
+//                 setLoading(false);
+//             } else {
+//                 fetchUserData().then((data) => {
+//                     if (data) {
+//                         setUser(data);
+//                         localStorage.setItem("user", JSON.stringify(data));
+//                     }
+//                     setLoading(false);
+//                 });
+//             }
+//         }
+//     }, [router]);
+
+//     return { user, loading }; // Return user and loading state
+// }
+
+
+
+export function useAuth(): AuthContextType {
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState(true);
     const router = useRouter();
 
     useEffect(() => {
@@ -188,8 +241,9 @@ export function useAuth() {
         }
     }, [router]);
 
-    return { user, loading }; // Return user and loading state
+    return { user, loading };
 }
+
 
 /**
  * Fetches the current authenticated user's data from the backend.
@@ -197,23 +251,46 @@ export function useAuth() {
  * @returns {Promise<any | null>} - The user data or null if fetching fails.
  */
 
-export async function fetchUserData() {
-    const token = localStorage.getItem("access_token");
+// export async function fetchUserData() {
+//     const token = localStorage.getItem("access_token");
 
+//     if (!token) return null;
+
+//     try {
+//         // const response = await fetch(`${API_BASE_URL}/users/me/`, {
+//         //     method: "GET",
+//         //     headers: {
+//         //         "Authorization": `Bearer ${token}`,
+//         //     },
+//         // });
+//         // lets use fetchWithAuth instead
+
+//         const response = await fetchWithAuth(`${API_BASE_URL}/users/me/`); // TODO :  IMPLEMEENT THE /USERS/ME/ ENDPOINT
+//         if (response.ok) {
+//             const userData = await response.json();
+//             return userData;
+//         } else {
+//             console.error("Failed to fetch user data");
+//             return null;
+//         }
+//     } catch (error) {
+//         console.error("Network error", error);
+//         return null;
+//     }
+// }
+
+
+
+
+
+export async function fetchUserData(): Promise<User | null> {
+    const token = localStorage.getItem("access_token");
     if (!token) return null;
 
     try {
-        // const response = await fetch(`${API_BASE_URL}/users/me/`, {
-        //     method: "GET",
-        //     headers: {
-        //         "Authorization": `Bearer ${token}`,
-        //     },
-        // });
-        // lets use fetchWithAuth instead
-
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/me/`); // TODO :  IMPLEMEENT THE /USERS/ME/ ENDPOINT
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/me/`);  // TODO :  IMPLEMEENT THE /USERS/ME/ ENDPOINT
         if (response.ok) {
-            const userData = await response.json();
+            const userData: User = await response.json();
             return userData;
         } else {
             console.error("Failed to fetch user data");
@@ -224,3 +301,4 @@ export async function fetchUserData() {
         return null;
     }
 }
+
