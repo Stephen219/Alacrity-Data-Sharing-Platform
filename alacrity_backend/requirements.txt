@@ -25,6 +25,8 @@ django-minio-storage
 # for authentication
 # djangorestframework-jwt
 djangorestframework-simplejwt
+Pillow
+
 
 
 
