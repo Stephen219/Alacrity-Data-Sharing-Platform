@@ -23,7 +23,7 @@ django-minio-storage
 # for background tasks
 
 # for authentication
-djangorestframework-jwt
+# djangorestframework-jwt
 djangorestframework-simplejwt
 
 
