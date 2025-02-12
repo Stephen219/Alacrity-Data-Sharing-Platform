@@ -24,7 +24,7 @@ django-minio-storage
 
 # for authentication
 djangorestframework-jwt
-
+rest_framework_simplejwt
 
 
 
