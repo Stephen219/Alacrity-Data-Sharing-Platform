@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { withAccessControl } from '@/components/auth_guard/AccessControl';
 import { useAuth } from '@/libs/auth';
-import { useRouter } from 'next/navigation';
+// import { useRouter } from 'next/navigation';
 
 // Mock the hooks
 jest.mock('@/libs/auth', () => ({

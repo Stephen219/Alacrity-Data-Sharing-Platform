@@ -16,7 +16,7 @@ import { useRouter } from "next/navigation";
  */
 
 export function withAccessControl(Component: React.ComponentType, allowedRoles: string[]) {
-    return function ProtectedRoute(props: any) {
+    return function ProtectedRoute(props: unknown) {
         const { user, loading } = useAuth();
         const router = useRouter();
         const [mounted, setMounted] = useState(false);

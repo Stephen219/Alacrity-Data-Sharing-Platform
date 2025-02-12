@@ -37,6 +37,7 @@ export async function login(email: string, password: string) {
             return { success: false, error: data.error || "Login failed" };
         }
     } catch (error) {
+        console.error("Login failed", error);
         return { success: false, error: "Network error" };
     }
 }
@@ -111,7 +112,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
 
     console.log("Using access token:", accessToken);
 
-    let response = await fetch(url, {
+    const response = await fetch(url, {
         ...options,
         headers: {
             ...options.headers,
@@ -160,7 +161,7 @@ export function scheduleTokenRefresh() {
 
 
 export function useAuth() {
-    const [user, setUser] = useState<any | null>(null);
+    const [user, setUser] = useState<unknown | null>(null);
     const [loading, setLoading] = useState(true); 
     const router = useRouter();
 

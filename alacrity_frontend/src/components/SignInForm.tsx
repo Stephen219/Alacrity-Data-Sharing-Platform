@@ -1,12 +1,12 @@
 "use client";
 
-import React, { use } from "react";
-import { useState, useEffect } from "react"
+import React from "react";
+import { useState} from "react"
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { BACKEND_URL } from "@/config";
+// import { BACKEND_URL } from "@/config";
 
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import { login } from "@/libs/auth";
 
 const SignInForm: React.FC = () => {
@@ -18,10 +18,6 @@ const SignInForm: React.FC = () => {
   
 
   // const router = useRouter();  ideally, we should use the router to redirect the user to the dashboard after successful login. However, we are using window.location.href for now to avoid the need to mock the router in the test file.
-
-
-
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +64,10 @@ const SignInForm: React.FC = () => {
           <div className="space-y-4">
             <h1 className="text-2xl font-bold text-gray-900">Welcome Back!</h1>
             <p className="text-gray-600">Sign in to your account to continue.</p>
+
+            {error && <p className="text-red-500 text-sm">{error}</p>} 
+
+            {/* TODO  :  HANDLE THIS ERROR IN THE UI like a person */}
             
 
             <form className="space-y-4" onSubmit={handleSubmit}>

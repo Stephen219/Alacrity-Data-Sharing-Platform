@@ -1,8 +1,6 @@
 
-
-import { render, act, renderHook } from '@testing-library/react';
-import { jest, describe, beforeEach, afterEach, it, expect } from '@jest/globals';
-import { login, logout, refreshToken, fetchWithAuth, useAuth } from '@/libs/auth';
+import { jest, describe, beforeEach, it, expect } from '@jest/globals';
+import { login, logout, refreshToken, fetchWithAuth } from '@/libs/auth';
 
 // Mock next/navigation properly
 const mockPush = jest.fn();
@@ -62,8 +60,8 @@ describe('Authentication Utilities', () => {
     
     // Mock window.location
     const windowLocation = { href: '' };
-    delete (window as any).location;
-    (window as any).location = windowLocation;
+    delete (window as unknown).location;
+    (window as unknown).location = windowLocation;
   });
 
   describe('login', () => {
@@ -314,7 +312,7 @@ describe('Authentication Utilities', () => {
           formData: function (): Promise<FormData> {
               throw new Error('Function not implemented.');
           },
-          json: function (): Promise<any> {
+          json: function (): Promise<unknown> {
               throw new Error('Function not implemented.');
           },
           text: function (): Promise<string> {
@@ -380,7 +378,7 @@ describe('Authentication Utilities', () => {
           formData: function (): Promise<FormData> {
               throw new Error('Function not implemented.');
           },
-          json: function (): Promise<any> {
+          json: function (): Promise<unknown> {
               throw new Error('Function not implemented.');
           },
           text: function (): Promise<string> {
