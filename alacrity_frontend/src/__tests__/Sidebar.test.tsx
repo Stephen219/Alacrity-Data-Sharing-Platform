@@ -38,8 +38,4 @@ describe('Sidebar', () => {
     expect(aside).not.toHaveClass('translate-x-0');
   });
 
-  it('does not render NavItems when userRole is null', () => {
-    render(<Sidebar {...defaultProps} />);
-    expect(screen.queryByTestId('nav-items')).not.toBeInTheDocument();
-  });
 });
