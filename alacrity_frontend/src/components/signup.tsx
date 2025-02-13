@@ -19,6 +19,9 @@ export default function SignUp() {
   const [serverError, setServerError] = useState("");
   const [serverMessage, setServerMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+  const [nameError, setNameError] = useState("");
 
   // Existing validation and submission handlers remain the same
   const validateForm = () => {
@@ -75,7 +78,7 @@ export default function SignUp() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${BACKEND_URL}datasets/sign_up/`, {
+      const response = await fetch(`${BACKEND_URL}/users/register/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -85,8 +88,21 @@ export default function SignUp() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || `HTTP error! status: ${response.status}`);
-      }
+        setEmailError(errorData?.email?.[0] || "");
+        setPhoneError(errorData?.phone_number?.[0] || "");
+        setNameError(errorData?.name?.[0] || "");
+    
+        if (!errorData || Object.keys(errorData).length === 0) {
+            setServerError("An error occurred. Please try again.");
+        } else {
+            setServerError("");
+        }
+    
+        console.log("Full API Error Response:", errorData);
+    
+        throw new Error(errorData?.message || "Something went wrong. Please check your input and try again.");
+
+    }
 
       const data = await response.json();
       setServerMessage(data.message);
@@ -127,6 +143,9 @@ export default function SignUp() {
                 onChange={handleInputChange}
                 placeholder="John"
               />
+
+
+
             </div>
             <div className="relative">
               <label className="text-sm font-medium text-gray-700 mb-1 block">Surname</label>
@@ -150,7 +169,12 @@ export default function SignUp() {
                 onChange={handleInputChange}
                 placeholder="12345678901"
               />
-            </div>
+              {phoneError && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
+                  {phoneError}
+                </div>
+              )}
+          </div>
 
             <div className="relative">
               <label className="text-sm font-medium text-gray-700 mb-1 block">Email</label>
@@ -161,6 +185,14 @@ export default function SignUp() {
                 onChange={handleInputChange}
                 placeholder="john.doe@example.com"
               />
+
+              {emailError && (
+                <p className="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm" role="alert" data-testid="title-error" id="title-error">
+                  {emailError}
+                </p>
+              )}
+
+
             </div>
 
             <div className="relative">
@@ -198,8 +230,8 @@ export default function SignUp() {
           </div>
 
           <div className="pt-4">
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full"
               disabled={loading}
             >
@@ -210,11 +242,6 @@ export default function SignUp() {
           {serverError && (
             <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
               {serverError}
-            </div>
-          )}
-          {serverMessage && (
-            <div className="mt-4 p-3 bg-green-50 border border-green-200 text-green-600 rounded-lg text-sm">
-              {serverMessage}
             </div>
           )}
         </form>
