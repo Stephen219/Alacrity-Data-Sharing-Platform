@@ -7,7 +7,7 @@ export const NAV_ITEMS = [
       featured: [
         {
           name: "Upload Dataset",
-          href: "#",
+          href: "/datasets",
           imageSrc: "/navbar/datasets/uploadDataset.png",
         },
         {

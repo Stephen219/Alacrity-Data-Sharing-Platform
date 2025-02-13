@@ -38,7 +38,7 @@ useOnClickOutside(navRef as React.RefObject<HTMLElement>, () => setActiveIndex(n
   );
 
   return (
-    <div className="flex gap-3 h-full" ref={navRef}>
+    <div className="flex flex-col gap-3 h-full" ref={navRef}>
       {filteredCategories.map((tools, i) => {
         const handleOpen = () => {
           setActiveIndex(activeIndex === i ? null : i);

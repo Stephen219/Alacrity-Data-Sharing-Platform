@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter} from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import ConditionalNavbar from "@/components/ConditionalNavbar";
+import Layout from "@/components/Layout";
 
 const inter = Inter({subsets: ["latin"]})
 
@@ -19,17 +19,13 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body
-        className={cn("relative h-full font-sans antialiased", 
-        inter.className
-        )}>
-          {/* Ensures the screen always takes up the whole space */}
-        <main className="relative flex flex-col min-h-screen">
-          <ConditionalNavbar/>
-          {/* Ensures children fills up as much content as possible */}
-          <div className="flex-grow flex-1">{children}</div>
-          {/* Footer here to be at very bottom */}
-        </main>
+        className={cn(
+          "relative h-full font-sans antialiased",
+          inter.className
+        )}
+      >
+        <Layout>{children}</Layout>
       </body>
     </html>
-  )
+  );
 }

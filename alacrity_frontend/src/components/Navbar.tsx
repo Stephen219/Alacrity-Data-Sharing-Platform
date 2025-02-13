@@ -1,83 +1,67 @@
-"use client"; 
-
-import { Bell } from "lucide-react";
-import MaxWidthWrapper from "./MaxWidthWrapper";
-import NavItems from "./NavItems";
+"use client";
+import React, { useState, useEffect } from "react";
+import { Bell, Menu } from "lucide-react";
 import Link from "next/link";
 import { buttonVariants } from "./ui/button";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 
-// TO-DO: Replace with actual authentication logic
 const getUserRole = (): "organisation" | "researcher" | null => {
-  return "organisation"; // Simulating that the user is not logged in
+  return "organisation"; // Simulated user role
 };
 
-const Navbar = () => {
+type NavbarProps = {
+  toggleSidebar: () => void;
+};
+
+const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
   const userRole = getUserRole();
-  const pathname = usePathname(); // This is the pathname from the client
+  const pathname = usePathname();
   const [isSignUpPage, setIsSignUpPage] = useState(false);
 
   useEffect(() => {
     setIsSignUpPage(pathname === "/auth/sign-up");
-  }, [pathname]); // Correctly use pathname in the dependency array
+  }, [pathname]);
 
   return (
-    <div className="bg-white sticky top-0 inset-x-0 z-50 h-16">
-      <header className="bg-white">
-        <MaxWidthWrapper>
-          <div className="border-b border-gray-200">
-            <div className="flex h-16 items-center">
-              
-              {/* Logo */}
-              <Link href="/" className="ml-4 flex items-center lg:ml-0">
-                <p className="text-lg font-bold text-black">ALACRITY</p>
+    <nav className="fixed top-0 left-0 w-full bg-white border-b border-gray-200 z-50 h-14">
+      <div className="px-5 py-2 flex items-center justify-between">
+        <div className="flex items-center">
+          <button className="p-2 lg:hidden" onClick={toggleSidebar}>
+            <Menu className="w-6 h-6" />
+          </button>
+          <Link href="/" className="text-lg font-bold text-black ml-2">
+            ALACRITY
+          </Link>
+        </div>
+        <div className="flex items-center space-x-3">
+          <Link href="/" className={buttonVariants({ variant: "ghost" })}>
+            Home
+          </Link>
+          <Link href="/" className={buttonVariants({ variant: "ghost" })}>
+            About
+          </Link>
+          {userRole ? (
+            <>
+              <Link href="/account" className={buttonVariants({ variant: "ghost" })}>
+                My Account
               </Link>
-
-              {/* Navigation Items (Only on large screens) */}
-              <div className="hidden lg:block lg:ml-12">
-                {userRole && <NavItems userRole={userRole} />}
-              </div>
-
-              {/* Right-side Navigation */}
-              <div className="ml-auto flex items-center space-x-4">
-                {!userRole ? (
-                  // Not signed in, show only Sign-In button and Sign-Up button unless on Sign-Up page
-                  <>
-                    <Link
-                      href="/auth/sign-in"
-                      className={buttonVariants({ variant: "ghost" })}
-                    >
-                      Sign In
-                    </Link>
-                    {!isSignUpPage && (
-                      <Link
-                        href="/auth/sign-up"
-                        className={buttonVariants({ variant: "default" })}
-                      >
-                        Sign Up
-                      </Link>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    {/* Signed-in User: Show account management and notifications */}
-                    <Link
-                      href="/account"
-                      className={buttonVariants({ variant: "ghost" })}
-                    >
-                      My Account
-                    </Link>
-                    <Bell className="w-5 h-5 text-primary hover:fill-primary" />
-                  </>
-                )}
-              </div>
-
-            </div>
-          </div>
-        </MaxWidthWrapper>
-      </header>
-    </div>
+              <Bell className="w-5 h-5 text-primary hover:fill-primary" />
+            </>
+          ) : (
+            <>
+              <Link href="/auth/sign-in" className={buttonVariants({ variant: "ghost" })}>
+                Sign In
+              </Link>
+              {!isSignUpPage && (
+                <Link href="/auth/sign-up" className={buttonVariants({ variant: "default" })}>
+                  Sign Up
+                </Link>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </nav>
   );
 };
 
