@@ -244,6 +244,16 @@ export default function SignUp() {
               {serverError}
             </div>
           )}
+          {serverMessage && (
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 text-green-600 rounded-lg text-sm">
+              {serverMessage}
+            </div>
+          )}      
+
+          {nameError && (
+            <p className="text-red-500 text-xs">{nameError}</p>
+          )}
+
         </form>
       </div>
     </div>
