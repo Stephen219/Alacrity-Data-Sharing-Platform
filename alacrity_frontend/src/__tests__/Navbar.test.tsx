@@ -3,33 +3,29 @@ import { render, screen } from '@testing-library/react';
 import Navbar from '@/components/Navbar';
 
 jest.mock('lucide-react', () => ({
-  Bell: () => null
+  Bell: () => <svg data-testid="bell-icon" />,
+  Menu: () => <svg data-testid="menu-icon" />
 }));
 
-jest.mock('@/components/MaxWidthWrapper', () => {
-  return function MockMaxWidthWrapper({ children }: { children: React.ReactNode }) {
-    return <div>{children}</div>;
-  };
-});
-
-jest.mock('@/components/NavItems', () => {
-  return function MockNavItems() {
-    return <div>Navigation Items</div>;
-  };
-});
+jest.mock('next/navigation', () => ({
+  usePathname: jest.fn(() => '/')
+}));
 
 jest.mock('@/components/ui/button', () => ({
   buttonVariants: () => 'mock-button-class'
 }));
 
 describe('Navbar Component', () => {
+  const mockToggleSidebar = jest.fn();
+
   test('renders logo', () => {
-    render(<Navbar />);
+    render(<Navbar toggleSidebar={mockToggleSidebar} />);
     expect(screen.getByText('ALACRITY')).toBeInTheDocument();
   });
 
-  test('renders account link', () => {
-    render(<Navbar />);
-    expect(screen.getByText('My Account')).toBeInTheDocument();
+  test('renders home and about links', () => {
+    render(<Navbar toggleSidebar={mockToggleSidebar} />);
+    expect(screen.getByText('Home')).toBeInTheDocument();
+    expect(screen.getByText('About')).toBeInTheDocument();
   });
 });

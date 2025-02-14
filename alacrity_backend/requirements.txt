@@ -18,7 +18,9 @@ minio
 # for minio
 django-minio-storage
 
-
+# authentication 
+pillow
+rest_framework_simplejwt
 
 
 

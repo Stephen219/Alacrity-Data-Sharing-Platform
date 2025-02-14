@@ -12,16 +12,19 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 from alacrity_backend.config import FRONTEND_URL, BACKEND_URL
+import os
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv()
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-5shh0og)m*+_*i_r(pcs(kd%9va%*zql0fl)f%r55vvqr(3pb!'
+SECRET_KEY = os.getenv("SECRET_KEY", "default-secret-key")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -43,6 +46,7 @@ INSTALLED_APPS = [
     'alacrity_backend',
     'datasets',
     'storages',
+    'users',
 ]
 
 MIDDLEWARE = [
@@ -92,7 +96,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'project_db',
         'USER': 'root',
-        'PASSWORD': 'comsc',
+        'PASSWORD': os.environ.get("DATABASE_PASSWORD"),
         'HOST': 'localhost',
         'PORT': '3306',
         'TEST': {
@@ -187,4 +191,7 @@ STATIC_URL = 'static/'
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
+AUTH_USER_MODEL = 'users.User'
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+

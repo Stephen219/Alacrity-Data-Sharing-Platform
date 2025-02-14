@@ -19,6 +19,9 @@ export default function SignUp() {
   const [serverError, setServerError] = useState("");
   const [serverMessage, setServerMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+  const [nameError, setNameError] = useState("");
 
   const validateForm = () => {
     const { email, password, firstname, surname, phonenumber, field, confirmPassword } = formData;
@@ -74,7 +77,7 @@ export default function SignUp() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${BACKEND_URL}datasets/sign_up/`, {
+      const response = await fetch(`${BACKEND_URL}/users/register/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -84,8 +87,21 @@ export default function SignUp() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || `HTTP error! status: ${response.status}`);
-      }
+        setEmailError(errorData?.email?.[0] || "");
+        setPhoneError(errorData?.phone_number?.[0] || "");
+        setNameError(errorData?.name?.[0] || "");
+    
+        if (!errorData || Object.keys(errorData).length === 0) {
+            setServerError("An error occurred. Please try again.");
+        } else {
+            setServerError("");
+        }
+    
+        console.log("Full API Error Response:", errorData);
+    
+        throw new Error(errorData?.message || "Something went wrong. Please check your input and try again.");
+
+    }
 
       const data = await response.json();
       setServerMessage(data.message || "Signup successful!");
@@ -136,6 +152,9 @@ export default function SignUp() {
                 aria-describedby={serverError ? "error-message" : undefined}
                 required
               />
+
+
+
             </div>
             <div className="relative">
               <label htmlFor="surname" className="text-sm font-medium text-gray-700 mb-1 block">
@@ -173,7 +192,12 @@ export default function SignUp() {
                 aria-describedby={serverError ? "error-message" : undefined}
                 required
               />
-            </div>
+              {phoneError && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
+                  {phoneError}
+                </div>
+              )}
+          </div>
 
             <div className="relative">
               <label htmlFor="email" className="text-sm font-medium text-gray-700 mb-1 block">
@@ -187,10 +211,21 @@ export default function SignUp() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                 onChange={handleInputChange}
                 placeholder="john.doe@example.com"
-                aria-invalid={serverError && !formData.email ? "true" : "false"}
-                aria-describedby={serverError ? "error-message" : undefined}
-                required
               />
+
+              {emailError && (
+                <p 
+                  role="alert"
+                  data-testid="error-message"
+                  id="title-error"
+                  className="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm"
+                >
+                  {emailError}
+                </p>
+              )}
+
+
+
             </div>
 
             <div className="relative">
@@ -249,8 +284,8 @@ export default function SignUp() {
           </div>
 
           <div className="pt-4">
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full"
               disabled={loading}
               aria-busy={loading}
@@ -259,30 +294,33 @@ export default function SignUp() {
             </Button>
           </div>
 
-          {/* Error Message */}
-          <div 
-            id="error-message"
-            role="alert"
-            data-testid="error-message" 
-            aria-hidden={!serverError}
-            className={`mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm ${
-              serverError ? 'block' : 'hidden'
-            }`}
-          >
-            {serverError}
+          <div
+              role="alert"
+              data-testid="error-message"
+              className={`mt-4 p-3 border rounded-lg text-sm ${
+                serverError ? "bg-red-50 border-red-200 text-red-600" : "hidden"
+              }`}
+              aria-hidden={serverError ? "false" : "true"}
+            >
+              {serverError || ""}
           </div>
 
-          {/* Success Message */}
-          <div 
-            role="status"
+          <div
+            role="alert"
             data-testid="success-message"
-            aria-hidden={!serverMessage}
-            className={`mt-4 p-3 bg-green-50 border border-green-200 text-green-600 rounded-lg text-sm ${
-              serverMessage ? 'block' : 'hidden'
+            className={`mt-4 p-3 border rounded-lg text-sm ${
+              serverMessage ? "bg-green-50 border-green-200 text-green-600" : "hidden"
             }`}
+            aria-hidden={serverMessage ? "false" : "true"}
           >
-            {serverMessage}
+            {serverMessage || ""}
           </div>
+    
+
+          {nameError && (
+            <p className="text-red-500 text-xs">{nameError}</p>
+          )}
+
         </form>
       </div>
     </div>
