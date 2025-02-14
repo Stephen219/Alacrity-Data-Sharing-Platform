@@ -112,7 +112,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': os.getenv('DJANGO_DATABASE_NAME', 'project_db'),
         'USER': os.getenv('DJANGO_DATABASE_USER', 'root'),
-        # 'PASSWORD'dfgu: os.getenv('DJANGO_DATABASEfgu_PASSWORD', 'comsc'),
+        # 'PASSWORD'dfgu: cfghjklos.getenv('DJANGO_DATABASEfgu_PASSWORD', 'comsc'),
         'PASSWORD':"",
         'HOST': os.getenv('DJANGO_DATABASE_HOST', 'mysql'),
         'PORT': os.getenv('DJANGO_DATABASE_PORT', '3306'),
