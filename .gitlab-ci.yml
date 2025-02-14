@@ -516,6 +516,7 @@ test-backend:
   # Make migrations and apply the others normally
   
   - python manage.py makemigrations
+  - python manage.py migrate
   - python manage.py migrate contenttypes
   - python manage.py migrate admin
   - python manage.py migrate auth
