@@ -415,6 +415,12 @@ test-backend:
     - apt-get update && apt-get install -y default-mysql-client
     - pip install -r requirements.txt
     - pip install coverage mysqlclient
+    # flush the database
+    - python manage.py flush --no-input
+    # make migrations and migratecd ..
+    
+    - python manage.py makemigrations
+    - python manage.py migrate
     
   script:
     - echo "Running backend tests..."
