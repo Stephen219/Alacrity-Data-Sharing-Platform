@@ -485,7 +485,7 @@ test-backend:
   - mysql -h mysql -uroot -e "DROP DATABASE IF EXISTS project_db;"
   - mysql -h mysql -uroot -e "CREATE DATABASE project_db;"
   - mysql -h mysql -uroot -e "ALTER DATABASE project_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-  - 
+  
 
   
  
