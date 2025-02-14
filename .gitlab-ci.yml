@@ -394,6 +394,83 @@ variables:
 #       changes:
 #         - alacrity_backend/**/*
 
+# test-backend:
+#   stage: test
+#   image: python:${PYTHON_VERSION}
+#   services:
+#     - name: mariadb:10.5
+#       alias: mysql
+#       variables:
+#         MYSQL_DATABASE: project_db
+#         MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+#         MYSQL_ROOT_HOST: "%"
+#   variables:
+#     MYSQL_HOST: mysql
+#     MYSQL_TCP_PORT: 3306
+#     MYSQL_DATABASE: project_db
+#     DATABASE_URL: mysql://root@mysql:3306/${MYSQL_DATABASE}
+    
+#   before_script:
+#     - cd alacrity_backend
+#     - apt-get update && apt-get install -y default-mysql-client
+#     - pip install -r requirements.txt
+#     - pip install coverage mysqlclient
+#     # drop the database and recreate it
+#     - mysql -h mysql -uroot -e "DROP DATABASE IF EXISTS project_db;"
+#     - mysql -h mysql -uroot -e "CREATE DATABASE project_db;"
+#     - mysql -h mysql -uroot -e "ALTER TABLE django_content_type ADD COLUMN name VARCHAR(50) NOT NULL DEFAULT 'anyName';"
+    
+
+
+#     # flush the database
+#     - python manage.py flush --no-input
+#     # make migrations and migrate using --fake-initial to mark migrations as applied
+#      # make migrations and migratecd ..
+#     - python manage.py migrate --fake
+   
+#     - python manage.py migrate contenttypes --fake-initial
+  
+
+
+#     - python manage.py makemigrations
+#     - python manage.py migrate contenttypes
+#     - python manage.py migrate --noinput
+    
+#   script:
+#     - echo "Running backend tests..."
+#     - python manage.py test
+#     - coverage run --omit="*/migrations/*" manage.py test
+#     - coverage report
+#     - COVERAGE_PERCENT=$(coverage report | tail -n 1 | awk '{print $NF}' | sed 's/%//')
+#     - |
+#       if [ $(echo "$COVERAGE_PERCENT < 50" | bc) -eq 1 ]; then 
+#         echo "Coverage is below 50%. Exiting..."
+#         exit 1
+#       fi
+#   artifacts:
+#     paths:
+#       - test-reports/
+#     expire_in: 1 week
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+#       changes:
+#         - alacrity_backend/**/*
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 test-backend:
   stage: test
   image: python:${PYTHON_VERSION}
@@ -408,30 +485,44 @@ test-backend:
     MYSQL_HOST: mysql
     MYSQL_TCP_PORT: 3306
     MYSQL_DATABASE: project_db
-    DATABASE_URL: mysql://root@mysql:3306/${MYSQL_DATABASE}
+    # Django-specific environment variables
+    DJANGO_DATABASE_NAME: project_db
+    DJANGO_DATABASE_USER: root
+    DJANGO_DATABASE_PASSWORD: ""
+    DJANGO_DATABASE_HOST: mysql
+    DJANGO_DATABASE_PORT: 3306
+    # Other required Django settings
+    DJANGO_SETTINGS_MODULE: alacrity_backend.settings
+    SECRET_KEY: "ci-test-key"
     
   before_script:
-    - cd alacrity_backend
-    - apt-get update && apt-get install -y default-mysql-client
-    - pip install -r requirements.txt
-    - pip install coverage mysqlclient
-    # drop the database and recreate it
-    - mysql -h mysql -uroot -e "DROP DATABASE IF EXISTS project_db;"
-    - mysql -h mysql -uroot -e "CREATE DATABASE project_db;"
+  - cd alacrity_backend
+  - apt-get update && apt-get install -y default-mysql-client
+  - pip install -r requirements.txt
+  - pip install coverage mysqlclient
+  
+  # Drop the database and recreate it
+  - mysql -h mysql -uroot -e "DROP DATABASE IF EXISTS project_db;"
+  - mysql -h mysql -uroot -e "CREATE DATABASE project_db;"
+  
+ 
+  - python manage.py migrate contenttypes --fake-initial
+  - python manage.py makemigrations contenttypes
+  # show the migrations
+  - python manage.py showmigrations
 
-    # flush the database
-    - python manage.py flush --no-input
-    # make migrations and migratecd ..
-    - python manage.py migrate --fake
+  
+  # Make migrations and apply the others normally
+  - python manage.py makemigrations
+  - python manage.py migrate contenttypes
+  - python manage.py migrate --noinput
 
-
-
-    - python manage.py makemigrations
-    - python manage.py migrate
+  # show tables
+  - mysql -h mysql -uroot -e "SHOW TABLES FROM project_db;"
     
   script:
     - echo "Running backend tests..."
-    - coverage run --omit="*/migrations/*" manage.py test
+    - coverage run --omit="*/migrations/*,*/tests/*" manage.py test
     - coverage report
     - COVERAGE_PERCENT=$(coverage report | tail -n 1 | awk '{print $NF}' | sed 's/%//')
     - |
