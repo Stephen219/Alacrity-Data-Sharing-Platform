@@ -214,10 +214,16 @@ export default function SignUp() {
               />
 
               {emailError && (
-                <p className="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm" role="alert" data-testid="title-error" id="title-error">
+                <p 
+                  role="alert"
+                  data-testid="error-message"
+                  id="title-error"
+                  className="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm"
+                >
                   {emailError}
                 </p>
               )}
+
 
 
             </div>
@@ -288,16 +294,28 @@ export default function SignUp() {
             </Button>
           </div>
 
-          {serverError && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
-              {serverError}
-            </div>
-          )}
-          {serverMessage && (
-            <div className="mt-4 p-3 bg-green-50 border border-green-200 text-green-600 rounded-lg text-sm">
-              {serverMessage}
-            </div>
-          )}      
+          <div
+              role="alert"
+              data-testid="error-message"
+              className={`mt-4 p-3 border rounded-lg text-sm ${
+                serverError ? "bg-red-50 border-red-200 text-red-600" : "hidden"
+              }`}
+              aria-hidden={serverError ? "false" : "true"}
+            >
+              {serverError || ""}
+          </div>
+
+          <div
+            role="alert"
+            data-testid="success-message"
+            className={`mt-4 p-3 border rounded-lg text-sm ${
+              serverMessage ? "bg-green-50 border-green-200 text-green-600" : "hidden"
+            }`}
+            aria-hidden={serverMessage ? "false" : "true"}
+          >
+            {serverMessage || ""}
+          </div>
+    
 
           {nameError && (
             <p className="text-red-500 text-xs">{nameError}</p>
