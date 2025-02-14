@@ -13,6 +13,7 @@ stages:
 
 variables:
   CI_DEBUG_TRACE: "false"
+  PYTHON_VERSION: "3.10"
 
 # 1. Linting - Frontend
 lint-frontend:
@@ -42,25 +43,7 @@ lint-backend:
       changes:
         - alacrity_backend/**/*.py
 
-# # 3. Testing - Frontend
-# test-frontend:
-#   stage: test
-#   script:
-#     - cd alacrity_frontend
-#     - npm ci
-#     - echo "Running frontend tests..."
-#     - npm run test
-#   artifacts:
-#     paths:
-#       - test-reports/
-#     expire_in: 1 week
-#   rules:
-#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-#       changes:
-#         - alacrity_frontend/**/*
-
-
-
+#
 
 
 # 3. Testing - Frontend 
@@ -97,25 +80,54 @@ test-frontend:
       changes:
         - alacrity_frontend/**/*
 
-# 4. Testing - Backend (Python Tests)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 test-backend:
   stage: test
-  image: python:3.10
+  image: python:${PYTHON_VERSION}
+  services:
+    - name: mariadb:10.5
+      alias: mysql
+      variables:
+        MYSQL_DATABASE: project_db
+        MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+        MYSQL_ROOT_HOST: "%"
+  variables:
+    MYSQL_HOST: mysql
+    MYSQL_TCP_PORT: 3306
+    MYSQL_DATABASE: project_db
+    DATABASE_URL: mysql://root@mysql:3306/${MYSQL_DATABASE}
+    
   before_script:
     - cd alacrity_backend
+    - apt-get update && apt-get install -y default-mysql-client
     - pip install -r requirements.txt
-    - pip install coverage
+    - pip install coverage mysqlclient
+    
   script:
     - echo "Running backend tests..."
-    - coverage run --omit="alacrity_backend/tests/*,alacrity_backend/migrations/*, datasets/migrations/*, datasets/tests/*" manage.py test
+    - coverage run --omit="*/migrations/*" manage.py test
     - coverage report
     - COVERAGE_PERCENT=$(coverage report | tail -n 1 | awk '{print $NF}' | sed 's/%//')
-    - echo $COVERAGE_PERCENT%
-    - echo $COVERAGE_PERCENT
-    - echo "Generating coverage report..."
-    - if [ $(echo "$COVERAGE_PERCENT < 50" | bc) -eq 1 ]; then echo "Coverage is below 50%. Exiting..."; exit 1; fi
-  
-    
+    - |
+      if [ $(echo "$COVERAGE_PERCENT < 50" | bc) -eq 1 ]; then 
+        echo "Coverage is below 50%. Exiting..."
+        exit 1
+      fi
   artifacts:
     paths:
       - test-reports/
@@ -124,6 +136,13 @@ test-backend:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       changes:
         - alacrity_backend/**/*
+
+
+
+
+
+
+
 
 # 5. Build - Frontend
 build-frontend:
