@@ -14,8 +14,6 @@ export default function Home() {
           <Button variant="ghost">Social Media &rarr;</Button>
         </div>
     <Charts/>
-
-
     </>
   )
 }
