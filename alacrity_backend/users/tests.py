@@ -1,3 +1,3 @@
 from django.test import TestCase
 
-# Create yVVVVour tests here.
+# Create yVVVVffour tests here.
