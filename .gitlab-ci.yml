@@ -514,7 +514,7 @@ test-backend:
 
   
   # Make migrations and apply the others normally
-  - python manage.py migrate --fake-initial
+  
   - python manage.py makemigrations
   - python manage.py migrate contenttypes
   - python manage.py migrate admin
@@ -523,7 +523,7 @@ test-backend:
   - python manage.py migrate sessions
   - python manage.py migrate users
   - python manage.py migrate --noinput
-  
+
 
 
 
