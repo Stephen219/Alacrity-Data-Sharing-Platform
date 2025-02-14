@@ -19,11 +19,13 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv()
 
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-5shh0og)m*+_*i_r(pcs(kd%9va%*zql0fl)f%r55vvqr(3pb!'
+SECRET_KEY = os.getenv("SECRET_KEY", "default-secret-key")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -50,7 +52,11 @@ INSTALLED_APPS = [
     'datasets',
     'storages',
     'users',
+
     'rest_framework_simplejwt',
+
+    'contact',
+
 ]
 
 MIDDLEWARE = [
@@ -100,7 +106,11 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'project_db',
         'USER': 'root',
+<<<<<<< alacrity_backend/alacrity_backend/settings.py
         'PASSWORD':os.environ.get('DATABASE_PASSWORD'),
+=======
+        'PASSWORD': os.environ.get("DATABASE_PASSWORD"),
+>>>>>>> alacrity_backend/alacrity_backend/settings.py
         'HOST': 'localhost',
         'PORT': '3306',
         'TEST': {
@@ -297,4 +307,17 @@ STATIC_URL = 'static/'
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
+AUTH_USER_MODEL = 'users.User'
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.sendgrid.net"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "apikey"
+EMAIL_HOST_PASSWORD = os.getenv("SENDGRID_API_KEY")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")  
+
+
+

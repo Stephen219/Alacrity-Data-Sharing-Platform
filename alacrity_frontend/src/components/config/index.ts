@@ -1,3 +1,4 @@
+
 export const NAV_ITEMS = [
     // Organisation navigation
     {
@@ -7,7 +8,7 @@ export const NAV_ITEMS = [
       featured: [
         {
           name: "Upload Dataset",
-          href: "#",
+          href: "/datasets",
           imageSrc: "/navbar/datasets/uploadDataset.png",
         },
         {
@@ -94,6 +95,43 @@ export const NAV_ITEMS = [
           name: "Research Requests",
           href: "#",
           imageSrc: "/navbar/researcher/reviewRequests.png",
+        },
+      ],
+    },
+    {
+      label: "My Account",
+      value: "my-account",
+      roles: ["researcher", "organisation"],
+      featured: [
+        {
+          name: "Edit Profile",
+          href: "#",
+          imageSrc: "/navbar/account/editProfile.png",
+        },
+        {
+          name: "Security & Login",
+          href: "#",
+          imageSrc: "/navbar/account/login.png",
+        },
+        {
+          name: "Account Preferences",
+          href: "#",
+          imageSrc: "/navbar/account/preferences.png",
+        },
+        {
+          name: "Subscription & Billing",
+          href: "#",
+          imageSrc: "/navbar/account/billing.png",
+        },
+        {
+          name: "Purchase History",
+          href: "#",
+          imageSrc: "/navbar/account/purchases.png",
+        },
+        {
+          name: "Sign Out",
+          href: "#",
+          imageSrc: "/navbar/account/signout.png",
         },
       ],
     },

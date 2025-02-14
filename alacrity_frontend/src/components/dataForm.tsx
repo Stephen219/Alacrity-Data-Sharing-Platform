@@ -3,7 +3,11 @@ import { useState, useEffect } from "react"
 import LoadingSpinner from "@/components/ui/Loader"
 import UploadIcon from "./ui/Upload"
 import { BACKEND_URL } from "@/config"
+
 import { fetchWithAuth } from "@/libs/auth"
+
+import MaxWidthWrapper from "./MaxWidthWrapper"
+
 
 /**
  * This component is a form for adding a new dataset. It has fields for title, description, category, tags, and file upload.
@@ -144,8 +148,9 @@ const DatasetForm = () => {
   // }, [])
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-3xl bg-white rounded-xl shadow-lg xl:px-10 xl:py-8 xl:rounded-2xl xl:max-w-6xl xl:min-h-[90vh] md:mb-9">
+    <MaxWidthWrapper>
+    <div className="min-h-screen bg-white flex items-center justify-center p-4">
+      <div className="w-full max-w-3xl bg-white rounded-xl shadow-2xl xl:px-10 xl:py-8 xl:rounded-2xl xl:max-w-6xl xl:min-h-[90vh] md:mb-9">
      
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-3xl font-bold text-gray-900">Add a new dataset</h2>
@@ -450,6 +455,7 @@ const DatasetForm = () => {
         </div>
       )}
     </div>
+    </MaxWidthWrapper>
   )
 }
 

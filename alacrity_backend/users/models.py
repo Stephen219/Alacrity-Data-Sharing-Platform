@@ -8,45 +8,41 @@ class Organization(models.Model):
     def __str__(self):
         return self.name
 
-
-
-
-
 class User(AbstractUser):
     ROLE_CHOICES = [
         ('organization_admin', 'Organization Admin'),
         ('admin', 'Admin'),
-
         ('contributor', 'Contributor'),
         ('researcher', 'Researcher'),
+        ('user', 'User'), 
     ]
     
-    # Make email required and unique
     email = models.EmailField(
-        ('email address'),
         unique=True,
         error_messages={
-            'unique': ("A user with that email already exists."),
+            'unique': "A user with that email already exists.",
         }
     )
-    
-    # Your existing fields
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
-    organization = models.ForeignKey('Organization', on_delete=models.SET_NULL, null=True, blank=True)
-    phone_number = models.CharField(max_length=20, blank=True, null=True)
-    address = models.TextField(blank=True, null=True)
+
+    first_name = models.CharField(max_length=30)  
+    sur_name = models.CharField(max_length=30) 
+    #username = models.CharField(max_length=30)
+    phone_number = models.CharField(max_length=15, unique=True, blank=True, null=True) 
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
+    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True)
+    field = models.TextField(blank=True, null=True)
     date_of_birth = models.DateField(blank=True, null=True)
+    
+    #TODO PROFILE PIC 
     profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
 
-    # Use email as the username field for authentication
+    # Email is used as primary field
     USERNAME_FIELD = 'email'
-    
-    # Remove email from REQUIRED_FIELDS since it's already required by USERNAME_FIELD
-    REQUIRED_FIELDS = ['username', 'role']  # Add any other fields you want to be required during user creation
+    REQUIRED_FIELDS = ['username', 'role']
 
     class Meta:
-        verbose_name = ('user')
-        verbose_name_plural = ('users')
+        verbose_name = "user"
+        verbose_name_plural = "users"
 
     def __str__(self):
         return self.email
