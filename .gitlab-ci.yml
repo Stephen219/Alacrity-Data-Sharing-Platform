@@ -506,16 +506,26 @@ test-backend:
   - mysql -h mysql -uroot -e "CREATE DATABASE project_db;"
   
  
-  - python manage.py migrate contenttypes --fake-initial
+  
   - python manage.py makemigrations contenttypes
   # show the migrations
+  - python manage.py makemigrations
   - python manage.py showmigrations
 
   
   # Make migrations and apply the others normally
+  - python manage.py migrate --fake-initial
   - python manage.py makemigrations
   - python manage.py migrate contenttypes
+  - python manage.py migrate admin
+  - python manage.py migrate auth
+  - python manage.py migrate contenttypes
+  - python manage.py migrate sessions
+  - python manage.py migrate users
   - python manage.py migrate --noinput
+  
+
+
 
   # show tables
   - mysql -h mysql -uroot -e "SHOW TABLES FROM project_db;"
