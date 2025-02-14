@@ -1,5 +1,3 @@
-import MaxWidthWrapper from "./MaxWidthWrapper";
-
 export default function Footer() {
     return <>
         

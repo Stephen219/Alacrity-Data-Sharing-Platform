@@ -10,7 +10,7 @@ export default function Home() {
     {/* Landing page content */}
     <LandingPage/>
     <div className="justify-center flex flex-col sm:flex-row gap-4 mb-12">
-          <Link href="/auth/sign-up" className={buttonVariants()}>Sign Up</Link>
+          <Link href="#" className={buttonVariants()}>About Us</Link>
           <Button variant="ghost">Social Media &rarr;</Button>
         </div>
     <Charts/>

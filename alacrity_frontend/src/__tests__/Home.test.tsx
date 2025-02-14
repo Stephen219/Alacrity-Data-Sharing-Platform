@@ -69,8 +69,8 @@ describe("Home Page", () => {
     expect(socialButton).toBeInTheDocument();
   });
 
-  test("clicking 'Sign Up' should navigate correctly", async () => {
-    const uploadLink = screen.getByRole("link", { name: /sign up/i });
-    expect(uploadLink).toHaveAttribute("href", "/auth/sign-up");
+  test("renders the 'About Us' button", async () => {
+    const uploadLink = screen.getByRole("link", { name: /about us/i });
+    expect(uploadLink).toBeInTheDocument();
   });
 });
