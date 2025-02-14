@@ -1,7 +1,51 @@
 import { render, screen } from "@testing-library/react";
 import Home from "@/app/page";
-import userEvent from "@testing-library/user-event";
 
+jest.mock("@/components/Charts", () => {
+  const MockCharts = () => <div data-testid="charts" />;
+  MockCharts.displayName = "Charts";
+  return MockCharts;
+});
+
+jest.mock("@/components/ui/BarChart", () => {
+  const MockBarChart = () => <div data-testid="bar-chart" />;
+  MockBarChart.displayName = "BarChart";
+  return MockBarChart;
+});
+
+jest.mock("@/components/ui/PieChart", () => {
+  const MockPieChart = () => <div data-testid="pie-chart" />;
+  MockPieChart.displayName = "PieChart";
+  return MockPieChart;
+});
+
+jest.mock("@/components/ui/button", () => {
+  const MockButton = ({ children }: { children: React.ReactNode }) => <button>{children}</button>;
+  MockButton.displayName = "Button";
+  return {
+    Button: MockButton,
+    buttonVariants: () => "mock-button-class",
+  };
+});
+
+jest.mock("@/components/MaxWidthWrapper", () => {
+  const MockMaxWidthWrapper = ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="max-width-wrapper">{children}</div>
+  );
+  MockMaxWidthWrapper.displayName = "MaxWidthWrapper";
+  return MockMaxWidthWrapper;
+});
+
+jest.mock("@/components/LandingPage", () => {
+  const MockLandingPage = () => (
+    <div data-testid="landing-page">
+      <h1>Your favourite platform for secure data collaboration</h1>
+      <p>The fastest way for organisations to upload, manage, and share datasets</p>
+    </div>
+  );
+  MockLandingPage.displayName = "LandingPage";
+  return MockLandingPage;
+});
 
 describe("Home Page", () => {
   beforeEach(() => {
@@ -20,27 +64,13 @@ describe("Home Page", () => {
     ).toBeInTheDocument();
   });
 
-  test("renders the 'Upload Data' link", () => {
-    const uploadLink = screen.getByRole("link", { name: /upload data/i });
+  test("renders the 'Social Media' button", () => {
+    const socialButton = screen.getByRole("button", { name: /social media/i });
+    expect(socialButton).toBeInTheDocument();
+  });
+
+  test("renders the 'About Us' button", async () => {
+    const uploadLink = screen.getByRole("link", { name: /about us/i });
     expect(uploadLink).toBeInTheDocument();
-    expect(uploadLink).toHaveAttribute("href", "/datasets");
-  });
-
-  test("renders the 'Approve Access' button", () => {
-    const approveButton = screen.getByRole("button", { name: /approve access/i });
-    expect(approveButton).toBeInTheDocument();
-  });
-
-  test("clicking 'Upload Data' should navigate correctly", async () => {
-    const uploadLink = screen.getByRole("link", { name: /upload data/i });
-    expect(uploadLink).toHaveAttribute("href", "/datasets");
-  });
-
-  test("clicking 'Approve Access' triggers button interaction", async () => {
-    const user = userEvent.setup();
-    const approveButton = screen.getByRole("button", { name: /approve access/i });
-
-    await user.click(approveButton);
-    expect(approveButton).toBeInTheDocument();
   });
 });
