@@ -504,6 +504,9 @@ test-backend:
   # Drop the database and recreate it
   - mysql -h mysql -uroot -e "DROP DATABASE IF EXISTS project_db;"
   - mysql -h mysql -uroot -e "CREATE DATABASE project_db;"
+  - mysql -h mysql -uroot -e "ALTER DATABASE project_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+  - 
+
   
  
   
@@ -511,6 +514,7 @@ test-backend:
   # show the migrations
   - python manage.py makemigrations
   - python manage.py showmigrations
+  - mysql -h mysql -uroot -e "SHOW TABLES FROM project_db;"
 
   
   # Make migrations and apply the others normally
