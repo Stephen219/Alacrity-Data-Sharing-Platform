@@ -1,3 +1,195 @@
+# default:
+#   tags:
+#     - comsc-ci
+
+# image: node:20-alpine
+
+# stages:
+#   - lint # Linting for both frontend and backend
+#   - test # Testing for both frontend and backend
+#   - build # Build frontend
+#   - deploy 
+#   - dev # Development server for frontend
+
+# variables:
+#   CI_DEBUG_TRACE: "false"
+#   PYTHON_VERSION: "3.10"
+
+# # 1. Linting - Frontend
+# lint-frontend:
+#   stage: lint
+#   script:
+#     - echo "Installing dependencies..."
+#     - cd alacrity_frontend
+#     - npm ci
+#     - echo "Running lint..."
+#     - npm run lint --fix
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+#       changes:
+#         - alacrity_frontend/**/*
+
+# # 2. Linting - Backend (Pylint)
+# lint-backend:
+#   stage: lint
+#   image: python:3.10
+#   before_script:
+#     - pip install pylint
+#   script:
+#     - echo "Running Pylint..."
+#     - pylint alacrity_backend --exit-zero  # Allow non-zero exit codes to avoid failing CI for now
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+#       changes:
+#         - alacrity_backend/**/*.py
+
+# #
+
+
+# # 3. Testing - Frontend 
+# test-frontend:
+#   stage: test
+#   #TODO: fix this thing    it is the most redundant thing and i need it refactored
+#   script:
+#     - cd alacrity_frontend
+#     # FIXME : i am not sure if this is the right way to do it
+#     - npm ci
+#     - echo "Running frontend tests..."
+#     - npm run test -- --coverage
+#     - npm run test -- --coverage --coverageReporters=json-summary
+#     - echo "Extracting Coverage Metrics..."
+#     - STATEMENTS_COVERAGE=$(grep -o '"statements":{"total":[0-9]*,"covered":[0-9]*,"skipped":[0-9]*,"pct":[0-9.]*' coverage/coverage-summary.json | awk -F':' '{print $NF}')
+#     - FUNCTIONS_COVERAGE=$(grep -o '"functions":{"total":[0-9]*,"covered":[0-9]*,"skipped":[0-9]*,"pct":[0-9.]*' coverage/coverage-summary.json | awk -F':' '{print $NF}')
+#     - BRANCHES_COVERAGE=$(grep -o '"branches":{"total":[0-9]*,"covered":[0-9]*,"skipped":[0-9]*,"pct":[0-9.]*' coverage/coverage-summary.json | awk -F':' '{print $NF}')
+#     - LINES_COVERAGE=$(grep -o '"lines":{"total":[0-9]*,"covered":[0-9]*,"skipped":[0-9]*,"pct":[0-9.]*' coverage/coverage-summary.json | awk -F':' '{print $NF}')
+#     - echo $STATEMENTS_COVERAGE%
+#     - echo  $FUNCTIONS_COVERAGE%
+#     - echo  $BRANCHES_COVERAGE%
+#     - echo  $LINES_COVERAGE%
+#     - if [ "$STATEMENTS_COVERAGE" -lt 40 ]; then echo ; exit 1; fi   # 20 for this branch to go in 
+#     - if [ "$FUNCTIONS_COVERAGE" -lt 40 ]; then echo ; exit 1; fi
+#     - if [ "$BRANCHES_COVERAGE" -lt 40 ]; then echo ; exit 1; fi
+#     - if [ "$LINES_COVERAGE" -lt 40 ]; then echo ; exit 1; fi
+#     - echo "Coverage Metrics extracted successfully!"
+#   artifacts:
+#     paths:
+#       - alacrity_frontend/coverage/
+#     expire_in: 1 week
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+#       changes:
+#         - alacrity_frontend/**/*
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# test-backend:
+#   stage: test
+#   image: python:${PYTHON_VERSION}
+#   services:
+#     - name: mariadb:10.5
+#       alias: mysql
+#       variables:
+#         MYSQL_DATABASE: project_db
+#         MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+#         MYSQL_ROOT_HOST: "%"
+#   variables:
+#     MYSQL_HOST: mysql
+#     MYSQL_TCP_PORT: 3306
+#     MYSQL_DATABASE: project_db
+#     DATABASE_URL: mysql://root@mysql:3306/${MYSQL_DATABASE}
+    
+#   before_script:
+#     - cd alacrity_backend
+#     - apt-get update && apt-get install -y default-mysql-client
+#     - pip install -r requirements.txt
+#     - pip install coverage mysqlclient
+    
+#   script:
+#     - echo "Running backend tests..."
+#     - coverage run --omit="*/migrations/*" manage.py test
+#     - coverage report
+#     - COVERAGE_PERCENT=$(coverage report | tail -n 1 | awk '{print $NF}' | sed 's/%//')
+#     - |
+#       if [ $(echo "$COVERAGE_PERCENT < 50" | bc) -eq 1 ]; then 
+#         echo "Coverage is below 50%. Exiting..."
+#         exit 1
+#       fi
+#   artifacts:
+#     paths:
+#       - test-reports/
+#     expire_in: 1 week
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+#       changes:
+#         - alacrity_backend/**/*
+
+
+
+
+
+
+
+
+# # 5. Build - Frontend
+# build-frontend:
+#   stage: build
+#   script:
+#     - cd alacrity_frontend
+#     - npm ci
+#     - npm run build
+#   artifacts:
+#     paths:
+#       - alacrity_frontend/.next/
+#     expire_in: 1 week
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+#       changes:
+#         - alacrity_frontend/**/*
+
+# # 6. Dev - Frontend
+# dev:
+#   stage: dev
+#   script:
+#     - cd alacrity_frontend
+#     - npm ci
+#     - npm run dev &
+#     - sleep 40
+#     - wget --spider --quiet http://localhost:3000 || { echo "Dev server not running"; exit 1; }
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+#       changes:
+#         - alacrity_frontend/**/*
+
+# # # 7. Deployment (Not functional yet)
+# # deploy:
+# #   stage: deploy
+# #   script:
+# #     - echo "Deploying..."
+# #   rules:
+# #     - if: '$CI_COMMIT_BRANCH == "main"'
+# #   environment:
+# #     name: production
+
+
+
+
+
+
+
 default:
   tags:
     - comsc-ci
@@ -5,96 +197,202 @@ default:
 image: node:20-alpine
 
 stages:
-  - lint # Linting for both frontend and backend
-  - test # Testing for both frontend and backend
-  - build # Build frontend
-  - deploy 
-  - dev # Development server for frontend
+  - lint
+  - test
+  - build
+  - deploy
+  - dev
+
+# variables:
+#   CI_DEBUG_TRACE: "false"
+#   MYSQL_ROOT_PASSWORD: "comsc"
+#   MYSQL_DATABASE: "project_db"  # Changed to match your test database name
+#   MYSQL_USER: "root"
+#   MYSQL_PASSWORD: "comsc"
+#   PYTHON_VERSION: "3.10"
+
+# # Previous stages remain the same...
+
+# test-backend:
+#   stage: test
+#   image: python:${PYTHON_VERSION}
+#   services:
+#     - name: mariadb:10.5
+#       alias: mysql  # Changed alias to match Django's default lookup
+#       variables:
+#         MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+#         MYSQL_DATABASE: ${MYSQL_DATABASE}
+#         MYSQL_USER: ${MYSQL_USER}
+#         MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+#   variables:
+#     MYSQL_HOST: mysql  # Cnged to match the new alias
+#     MYSQL_TCP_PORT: 3306
+#     # Use the same variables as defined in the service
+#     MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+#     MYSQL_DATABASE: ${MYSQL_DATABASE}
+#     MYSQL_USER: ${MYSQL_USER}
+#     MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    
+#   before_script:
+#     - cd alacrity_backend
+#     - apt-get update
+#     - apt-get install -y mariadb-client netcat-traditional
+    
+#     # Enhanced debug information
+#     - echo "Current environment:"
+#     - env | grep -E "MYSQL|MARIADB"
+#     - echo "Testing DNS resolution:"
+#     - getent hosts mysql || echo "DNS lookup failed"
+    
+#     # Modified wait script with better error handling
+#     - |
+#       echo "Waiting for MariaDB to be ready..."
+#       max_attempts=30
+#       counter=0
+#       while ! nc -z mysql 3306; do
+#         counter=$((counter + 1))
+#         if [ $counter -eq $max_attempts ]; then
+#           echo "Could not connect to MariaDB after $max_attempts attempts"
+#           echo "Network debugging information:"
+#           netstat -tuln
+#           ping -c 1 mysql || echo "Ping failed"
+#           exit 1
+#         fi
+#         echo "Attempt $counter: Waiting for MariaDB..."
+#         sleep 5
+#       done
+      
+#       echo "Port is open, testing MySQL connection..."
+#       until mysql -h mysql -u${MYSQL_USER} -p${MYSQL_PASSWORD} -e "SELECT 1;" >/dev/null 2>&1; do
+#         counter=$((counter + 1))
+#         if [ $counter -eq $max_attempts ]; then
+#           echo "Could not establish MySQL connection after $max_attempts attempts"
+#           exit 1
+#         fi
+#         echo "Attempt $counter: Waiting for MySQL to accept connections..."
+#         sleep 5
+#       done
+#       echo "Successfully connected to MariaDB!"
+    
+#     # Install Python requirements
+#     - pip install --no-cache-dir -r requirements.txt
+#     - pip install coverage mysqlclient
+#   script:
+#     - echo "Running backend tests..."
+#     - coverage run --omit="*/migrations/*" manage.py test
+#     - coverage report
+#     - COVERAGE_PERCENT=$(coverage report | tail -n 1 | awk '{print $NF}' | sed 's/%//')
+#     - |
+#       if [ $(echo "$COVERAGE_PERCENT < 50" | bc) -eq 1 ]; then 
+#         echo "Coverage is below 50%. Exiting..."
+#         exit 1
+#       fi
+#   artifacts:
+#     paths:
+#       - test-reports/
+#     expire_in: 1 week
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+#       changes:
+#         - alacrity_backend/**/*
+
+
+
+
+
+
+
+
+
+
 
 variables:
   CI_DEBUG_TRACE: "false"
+  # MYSQL_ROOT_PASSWORD: "comsc"
+  # MYSQL_DATABASE: "project_db"
   PYTHON_VERSION: "3.10"
 
-# 1. Linting - Frontend
-lint-frontend:
-  stage: lint
-  script:
-    - echo "Installing dependencies..."
-    - cd alacrity_frontend
-    - npm ci
-    - echo "Running lint..."
-    - npm run lint --fix
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      changes:
-        - alacrity_frontend/**/*
-
-# 2. Linting - Backend (Pylint)
-lint-backend:
-  stage: lint
-  image: python:3.10
-  before_script:
-    - pip install pylint
-  script:
-    - echo "Running Pylint..."
-    - pylint alacrity_backend --exit-zero  # Allow non-zero exit codes to avoid failing CI for now
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      changes:
-        - alacrity_backend/**/*.py
-
-#
-
-
-# 3. Testing - Frontend 
-test-frontend:
-  stage: test
-  #TODO: fix this thing    it is the most redundant thing and i need it refactored
-  script:
-    - cd alacrity_frontend
-    # FIXME : i am not sure if this is the right way to do it
-    - npm ci
-    - echo "Running frontend tests..."
-    - npm run test -- --coverage
-    - npm run test -- --coverage --coverageReporters=json-summary
-    - echo "Extracting Coverage Metrics..."
-    - STATEMENTS_COVERAGE=$(grep -o '"statements":{"total":[0-9]*,"covered":[0-9]*,"skipped":[0-9]*,"pct":[0-9.]*' coverage/coverage-summary.json | awk -F':' '{print $NF}')
-    - FUNCTIONS_COVERAGE=$(grep -o '"functions":{"total":[0-9]*,"covered":[0-9]*,"skipped":[0-9]*,"pct":[0-9.]*' coverage/coverage-summary.json | awk -F':' '{print $NF}')
-    - BRANCHES_COVERAGE=$(grep -o '"branches":{"total":[0-9]*,"covered":[0-9]*,"skipped":[0-9]*,"pct":[0-9.]*' coverage/coverage-summary.json | awk -F':' '{print $NF}')
-    - LINES_COVERAGE=$(grep -o '"lines":{"total":[0-9]*,"covered":[0-9]*,"skipped":[0-9]*,"pct":[0-9.]*' coverage/coverage-summary.json | awk -F':' '{print $NF}')
-    - echo $STATEMENTS_COVERAGE%
-    - echo  $FUNCTIONS_COVERAGE%
-    - echo  $BRANCHES_COVERAGE%
-    - echo  $LINES_COVERAGE%
-    - if [ "$STATEMENTS_COVERAGE" -lt 40 ]; then echo ; exit 1; fi   # 20 for this branch to go in 
-    - if [ "$FUNCTIONS_COVERAGE" -lt 40 ]; then echo ; exit 1; fi
-    - if [ "$BRANCHES_COVERAGE" -lt 40 ]; then echo ; exit 1; fi
-    - if [ "$LINES_COVERAGE" -lt 40 ]; then echo ; exit 1; fi
-    - echo "Coverage Metrics extracted successfully!"
-  artifacts:
-    paths:
-      - alacrity_frontend/coverage/
-    expire_in: 1 week
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      changes:
-        - alacrity_frontend/**/*
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# test-backend:
+#   stage: test
+#   image: python:${PYTHON_VERSION}
+#   services:
+#     - name: mariadb:10.5
+#       alias: mysql
+#       variables:
+#         MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+#         MYSQL_DATABASE: ${MYSQL_DATABASE}
+#   variables:
+#     MYSQL_HOST: mysql
+#     MYSQL_TCP_PORT: 3306
+#     MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+#     MYSQL_DATABASE: ${MYSQL_DATABASE}
+    
+#   before_script:
+#     - cd alacrity_backend
+#     - apt-get update
+#     - apt-get install -y mariadb-client netcat-traditional
+    
+#     # Enhanced debug information
+#     - echo "Current environment:"
+#     - env | grep -E "MYSQL|MARIADB"
+#     - echo "Testing DNS resolution:"
+#     - getent hosts mysql || echo "DNS lookup failed"
+    
+#     # Modified wait script with better error handling
+#     - |
+#       echo "Waiting for MariaDB to be ready..."
+#       max_attempts=30
+#       counter=0
+#       while ! nc -z mysql 3306; do
+#         counter=$((counter + 1))
+#         if [ $counter -eq $max_attempts ]; then
+#           echo "Could not connect to MariaDB after $max_attempts attempts"
+#           echo "Network debugging information:"
+#           netstat -tuln
+#           ping -c 1 mysql || echo "Ping failed"
+#           exit 1
+#         fi
+#         echo "Attempt $counter: Waiting for MariaDB..."
+#         sleep 5
+#       done
+      
+#       echo "Port is open, testing MySQL connection..."
+#       until mysql -h mysql -uroot -p${MYSQL_ROOT_PASSWORD} -e "SELECT 1;" >/dev/null 2>&1; do
+#         counter=$((counter + 1))
+#         if [ $counter -eq $max_attempts ]; then
+#           echo "Could not establish MySQL connection after $max_attempts attempts"
+#           exit 1
+#         fi
+#         echo "Attempt $counter: Waiting for MySQL to accept connections..."
+#         sleep 5
+#       done
+      
+#       echo "Configuring database access..."
+#       mysql -h mysql -uroot -p${MYSQL_ROOT_PASSWORD} -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';"
+#       mysql -h mysql -uroot -p${MYSQL_ROOT_PASSWORD} -e "FLUSH PRIVILEGES;"
+#       echo "Successfully connected to MariaDB!"
+    
+#     # Install Python requirements
+#     - pip install --no-cache-dir -r requirements.txt
+#     - pip install coverage mysqlclient
+#   script:
+#     - echo "Running backend tests..."
+#     - coverage run --omit="*/migrations/*" manage.py test
+#     - coverage report
+#     - COVERAGE_PERCENT=$(coverage report | tail -n 1 | awk '{print $NF}' | sed 's/%//')
+#     - |
+#       if [ $(echo "$COVERAGE_PERCENT < 50" | bc) -eq 1 ]; then 
+#         echo "Coverage is below 50%. Exiting..."
+#         exit 1
+#       fi
+#   artifacts:
+#     paths:
+#       - test-reports/
+#     expire_in: 1 week
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+#       changes:
+#         - alacrity_backend/**/*
 
 test-backend:
   stage: test
@@ -141,9 +439,40 @@ test-backend:
 
 
 
-
-
-
+        
+# 3. Testing - Frontend 
+test-frontend:
+  stage: test
+  #TODO: fix this thing    it is the most redundant thing and i need it refactored
+  script:
+    - cd alacrity_frontend
+    # FIXME : i am not sure if this is the right way to do it
+    - npm ci
+    - echo "Running frontend tests..."
+    - npm run test -- --coverage
+    - npm run test -- --coverage --coverageReporters=json-summary
+    - echo "Extracting Coverage Metrics..."
+    - STATEMENTS_COVERAGE=$(grep -o '"statements":{"total":[0-9]*,"covered":[0-9]*,"skipped":[0-9]*,"pct":[0-9.]*' coverage/coverage-summary.json | awk -F':' '{print $NF}')
+    - FUNCTIONS_COVERAGE=$(grep -o '"functions":{"total":[0-9]*,"covered":[0-9]*,"skipped":[0-9]*,"pct":[0-9.]*' coverage/coverage-summary.json | awk -F':' '{print $NF}')
+    - BRANCHES_COVERAGE=$(grep -o '"branches":{"total":[0-9]*,"covered":[0-9]*,"skipped":[0-9]*,"pct":[0-9.]*' coverage/coverage-summary.json | awk -F':' '{print $NF}')
+    - LINES_COVERAGE=$(grep -o '"lines":{"total":[0-9]*,"covered":[0-9]*,"skipped":[0-9]*,"pct":[0-9.]*' coverage/coverage-summary.json | awk -F':' '{print $NF}')
+    - echo $STATEMENTS_COVERAGE%
+    - echo  $FUNCTIONS_COVERAGE%
+    - echo  $BRANCHES_COVERAGE%
+    - echo  $LINES_COVERAGE%
+    - if [ "$STATEMENTS_COVERAGE" -lt 40 ]; then echo ; exit 1; fi   # 20 for this branch to go in 
+    - if [ "$FUNCTIONS_COVERAGE" -lt 40 ]; then echo ; exit 1; fi
+    - if [ "$BRANCHES_COVERAGE" -lt 40 ]; then echo ; exit 1; fi
+    - if [ "$LINES_COVERAGE" -lt 40 ]; then echo ; exit 1; fi
+    - echo "Coverage Metrics extracted successfully!"
+  artifacts:
+    paths:
+      - alacrity_frontend/coverage/
+    expire_in: 1 week
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - alacrity_frontend/**/*
 # 5. Build - Frontend
 build-frontend:
   stage: build
@@ -174,12 +503,3 @@ dev:
       changes:
         - alacrity_frontend/**/*
 
-# # 7. Deployment (Not functional yet)
-# deploy:
-#   stage: deploy
-#   script:
-#     - echo "Deploying..."
-#   rules:
-#     - if: '$CI_COMMIT_BRANCH == "main"'
-#   environment:
-#     name: production
