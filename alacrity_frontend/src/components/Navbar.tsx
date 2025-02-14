@@ -37,14 +37,11 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
           <Link href="/" className={buttonVariants({ variant: "ghost" })}>
             Home
           </Link>
-          <Link href="/" className={buttonVariants({ variant: "ghost" })}>
+          <Link href="#" className={buttonVariants({ variant: "ghost" })}>
             About
           </Link>
           {userRole ? (
             <>
-              <Link href="/account" className={buttonVariants({ variant: "ghost" })}>
-                My Account
-              </Link>
               <Bell className="w-5 h-5 text-primary hover:fill-primary" />
             </>
           ) : (
