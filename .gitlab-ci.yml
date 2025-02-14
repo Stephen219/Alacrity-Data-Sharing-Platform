@@ -415,10 +415,17 @@ test-backend:
     - apt-get update && apt-get install -y default-mysql-client
     - pip install -r requirements.txt
     - pip install coverage mysqlclient
+    # drop the database and recreate it
+    - mysql -h mysql -uroot -e "DROP DATABASE IF EXISTS project_db;"
+    - mysql -h mysql -uroot -e "CREATE DATABASE project_db;"
+
     # flush the database
     - python manage.py flush --no-input
     # make migrations and migratecd ..
-    
+    - python manage.py migrate --fake
+
+
+
     - python manage.py makemigrations
     - python manage.py migrate
     
