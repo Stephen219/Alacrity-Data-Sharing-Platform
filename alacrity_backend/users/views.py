@@ -9,13 +9,15 @@ from django.middleware.csrf import get_token
 from django.contrib.auth import authenticate
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
-# from users.serializer import RegisterSerializer
+
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model, authenticate
 from django.db import transaction
 from rest_framework.permissions import AllowAny
+from rest_framework import status
+
+from .serializers import RegisterSerializer
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
@@ -58,12 +60,14 @@ class LoginView(APIView):
                 }, status=status.HTTP_200_OK)
             else:
                 return Response({
-                    'error': 'Invalid password'
+                    'error': 'Invalid password or email combination'
                 }, status=status.HTTP_401_UNAUTHORIZED)
 
         except Exception as e:
+            print(e)
             return Response({
-                'error': f'An error occurred: {str(e)}'
+
+                'error': 'An error occurred while trying to log you in',
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -72,16 +76,11 @@ class CSRFTokenView(View):
         return JsonResponse({"csrfToken": get_token(request)})
     
 
-class RegisterView(APIView):
-    permission_classes = [AllowAny]
-    pass
-    
-=======
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import AllowAny
-from .serializers import RegisterSerializer
+
+
+
+
+
 
 def generate_username(first_name: str, last_name: str) -> str:
     """

@@ -106,15 +106,11 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'project_db',
         'USER': 'root',
-<<<<<<< alacrity_backend/alacrity_backend/settings.py
-        'PASSWORD':os.environ.get('DATABASE_PASSWORD'),
-=======
-        'PASSWORD': os.environ.get("DATABASE_PASSWORD"),
->>>>>>> alacrity_backend/alacrity_backend/settings.py
+        'PASSWORD': "Foundation,219",
         'HOST': 'localhost',
         'PORT': '3306',
         'TEST': {
-            'NAME': 'test_project_db',  # Unique test database name
+            'NAME': 'test_project_db',  
         }
     }
 }

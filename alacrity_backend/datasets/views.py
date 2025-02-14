@@ -24,89 +24,10 @@ renderer = JSONRenderer()
 def is_valid_url(url):
     try:
         result = urlparse(url)
-        return all([result.scheme, result.netloc, result.path])  # Check if the url is valid
+        return all([result.scheme, result.netloc, result.path])  
     except:
         return False
-# Create your views here.
-# @csrf_protect
-# @role_required(['organization_admin, contributor'])
-# @api_view(['POST'])
-# def create_dataset(request):
-#     if request.method == 'POST':    #
-#         # Get the data from the request
-#         data = request.data # if any error   use data2 = request.dat  // removed post because i need the file
-#         file = request.FILES.get('file')
-#         if not file:
-#             return Response({'error': 'No file uploaded'}, status=400)
-#         file_extension = file.name.split(".")[-1]
-#         file1 = file.name.split(".")[0]
-#         unique_filename = f"{uuid.uuid4()}_{file1}.{file_extension}"
-#         file_name = default_storage.save(unique_filename, file)
-#         file_url = default_storage.url(file_name)
-#         print(f"File uploaded successfully: {type(file_url)}") 
-#         cleaned_minio_url = re.sub(r'^https?://', '', file_url)
-#         print(cleaned_minio_url)
-#         data['fileUrl'] = file_url
-    
 
-#         # extract the data from the request
-#         title = data.get('title')
-          
-#         category = data.get('category')
-       
-#         link = data.get('fileUrl')
-       
-#         description = data.get('description')
-      
-#         # TODO: Add organization and user id to the dataset
-
-#         # validating the data 
-#         errors = {} # This will hold the errors
-
-#         # Check if the title is empty
-#         if not title:
-#             errors['title'] = 'Title is required'
-#             print(errors)
-#         elif len(title) > 100:
-#             errors['title'] = 'Title is too long'
-#             print(errors)
-#         # validate the link
-#         if not link:
-#             errors['link'] = 'Link is required'
-#             print(errors)   
-#         elif not is_valid_url(link):
-#             errors['link'] = 'Invalid link'
-#             print(errors)   
-        
-#         # validate the description
-#         if not description:
-#             errors['description'] = 'Description is required'
-#             print(errors)
-#         elif len(description) < 10:
-#             errors['description'] = 'Description is too short'
-#             print(errors)   
-#         elif len(description) > 255545678:
-#             errors['description'] = 'Description is too long'
-#             print(errors)   
-        
-#         # If there are errors, return the errors
-#         if errors:
-#             return Response(errors, status=500)
-        
-        
-#         dataset = Dataset(title=title, category=category, link=link, description=description)
-
-#         try:
-#             dataset.save()
-#         except Exception as e:
-#             print(e)
-#             return Response({'error': "An error occurred while creating the dataset"}, status=500)
-        
-        
-#         return Response({'message': 'Dataset created successfully'}, status=201)
-#     else:
-#         # return JsonResponse({'error': 'Method not allowed'}, status=405)
-#         return Response({'message': 'Dataset created successfully'}, status=201)
         
     
 
@@ -120,7 +41,7 @@ def create_dataset(request):
     if request.method != 'POST':
         return Response({'error': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-    data = request.data.copy()  # Copy the data to modify
+    data = request.data.copy()  
     file = request.FILES.get('file')
 
     if not file:
