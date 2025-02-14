@@ -118,8 +118,9 @@ We welcome contributions! To contribute:
 5. checkout to the branch created by the merge request
 6. make changes and push to the branch
 
-## License
-This project is licensed under the MIT License.
+## Guides
+1.  A complete guide on how the authentication is implementesd and how to interact with it can be found [here](https://git.cardiff.ac.uk/c2051028/alacrity/-/wikis/authentication)
+
 
 ## Authors
 
