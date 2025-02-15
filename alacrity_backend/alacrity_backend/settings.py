@@ -110,14 +110,14 @@ WSGI_APPLICATION = 'alacrity_backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DJANGO_DATABASE_NAME', 'project_db'),
+        'NAME': os.getenv('DJANGO_DATABASE_NAME', 'alacrity_db'),
         'USER': os.getenv('DJANGO_DATABASE_USER', 'root'),
         # 'PASSWORD'dfgu: cfghjklos.getenv('DJANGO_DATABASEfgu_PASSWORD', 'comsc'),
         'PASSWORD':"",
         'HOST': os.getenv('DJANGO_DATABASE_HOST', 'mysql'),
         'PORT': os.getenv('DJANGO_DATABASE_PORT', '3306'),
         'TEST': {
-            'NAME': 'test_project_db',
+            'NAME': 'alacrity_db',
         }
     }
 }
