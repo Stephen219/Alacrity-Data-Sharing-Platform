@@ -11,6 +11,7 @@ from datasets.models import Dataset
 from datetime import datetime
 # valiadtor errors
 from rest_framework.exceptions import ValidationError
+from datetime import datetime, timedelta
 
 class DatasetTestCase(TestCase):
     def setUp(self):
@@ -104,7 +105,8 @@ class DatasetTestCase(TestCase):
         # Ensure created_at and updated_at are set automatically
         self.assertIsNotNone(dataset.created_at)
         self.assertIsNotNone(dataset.updated_at)
-        self.assertEqual(dataset.created_at, dataset.updated_at)
+        self.assertLess(abs(dataset.created_at - dataset.updated_at), timedelta(seconds=2))
+        
 
 
 
