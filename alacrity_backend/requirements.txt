@@ -22,6 +22,18 @@ django-minio-storage
 pillow
 rest_framework_simplejwt
 
+# for background tasks
+
+# for authentication
+# djangorestframework-jwt
+djangorestframework-simplejwt
+Pillow
+
+
+
+
+
+
 
 
 

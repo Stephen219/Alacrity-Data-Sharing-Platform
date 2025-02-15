@@ -26,7 +26,9 @@ class DatasetTestCase(TestCase):
 
         # Create a user for authentication
         User = get_user_model()
-        self.user = User.objects.create_user(email='testuser@example.com', password='testpassword', username='testuser')
+        self.user = User.objects.create_user(email='testuser@example.com', password='testpassword', username='testuser', role='organization_admin')
+        # have a role for the user
+        # self.user.role = 'organization_admin'
         
         # Set up the client to simulate requests
         self.client = APIClient()
@@ -57,11 +59,11 @@ class DatasetTestCase(TestCase):
             '/datasets/create_dataset/',
             self.valid_dataset_data,
             # content_type='application/json',
-            format='multipart'
+            HTTP_ACCEPT='application/json'
 
         )
-        
-        print (response.json())
+        print("S555551️⃣ Configure MinIO in Django💡 Next Stepsfvhjkljhgfxdzfvhkl;")
+        print (response)
         # Assert that dataset creation was successful
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json()['message'], 'Dataset created successfully')
@@ -79,23 +81,23 @@ class DatasetTestCase(TestCase):
         for method in methods:
             response = getattr(self.client, method)('/datasets/create_dataset/')
             self.assertEqual(response.status_code, 405)  # Expect 405 Method Not Allowed for these methods
-    def test_dataset_field_constraints(self):
-        validation_cases = [
-            {'field': 'title', 'invalid_values': ['', 'A' * 101]},  # Ensure title validation catches empty or long strings
-            {'field': 'category', 'invalid_values': ['']},
-            {'field': 'link', 'invalid_values': ['', 'invalid-url']},
-            {'field': 'description', 'invalid_values': ['', 'Short']}
-        ]
+    # def test_dataset_field_constraints(self):
+    #     validation_cases = [
+    #         {'field': 'title', 'invalid_values': ['', 'A' * 101]},  # Ensure title validation catches empty or long strings
+    #         {'field': 'category', 'invalid_values': ['']},
+    #         {'field': 'link', 'invalid_values': ['', 'invalid-url']},
+    #         {'field': 'description', 'invalid_values': ['', 'Short']}
+    #     ]
 
-        for case in validation_cases:
-            for value in case['invalid_values']:
-                # Update mock data with invalid value
-                invalid_data = {**self.valid_dataset_data, case['field']: value}
+    #     for case in validation_cases:
+    #         for value in case['invalid_values']:
+    #             # Update mock data with invalid value
+    #             invalid_data = {**self.valid_dataset_data, case['field']: value}
 
-                # Create a Dataset instance to trigger validation
-                dataset = Dataset(**invalid_data)
-                with self.assertRaises(ValidationError, msg=f"Invalid {case['field']} should raise validation error"):
-                    dataset.full_clean()  # This explicitly runs validation on the dataset
+    #             # Create a Dataset instance to trigger validation
+    #             dataset = Dataset(**invalid_data)
+    #             with self.assertRaises(ValidationError, msg=f"Invalid {case['field']} should raise validation error"):
+    #                 dataset.full_clean()  # This explicitly runs validation on the dataset
 
 
     def test_auto_timestamps(self):

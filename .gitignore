@@ -18,7 +18,6 @@ alacrity_frontend/node_modules
 # Ignore compiled Python files
 *.pyc
 /alacrity_backend/datasets/htmlcov
-<<<<<<< HEAD
 # Ignore the virtual environment
 /alacrity_backend/venv/
 # all log files
@@ -28,6 +27,6 @@ alacrity_frontend/node_modules
 
 /alacrity_backend/.env
 /alacrity_backend/alacrity_backend/.env
-=======
 /alacrity_frontend/node_modules
->>>>>>> origin/46-as-a-user-i-would-want-to-sign-up-successfully-into-the-account-frontend
+/alacrity_backend/background_task.log
+/alacrity_backend/users/serializer.py
