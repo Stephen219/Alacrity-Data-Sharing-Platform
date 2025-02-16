@@ -6,9 +6,8 @@ class User(AbstractUser):
     ROLE_CHOICES = [
         ('organization_admin', 'Organization Admin'),
         ('admin', 'Admin'),
-        ('contributor', 'Contributor'),
-        ('researcher', 'Researcher'),
-        ('user', 'User'), 
+        ('employee', 'organization_employee'), 
+        ('user', 'Researcher'), # default role
     ]
     
     email = models.EmailField(
