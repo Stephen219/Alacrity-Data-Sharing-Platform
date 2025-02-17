@@ -130,7 +130,7 @@ export default function PreAnalysis() {
               </thead>
               <tbody>
               {Object.entries(analysisData.missing_values)
-                  .filter(([_unused, count]) => count > 0) 
+                  .filter(([, count]) => count > 0) 
                   .map(([col, count]) => (
                     <tr key={col}>
                       <td className="border px-4 py-2">{col}</td>
