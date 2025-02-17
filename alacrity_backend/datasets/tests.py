@@ -26,7 +26,7 @@ class DatasetTestCase(TestCase):
 
         # Create a user for authentication
         User = get_user_model()
-        self.user = User.objects.create_user(email='testuser@example.com', password='testpassword', username='testuser', role='organization_admin')
+        self.user = User.objects.create_user(email='testuser@example.com', password='testpassword', username='testuser', role='user')
         # have a role for the user
         # self.user.role = 'organization_admin'
         

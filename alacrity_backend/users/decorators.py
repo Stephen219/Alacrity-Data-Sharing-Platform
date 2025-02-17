@@ -59,6 +59,12 @@ def role_required(allowed_roles=[]):
 
                 user, token = auth_result
                 print(f"Authenticated user: {user.email}, Role: {user.role}")
+                
+                if not hasattr(user, 'role'):
+                    return Response({'error': 'User role not found'}, status=status.HTTP_400_BAD_REQUEST)
+
+                print(f"Authenticated user: {user.email}, Role: {user.role}")
+
 
                 if user.role in allowed_roles:
                     request.user = user
@@ -66,6 +72,11 @@ def role_required(allowed_roles=[]):
                 else:
                     print(f"Access denied: User role {user.role} not in {allowed_roles}")
                     return Response({'error': 'Insufficient permissions'}, status=status.HTTP_403_FORBIDDEN)
+                
+
+            except (InvalidToken, TokenError) as e:
+                print(f"JWT Token Error: {str(e)}")
+                return Response({'error': 'Invalid or expired token'}, status=status.HTTP_401_UNAUTHORIZED)
 
             except Exception as e:
                 print(f"Error in role_required: {str(e)}")

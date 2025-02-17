@@ -24,6 +24,7 @@ variables:
   # MYSQL_ROOT_PASSWORD: "comsc"
   # MYSQL_DATABASE: "project_db"
   PYTHON_VERSION: "3.10"
+  CI: 'true'
 
 
 

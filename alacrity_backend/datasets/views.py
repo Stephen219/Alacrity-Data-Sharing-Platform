@@ -14,9 +14,9 @@ import re
 from users.decorators import role_required
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.renderers import JSONRenderer
+# from rest_framework.renderers import JSONRenderer
 
-renderer = JSONRenderer()
+# renderer = JSONRenderer()
 
 
 # this view creates the datases in the database, in future it will be updated to include the organization and user id by checking in the user who is logged in while making the request
@@ -38,6 +38,8 @@ def is_valid_url(url):
 @api_view(['POST'])
 def create_dataset(request):
     print("Request data:", request.data)
+    print ("request headers :", request.headers)
+    print ("request body :", request.body)
     if request.method != 'POST':
         return Response({'error': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
