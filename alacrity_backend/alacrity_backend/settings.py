@@ -36,6 +36,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'corsheaders',
     'django.contrib.admin',
 
 
@@ -47,7 +48,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'corsheaders',
     'alacrity_backend',
     'datasets',
     'storages',
@@ -60,8 +60,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -106,7 +106,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'project_db',
         'USER': 'root',
-        'PASSWORD': "Foundation,219",
+        'PASSWORD': os.getenv("DATABASE_PASSWORD"),
         'HOST': 'localhost',
         'PORT': '3306',
         'TEST': {
@@ -141,9 +141,9 @@ CORS_ORIGIN_ALLOW_ALL = False
 ################################  file storage config  ##############################################################
 
 # MINIO_URL = "http://localhost:9000" 
-MINIO_URL = "https://6f05-131-251-254-121.ngrok-free.app"
-MINIO_ACCESS_KEY = "minioadmin"
-MINIO_SECRET_KEY = "minioadmin"
+MINIO_URL = "http://10.72.98.137:9000"
+MINIO_ACCESS_KEY = "admin"
+MINIO_SECRET_KEY = "Notgood1"
 MINIO_BUCKET_NAME = "alacrity"
 
 
@@ -242,7 +242,7 @@ from datetime import timedelta
 # }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=1/3),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,
