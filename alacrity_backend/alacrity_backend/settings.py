@@ -25,7 +25,7 @@ load_dotenv()
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY ="dertfgyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+SECRET_KEY ="9cdf91842b864472c0570e917223afcc51a390b39a083a3f0de114cadf408f41"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -37,10 +37,6 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'django.contrib.admin',
-
-
-
-
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -101,7 +97,6 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': os.getenv('DJANGO_DATABASE_NAME', 'alacrity_db'),
         'USER': os.getenv('DJANGO_DATABASE_USER', 'root'),
-        # 'PASSWORD'dfgu: cfghjklos.getenv('DJANGO_DATABASEfgu_PASSWORD', 'comsc'),
 
         'PASSWORD':"" if IS_GITLAB_CI else os.getenv('DJANGO_DATABASE_PASSWORD', 'Foundation,219'),
         'HOST': os.getenv('DJANGO_DATABASE_HOST', 'mysql'),
@@ -159,18 +154,6 @@ AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
 
 AWS_S3_REGION_NAME = 'us-east-1'  
 ##########################################***####################################################
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 import pymysql
