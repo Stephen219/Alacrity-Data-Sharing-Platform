@@ -25,7 +25,7 @@ load_dotenv()
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY", "default-secret-key")
+SECRET_KEY ="9cdf91842b864472c0570e917223afcc51a390b39a083a3f0de114cadf408f41"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -37,10 +37,6 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'django.contrib.admin',
-
-
-
-
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -90,30 +86,27 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'alacrity_backend.wsgi.application'
 
+IS_GITLAB_CI = os.getenv('CI', 'false').lower() == 'true'
 
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
+
+
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'project_db',
-        'USER': 'root',
-        'PASSWORD': "Foundation,219",
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': os.getenv('DJANGO_DATABASE_NAME', 'alacrity_db'),
+        'USER': os.getenv('DJANGO_DATABASE_USER', 'root'),
+
+        'PASSWORD':"" if IS_GITLAB_CI else os.getenv('DJANGO_DATABASE_PASSWORD', 'Foundation,219'),
+        'HOST': os.getenv('DJANGO_DATABASE_HOST', 'mysql'),
+        'PORT': os.getenv('DJANGO_DATABASE_PORT', '3306'),
         'TEST': {
-            'NAME': 'test_project_db',  
+            'NAME': 'alacrity_db',
         }
     }
 }
+
 
 
 CORS_ALLOWED_ORIGINS = [
@@ -138,12 +131,12 @@ CORS_ORIGIN_ALLOW_ALL = False
 
 
 
-################################  file storage config  ##############################################################
+################################  file stosssrage config  ##############################################################
 
 # MINIO_URL = "http://localhost:9000" 
-MINIO_URL = "https://6f05-131-251-254-121.ngrok-free.app"
-MINIO_ACCESS_KEY = "minioadmin"
-MINIO_SECRET_KEY = "minioadmin"
+MINIO_URL = "http://10.72.98.137:9000"
+MINIO_ACCESS_KEY = "admin"
+MINIO_SECRET_KEY = "Notgood1"
 MINIO_BUCKET_NAME = "alacrity"
 
 
@@ -161,18 +154,6 @@ AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
 
 AWS_S3_REGION_NAME = 'us-east-1'  
 ##########################################***####################################################
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 import pymysql
@@ -200,14 +181,7 @@ AUTH_PASSWORD_VALIDATORS = [
 #3####################################################################
 # auth 
 AUTH_USER_MODEL = 'users.User'
-# REST_FRAMEWORK = {
-#     'DEFAULT_AUTHENTICATION_CLASSES': (
-#         'rest_framework_simplejwt.authentication.JWTAuthentication',
-#     ),
-#     'DEFAULT_RENDERER_CLASSES': [
-#         'rest_framework.renderers.JSONRenderer',
-#     ]
-# }
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -234,20 +208,15 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 from datetime import timedelta
-# SIMPLE_JWT = {
-#     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-#     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-#     'ROTATE_REFRESH_TOKENS': False,
-#     'BLACKLIST_AFTER_ROTATION': True,
-# }
+
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=1/3),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,
     'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,  # Use Django's SECRET_KEY instead of hardcoded value
+    'SIGNING_KEY': SECRET_KEY, 
     'VERIFYING_KEY': None,
     'AUTH_HEADER_TYPES': ('Bearer',),
     'USER_ID_FIELD': 'id',
