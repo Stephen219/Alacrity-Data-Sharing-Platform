@@ -80,7 +80,8 @@ export default function PreAnalysis() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <>
+      <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-xl font-bold mb-4">Select a Dataset for Pre-Analysis</h1>
       {error && <p className="text-red-500">{error}</p>}
 
@@ -162,5 +163,6 @@ export default function PreAnalysis() {
         </div>
       )}
     </div>
+    </>
   );
 }

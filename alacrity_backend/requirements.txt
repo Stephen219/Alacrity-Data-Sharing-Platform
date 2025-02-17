@@ -4,6 +4,8 @@ djangorestframework
 pymysql
 django-cors-headers
 nanoid
+pandas
+scipy
 
 # dotenv
 python-dotenv
