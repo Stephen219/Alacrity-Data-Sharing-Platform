@@ -623,6 +623,161 @@ variables:
 
 
 
+# test-backend:
+#   stage: test
+#   image: python:${PYTHON_VERSION}
+#   services:
+#     - name: mariadb:10.5
+#       alias: mysql
+#       variables:
+#         MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+#         MYSQL_DATABASE: ${MYSQL_DATABASE}
+#   variables:
+#     MYSQL_HOST: mysql
+#     MYSQL_TCP_PORT: 3306
+#     MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+#     MYSQL_DATABASE: ${MYSQL_DATABASE}
+    
+#   before_script:
+#     - cd alacrity_backend
+#     - apt-get update
+#     - apt-get install -y mariadb-client netcat-traditional
+    
+#     # Enhanced debug information
+#     - echo "Current environment:"
+#     - env | grep -E "MYSQL|MARIADB"
+#     - echo "Testing DNS resolution:"
+#     - getent hosts mysql || echo "DNS lookup failed"
+    
+#     # Modified wait script with better error handling
+#     - |
+#       echo "Waiting for MariaDB to be ready..."
+#       max_attempts=30
+#       counter=0
+#       while ! nc -z mysql 3306; do
+#         counter=$((counter + 1))
+#         if [ $counter -eq $max_attempts ]; then
+#           echo "Could not connect to MariaDB after $max_attempts attempts"
+#           echo "Network debugging information:"
+#           netstat -tuln
+#           ping -c 1 mysql || echo "Ping failed"
+#           exit 1
+#         fi
+#         echo "Attempt $counter: Waiting for MariaDB..."
+#         sleep 5
+#       done
+      
+#       echo "Port is open, testing MySQL connection..."
+#       until mysql -h mysql -uroot -p${MYSQL_ROOT_PASSWORD} -e "SELECT 1;" >/dev/null 2>&1; do
+#         counter=$((counter + 1))
+#         if [ $counter -eq $max_attempts ]; then
+#           echo "Could not establish MySQL connection after $max_attempts attempts"
+#           exit 1
+#         fi
+#         echo "Attempt $counter: Waiting for MySQL to accept connections..."
+#         sleep 5
+#       done
+      
+#       echo "Configuring database access..."
+#       mysql -h mysql -uroot -p${MYSQL_ROOT_PASSWORD} -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';"
+#       mysql -h mysql -uroot -p${MYSQL_ROOT_PASSWORD} -e "FLUSH PRIVILEGES;"
+#       echo "Successfully connected to MariaDB!"
+    
+#     # Install Python requirements
+#     - pip install --no-cache-dir -r requirements.txt
+#     - pip install coverage mysqlclient
+#   script:
+#     - echo "Running backend tests..."
+#     - coverage run --omit="*/migrations/*" manage.py test
+#     - coverage report
+#     - COVERAGE_PERCENT=$(coverage report | tail -n 1 | awk '{print $NF}' | sed 's/%//')
+#     - |
+#       if [ $(echo "$COVERAGE_PERCENT < 50" | bc) -eq 1 ]; then 
+#         echo "Coverage is below 50%. Exiting..."
+#         exit 1
+#       fi
+#   artifacts:
+#     paths:
+#       - test-reports/
+#     expire_in: 1 week
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+#       changes:
+#         - alacrity_backend/**/*
+
+# test-backend:
+#   stage: test
+#   image: python:${PYTHON_VERSION}
+#   services:
+#     - name: mariadb:10.5
+#       alias: mysql
+#       variables:
+#         MYSQL_DATABASE: project_db
+#         MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+#         MYSQL_ROOT_HOST: "%"
+#   variables:
+#     MYSQL_HOST: mysql
+#     MYSQL_TCP_PORT: 3306
+#     MYSQL_DATABASE: project_db
+#     DATABASE_URL: mysql://root@mysql:3306/${MYSQL_DATABASE}
+    
+#   before_script:
+#     - cd alacrity_backend
+#     - apt-get update && apt-get install -y default-mysql-client
+#     - pip install -r requirements.txt
+#     - pip install coverage mysqlclient
+#     # drop the database and recreate it
+#     - mysql -h mysql -uroot -e "DROP DATABASE IF EXISTS project_db;"
+#     - mysql -h mysql -uroot -e "CREATE DATABASE project_db;"
+#     - mysql -h mysql -uroot -e "ALTER TABLE django_content_type ADD COLUMN name VARCHAR(50) NOT NULL DEFAULT 'anyName';"
+    
+
+
+#     # flush the database
+#     - python manage.py flush --no-input
+#     # make migrations and migrate using --fake-initial to mark migrations as applied
+#      # make migrations and migratecd ..
+#     - python manage.py migrate --fake
+   
+#     - python manage.py migrate contenttypes --fake-initial
+  
+
+
+#     - python manage.py makemigrations
+#     - python manage.py migrate contenttypes
+#     - python manage.py migrate --noinput
+    
+#   script:
+#     - echo "Running backend tests..."
+#     - python manage.py test
+#     - coverage run --omit="*/migrations/*" manage.py test
+#     - coverage report
+#     - COVERAGE_PERCENT=$(coverage report | tail -n 1 | awk '{print $NF}' | sed 's/%//')
+#     - |
+#       if [ $(echo "$COVERAGE_PERCENT < 50" | bc) -eq 1 ]; then 
+#         echo "Coverage is below 50%. Exiting..."
+#         exit 1
+#       fi
+#   artifacts:
+#     paths:
+#       - test-reports/
+#     expire_in: 1 week
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+#       changes:
+#         - alacrity_backend/**/*
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
