@@ -26,15 +26,14 @@ default_storage = S3Boto3Storage()
 
 # this view creates the datases in the database, in future it will be updated to include the organization and user id by checking in the user who is logged in while making the request
 
-# def is_valid_url(url):
-#     try:
-#         result = urlparse(url)
-#         return all([result.scheme, result.netloc, result.path])  
-#     except:
-#         return False
+def is_valid_url(url):
+    try:
+        result = urlparse(url)
+        return all([result.scheme, result.netloc, result.path])  
+    except:
+        return False
 
     
-
 
 
 
@@ -45,24 +44,27 @@ def create_dataset(request):
     if request.method != 'POST':
         return Response({'error': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-    file = request.FILES.get('file')  # ✅ FIXED
+    # Retrieve uploaded file
+    file = request.FILES.get('file')
 
     if not file:
         return Response({'error': 'No file uploaded'}, status=status.HTTP_400_BAD_REQUEST)
 
+    # Generate a unique filename
     file_extension = file.name.split(".")[-1]
     file1 = file.name.split(".")[0]
     unique_filename = f"{uuid.uuid4()}_{file1}.{file_extension}"
 
+    # Save the file and get its URL
     file_name = default_storage.save(unique_filename, file)
     file_url = default_storage.url(file_name)
 
     print(f"File uploaded successfully: {file_url}")
 
-    # Extract data
+    # Extract data from request
     title = request.data.get('title')
     category = request.data.get('category')
-    link = file_url  # ✅ FIXED
+    link = file_url  # Use the uploaded file URL as the link
     description = request.data.get('description')
 
     # Validation
@@ -88,6 +90,7 @@ def create_dataset(request):
     if errors:
         return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
+    # Create and save dataset
     dataset = Dataset(title=title, category=category, link=link, description=description)
 
     try:
@@ -99,6 +102,7 @@ def create_dataset(request):
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     return Response({'message': 'Dataset created successfully'}, status=status.HTTP_201_CREATED)
+
 
 
 
