@@ -28,8 +28,8 @@ def is_valid_url(url):
     except:
         return False
 
-        
     
+
 
 
 
@@ -37,14 +37,10 @@ def is_valid_url(url):
 @role_required(['organization_admin', 'contributor'])
 @api_view(['POST'])
 def create_dataset(request):
-    print("Request data:", request.data)
-    print ("request headers :", request.headers)
-    print ("request body :", request.body)
     if request.method != 'POST':
         return Response({'error': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-    data = request.data.copy()  
-    file = request.FILES.get('file')
+    file = request.FILES.get('file')  # ✅ FIXED
 
     if not file:
         return Response({'error': 'No file uploaded'}, status=status.HTTP_400_BAD_REQUEST)
@@ -52,20 +48,17 @@ def create_dataset(request):
     file_extension = file.name.split(".")[-1]
     file1 = file.name.split(".")[0]
     unique_filename = f"{uuid.uuid4()}_{file1}.{file_extension}"
-    
+
     file_name = default_storage.save(unique_filename, file)
     file_url = default_storage.url(file_name)
-    
-    print(f"File uploaded successfully: {type(file_url)}")
+
     print(f"File uploaded successfully: {file_url}")
-    
-    data['fileUrl'] = file_url
 
     # Extract data
-    title = data.get('title')
-    category = data.get('category')
-    link = data.get('fileUrl')
-    description = data.get('description')
+    title = request.data.get('title')
+    category = request.data.get('category')
+    link = file_url  # ✅ FIXED
+    description = request.data.get('description')
 
     # Validation
     errors = {}
@@ -96,12 +89,11 @@ def create_dataset(request):
         dataset.save()
         print(f"Dataset created successfully: {dataset}")
     except Exception as e:
-        print(e)
         print(f"An error occurred while creating the dataset: {e}")
-        return Response({'erro  r': "An error occhhhurred while creating the dataset"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({'error': "An error occurred while creating the dataset"},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     return Response({'message': 'Dataset created successfully'}, status=status.HTTP_201_CREATED)
-
 
 
 

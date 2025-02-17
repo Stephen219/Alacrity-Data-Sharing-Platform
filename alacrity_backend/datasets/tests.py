@@ -44,16 +44,12 @@ class DatasetTestCase(TestCase):
         return login_response.data['access_token']
 
     def test_create_valid_dataset(self):
-        # Log in and get the access token
+       
         token = self.login_and_get_token()
         
-        # Use the token for authorization in the header
+     
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
-        
-        # Now make the actual request to create the dataset
-        # append file to the data
         test_file = SimpleUploadedFile("test_file.txt", b"File content here", content_type="text/plain")
-        # Prepare mock data for the dataset
         self.valid_dataset_data['file'] = test_file
         response = self.client.post(
             '/datasets/create_dataset/',
@@ -64,23 +60,21 @@ class DatasetTestCase(TestCase):
         )
         print("S555551️⃣ Configure MinIO in Django💡 Next Stepsfvhjkljhgfxdzfvhkl;")
         print (response)
-        # Assert that dataset creation was successful
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json()['message'], 'Dataset created successfully')
 
     def test_create_dataset_method_not_allowed(self):
         methods = ['get', 'put', 'delete', 'patch']
-
-        # Log in and get the access token
         token = self.login_and_get_token()
-
-        # Use the token for authorization in the header
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
-
-        # Test for each of the methods that should return 405
         for method in methods:
             response = getattr(self.client, method)('/datasets/create_dataset/')
-            self.assertEqual(response.status_code, 405)  # Expect 405 Method Not Allowed for these methods
+            self.assertEqual(response.status_code, 405)  # Expect 405 Method Not Allowed for these methods\
+
+
+
+
+            
     # def test_dataset_field_constraints(self):
     #     validation_cases = [
     #         {'field': 'title', 'invalid_values': ['', 'A' * 101]},  # Ensure title validation catches empty or long strings
