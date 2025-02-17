@@ -34,7 +34,7 @@ class DatasetTestCase(TestCase):
         self.client = APIClient()
 
     def login_and_get_token(self):
-        # Make a POST request to login and get the JWT token
+        
         login_response = self.client.post('/users/login/', {
             'email': 'testuser@example.com',
             'password': 'testpassword',
@@ -58,8 +58,8 @@ class DatasetTestCase(TestCase):
             HTTP_ACCEPT='application/json'
 
         )
-        print("S555551️⃣ Configure MinIO in Django💡 Next Stepsfvhjkljhgfxdzfvhkl;")
-        print (response)
+       
+       
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json()['message'], 'Dataset created successfully')
 
