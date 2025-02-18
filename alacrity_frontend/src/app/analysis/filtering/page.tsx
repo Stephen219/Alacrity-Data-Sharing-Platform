@@ -29,21 +29,25 @@ export default function FilterAndClean() {
   const [filters, setFilters] = useState<FilterCondition[]>([]);
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
   const [selectAllColumns, setSelectAllColumns] = useState(false);
-  const [filteredData, setFilteredData] = useState<any[]>([]);
+  interface FilteredRow {
+    [key: string]: string | number | boolean | null;
+  }
+  const [filteredData, setFilteredData] = useState<FilteredRow[]>([]);  
   const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState("");
 
   useEffect(() => {
     async function fetchDatasets() {
-      try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/`, { method: "GET" });
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        const data = await response.json();
-        setDatasets(data.datasets);
-      } catch (err) {
-        console.error(err);
-        setError("Error fetching datasets");
-      }
+        try {
+            const response = await fetchWithAuth(`${API_BASE_URL}/`, { method: "GET" });
+            if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+            const data = await response.json();
+            setDatasets(data.datasets);
+          } catch (error) {
+            console.error("Error fetching datasets:", error); 
+            setError("Error fetching datasets");
+          }
+          
     }
     fetchDatasets();
   }, []);
@@ -51,14 +55,15 @@ export default function FilterAndClean() {
   async function fetchFilterOptions() {
     if (!selectedDataset) return;
     try {
-      const response = await fetchWithAuth(`${API_BASE_URL}/analysis/filter-options/${selectedDataset}/`);
-      if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-      const data = await response.json();
-      setColumns(data.columns);
-    } catch (err) {
-      console.error(err);
-      setError("Error fetching filter options");
-    }
+        const response = await fetchWithAuth(`${API_BASE_URL}/analysis/filter-options/${selectedDataset}/`);
+        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+        const data = await response.json();
+        setColumns(data.columns);
+      } catch (error) {
+        console.error("Error fetching filter options:", error); 
+        setError("Error fetching filter options");
+      }
+      
   }
 
   function handleSelectAllColumns() {
@@ -188,6 +193,13 @@ export default function FilterAndClean() {
       ))}
       <button onClick={addFilter} className="mt-2 bg-gray-500 text-white p-2 rounded-md">+ Add Filter</button>
       <button onClick={applyFilters} className="ml-4 bg-green-500 text-white p-2 rounded-md">Apply</button>
+
+      {error && (
+  <div className="mt-2 text-red-600 bg-red-100 p-2 rounded-md">
+    {error}
+  </div>
+)}
+
 
       {paginatedData.length > 0 && (
         <div className="mt-4 p-4 border rounded-md bg-gray-100 overflow-auto max-h-[500px]">

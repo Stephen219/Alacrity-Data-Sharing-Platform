@@ -16,6 +16,7 @@ django-storages
 boto3
 django-storages[boto3]
 minio
+redis
 
 # for minio
 django-minio-storage
