@@ -7,8 +7,9 @@ import { usePathname } from "next/navigation";
 
 //// edit the function below
 const getUserRole = (): "organisation" | "researcher" | null => {
-"organisation";
+  return "organisation"; // You can modify this to return the appropriate value dynamically
 };
+
 
 type NavbarProps = {
   toggleSidebar: () => void;
