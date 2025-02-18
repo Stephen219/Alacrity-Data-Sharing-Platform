@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 
 //// edit the function below
 const getUserRole = (): "organisation" | "researcher" | null => {
- "";
+"organisation";
 };
 
 type NavbarProps = {
