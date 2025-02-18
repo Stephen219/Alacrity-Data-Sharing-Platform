@@ -138,22 +138,17 @@ minio_client = Minio(
 
 def fetch_dataset_from_minio(dataset_url):
     """Fetch dataset from MinIO and return as a Pandas DataFrame"""
-
     bucket_name = "alacrity"
-
     object_name = dataset_url.split("/")[-1]
 
     try:
         response = minio_client.get_object(bucket_name, object_name)
-        
         df = pd.read_csv(io.BytesIO(response.read()))
-        
-        print(f"Dataset loaded: {df.shape}")  # Debugging: Check if dataset is loaded
+        print(f"Dataset loaded: {df.shape}")  # Debugging
         return df
     except Exception as e:
-        print(f"Error fetching dataset from MinIO: {e}")  # Debugging
+        print(f"Error fetching dataset from MinIO: {e}")
         return None
-
 
 
 @api_view(['GET'])
