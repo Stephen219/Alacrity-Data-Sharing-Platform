@@ -6,8 +6,8 @@ class User(AbstractUser):
     ROLE_CHOICES = [
         ('organization_admin', 'Organization Admin'),
         ('admin', 'Admin'),
-        ('employee', 'organization_employee'), 
-        ('user', 'Researcher'), # default role
+        ('contributor', 'organization_employee'), 
+        ('researcher', 'Researcher'), # default role
     ]
     
     email = models.EmailField(
@@ -44,7 +44,7 @@ class User(AbstractUser):
         return self.role == 'admin'
 
     def is_contributor(self):
-        return self.role == 'contributor'
+        return self.role == 'employee'
 
     def is_researcher(self):
         return self.role == 'researcher'

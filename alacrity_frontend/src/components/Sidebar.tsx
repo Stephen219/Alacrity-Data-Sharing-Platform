@@ -2,6 +2,8 @@
 import React from "react";
 import NavItems from "./NavItems";
 
+
+/// edit the function below
 const getUserRole = (): "organisation" | "researcher" | null => {
   return "organisation"; // authentication needs to be implemented
 };

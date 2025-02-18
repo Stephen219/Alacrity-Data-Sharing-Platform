@@ -5,8 +5,9 @@ import Link from "next/link";
 import { buttonVariants } from "./ui/button";
 import { usePathname } from "next/navigation";
 
+//// edit the function below
 const getUserRole = (): "organisation" | "researcher" | null => {
-  return "organisation"; // Simulated user role
+ "";
 };
 
 type NavbarProps = {
