@@ -151,7 +151,7 @@ def fetch_dataset_from_minio(dataset_url):
 
 
 @api_view(['GET'])
-def get_datasets(request):
+def get_datasetss(request):
     try:
         datasets = Dataset.objects.all().values("dataset_id", "title", "category", "description", "link")
         return JsonResponse({"datasets": list(datasets)}, safe=False)
