@@ -76,12 +76,6 @@ class CSRFTokenView(View):
         return JsonResponse({"csrfToken": get_token(request)})
     
 
-
-
-
-
-
-
 def generate_username(first_name: str, last_name: str) -> str:
     """
     Generates a unique username based on the first name and last name.
@@ -157,5 +151,4 @@ class RegisterView(APIView):
                 {"error": "Registration failed", "details": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
 

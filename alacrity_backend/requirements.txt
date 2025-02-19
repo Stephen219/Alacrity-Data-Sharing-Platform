@@ -5,6 +5,7 @@ pymysql
 django-cors-headers
 nanoid
 
+
 # dotenv
 python-dotenv
 
