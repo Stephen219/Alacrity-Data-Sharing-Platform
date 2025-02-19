@@ -10,6 +10,6 @@ urlpatterns = [
     path("analysis/pre-analysis/<str:dataset_id>/", pre_analysis, name="pre-analysis"),
     path("analysis/descriptive/<str:dataset_id>/", descriptive_statistics, name="descriptive-statistics"),
     path('analysis/filter-options/<str:dataset_id>/', get_filter_options, name='get_filter_options'),
-    path('analysis/filter/<str:dataset_id>/', filter_and_clean_dataset, name='filter_and_clean_dataset'),
+    path('analysis/filter/<str:dataset_id>/', filter_and_clean_dataset, name='filter_clean_aggregate_dataset'),
 ]
 
