@@ -20,7 +20,6 @@ interface FilterCondition {
 }
 
 const API_BASE_URL = "http://127.0.0.1:8000/datasets";
-const ROWS_PER_PAGE = 100; // Display 100 rows per page
 
 export default function FilterAndClean() {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
@@ -28,56 +27,58 @@ export default function FilterAndClean() {
   const [columns, setColumns] = useState<ColumnInfo>({});
   const [filters, setFilters] = useState<FilterCondition[]>([]);
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
-  const [selectAllColumns, setSelectAllColumns] = useState(false);
-  interface FilteredRow {
-    [key: string]: string | number | boolean | null;
-  }
-  const [filteredData, setFilteredData] = useState<FilteredRow[]>([]);  
-  const [currentPage, setCurrentPage] = useState(1);
   const [error, setError] = useState("");
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [analysisResults, setAnalysisResults] = useState<Record<string, unknown> | null>(null);
+  const [selectedAnalysis, setSelectedAnalysis] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchDatasets() {
-        try {
-            const response = await fetchWithAuth(`${API_BASE_URL}/`, { method: "GET" });
-            if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-            const data = await response.json();
-            setDatasets(data.datasets);
-          } catch (error) {
-            console.error("Error fetching datasets:", error); 
-            setError("Error fetching datasets");
-          }
-          
+      try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/`, { method: "GET" });
+        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+        const data = await response.json();
+        setDatasets(data.datasets);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (_err) {
+        setError("Error fetching datasets");
+      }
     }
     fetchDatasets();
   }, []);
 
-  async function fetchFilterOptions() {
-    if (!selectedDataset) return;
-    try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/analysis/filter-options/${selectedDataset}/`);
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        const data = await response.json();
-        setColumns(data.columns);
-      } catch (error) {
-        console.error("Error fetching filter options:", error); 
-        setError("Error fetching filter options");
-      }
-      
-  }
+  useEffect(() => {
+    if (selectedDataset) {
+      fetchFilterOptions();
+    }
+  }, [selectedDataset]);
 
-  function handleSelectAllColumns() {
-    setSelectAllColumns(!selectAllColumns);
-    setSelectedColumns(selectAllColumns ? [] : Object.keys(columns));
+  async function fetchFilterOptions() {
+    try {
+      const response = await fetchWithAuth(`${API_BASE_URL}/analysis/filter-options/${selectedDataset}/`);
+      if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+      const data = await response.json();
+      setColumns(data.columns);
+      setError("");
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_err) {
+      setError("Error fetching filter options");
+    }
   }
 
   function addFilter() {
     setFilters([...filters, { column: "", operator: "=", value: "" }]);
   }
 
-  function updateFilter(index: number, key: keyof FilterCondition, value: string) {
+  function updateFilter(index: number, key: keyof FilterCondition, value: string | number) {
     const updatedFilters = [...filters];
-    updatedFilters[index][key] = value;
+  
+    if (key === "column" || key === "operator") {
+      updatedFilters[index][key] = String(value);
+    } else {
+      updatedFilters[index][key] = value;
+    }
+  
     setFilters(updatedFilters);
   }
 
@@ -87,8 +88,6 @@ export default function FilterAndClean() {
       return;
     }
 
-    console.log("Sending filter request:", { filters, columns: selectedColumns });
-
     try {
       const response = await fetchWithAuth(`${API_BASE_URL}/analysis/filter/${selectedDataset}/`, {
         method: "POST",
@@ -96,139 +95,170 @@ export default function FilterAndClean() {
         headers: { "Content-Type": "application/json" },
       });
 
-      console.log("Request Sent:", response);
-
-      if (!response.ok) {
-        throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
-      }
+      if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
 
       const data = await response.json();
-      console.log("Filtered Data Received:", data.filtered_data);
-
-      if (data.filtered_data.length === 0) {
-        console.warn("Rows don't match the filter criteria.");
-      }
-
-      setFilteredData(data.filtered_data);
-      setCurrentPage(1); 
-    } catch (err) {
-      console.error("Error applying filters:", err);
+      setSessionId(data.session_id);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_err) {
       setError("Error applying filters.");
     }
   }
 
+  async function performAnalysis() {
+    if (!selectedDataset || !selectedAnalysis) {
+      setError("Please select a dataset and an analysis type.");
+      return;
+    }
   
-  const paginatedData = filteredData.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE);
-  const totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE);
+    let url = `${API_BASE_URL}/analysis/${selectedAnalysis}/${selectedDataset}/`;
+  
+    if (sessionId) {
+      url += `?session_id=${encodeURIComponent(sessionId)}`;
+    }
+  
+    try {
+      const response = await fetchWithAuth(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+  
+      if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+  
+      const data = await response.json();
+      setAnalysisResults(data);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_err) {
+      setError("Error performing analysis.");
+    }
+  }  
 
   return (
     <MaxWidthWrapper>
-      <h1 className="text-xl font-bold">Filter & Clean Data</h1>
+      <h1 className="text-xl font-bold mb-4">Dataset Analysis</h1>
 
-      <select onChange={(e) => setSelectedDataset(e.target.value)} className="p-2 border rounded-md">
-        <option value="">Select Dataset</option>
-        {datasets.map((dataset) => (
-          <option key={dataset.dataset_id} value={dataset.dataset_id}>{dataset.title}</option>
-        ))}
-      </select>
+      <div className="mb-4">
+        <label className="block mb-2 font-medium">Select Dataset</label>
+        <select 
+          value={selectedDataset || ""}
+          onChange={(e) => setSelectedDataset(e.target.value)} 
+          className="p-2 border rounded-md w-full"
+        >
+          <option value="">Choose a dataset</option>
+          {datasets.map((dataset) => (
+            <option key={dataset.dataset_id} value={dataset.dataset_id}>
+              {dataset.title}
+            </option>
+          ))}
+        </select>
+      </div>
 
-      <button onClick={fetchFilterOptions} className="ml-4 bg-primary text-white p-2 rounded-md">Load Filters</button>
-
-      {Object.keys(columns).length > 0 && (
-        <div>
-          <h2 className="text-lg font-bold mt-4">Select Columns to Display</h2>
-          <label>
-            <input
-              type="checkbox"
-              checked={selectAllColumns}
-              onChange={handleSelectAllColumns}
-            />
-            Select All
-          </label>
+      {selectedDataset && Object.keys(columns).length > 0 && (
+        <div className="mb-4">
+          <h2 className="text-lg font-bold mb-2">Select Columns</h2>
           <div className="grid grid-cols-2 gap-2">
             {Object.keys(columns).map((col) => (
-              <label key={col}>
+              <label key={col} className="flex items-center space-x-2">
                 <input
                   type="checkbox"
                   checked={selectedColumns.includes(col)}
-                  onChange={() =>
-                    setSelectedColumns(selectedColumns.includes(col)
-                      ? selectedColumns.filter((c) => c !== col)
-                      : [...selectedColumns, col])
-                  }
+                  onChange={() => {
+                    if (selectedColumns.includes(col)) {
+                      setSelectedColumns(selectedColumns.filter(c => c !== col));
+                    } else {
+                      setSelectedColumns([...selectedColumns, col]);
+                    }
+                  }}
                 />
-                {col}
+                <span>{col}</span>
               </label>
             ))}
           </div>
         </div>
       )}
 
-      <h2 className="text-lg font-bold mt-4">Apply Filters</h2>
-      {filters.map((filter, index) => (
-        <div key={index} className="flex gap-2 mt-2">
-          <select onChange={(e) => updateFilter(index, "column", e.target.value)} className="border p-2 rounded-md">
-            <option value="">Select Column</option>
-            {Object.keys(columns).map((col) => (
-              <option key={col} value={col}>{col}</option>
-            ))}
-          </select>
+      <div className="mb-4">
+        <h2 className="text-lg font-bold mb-2">Filters</h2>
+        {filters.map((filter, index) => (
+          <div key={index} className="flex gap-2 mb-2">
 
-          <select onChange={(e) => updateFilter(index, "operator", e.target.value)} className="border p-2 rounded-md">
-            <option value="=">=</option>
-            <option value=">">&gt;</option>
-            <option value="<">&lt;</option>
-            <option value=">=">≥</option>
-            <option value="<=">≤</option>
-          </select>
-
-          <input
-            type="text"
-            onChange={(e) => updateFilter(index, "value", e.target.value)}
-            className="border p-2 rounded-md"
-            placeholder="Value"
-            list={`unique-values-${index}`}
-          />
-        </div>
-      ))}
-      <button onClick={addFilter} className="mt-2 bg-gray-500 text-white p-2 rounded-md">+ Add Filter</button>
-      <button onClick={applyFilters} className="ml-4 bg-green-500 text-white p-2 rounded-md">Apply</button>
-
-      {error && (
-  <div className="mt-2 text-red-600 bg-red-100 p-2 rounded-md">
-    {error}
-  </div>
-)}
-
-
-      {paginatedData.length > 0 && (
-        <div className="mt-4 p-4 border rounded-md bg-gray-100 overflow-auto max-h-[500px]">
-          <h2 className="text-lg font-bold">Filtered Results</h2>
-          <table className="w-full border-collapse border border-gray-300">
-            <thead>
-              <tr className="bg-gray-200">
-                {Object.keys(paginatedData[0]).map((key) => (
-                  <th key={key} className="border border-gray-300 p-2">{key}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedData.map((row, index) => (
-                <tr key={index} className="even:bg-gray-50">
-                  {Object.values(row).map((value, cellIndex) => (
-                    <td key={cellIndex} className="border border-gray-300 p-2">
-                      {typeof value === "string" || typeof value === "number" ? value : JSON.stringify(value)}
-                    </td>
-                  ))}
-                </tr>
+            <select
+              value={filter.column}
+              onChange={(e) => updateFilter(index, "column", e.target.value)}
+              className="p-2 border rounded-md flex-1"
+            >
+              <option value="">Select Column</option>
+              {Object.keys(columns).map((col) => (
+                <option key={col} value={col}>{col}</option>
               ))}
-            </tbody>
-          </table>
-          <div className="flex justify-center mt-4">
-            <button onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="p-2 bg-gray-400 text-white rounded-md mx-2">Previous</button>
-            <span className="p-2">Page {currentPage} of {totalPages}</span>
-            <button onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))} disabled={currentPage >= totalPages} className="p-2 bg-gray-400 text-white rounded-md mx-2">Next</button>
+            </select>
+
+            <select
+              value={filter.operator}
+              onChange={(e) => updateFilter(index, "operator", e.target.value)}
+              className="p-2 border rounded-md w-1/4"
+            >
+              <option value="=">=</option>
+              <option value="!=">≠</option>
+              <option value=">">{">"}</option>
+              <option value="<">{"<"}</option>
+              <option value=">=">≥</option>
+              <option value="<=">≤</option>
+            </select>
+
+            <input
+              type="text"
+              value={filter.value}
+              onChange={(e) => updateFilter(index, "value", e.target.value)}
+              className="p-2 border rounded-md flex-1"
+              placeholder="Enter value"
+            />
           </div>
+        ))}
+        <button onClick={addFilter} className="bg-gray-200 px-4 py-2 rounded-md">
+          + Add Filter
+        </button>
+      </div>
+
+      {/* add your analyses here guys */}
+      <div className="mb-4">
+        <label className="block mb-2 font-medium">Select Analysis</label>
+        <select
+          value={selectedAnalysis || ""}
+          onChange={(e) => setSelectedAnalysis(e.target.value)}
+          className="p-2 border rounded-md w-full"
+        >
+          <option value="">Choose analysis type</option>
+          <option value="pre-analysis">Pre-Analysis</option>
+          <option value="descriptive">Descriptive Statistics</option>
+          {/* <option value="aggregate">Aggregation</option> */}
+        </select>
+      </div>
+
+      <div className="flex gap-4 mb-4">
+        <button
+          onClick={applyFilters}
+          className="bg-blue-500 text-white px-4 py-2 rounded-md"
+        >
+          Apply Filters
+        </button>
+        <button
+          onClick={performAnalysis}
+          className="bg-green-500 text-white px-4 py-2 rounded-md"
+        >
+          Perform Analysis
+        </button>
+      </div>
+
+      {error && <div className="text-red-500 mb-4">{error}</div>}
+
+      {/* Analysis results */}
+      {analysisResults && (
+        <div className="mt-4 p-4 border rounded-md bg-gray-100">
+          <h2 className="text-lg font-bold mb-4">Analysis Results</h2>
+          <pre className="bg-white p-2 rounded-md overflow-x-auto">
+            {JSON.stringify(analysisResults, null, 2)}
+          </pre>
         </div>
       )}
     </MaxWidthWrapper>

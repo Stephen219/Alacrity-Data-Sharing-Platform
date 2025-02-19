@@ -11,42 +11,40 @@ interface Dataset {
 }
 
 interface PreAnalysisData {
-  dataset_id: string;
-  title: string;
-  category: string;
-  description: string;
-  columns: Record<string, string>; 
-  missing_values: Record<string, number>; 
-  categorical_summary: Record<string, number>; 
+  total_rows: number;
+  columns: string[];
+  missing_values: Record<string, number>;
+  categorical_summary: Record<string, number>;
   duplicate_rows: number;
 }
 
-const API_BASE_URL = "http://127.0.0.1:8000/datasets"; // Django API base URL
+const API_BASE_URL = "http://127.0.0.1:8000/datasets";
 
 export default function PreAnalysis() {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [selectedDataset, setSelectedDataset] = useState<string | null>(null);
   const [analysisData, setAnalysisData] = useState<PreAnalysisData | null>(null);
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchDatasets() {
       try {
-        console.log("Fetching datasets...");
         const response = await fetchWithAuth(`${API_BASE_URL}/`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
-          mode: "cors",
         });
 
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
 
         const data = await response.json();
-        console.log("Fetched Datasets:", data);
-        setDatasets(data.datasets);
-      } catch (err) {
-        console.error("Fetch error:", err);
-        setError(`Error fetching datasets: ${err}`);
+        setDatasets(Array.isArray(data.datasets) ? data.datasets : []);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(`Error fetching datasets: ${err.message}`);
+        } else {
+          setError("Error fetching datasets: Unknown error occurred.");
+        }
       }
     }
 
@@ -55,39 +53,48 @@ export default function PreAnalysis() {
 
   async function fetchPreAnalysis() {
     if (!selectedDataset) {
-      console.error("No dataset selected!");
       setError("Please select a dataset first.");
       return;
     }
 
-    try {
-      console.log(`Fetching pre-analysis for dataset: ${selectedDataset}`);
-      const response = await fetchWithAuth(`${API_BASE_URL}/analysis/pre-analysis/${selectedDataset}/`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        mode: "cors",
-      });
+    setLoading(true);
+    setError(null);
 
-      if (!response.ok) throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+    try {
+      const response = await fetchWithAuth(
+        `${API_BASE_URL}/analysis/pre-analysis/${selectedDataset}/`,
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
 
       const data = await response.json();
-      console.log("Parsed Pre-Analysis Data:", data);
       setAnalysisData(data);
-    } catch (err) {
-      console.error("Fetch error:", err);
-      setError(`Error fetching pre-analysis: ${err}`);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(`Error fetching pre-analysis: ${err.message}`);
+      } else {
+        setError("Error fetching pre-analysis: Unknown error occurred.");
+      }
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <>
-      <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-xl font-bold mb-4">Select a Dataset for Pre-Analysis</h1>
       {error && <p className="text-red-500">{error}</p>}
 
       <div className="flex items-center gap-4">
         <select
-          onChange={(e) => setSelectedDataset(e.target.value)}
+          onChange={(e) => {
+            setSelectedDataset(e.target.value);
+            setAnalysisData(null);
+          }}
           value={selectedDataset || ""}
           className="p-2 border rounded-md"
         >
@@ -99,21 +106,21 @@ export default function PreAnalysis() {
           ))}
         </select>
 
-        {selectedDataset && (
-          <button 
-            onClick={fetchPreAnalysis}
-            className="px-4 py-2 bg-primary text-white rounded-md"
-          >
-            Perform Pre-Analysis
-          </button>
-        )}
+        <button
+          onClick={fetchPreAnalysis}
+          disabled={!selectedDataset || loading}
+          className={`px-4 py-2 rounded-md text-white ${
+            selectedDataset ? "bg-primary" : "bg-gray-400 cursor-not-allowed"
+          }`}
+        >
+          {loading ? "Running..." : "Run Pre-Analysis"}
+        </button>
       </div>
 
-      {analysisData && selectedDataset === analysisData.dataset_id && (
+      {analysisData && (
         <div className="mt-6 border p-4 rounded-md">
-          <h2 className="text-lg font-semibold mb-4">Pre-Analysis for {analysisData.title}</h2>
-          <p className="text-gray-700"><b>Category:</b> {analysisData.category}</p>
-          <p className="text-gray-700"><b>Description:</b> {analysisData.description}</p>
+          <h2 className="text-lg font-semibold mb-4">Pre-Analysis Results</h2>
+          <p className="text-gray-700"><b>Total Rows:</b> {analysisData.total_rows}</p>
 
           <h3 className="text-lg font-semibold mt-4">Duplicate Rows</h3>
           <p className="text-gray-700">{analysisData.duplicate_rows} duplicate rows found.</p>
@@ -130,15 +137,14 @@ export default function PreAnalysis() {
                 </tr>
               </thead>
               <tbody>
-              {Object.entries(analysisData.missing_values)
-                  .filter(([, count]) => count > 0) 
+                {Object.entries(analysisData.missing_values)
+                  .filter(([, count]) => count > 0)
                   .map(([col, count]) => (
                     <tr key={col}>
                       <td className="border px-4 py-2">{col}</td>
                       <td className="border px-4 py-2">{count}</td>
                     </tr>
                   ))}
-
               </tbody>
             </table>
           )}
@@ -163,6 +169,5 @@ export default function PreAnalysis() {
         </div>
       )}
     </div>
-    </>
   );
 }
