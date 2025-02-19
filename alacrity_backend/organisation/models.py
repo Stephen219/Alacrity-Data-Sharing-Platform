@@ -33,10 +33,14 @@ class Organization(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        verbose_name = _("Organization")
+        verbose_name_plural = _("Organizations")
+    
+# creating a model for the contributor table
+# this model will be used to create the contributor table in the database
+# the contributor table will store the details of the contributors which will be linked to the organization table
 
-from django.db import models
-from django.contrib.auth.hashers import make_password
-from django.utils.translation import gettext_lazy as _
 
 class Contributor(models.Model):
     ROLE_CHOICES = [
