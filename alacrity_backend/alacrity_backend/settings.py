@@ -110,7 +110,7 @@ DATABASES = {
 
 
 CORS_ALLOWED_ORIGINS = [
-    # FRONTEND_URL, 
+    FRONTEND_URL, 
     "http://127.0.0.1:3000",
     "http://localhost:3000",
 ]
@@ -123,10 +123,32 @@ CORS_ALLOW_HEADERS = [
     'origin',
     'x-requested-with',
     'x-csrftoken',
+    'x-requested-with',
+    'accept-encoding',
+    'accept-language',
+    'cache-control',
+    'connection',
+    'content-length',
+    'content-type',
+    'cookie',
+    'host',
+    'origin',
+]
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_ALLOW_ALL = False
+
+CORS_ALLOW_CREDENTIALS = True
+
 
 
 
