@@ -25,7 +25,7 @@ export default function PreAnalysis() {
   const [selectedDataset, setSelectedDataset] = useState<string | null>(null);
   const [analysisData, setAnalysisData] = useState<PreAnalysisData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchDatasets() {
@@ -38,9 +38,13 @@ export default function PreAnalysis() {
         if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
 
         const data = await response.json();
-        setDatasets(Array.isArray(data) ? data : data.datasets);
-      } catch (err: any) {
-        setError(`Error fetching datasets: ${err.message || "Unknown error"}`);
+        setDatasets(Array.isArray(data.datasets) ? data.datasets : []);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(`Error fetching datasets: ${err.message}`);
+        } else {
+          setError("Error fetching datasets: Unknown error occurred.");
+        }
       }
     }
 
@@ -54,11 +58,11 @@ export default function PreAnalysis() {
     }
 
     setLoading(true);
-    setError("");
+    setError(null);
 
     try {
       const response = await fetchWithAuth(
-        `${API_BASE_URL}/analysis/pre-analysis/${selectedDataset}/`, // ✅ Always full dataset
+        `${API_BASE_URL}/analysis/pre-analysis/${selectedDataset}/`,
         {
           method: "GET",
           headers: { "Content-Type": "application/json" },
@@ -69,8 +73,12 @@ export default function PreAnalysis() {
 
       const data = await response.json();
       setAnalysisData(data);
-    } catch (err) {
-      setError(`Error fetching pre-analysis: ${err}`);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(`Error fetching pre-analysis: ${err.message}`);
+      } else {
+        setError("Error fetching pre-analysis: Unknown error occurred.");
+      }
     } finally {
       setLoading(false);
     }
@@ -85,7 +93,7 @@ export default function PreAnalysis() {
         <select
           onChange={(e) => {
             setSelectedDataset(e.target.value);
-            setAnalysisData(null); // ✅ Reset analysis when switching datasets
+            setAnalysisData(null);
           }}
           value={selectedDataset || ""}
           className="p-2 border rounded-md"
@@ -101,7 +109,9 @@ export default function PreAnalysis() {
         <button
           onClick={fetchPreAnalysis}
           disabled={!selectedDataset || loading}
-          className={`px-4 py-2 rounded-md text-white ${selectedDataset ? "bg-primary" : "bg-gray-400 cursor-not-allowed"}`}
+          className={`px-4 py-2 rounded-md text-white ${
+            selectedDataset ? "bg-primary" : "bg-gray-400 cursor-not-allowed"
+          }`}
         >
           {loading ? "Running..." : "Run Pre-Analysis"}
         </button>
@@ -128,7 +138,7 @@ export default function PreAnalysis() {
               </thead>
               <tbody>
                 {Object.entries(analysisData.missing_values)
-                  .filter(([, count]) => count > 0) 
+                  .filter(([, count]) => count > 0)
                   .map(([col, count]) => (
                     <tr key={col}>
                       <td className="border px-4 py-2">{col}</td>

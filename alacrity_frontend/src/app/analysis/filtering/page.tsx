@@ -20,7 +20,6 @@ interface FilterCondition {
 }
 
 const API_BASE_URL = "http://127.0.0.1:8000/datasets";
-const RESULTS_PER_PAGE = 10;
 
 export default function FilterAndClean() {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
@@ -30,10 +29,8 @@ export default function FilterAndClean() {
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [analysisResults, setAnalysisResults] = useState<Record<string, any> | null>(null);
+  const [analysisResults, setAnalysisResults] = useState<Record<string, unknown> | null>(null);
   const [selectedAnalysis, setSelectedAnalysis] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     async function fetchDatasets() {
@@ -42,8 +39,8 @@ export default function FilterAndClean() {
         if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
         const data = await response.json();
         setDatasets(data.datasets);
-      } catch (err) {
-        console.error(err);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (_err) {
         setError("Error fetching datasets");
       }
     }
@@ -63,63 +60,50 @@ export default function FilterAndClean() {
       const data = await response.json();
       setColumns(data.columns);
       setError("");
-    } catch (err) {
-      console.error(err);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_err) {
       setError("Error fetching filter options");
     }
   }
 
   function addFilter() {
-    const defaultColumn = Object.keys(columns)[0] || "";
-  
-    setFilters([...filters, { column: defaultColumn, operator: "=", value: "" }]);
+    setFilters([...filters, { column: "", operator: "=", value: "" }]);
   }
-  
 
   function updateFilter(index: number, key: keyof FilterCondition, value: string | number) {
-    setFilters((prevFilters) => {
-      const updatedFilters = [...prevFilters];
+    const updatedFilters = [...filters];
   
-      if (key === "column" || key === "operator") {
-        updatedFilters[index] = { ...updatedFilters[index], [key]: String(value) };
-      } else {
-        updatedFilters[index] = { ...updatedFilters[index], [key]: value }; 
-      }
+    if (key === "column" || key === "operator") {
+      updatedFilters[index][key] = String(value);
+    } else {
+      updatedFilters[index][key] = value;
+    }
   
-      return updatedFilters;
-    });
-  }  
-  
+    setFilters(updatedFilters);
+  }
 
   async function applyFilters() {
     if (!selectedDataset) {
       setError("Please select a dataset first.");
       return;
     }
-  
-    const validFilters = filters.filter(filter => filter.column.trim() !== "");
-  
-    if (validFilters.length === 0) {
-      setError("Please select at least one valid filter.");
-      return;
-    }
-  
+
     try {
       const response = await fetchWithAuth(`${API_BASE_URL}/analysis/filter/${selectedDataset}/`, {
         method: "POST",
-        body: JSON.stringify({ filters: validFilters, columns: selectedColumns }),
+        body: JSON.stringify({ filters, columns: selectedColumns }),
         headers: { "Content-Type": "application/json" },
       });
-  
+
       if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-  
+
       const data = await response.json();
       setSessionId(data.session_id);
-      setError(""); 
-    } catch (err) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_err) {
       setError("Error applying filters.");
     }
-  }  
+  }
 
   async function performAnalysis() {
     if (!selectedDataset || !selectedAnalysis) {
@@ -131,9 +115,6 @@ export default function FilterAndClean() {
   
     if (sessionId) {
       url += `?session_id=${encodeURIComponent(sessionId)}`;
-      console.log("Running analysis on filtered dataset with session ID:", sessionId);
-    } else {
-      console.log("Running analysis on full dataset");
     }
   
     try {
@@ -145,9 +126,9 @@ export default function FilterAndClean() {
       if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
   
       const data = await response.json();
-      console.log("Analysis Response:", data);
       setAnalysisResults(data);
-    } catch (err) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_err) {
       setError("Error performing analysis.");
     }
   }  
@@ -197,48 +178,49 @@ export default function FilterAndClean() {
       )}
 
       <div className="mb-4">
-  <h2 className="text-lg font-bold mb-2">Filters</h2>
-  {filters.map((filter, index) => (
-    <div key={index} className="flex gap-2 mb-2">
-      <select
-        value={filter.column}
-        onChange={(e) => updateFilter(index, "column", e.target.value)}
-        className="p-2 border rounded-md flex-1"
-      >
-        <option value="">Select Column</option>
-        {Object.keys(columns).map((col) => (
-          <option key={col} value={col}>{col}</option>
+        <h2 className="text-lg font-bold mb-2">Filters</h2>
+        {filters.map((filter, index) => (
+          <div key={index} className="flex gap-2 mb-2">
+
+            <select
+              value={filter.column}
+              onChange={(e) => updateFilter(index, "column", e.target.value)}
+              className="p-2 border rounded-md flex-1"
+            >
+              <option value="">Select Column</option>
+              {Object.keys(columns).map((col) => (
+                <option key={col} value={col}>{col}</option>
+              ))}
+            </select>
+
+            <select
+              value={filter.operator}
+              onChange={(e) => updateFilter(index, "operator", e.target.value)}
+              className="p-2 border rounded-md w-1/4"
+            >
+              <option value="=">=</option>
+              <option value="!=">≠</option>
+              <option value=">">{">"}</option>
+              <option value="<">{"<"}</option>
+              <option value=">=">≥</option>
+              <option value="<=">≤</option>
+            </select>
+
+            <input
+              type="text"
+              value={filter.value}
+              onChange={(e) => updateFilter(index, "value", e.target.value)}
+              className="p-2 border rounded-md flex-1"
+              placeholder="Enter value"
+            />
+          </div>
         ))}
-      </select>
+        <button onClick={addFilter} className="bg-gray-200 px-4 py-2 rounded-md">
+          + Add Filter
+        </button>
+      </div>
 
-      <select
-        value={filter.operator}
-        onChange={(e) => updateFilter(index, "operator", e.target.value)}
-        className="p-2 border rounded-md w-1/4"
-      >
-        <option value="=">=</option>
-        <option value="!=">≠</option>
-        <option value=">">{">"}</option>
-        <option value="<">{"<"}</option>
-        <option value=">=">≥</option>
-        <option value="<=">≤</option>
-      </select>
-
-      <input
-        type="text"
-        value={filter.value}
-        onChange={(e) => updateFilter(index, "value", e.target.value)}
-        className="p-2 border rounded-md flex-1"
-        placeholder="Enter value"
-      />
-    </div>
-  ))}
-  <button onClick={addFilter} className="bg-gray-200 px-4 py-2 rounded-md">
-    + Add Filter
-  </button>
-</div>
-
-      {/* Update this part if you want to add new analysis */}
+      {/* add your analyses here guys */}
       <div className="mb-4">
         <label className="block mb-2 font-medium">Select Analysis</label>
         <select
@@ -249,7 +231,7 @@ export default function FilterAndClean() {
           <option value="">Choose analysis type</option>
           <option value="pre-analysis">Pre-Analysis</option>
           <option value="descriptive">Descriptive Statistics</option>
-          {/*<option value="aggregate">Aggregation</option>*/}
+          {/* <option value="aggregate">Aggregation</option> */}
         </select>
       </div>
 
@@ -270,7 +252,7 @@ export default function FilterAndClean() {
 
       {error && <div className="text-red-500 mb-4">{error}</div>}
 
-      {/* This shows the analysis results */}
+      {/* Analysis results */}
       {analysisResults && (
         <div className="mt-4 p-4 border rounded-md bg-gray-100">
           <h2 className="text-lg font-bold mb-4">Analysis Results</h2>
