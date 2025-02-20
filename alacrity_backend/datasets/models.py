@@ -26,6 +26,13 @@ class Dataset(models.Model):
         max_length=255, 
         validators=[URLValidator()]
     )
+    analysis_link = models.CharField(
+        max_length=255, 
+        validators=[URLValidator()],
+        default= None, 
+        blank=True,
+        null=True
+    )
     description = models.TextField(
         validators=[MinLengthValidator(10)]
     )
@@ -33,7 +40,7 @@ class Dataset(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ['title', 'link']  # Ensure unique combination of title and link
+        unique_together = ['title', 'link'] 
 
         
     def __str__(self):
