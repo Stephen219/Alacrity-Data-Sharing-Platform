@@ -6,21 +6,17 @@ from .serializers import ContributorSerializer
 from rest_framework.permissions import IsAuthenticated
 from django.core.exceptions import ValidationError
 from rest_framework.permissions import BasePermission
-
-class IsOrganizationAdmin(BasePermission):
-    def has_permission(self, request, view):
-        # Check if the authenticated contributor is an organization admin
-        return request.user.role == 'organization_admin'
+from users.decorators import role_required
 
 class AddContributors(APIView):
-    permission_classes = [IsAuthenticated, IsOrganizationAdmin]
+    @role_required ('organization_admin')
 
     def post(self, request):
         # Create a mutable copy of the request data
         data = request.data.copy()
         
         # Add the organization from the authenticated contributor (who is an admin)
-        data['organization'] = request.user.organization.id
+        data['organization'] = request.user.Organization_id
         
         # Handle role assignment
         if 'role' not in data:
@@ -41,7 +37,7 @@ class AddContributors(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class GetContributors(APIView):
-    permission_classes = [IsAuthenticated, IsOrganizationAdmin]
+    @role_required ('organization_admin')
 
     def get(self, request):
         # Get all contributors from the same organization as the authenticated contributor

@@ -4,23 +4,20 @@ from django.core.validators import MinLengthValidator, MaxLengthValidator, URLVa
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+
 def generate_id():
     return generate(size=10)
 
-# creating a model for the organization table
-# this model will be used to create the organization table in the database 
-# the organization table will store the details of the organization which will be linked to the user table
 class Organization(models.Model):
     Organization_id = models.CharField(max_length=10, primary_key=True, default=generate_id, editable=False)  
-    name = models.e = models.CharField(
+    name = models.CharField(
         max_length=100, 
         validators=[
             MinLengthValidator(1), 
             MaxLengthValidator(100)
         ]
     )
-    description = models.TextField( 
-        validators=[MinLengthValidator(10)])
+    description = models.TextField(validators=[MinLengthValidator(10)])
     email = models.EmailField(
         unique=True,
         error_messages={
@@ -36,10 +33,6 @@ class Organization(models.Model):
     class Meta:
         verbose_name = _("Organization")
         verbose_name_plural = _("Organizations")
-    
-# creating a model for the contributor table
-# this model will be used to create the contributor table in the database
-# the contributor table will store the details of the contributors which will be linked to the organization table
 
 
 class Contributor(models.Model):
@@ -79,7 +72,7 @@ class Contributor(models.Model):
         if self.pk is None or not self.password.startswith('pbkdf2_'):
             self.password = make_password(self.password)
         super().save(*args, **kwargs)
-
+    
     class Meta:
         ordering = ['first_name', 'last_name']
         verbose_name = _("Contributor")
