@@ -1,51 +1,42 @@
 from django.shortcuts import render
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_protect, csrf_exempt
-from rest_framework.decorators import api_view
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_protect
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from .models import Dataset
 from urllib.parse import urlparse
-import json
 import uuid
 from storages.backends.s3boto3 import S3Boto3Storage
 from django.core.files.storage import default_storage
-default_storage = S3Boto3Storage()  
-import re
 from users.decorators import role_required
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.renderers import JSONRenderer
 
-renderer = JSONRenderer()
-
-
-# this view creates the datases in the database, in future it will be updated to include the organization and user id by checking in the user who is logged in while making the request
+default_storage = S3Boto3Storage()
 
 def is_valid_url(url):
     try:
         result = urlparse(url)
-        return all([result.scheme, result.netloc, result.path])  
+        return all([result.scheme, result.netloc, result.path])
     except:
         return False
-
-        
-    
-
-
 
 @csrf_protect
 @role_required(['organization_admin', 'contributor'])
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def create_dataset(request):
-    print("Request data:", request.data)
     if request.method != 'POST':
         return Response({'error': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-    data = request.data.copy()  
+    data = request.data.copy()
     file = request.FILES.get('file')
 
     if not file:
         return Response({'error': 'No file uploaded'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Get the authenticated contributor and their organization
+    contributor = request.user  # Assuming request.user is the authenticated Contributor
+    organization = contributor.organization
 
     file_extension = file.name.split(".")[-1]
     file1 = file.name.split(".")[0]
@@ -53,10 +44,7 @@ def create_dataset(request):
     
     file_name = default_storage.save(unique_filename, file)
     file_url = default_storage.url(file_name)
-    
-    print(f"File uploaded successfully: {type(file_url)}")
-    print(f"File uploaded successfully: {file_url}")
-    
+
     data['fileUrl'] = file_url
 
     # Extract data
@@ -67,7 +55,6 @@ def create_dataset(request):
 
     # Validation
     errors = {}
-
     if not title:
         errors['title'] = 'Title is required'
     elif len(title) > 100:
@@ -88,39 +75,44 @@ def create_dataset(request):
     if errors:
         return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
-    dataset = Dataset(title=title, category=category, link=link, description=description)
+    # Create dataset with organization and contributor information
+    dataset = Dataset(
+        title=title,
+        category=category,
+        link=link,
+        description=description,
+        orgid=organization,
+        uploaderid=contributor
+    )
 
     try:
         dataset.save()
-        print(f"Dataset created successfully: {dataset}")
     except Exception as e:
-        print(e)
-        print(f"An error occurred while creating the dataset: {e}")
-        return Response({'erro  r': "An error occhhhurred while creating the dataset"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(
+            {'error': f"An error occurred while creating the dataset: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
     return Response({'message': 'Dataset created successfully'}, status=status.HTTP_201_CREATED)
 
-
-
-
-    
-
-
-# let me test the auth with auth 
-
 @api_view(['GET'])
 @role_required(['organization_admin', 'contributor', 'researcher'])
-
+@permission_classes([IsAuthenticated])
 def get_datasets(request):
-    datasets = Dataset.objects.all()
+    # Get datasets for the user's organization only
+    organization = request.user.organization
+    datasets = Dataset.objects.filter(orgid=organization)
+    
     data = []
-    print(datasets.values())
     for dataset in datasets:
         data.append({
             'id': dataset.dataset_id,
             'title': dataset.title,
             'category': dataset.category,
             'link': dataset.link,
-            'description': dataset.description
+            'description': dataset.description,
+            'uploader': f"{dataset.uploaderid.first_name} {dataset.uploaderid.last_name}",
+            'created_at': dataset.created_at,
+            'updated_at': dataset.updated_at
         })
-    return Response(data, status=200)
+    return Response(data, status=status.HTTP_200_OK)

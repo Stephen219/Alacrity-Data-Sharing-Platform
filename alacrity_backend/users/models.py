@@ -4,7 +4,9 @@ from organisation.models import Organization
 
 class User(AbstractUser):
     ROLE_CHOICES = [
+        ('organization_admin', 'Organization Admin'),
         ('admin', 'Admin'),
+        ('contributor', 'organization_employee'), 
         ('researcher', 'Researcher'), # default role
     ]
     
@@ -40,6 +42,9 @@ class User(AbstractUser):
 
     def is_admin(self):
         return self.role == 'admin'
+
+    def is_contributor(self):
+        return self.role == 'employee'
 
     def is_researcher(self):
         return self.role == 'researcher'

@@ -159,25 +159,8 @@ AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
 AWS_S3_REGION_NAME = 'us-east-1'  
 ##########################################***####################################################
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 import pymysql
 pymysql.install_as_MySQLdb()
-
-
-
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
