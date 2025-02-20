@@ -1,4 +1,7 @@
 from django.urls import path
+from .views import  RegisterView
+# from rest_framfework_simplejwt.views import TokenRefreshView
+# add login vhiejw
 from .views import  RegisterView, LoginView
 from rest_framework_simplejwt.views import TokenRefreshView
 
