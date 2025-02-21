@@ -63,30 +63,158 @@ logger = logging.getLogger(__name__)
 
 import tempfile  # Import tempfile to get system's temp directory
 from nanoid import generate
+## renderers
+from rest_framework.renderers import TemplateHTMLRenderer
+from rest_framework.renderers import JSONRenderer
+from rest_framework.decorators import renderer_classes
+from rest_framework.response import Response
+from django.http import HttpResponse
+from django.shortcuts import render
+
 
 def generate_id():
     return generate(size=10)
 
+# @method_decorator(csrf_exempt, name='dispatch')
+# @renderer_classes((JSONRenderer,))  
+# @method_decorator(role_required(['organization_admin', 'contributor']), name='dispatch')
+# class CreateDatasetView(View):
+#     renderer_classes = [JSONRenderer]  # Specify JSONRenderer explicitly
+
+#     def post(self, request, *args, **kwargs):
+#     # def post(self, request):
+
+        
+        
+
+
+
+
+#         print("inside the post method")
+#         print(request.FILES)
+#         print("receive the post now procing it ")
+#         # measure the time taken to process the request
+#         start = datetime.now()
+#         print("start time is ", start)
+#         try:
+#             file = request.FILES.get('file')
+#             if not file:
+#                 return Response({"error": "No file uploaded"}, status=400)
+#             file_extension = file.name.split(".")[-1]
+#             file_basename = file.name.split(".")[0]
+#             unique_filename = f"{uuid.uuid4()}_{file_basename}.{file_extension}"
+            
+#             # Get a temp directory compatible with Windows/Linux/macOS
+#             temp_dir = tempfile.gettempdir()  
+#             temp_file_path = os.path.join(temp_dir, unique_filename)
+
+#             # Save the file locally first
+#             with open(temp_file_path, "wb") as f:
+#                 for chunk in file.chunks():
+#                     f.write(chunk)
+
+#             print(f"File saved locally at: {temp_file_path}")
+
+#             # Upload to MinIO / S3 storage
+#             file_name = default_storage.save(unique_filename, file)
+#             file_url = default_storage.url(file_name)
+#             print(f"File uploaded to MinIO at: {file_url}")
+
+#             # Extract form data
+#             title = request.POST.get('title')
+#             category = request.POST.get('category')
+#             description = request.POST.get('description')
+
+#             # Validate form data
+#             if not title or len(title) > 100:
+#                 return Response({"error": "Invalid title"}, status=400)
+#             if not description or len(description) < 10 or len(description) > 100000:
+#                 return Response({"error": "Invalid description"}, status=400)
+#             dataset_id1=generate_id()
+#             print(dataset_id1)
+#             print("above is the dataset id")
+
+#             stop = datetime.now()
+#             print("end time is ", stop)
+#             print("time taken is ", stop-start)
+
+#             # Save dataset to database
+#             dataset = Dataset.objects.create(dataset_id=dataset_id1,
+#                 title=title, category=category, link=file_url, description=description
+#             )
+
+#             # Start background thread for correlation calculation
+#             correlation_json_path = os.path.join(temp_dir, f"{uuid.uuid4()}_correlation.json")
+            
+#             thread = threading.Thread(
+#                 target=compute_correlation, 
+#                 args=(temp_file_path, correlation_json_path, dataset_id1)
+                    
+#             )
+#             thread.start()
+            
+
+
+#             return Response({"message": "Dataset created successfully"}, status=201)
+
+#         except Exception as e:
+#             logger.error(f"Error: {e}", exc_info=True)
+#             return Response({"error": "Something went wrong"}, status=500)
+
+
+
+
+
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+import os
+import uuid
+import tempfile
+import threading
+from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 @method_decorator(csrf_exempt, name='dispatch')
-@method_decorator(role_required(['organization_admin', 'contributor']), name='dispatch')
-class CreateDatasetView(View):
-    def post(self, request):
+# @method_decorator(role_required(['organization_admin', 'contributor']), name='dispatch')
+class CreateDatasetView(APIView):
+    from rest_framework.negotiation import DefaultContentNegotiation
+    content_negotiation_class = DefaultContentNegotiation
+    renderer_classes = [JSONRenderer]
+    print (renderer_classes)
+    # configure accepter renderer
+
+    parser_classes = [MultiPartParser, FormParser]
+
+    @role_required(['organization_admin', 'contributor'])
+
+    def post(self, request, *args, **kwargs):
         print("inside the post method")
         print(request.FILES)
-        print("receive the post now procing it ")
-        # measure the time taken to process the request
+        print("receive the post now processing it")
+
+        
         start = datetime.now()
         print("start time is ", start)
+
         try:
             file = request.FILES.get('file')
             if not file:
-                return JsonResponse({"error": "No file uploaded"}, status=400)
+                return Response({"error": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST)
+
             file_extension = file.name.split(".")[-1]
             file_basename = file.name.split(".")[0]
             unique_filename = f"{uuid.uuid4()}_{file_basename}.{file_extension}"
-            
+
             # Get a temp directory compatible with Windows/Linux/macOS
-            temp_dir = tempfile.gettempdir()  
+            temp_dir = tempfile.gettempdir()
             temp_file_path = os.path.join(temp_dir, unique_filename)
 
             # Save the file locally first
@@ -108,41 +236,40 @@ class CreateDatasetView(View):
 
             # Validate form data
             if not title or len(title) > 100:
-                return JsonResponse({"error": "Invalid title"}, status=400)
+                return Response({"error": "Invalid title"}, status=status.HTTP_400_BAD_REQUEST)
             if not description or len(description) < 10 or len(description) > 100000:
-                return JsonResponse({"error": "Invalid description"}, status=400)
-            dataset_id1=generate_id()
+                return Response({"error": "Invalid description"}, status=status.HTTP_400_BAD_REQUEST)
+
+            dataset_id1 = generate_id()
             print(dataset_id1)
             print("above is the dataset id")
 
             stop = datetime.now()
             print("end time is ", stop)
-            print("time taken is ", stop-start)
+            print("time taken is ", stop - start)
 
             # Save dataset to database
-            dataset = Dataset.objects.create(dataset_id=dataset_id1,
-                title=title, category=category, link=file_url, description=description
+            dataset = Dataset.objects.create(
+                dataset_id=dataset_id1,
+                title=title,
+                category=category,
+                link=file_url,
+                description=description
             )
 
             # Start background thread for correlation calculation
             correlation_json_path = os.path.join(temp_dir, f"{uuid.uuid4()}_correlation.json")
-            
             thread = threading.Thread(
-                target=compute_correlation, 
+                target=compute_correlation,
                 args=(temp_file_path, correlation_json_path, dataset_id1)
-                    
             )
             thread.start()
-            
 
-
-            return JsonResponse({"message": "Dataset created successfully"}, status=201)
+            return Response({"message": "Dataset created successfully"}, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             logger.error(f"Error: {e}", exc_info=True)
-            return JsonResponse({"error": "Something went wrong"}, status=500)
-
-
+            return Response({"error": "Something went wrong"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 

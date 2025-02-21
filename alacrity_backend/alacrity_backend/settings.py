@@ -68,6 +68,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'alacrity_backend.urls'
 
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -95,7 +96,7 @@ IS_GITLAB_CI = os.getenv('CI', 'false').lower() == 'true'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DJANGO_DATABASE_NAME', 'alacrity_db'),
+        'NAME': os.getenv('DJANGO_DATABASE_NAME', 'projecte_db'),
         'USER': os.getenv('DJANGO_DATABASE_USER', 'root'),
 
         'PASSWORD':"" if IS_GITLAB_CI else os.getenv('DJANGO_DATABASE_PASSWORD', 'Foundation,219'),
@@ -214,7 +215,11 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',  # Add this
+        'rest_framework.renderers.BrowsableAPIRenderer',  
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.TemplateHTMLRenderer',
+        'rest_framework.renderers.MultiPartRenderer',
+        
     ],
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',
@@ -226,6 +231,10 @@ REST_FRAMEWORK = {
     ],
     'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler'
 }
+
+if DEBUG:
+    REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'].append('rest_framework.renderers.BrowsableAPIRenderer')
+
 
 
 
