@@ -18,6 +18,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.renderers import JSONRenderer
 from scipy.stats import mode
+from django.core.cache import cache
+
 default_storage = S3Boto3Storage() 
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -48,228 +50,79 @@ logger = logging.getLogger(__name__)
 
 # this view creates the datases in the database, in future it will be updated to include the organization and user id by checking in the user who is logged in while making the request
 
-# def is_valid_url(url):
-#     try:
-#         result = urlparse(url)
-#         return all([result.scheme, result.netloc, result.path])  
-#     except:
-#         return False
+def is_valid_url(url):
+    try:
+        result = urlparse(url)
+        return all([result.scheme, result.netloc, result.path])  
+    except:
+        return False
+
+    
 
 
 
 
+@csrf_protect
+@role_required(['organization_admin', 'contributor'])
+@api_view(['POST'])
+def create_dataset(request):
+    if request.method != 'POST':
+        return Response({'error': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
+    file = request.FILES.get('file')  # ✅ FIXED
 
+    if not file:
+        return Response({'error': 'No file uploaded'}, status=status.HTTP_400_BAD_REQUEST)
 
-import tempfile  # Import tempfile to get system's temp directory
-from nanoid import generate
-## renderers
-from rest_framework.renderers import TemplateHTMLRenderer
-from rest_framework.renderers import JSONRenderer
-from rest_framework.decorators import renderer_classes
-from rest_framework.response import Response
-from django.http import HttpResponse
-from django.shortcuts import render
+    file_extension = file.name.split(".")[-1]
+    file1 = file.name.split(".")[0]
+    unique_filename = f"{uuid.uuid4()}_{file1}.{file_extension}"
 
+    file_name = default_storage.save(unique_filename, file)
+    file_url = default_storage.url(file_name)
 
-def generate_id():
-    return generate(size=10)
+    print(f"File uploaded successfully: {file_url}")
 
-# @method_decorator(csrf_exempt, name='dispatch')
-# @renderer_classes((JSONRenderer,))  
-# @method_decorator(role_required(['organization_admin', 'contributor']), name='dispatch')
-# class CreateDatasetView(View):
-#     renderer_classes = [JSONRenderer]  # Specify JSONRenderer explicitly
+    # Extract data
+    title = request.data.get('title')
+    category = request.data.get('category')
+    link = file_url  # ✅ FIXED
+    description = request.data.get('description')
 
-#     def post(self, request, *args, **kwargs):
-#     # def post(self, request):
+    # Validation
+    errors = {}
 
-        
-        
+    if not title:
+        errors['title'] = 'Title is required'
+    elif len(title) > 100:
+        errors['title'] = 'Title is too long'
 
+    if not link:
+        errors['link'] = 'Link is required'
+    elif not is_valid_url(link):
+        errors['link'] = 'Invalid link'
 
+    if not description:
+        errors['description'] = 'Description is required'
+    elif len(description) < 10:
+        errors['description'] = 'Description is too short'
+    elif len(description) > 1000:
+        errors['description'] = 'Description is too long'
 
+    if errors:
+        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
-#         print("inside the post method")
-#         print(request.FILES)
-#         print("receive the post now procing it ")
-#         # measure the time taken to process the request
-#         start = datetime.now()
-#         print("start time is ", start)
-#         try:
-#             file = request.FILES.get('file')
-#             if not file:
-#                 return Response({"error": "No file uploaded"}, status=400)
-#             file_extension = file.name.split(".")[-1]
-#             file_basename = file.name.split(".")[0]
-#             unique_filename = f"{uuid.uuid4()}_{file_basename}.{file_extension}"
-            
-#             # Get a temp directory compatible with Windows/Linux/macOS
-#             temp_dir = tempfile.gettempdir()  
-#             temp_file_path = os.path.join(temp_dir, unique_filename)
+    dataset = Dataset(title=title, category=category, link=link, description=description)
 
-#             # Save the file locally first
-#             with open(temp_file_path, "wb") as f:
-#                 for chunk in file.chunks():
-#                     f.write(chunk)
+    try:
+        dataset.save()
+        print(f"Dataset created successfully: {dataset}")
+    except Exception as e:
+        print(f"An error occurred while creating the dataset: {e}")
+        return Response({'error': "An error occurred while creating the dataset"},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-#             print(f"File saved locally at: {temp_file_path}")
-
-#             # Upload to MinIO / S3 storage
-#             file_name = default_storage.save(unique_filename, file)
-#             file_url = default_storage.url(file_name)
-#             print(f"File uploaded to MinIO at: {file_url}")
-
-#             # Extract form data
-#             title = request.POST.get('title')
-#             category = request.POST.get('category')
-#             description = request.POST.get('description')
-
-#             # Validate form data
-#             if not title or len(title) > 100:
-#                 return Response({"error": "Invalid title"}, status=400)
-#             if not description or len(description) < 10 or len(description) > 100000:
-#                 return Response({"error": "Invalid description"}, status=400)
-#             dataset_id1=generate_id()
-#             print(dataset_id1)
-#             print("above is the dataset id")
-
-#             stop = datetime.now()
-#             print("end time is ", stop)
-#             print("time taken is ", stop-start)
-
-#             # Save dataset to database
-#             dataset = Dataset.objects.create(dataset_id=dataset_id1,
-#                 title=title, category=category, link=file_url, description=description
-#             )
-
-#             # Start background thread for correlation calculation
-#             correlation_json_path = os.path.join(temp_dir, f"{uuid.uuid4()}_correlation.json")
-            
-#             thread = threading.Thread(
-#                 target=compute_correlation, 
-#                 args=(temp_file_path, correlation_json_path, dataset_id1)
-                    
-#             )
-#             thread.start()
-            
-
-
-#             return Response({"message": "Dataset created successfully"}, status=201)
-
-#         except Exception as e:
-#             logger.error(f"Error: {e}", exc_info=True)
-#             return Response({"error": "Something went wrong"}, status=500)
-
-
-
-
-
-
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
-import os
-import uuid
-import tempfile
-import threading
-from datetime import datetime
-import logging
-
-logger = logging.getLogger(__name__)
-
-
-@method_decorator(csrf_exempt, name='dispatch')
-# @method_decorator(role_required(['organization_admin', 'contributor']), name='dispatch')
-class CreateDatasetView(APIView):
-    from rest_framework.negotiation import DefaultContentNegotiation
-    content_negotiation_class = DefaultContentNegotiation
-    renderer_classes = [JSONRenderer]
-    print (renderer_classes)
-    # configure accepter renderer
-
-    parser_classes = [MultiPartParser, FormParser]
-
-    @role_required(['organization_admin', 'contributor'])
-
-    def post(self, request, *args, **kwargs):
-        print("inside the post method")
-        print(request.FILES)
-        print("receive the post now processing it")
-
-        
-        start = datetime.now()
-        print("start time is ", start)
-
-        try:
-            file = request.FILES.get('file')
-            if not file:
-                return Response({"error": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST)
-
-            file_extension = file.name.split(".")[-1]
-            file_basename = file.name.split(".")[0]
-            unique_filename = f"{uuid.uuid4()}_{file_basename}.{file_extension}"
-
-            # Get a temp directory compatible with Windows/Linux/macOS
-            temp_dir = tempfile.gettempdir()
-            temp_file_path = os.path.join(temp_dir, unique_filename)
-
-            # Save the file locally first
-            with open(temp_file_path, "wb") as f:
-                for chunk in file.chunks():
-                    f.write(chunk)
-
-            print(f"File saved locally at: {temp_file_path}")
-
-            # Upload to MinIO / S3 storage
-            file_name = default_storage.save(unique_filename, file)
-            file_url = default_storage.url(file_name)
-            print(f"File uploaded to MinIO at: {file_url}")
-
-            # Extract form data
-            title = request.POST.get('title')
-            category = request.POST.get('category')
-            description = request.POST.get('description')
-
-            # Validate form data
-            if not title or len(title) > 100:
-                return Response({"error": "Invalid title"}, status=status.HTTP_400_BAD_REQUEST)
-            if not description or len(description) < 10 or len(description) > 100000:
-                return Response({"error": "Invalid description"}, status=status.HTTP_400_BAD_REQUEST)
-
-            dataset_id1 = generate_id()
-            print(dataset_id1)
-            print("above is the dataset id")
-
-            stop = datetime.now()
-            print("end time is ", stop)
-            print("time taken is ", stop - start)
-
-            # Save dataset to database
-            dataset = Dataset.objects.create(
-                dataset_id=dataset_id1,
-                title=title,
-                category=category,
-                link=file_url,
-                description=description
-            )
-
-            # Start background thread for correlation calculation
-            correlation_json_path = os.path.join(temp_dir, f"{uuid.uuid4()}_correlation.json")
-            thread = threading.Thread(
-                target=compute_correlation,
-                args=(temp_file_path, correlation_json_path, dataset_id1)
-            )
-            thread.start()
-
-            return Response({"message": "Dataset created successfully"}, status=status.HTTP_201_CREATED)
-
-        except Exception as e:
-            logger.error(f"Error: {e}", exc_info=True)
-            return Response({"error": "Something went wrong"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    return Response({'message': 'Dataset created successfully'}, status=status.HTTP_201_CREATED)
 
 
 
@@ -292,11 +145,10 @@ def get_datasets(request):
         })
     return Response(data, status=200)
 
-##analysis 
+#analysis
 
-# Initialize MinIO client
 minio_client = Minio(
-    endpoint="10.72.98.137:9000", 
+    endpoint="10.72.98.137:9000",
     access_key="admin",
     secret_key="Notgood1",
     secure=False  
@@ -320,116 +172,84 @@ def fetch_dataset_from_minio(dataset_url):
         return None
 
 
-
 @api_view(['GET'])
-def get_datasetss(request):
-    try:
-        datasets = Dataset.objects.all().values("dataset_id", "title", "category", "description", "link")
-        return JsonResponse({"datasets": list(datasets)}, safe=False)
-    except Exception as e:
-        return JsonResponse({"error": f"Server error: {str(e)}"}, status=500)
+def get_datasets(request):
+    """Fetch all available datasets for selection"""
+    datasets = Dataset.objects.all().values("dataset_id", "title", "category", "description", "link")
+    return Response({"datasets": list(datasets)}, status=200)
 
+@api_view(['GET', 'POST'])
+def pre_analysis(request, dataset_id=None):
+    """Perform pre-analysis on either the full dataset or the filtered dataset (if session_id is provided)."""
+    session_id = request.GET.get('session_id', None)
 
-@api_view(['GET'])
-def pre_analysis(request, dataset_id):
-    """Perform pre-analysis checks on the entire dataset efficiently."""
-    dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
-    chunk_iterator = fetch_dataset_from_minio(dataset.link)
+    if session_id:
+        dataset = cache.get(session_id)
+        if dataset is None:
+            print("Session expired or invalid session ID.")
+            return Response({"error": "Session expired or invalid session ID"}, status=400)
+        print(f"Using filtered dataset from cache (Session: {session_id})")
+        df = pd.DataFrame(dataset)
+    else:
+        print(f"Loading FULL dataset for {dataset_id}") 
+        dataset_obj = get_object_or_404(Dataset, dataset_id=dataset_id)
+        chunk_iterator = fetch_dataset_from_minio(dataset_obj.link)
+        if chunk_iterator is None:
+            return Response({"error": "Dataset could not be loaded from MinIO"}, status=500)
+        df = pd.concat(chunk_iterator, ignore_index=True)
 
-    if chunk_iterator is None:
-        return Response({"error": "Dataset could not be loaded from MinIO"}, status=500)
+    total_rows = len(df)
+    print(f"Pre-analysis dataset size: {total_rows}")
 
-    column_info = {}
-    missing_values = {}
-    categorical_summary = {}
-    duplicate_count = 0
-    total_rows = 0
+    return Response({
+        "total_rows": total_rows,
+        "columns": list(df.columns),
+        "duplicate_rows": df.duplicated().sum(),
+        "missing_values": df.isnull().sum().to_dict(),
+        "categorical_summary": {col: df[col].nunique() for col in df.select_dtypes(include=['object'])}
+    })
 
-    try:
-        for chunk in chunk_iterator:
-            total_rows += len(chunk)
+@api_view(['GET', 'POST'])
+def descriptive_statistics(request, dataset_id=None):
+    """
+    Return descriptive statistics on either:
+    - The **filtered dataset** (if `session_id` is provided)
+    - The **entire dataset** (if only `dataset_id` is provided)
+    """
+    session_id = request.GET.get('session_id', None)
 
-            for col in chunk.columns:
-                dtype = str(chunk[col].dtype)
-                column_info[col] = dtype 
+    if session_id:
+        dataset = cache.get(session_id)
+        if dataset is None:
+            return Response({"error": "Session expired or invalid session ID"}, status=400)
+        df = pd.DataFrame(dataset)
+    else:
+        dataset_obj = get_object_or_404(Dataset, dataset_id=dataset_id)
+        chunk_iterator = fetch_dataset_from_minio(dataset_obj.link)
+        if chunk_iterator is None:
+            return Response({"error": "Dataset could not be loaded from MinIO"}, status=500)
+        df = pd.concat(chunk_iterator, ignore_index=True)
 
-                missing_values[col] = missing_values.get(col, 0) + chunk[col].isnull().sum()
+    numeric_cols = df.select_dtypes(include=["number"])
 
-                if dtype == "object":
-                    categorical_summary[col] = categorical_summary.get(col, set()) | set(chunk[col].dropna().unique())
+    if numeric_cols.empty:
+        return Response({"error": "No numeric columns available for analysis"}, status=400)
 
-            duplicate_count += chunk.duplicated().sum()
+    mean_values = numeric_cols.mean().to_dict()
+    median_values = numeric_cols.median().to_dict()
 
-        categorical_summary = {col: len(vals) for col, vals in categorical_summary.items()}
-
-        return Response({
-            "dataset_id": dataset_id,
-            "total_rows": total_rows,
-            "columns": column_info,
-            "missing_values": missing_values,
-            "categorical_summary": categorical_summary,
-            "duplicate_rows": duplicate_count
-        })
-
-    except Exception as e:
-        return Response({"error": f"Server error: {str(e)}"}, status=500)
-
-
-@api_view(['GET'])
-def descriptive_statistics(request, dataset_id):
-    """Return summary statistics for numerical columns."""
-    dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
-    chunk_iterator = fetch_dataset_from_minio(dataset.link)
-
-    if chunk_iterator is None:
-        return Response({"error": "Dataset could not be loaded from MinIO"}, status=500)
-
-    mean_values = {}
-    median_values = {}
     mode_values = {}
-    column_counts = {}
+    for col in numeric_cols.columns:
+        mode_res = mode(numeric_cols[col].dropna(), keepdims=True)
+        mode_values[col] = mode_res.mode[0] if len(mode_res.mode) > 0 else None
 
-    try:
-        for chunk in chunk_iterator:
-            numeric_cols = chunk.select_dtypes(include=['number'])
-
-            for col in numeric_cols.columns:
-                # Update mean
-                mean_values[col] = mean_values.get(col, 0) + chunk[col].sum()
-                column_counts[col] = column_counts.get(col, 0) + len(chunk[col].dropna())
-
-                # Update median
-                median_values[col] = median_values.get(col, []) + chunk[col].dropna().tolist()
-
-                # Update mode
-                mode_res = mode(chunk[col].dropna(), keepdims=True)
-                mode_values[col] = mode_values.get(col, []) + list(mode_res.mode)
-
-        # mean
-        mean_values = {col: (mean_values[col] / column_counts[col]) for col in mean_values}
-
-        # median
-        median_values = {col: sorted(median_values[col])[len(median_values[col]) // 2] for col in median_values}
-
-        # mode
-        mode_values = {col: max(set(mode_values[col]), key=mode_values[col].count) for col in mode_values}
-
-        return Response({
-            "mean": mean_values,
-            "median": median_values,
-            "mode": mode_values
+    return Response({
+        "mean": mean_values,
+        "median": median_values,
+        "mode": mode_values
+    })
 
 
-        })
-    
-
-   
-
-    except Exception as e:
-        return Response({"error": f"Server error: {str(e)}"}, status=500)
-
-
-    
 @api_view(['GET'])
 def get_filter_options(request, dataset_id):
     """Efficiently extract column names and unique categorical values for filtering UI."""
@@ -440,13 +260,13 @@ def get_filter_options(request, dataset_id):
         return Response({"error": "Dataset could not be loaded"}, status=500)
 
     try:
-        first_chunk = next(chunk_iterator) 
+        first_chunk = next(chunk_iterator)  # Load the first 10,000 rows
 
         column_details = {
             col: {
                 "type": "numeric" if first_chunk[col].dtype.kind in "biufc" else "categorical",
                 "values": sorted(first_chunk[col].dropna().astype(str).str.strip().str.lower().unique().tolist()) 
-                          if first_chunk[col].dtype == "object" else []  
+                          if first_chunk[col].dtype == "object" else []
             }
             for col in first_chunk.columns
         }
@@ -461,11 +281,38 @@ def get_filter_options(request, dataset_id):
 
     except Exception as e:
         return Response({"error": f"Server error: {str(e)}"}, status=500)
+    
+from django.core.cache import cache
+import uuid
 
+@api_view(['POST'])
+def aggregate_dataset(request, dataset_id):
+    session_id = request.GET.get('session_id', None)
+
+    if session_id:
+        dataset = cache.get(session_id)
+        if dataset is None:
+            return Response({"error": "Session expired or invalid session ID"}, status=400)
+        df = pd.DataFrame(dataset)
+    else:
+        dataset_obj = get_object_or_404(Dataset, dataset_id=dataset_id)
+        chunk_iterator = fetch_dataset_from_minio(dataset_obj.link)
+        if chunk_iterator is None:
+            return Response({"error": "Dataset could not be loaded from MinIO"}, status=500)
+        df = pd.concat(chunk_iterator, ignore_index=True)
+
+    group_by = request.data.get("group_by", [])
+    aggregation_functions = request.data.get("aggregation_functions", {})
+
+    if not group_by or not aggregation_functions:
+        return Response({"error": "Group by columns and aggregation functions are required"}, status=400)
+
+    aggregated_data = df.groupby(group_by).agg(aggregation_functions).reset_index()
+
+    return Response({"aggregated_data": aggregated_data.to_dict(orient="records")})
 
 @api_view(['POST'])
 def filter_and_clean_dataset(request, dataset_id):
-    """Apply user-defined filters without modifying the original MinIO file."""
     dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
     chunk_iterator = fetch_dataset_from_minio(dataset.link)
 
@@ -473,23 +320,26 @@ def filter_and_clean_dataset(request, dataset_id):
         return Response({"error": "Dataset could not be loaded from MinIO"}, status=500)
 
     filters = request.data.get("filters", [])
-    selected_columns = request.data.get("columns", [])  
+    selected_columns = request.data.get("columns", [])
+    cleaning_options = request.data.get("cleaning_options", {})
+    automated_filters = request.data.get("automated_filters", {})
 
-    print(f"Applying the filters: {filters}")
-
-    filtered_results = []  # Stores the filtered data
+    filtered_results = []
+    total_before = 0
+    total_after = 0
 
     for chunk in chunk_iterator:
-        for col in chunk.select_dtypes(include=["object"]).columns:
-            chunk[col] = chunk[col].astype(str).str.strip().str.lower()
+        total_before += len(chunk)
+        chunk.columns = chunk.columns.str.strip().str.lower()
 
         for filter_condition in filters:
-            column = filter_condition.get("column").strip()
+            column = filter_condition.get("column").strip().lower()
             operator = filter_condition.get("operator")
             value = filter_condition.get("value")
 
             if column not in chunk.columns:
-                return Response({"error": f"Column '{column}' not found in dataset"}, status=400)
+                print(f"Column '{column}' not found in dataset.")
+                continue
 
             if chunk[column].dtype.kind in "biufc":
                 try:
@@ -514,77 +364,36 @@ def filter_and_clean_dataset(request, dataset_id):
             else:
                 return Response({"error": f"Unsupported operator '{operator}'"}, status=400)
 
+        if automated_filters.get("remove_missing_values"):
+            chunk = chunk.dropna()
+        if automated_filters.get("remove_duplicates"):
+            chunk = chunk.drop_duplicates()
+        if automated_filters.get("remove_outliers"):
+            for col in chunk.select_dtypes(include=["number"]).columns:
+                Q1 = chunk[col].quantile(0.25)
+                Q3 = chunk[col].quantile(0.75)
+                IQR = Q3 - Q1
+                chunk = chunk[(chunk[col] >= (Q1 - 1.5 * IQR)) & (chunk[col] <= (Q3 + 1.5 * IQR))]
+
         if selected_columns:
+            selected_columns = [col.strip().lower() for col in selected_columns]
             chunk = chunk[selected_columns]
 
+        if cleaning_options.get("handle_missing_values"):
+            chunk = chunk.fillna(cleaning_options["handle_missing_values"])
+        if cleaning_options.get("normalize"):
+            if cleaning_options["normalize"] == "min_max":
+                chunk = (chunk - chunk.min()) / (chunk.max() - chunk.min())
+            elif cleaning_options["normalize"] == "z_score":
+                chunk = (chunk - chunk.mean()) / chunk.std()
+
+        total_after += len(chunk)
         filtered_results.extend(chunk.to_dict(orient="records"))
 
-    print(f"Filtered dataset to {len(filtered_results)} rows")
+    session_id = str(uuid.uuid4())
+    cache.set(session_id, filtered_results, timeout=3600)
 
-    return Response({"filtered_data": filtered_results}, status=200)
+    print(f"Total rows before filtering: {total_before}")
+    print(f"Filtered dataset to {total_after} rows. Session ID: {session_id}")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-@api_view(['GET'])
-def correlation_analysis(request, dataset_id):
-    """Retrieve precomputed correlation JSON from MinIO using dataset_id."""
-    print("Fetching correlation analysis...")
-
-    dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
-
-    # Get analysis file URL from database
-    analysis_link = dataset.analysis_link
-    print("Fetching correlation ananalysis linkd...")
-    print(analysis_link)
-    if not analysis_link:
-        return Response({"error": "No correlation analysis found for this dataset"}, status=404)
-
-    try:
-        
-        correlation_data = fetch_json_from_minio(analysis_link)
-
-        if correlation_data is None:
-            return Response({"error": "Failed to retrieve analysis file"}, status=500)
-
-        return Response({
-            "dataset_id": dataset_id,
-            "correlation_analysis": correlation_data
-        })
-    except Exception as e:
-        return Response({"error": f"Server error: {str(e)}"}, status=500)
-
-
-
-
-
-
-
-
-
-
-
+    return Response({"filtered_data": filtered_results, "session_id": session_id}, status=200)
