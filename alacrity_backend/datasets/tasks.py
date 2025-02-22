@@ -19,6 +19,7 @@ from .inferential.t_tests import run_t_tests
 ###%%%%%%%%%%%%%%%%%%%%%%%%%%%#####3%%%%%func imports%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 from .inferential.anova import run_anova_tests
 from .inferential.t_tests import run_t_tests
+from .descrptive import calculate_descriptive_statistics 
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
@@ -168,6 +169,7 @@ def compute_correlation(file_path, json_output_path, dataset_id):
 
         my_chi_square_tests = run_chi_square_tests(df)
         my_chi_square_tests2 = run_chi_square_tests2(df)
+        descriptive_results = calculate_descriptive_statistics(df)
         
         ####
         # t tests
@@ -175,7 +177,7 @@ def compute_correlation(file_path, json_output_path, dataset_id):
 
         # Prepare JSON output
         correlation_data = {
-            "desptive_stats": {"i will add later": "i will add later"},
+            "desptive_stats": {descriptive_results},
             "correlation": {
                 "pearson": pearson_dict,
                 "spearman": spearman_dict
