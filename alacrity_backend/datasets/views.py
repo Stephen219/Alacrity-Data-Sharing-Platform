@@ -61,89 +61,120 @@ def is_valid_url(url):
 
 
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+import os
+import uuid
+import tempfile
+import threading
+from datetime import datetime
+import logging
 
-@csrf_protect
-@role_required(['organization_admin', 'contributor'])
-@api_view(['POST'])
-def create_dataset(request):
-    if request.method != 'POST':
-        return Response({'error': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-    file = request.FILES.get('file')  # ✅ FIXED
-
-    if not file:
-        return Response({'error': 'No file uploaded'}, status=status.HTTP_400_BAD_REQUEST)
-
-    file_extension = file.name.split(".")[-1]
-    file1 = file.name.split(".")[0]
-    unique_filename = f"{uuid.uuid4()}_{file1}.{file_extension}"
-
-    file_name = default_storage.save(unique_filename, file)
-    file_url = default_storage.url(file_name)
-
-    print(f"File uploaded successfully: {file_url}")
-
-    # Extract data
-    title = request.data.get('title')
-    category = request.data.get('category')
-    link = file_url  # ✅ FIXED
-    description = request.data.get('description')
-
-    # Validation
-    errors = {}
-
-    if not title:
-        errors['title'] = 'Title is required'
-    elif len(title) > 100:
-        errors['title'] = 'Title is too long'
-
-    if not link:
-        errors['link'] = 'Link is required'
-    elif not is_valid_url(link):
-        errors['link'] = 'Invalid link'
-
-    if not description:
-        errors['description'] = 'Description is required'
-    elif len(description) < 10:
-        errors['description'] = 'Description is too short'
-    elif len(description) > 1000:
-        errors['description'] = 'Description is too long'
-
-    if errors:
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
-
-    dataset = Dataset(title=title, category=category, link=link, description=description)
-
-    try:
-        dataset.save()
-        print(f"Dataset created successfully: {dataset}")
-    except Exception as e:
-        print(f"An error occurred while creating the dataset: {e}")
-        return Response({'error': "An error occurred while creating the dataset"},
-                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    return Response({'message': 'Dataset created successfully'}, status=status.HTTP_201_CREATED)
+from nanoid import generate
+logger = logging.getLogger(__name__)
 
 
 
-# let me test the auth with auth 
+def generate_id():
+    return generate(size=10)
 
-@api_view(['GET'])
-@role_required(['organization_admin', 'contributor', 'researcher'])
 
-def get_datasets(request):
-    datasets = Dataset.objects.all()
-    data = []
-    print(datasets.values())
-    for dataset in datasets:
-        data.append({
-            'id': dataset.dataset_id,
-            'title': dataset.title,
-            'category': dataset.category,
-            'link': dataset.link,
-            'description': dataset.description
-        })
-    return Response(data, status=200)
+
+@method_decorator(csrf_exempt, name='dispatch')
+# @method_decorator(role_required(['organization_admin', 'contributor']), name='dispatch')
+class CreateDatasetView(APIView):
+    from rest_framework.negotiation import DefaultContentNegotiation
+    content_negotiation_class = DefaultContentNegotiation
+    renderer_classes = [JSONRenderer]
+    print (renderer_classes)
+    # configure accepter renderer
+
+    parser_classes = [MultiPartParser, FormParser]
+
+    @role_required(['organization_admin', 'contributor'])
+
+    def post(self, request, *args, **kwargs):
+        print("inside the post method")
+        print(request.FILES)
+        print("receive the post now processing it")
+
+        
+        start = datetime.now()
+        print("start time is ", start)
+
+        try:
+            file = request.FILES.get('file')
+            if not file:
+                return Response({"error": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST)
+
+            file_extension = file.name.split(".")[-1]
+            file_basename = file.name.split(".")[0]
+            unique_filename = f"{uuid.uuid4()}_{file_basename}.{file_extension}"
+
+            # Get a temp directory compatible with Windows/Linux/macOS
+            temp_dir = tempfile.gettempdir()
+            temp_file_path = os.path.join(temp_dir, unique_filename)
+
+            # Save the file locally first
+            with open(temp_file_path, "wb") as f:
+                for chunk in file.chunks():
+                    f.write(chunk)
+
+            print(f"File saved locally at: {temp_file_path}")
+
+            # Upload to MinIO / S3 storage
+            file_name = default_storage.save(unique_filename, file)
+            file_url = default_storage.url(file_name)
+            print(f"File uploaded to MinIO at: {file_url}")
+
+            # Extract form data
+            title = request.POST.get('title')
+            category = request.POST.get('category')
+            description = request.POST.get('description')
+
+            # Validate form data
+            if not title or len(title) > 100:
+                return Response({"error": "Invalid title"}, status=status.HTTP_400_BAD_REQUEST)
+            if not description or len(description) < 10 or len(description) > 100000:
+                return Response({"error": "Invalid description"}, status=status.HTTP_400_BAD_REQUEST)
+
+            dataset_id1 = generate_id()
+            print(dataset_id1)
+            print("above is the dataset id")
+
+            stop = datetime.now()
+            print("end time is ", stop)
+            print("time taken is ", stop - start)
+
+            # Save dataset to database
+            dataset = Dataset.objects.create(
+                dataset_id=dataset_id1,
+                title=title,
+                category=category,
+                link=file_url,
+                description=description
+            )
+
+            # Start background thread for correlation calculation
+            correlation_json_path = os.path.join(temp_dir, f"{uuid.uuid4()}_correlation.json")
+            thread = threading.Thread(
+                target=compute_correlation,
+                args=(temp_file_path, correlation_json_path, dataset_id1)
+            )
+            thread.start()
+
+            return Response({"message": "Dataset created successfully"}, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            logger.error(f"Error: {e}", exc_info=True)
+            return Response({"error": "Something went wrong"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
 
 #analysis
 
@@ -397,3 +428,43 @@ def filter_and_clean_dataset(request, dataset_id):
     print(f"Filtered dataset to {total_after} rows. Session ID: {session_id}")
 
     return Response({"filtered_data": filtered_results, "session_id": session_id}, status=200)
+
+
+
+
+
+
+
+
+
+
+@api_view(['GET'])
+def correlation_analysis(request, dataset_id):
+    """Retrieve precomputed correlation JSON from MinIO using dataset_id."""
+    print("Fetching correlation analysis...")
+
+    dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
+
+    # Get analysis file URL from database
+    analysis_link = dataset.analysis_link
+    print("Fetching correlation ananalysis linkd...")
+    print(analysis_link)
+    if not analysis_link:
+        return Response({"error": "No correlation analysis found for this dataset"}, status=404)
+
+    try:
+        
+        correlation_data = fetch_json_from_minio(analysis_link)
+
+        if correlation_data is None:
+            return Response({"error": "Failed to retrieve analysis file"}, status=500)
+
+        return Response({
+            "dataset_id": dataset_id,
+            "correlation_analysis": correlation_data
+        })
+    except Exception as e:
+        return Response({"error": f"Server error: {str(e)}"}, status=500)
+
+
+
