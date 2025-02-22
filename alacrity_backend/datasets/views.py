@@ -418,7 +418,12 @@ def descriptive_statistics(request, dataset_id):
             "mean": mean_values,
             "median": median_values,
             "mode": mode_values
+
+
         })
+    
+
+   
 
     except Exception as e:
         return Response({"error": f"Server error: {str(e)}"}, status=500)

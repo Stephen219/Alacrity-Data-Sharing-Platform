@@ -1,5 +1,6 @@
 import json
 import os
+
 import pandas as pd
 from minio import Minio
 from alacrity_backend.settings import MINIO_URL
@@ -11,6 +12,15 @@ from io import BytesIO
 from minio import Minio
 import numpy as np
 import scipy.stats as stats
+from .inferential.t_tests import run_t_tests
+
+
+
+###%%%%%%%%%%%%%%%%%%%%%%%%%%%#####3%%%%%func imports%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+from .inferential.anova import run_anova_tests
+from .inferential.t_tests import run_t_tests
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 # TODO: Add the MinIO client configuration TO PREVENT REPEATED CODE
 
@@ -116,100 +126,6 @@ def convert_df_types(df):
     
     return df.astype(object).applymap(convert_numeric)
 # FIXME :  FUNC  NAME TO ANALYSIS
-# def compute_correlation(file_path, json_output_path, dataset_id):
-#     """Reads CSV, computes correlation, range, and non-numeric stats, and saves the results as JSON."""
-#     try:
-#         df = pd.read_csv(file_path)
-#         df = df.drop(columns=['target'], errors='ignore')  # Remove target column if it exists
-
-#         # Calculate correlation for numeric columns
-#         pearson_corr, spearman_corr = calculate_correlation(df)
-        
-#         # Convert correlation matrices to native Python types
-#         pearson_dict = convert_df_types(pearson_corr).to_dict() if pearson_corr is not None else {}
-#         spearman_dict = convert_df_types(spearman_corr).to_dict() if spearman_corr is not None else {}
-
-#         # Store correlation results
-#         correlation_data = {
-#             "pearson": pearson_dict,
-#             "spearman": spearman_dict
-#         }
-
-#         # Calculate range for numerical columns
-#         ranges = calculate_range(df)
-#         # Convert numpy types in ranges to native Python types
-#         for col in ranges:
-#             ranges[col] = {k: float(v) if isinstance(v, np.floating) else int(v) if isinstance(v, np.integer) else v 
-#                           for k, v in ranges[col].items()}
-
-#         # Add range data to the correlation data
-#         correlation_data["ranges"] = ranges
-
-#         # Calculate statistics for non-numeric columns
-#         non_numeric_stats = calculate_non_numeric_stats(df)
-        
-#         # Convert any numpy types in value_counts to native Python types
-#         for col in non_numeric_stats:
-#             non_numeric_stats[col]["value_counts"] = {
-#                 str(k): int(v) if isinstance(v, np.integer) else float(v) if isinstance(v, np.floating) else v
-#                 for k, v in non_numeric_stats[col]["value_counts"].items()
-#             }
-
-
-#         t_tests = perform_t_tests(df)
-#         chi_square_tests = perform_chi_square_tests(df)
-#         anova_tests = perform_anova(df)
-
-#         # Add inferential tests to the correlation data in the inferential tests
-        
-
-
-        
-
-#         # Add non-numeric stats to the correlation data
-#         correlation_data["non_numeric_stats"] = non_numeric_stats
-
-#         # Save the correlation data as JSON
-#         with open(json_output_path, "w") as json_file:
-#             json.dump(correlation_data, json_file, indent=4)
-        
-#         print(f"Correlation, range, and stats saved at {json_output_path}")
-
-#         # Upload the JSON to MinIO
-#         minio_bucket = "alacrity"
-#         minio_object_name = f"analysis/{os.path.basename(json_output_path)}"
-
-#         with open(json_output_path, "rb") as json_file:
-#             minio_client.put_object(
-#                 minio_bucket, minio_object_name, json_file,
-#                 length=os.path.getsize(json_output_path),
-#                 content_type="application/json"
-#             )
-
-#         # Generate the MinIO URL
-#         minio_url = f"{MINIO_URL}/{minio_bucket}/{minio_object_name}"
-#         print(f"Correlation, range, and stats uploaded to MinIO: {minio_url}")
-
-#         # Update the dataset record with the analysis link
-#         try:
-#             dataset = Dataset.objects.get(dataset_id=dataset_id)
-#             dataset.analysis_link = minio_url
-#             dataset.save()
-#             print(f"Dataset updated with analysis link: {dataset.analysis_link}")
-#         except Dataset.DoesNotExist:
-#             print(f"Dataset with ID {dataset_id} does not exist.")
-#             return
-
-#         # Clean up temporary files
-#         os.remove(file_path)
-#         os.remove(json_output_path)
-
-#     except Exception as e:
-#         print(f"Error computing correlation, range, and stats: {str(e)}")
-
-
-
-
 
 
 
@@ -240,11 +156,26 @@ def compute_correlation(file_path, json_output_path, dataset_id):
 
         # Perform inferential statistics
         t_tests = perform_t_tests(df)
-        chi_square_tests = perform_chi_square_tests(df)
+        t_tests2 = run_t_tests(df)
+        
         anova_tests = perform_anova(df)
+
+
+
+
+        anover_results = run_anova_tests(df)
+
+
+        my_chi_square_tests = run_chi_square_tests(df)
+        my_chi_square_tests2 = run_chi_square_tests2(df)
+        
+        ####
+        # t tests
+        # t_tests2 = run_t_tests(df)
 
         # Prepare JSON output
         correlation_data = {
+            "desptive_stats": {"i will add later": "i will add later"},
             "correlation": {
                 "pearson": pearson_dict,
                 "spearman": spearman_dict
@@ -252,11 +183,24 @@ def compute_correlation(file_path, json_output_path, dataset_id):
             "ranges": ranges,
             "non_numeric_stats": non_numeric_stats,
             "inferential_statistics": {
-                "t_tests": t_tests,
-                "chi_square_tests": chi_square_tests,
-                "anova_tests": anova_tests
+                # "t_tests": t_tests,
+
+
+                "t_tests": t_tests2,
+               
+                # "anova_tests": anova_tests,
+                "anova_results": anover_results,
+                # "my_chi_square_tests": my_chi_square_tests, # 2nd last Chi-Square tests
+                "chi_square_tests": my_chi_square_tests2  # New Chi-Square tests
             }
+            
         }
+        
+    
+    
+        print (correlation_data.keys())
+        print (correlation_data['correlation'].keys())
+        print()
 
         # Save JSON
         with open(json_output_path, "w") as json_file:
@@ -290,11 +234,198 @@ def compute_correlation(file_path, json_output_path, dataset_id):
         os.remove(json_output_path)
 
     except Exception as e:
+        # print the method the error occurred in
+        print( f"Error computing correlation, range, and stats: {str(e)}")
         print(f"Error computing correlation, range, and stats: {str(e)}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #################################################################3
 
-# infelential tests
+
+def infer_data_types(df):
+    """Detect categorical and numerical columns."""
+    categorical_cols = []
+    numerical_cols = []
+    
+    for col in df.columns:
+        unique_values = df[col].nunique()
+        if df[col].dtype == 'object' or unique_values < 10:  
+            categorical_cols.append(col)
+        else:
+            numerical_cols.append(col)
+
+    return categorical_cols, numerical_cols
+
+
+from scipy.stats import chi2_contingency, ttest_ind, f_oneway
+
+def run_chi_square_tests(df):
+    """Run Chi-Square test on categorical variables."""
+    categorical_cols, _ = infer_data_types(df)
+    chi_results = []
+
+    for i in range(len(categorical_cols)):
+        for j in range(i + 1, len(categorical_cols)):
+            var1, var2 = categorical_cols[i], categorical_cols[j]
+            contingency_table = pd.crosstab(df[var1], df[var2])
+
+            try:
+                chi2, p, dof, expected = chi2_contingency(contingency_table)
+                chi_results.append({
+                    "Variable 1": var1,
+                    "Variable 2": var2,
+                    "Chi-Square": chi2,
+                    "p-value": p,
+                    "Degrees of Freedom": dof,
+                    "Conclusion": "Significant" if p < 0.05 else "Not Significant"
+                })
+            except Exception as e:
+                print(f"Skipping {var1} vs {var2}: {e}")
+
+    return chi_results
+
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%second approach to chi square test%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+def cramers_v(chi2_stat, n, dof):
+    """Calculate Cramér’s V (effect size) for Chi-Square test."""
+    return np.sqrt(chi2_stat / (n * dof))
+
+def infer_categorical_cols(df, threshold=10):
+    """Detect categorical columns (both actual categorical and low-cardinality numerical)."""
+    categorical_cols = [col for col in df.columns if df[col].nunique() <= threshold or df[col].dtype == 'object']
+    return categorical_cols
+
+def run_chi_square_tests2(df, min_expected_freq=5):
+    """
+    Runs Chi-Square tests on all categorical column pairs.
+    - Ignores low-frequency categories.
+    - Uses Cramér’s V for effect size.
+    - Returns structured JSON output.
+    """
+    categorical_cols = infer_categorical_cols(df)
+    chi_results = []
+    warnings = []
+    
+    for i in range(len(categorical_cols)):
+        for j in range(i + 1, len(categorical_cols)):
+            var1, var2 = categorical_cols[i], categorical_cols[j]
+            contingency_table = pd.crosstab(df[var1], df[var2])
+
+            # Skip if the table is too small
+            if contingency_table.shape[0] < 2 or contingency_table.shape[1] < 2:
+                warnings.append(f"Skipping {var1} vs {var2}: Not enough categories.")
+                continue
+
+            # Ensure no rows/columns have all zeros
+            if (contingency_table.sum(axis=1) == 0).any() or (contingency_table.sum(axis=0) == 0).any():
+                warnings.append(f"Skipping {var1} vs {var2}: Empty categories found.")
+                continue
+
+            # Compute Chi-Square
+            chi2_stat, p, dof, expected = chi2_contingency(contingency_table)
+
+            # Check expected frequencies
+            if (expected < min_expected_freq).sum() > 0:
+                warnings.append(f"Chi-Square for {var1} vs {var2} may be unreliable: Low expected frequencies detected.")
+
+            # Calculate Cramér’s V
+            n = df.shape[0]  # Sample size
+            effect_size = cramers_v(chi2_stat, n, dof)
+
+            # Interpret effect size (Cohen’s convention)
+            if effect_size < 0.1:
+                strength = "Weak"
+            elif effect_size < 0.3:
+                strength = "Moderate"
+            else:
+                strength = "Strong"
+
+            # Store results
+            chi_results.append({
+                "Variable 1": var1,
+                "Variable 2": var2,
+                "Chi-Square": chi2_stat,
+                "p-value": p,
+                "Degrees of Freedom": dof,
+                "Cramér's V": effect_size,
+                "Effect Strength": strength,
+                "Conclusion": "Significant" if p < 0.05 else "Not Significant"
+            })
+
+    return {"Chi-Square Tests": chi_results, "Warnings": warnings}
+
+
+
+
+
+########################################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -317,20 +448,7 @@ def perform_t_tests(df):
     return t_test_results
 
 
-def perform_chi_square_tests(df):
-    """Perform Chi-Square tests for categorical variables."""
-    categorical_cols = df.select_dtypes(exclude=['number']).columns
-    chi_square_results = {}
 
-    for i in range(len(categorical_cols)):
-        for j in range(i + 1, len(categorical_cols)):  
-            cat_col1, cat_col2 = categorical_cols[i], categorical_cols[j]
-            contingency_table = pd.crosstab(df[cat_col1], df[cat_col2])
-
-            chi_stat, p_value, _, _ = stats.chi2_contingency(contingency_table)
-            chi_square_results[f"{cat_col1} vs {cat_col2}"] = {"chi_statistic": chi_stat, "p_value": p_value}
-
-    return chi_square_results
 
 
 def perform_anova(df):
