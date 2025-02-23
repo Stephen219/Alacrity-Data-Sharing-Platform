@@ -1,16 +1,18 @@
 from django.urls import path
 from .views import ( descriptive_statistics, 
 filter_and_clean_dataset, 
-get_datasets, get_filter_options, correlation_analysis, CreateDatasetView,
+get_datasets, get_filter_options, correlation_analysis, CreateDatasetView, all_datasets_view,
  pre_analysis)
 
 
 urlpatterns = [
-    # path('create_dataset/',create_dataset, name='create_dataset'),
+
     path('create_dataset/', CreateDatasetView.as_view(), name='create_dataset'),
     # path('sign_up/',sign_up, name='sign_up'),
     path('testget/',get_datasets, name='testget'),
     path('correlation/<str:dataset_id>/',correlation_analysis, name='correlation_analysis'),
+
+    path('all/', all_datasets_view, name='dataset-list'),
 
 
     path("", get_datasets, name="get_datasets"),

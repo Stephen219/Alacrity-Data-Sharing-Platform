@@ -177,7 +177,7 @@ def compute_correlation(file_path, json_output_path, dataset_id):
 
         # Prepare JSON output
         correlation_data = {
-            "desptive_stats": {descriptive_results},
+            "desptive_stats": descriptive_results,
             "correlation": {
                 "pearson": pearson_dict,
                 "spearman": spearman_dict

@@ -171,7 +171,26 @@ class CreateDatasetView(APIView):
         except Exception as e:
             logger.error(f"Error: {e}", exc_info=True)
             return Response({"error": "Something went wrong"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        
 
+
+# this view is used to get the datasets from the database and display them in the frontend
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Dataset
+from .serializer import DatasetSerializer
+
+@api_view(['GET'])
+def all_datasets_view(request):
+    # Fetch all datasets with related contributor and organization data
+    datasets = Dataset.objects.select_related('contributor_id__organization').all()
+    # Serialize the data
+    serializer = DatasetSerializer(datasets, many=True)
+    return Response({"datasets": serializer.data}, status=status.HTTP_200_OK)
+    
 
 
 
@@ -465,6 +484,15 @@ def correlation_analysis(request, dataset_id):
         })
     except Exception as e:
         return Response({"error": f"Server error: {str(e)}"}, status=500)
+
+
+
+
+
+
+# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+# fetching the dataset for display
+
 
 
 
