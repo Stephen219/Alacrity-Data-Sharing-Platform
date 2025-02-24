@@ -8,7 +8,7 @@ get_datasets, get_filter_options, correlation_analysis, CreateDatasetView, all_d
 urlpatterns = [
 
     path('create_dataset/', CreateDatasetView.as_view(), name='create_dataset'),
-    # path('sign_up/',sign_up, name='sign_up'),
+    
     path('testget/',get_datasets, name='testget'),
     path('correlation/<str:dataset_id>/',correlation_analysis, name='correlation_analysis'),
 

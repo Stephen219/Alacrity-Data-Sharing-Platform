@@ -157,7 +157,8 @@ class CreateDatasetView(APIView):
                 link=file_url,
                 description=description
             )
-
+          # TODO: add tags and also the contributor id who will bring the organization id
+          # TODO: REMOVE THE FILE IO OPERATIONS FROM THE MAIN THREAD AND USE THREADING TO DO THE FILE OPERATIONS AND OPTIMIZE THE CODE
             # Start background thread for correlation calculation
             correlation_json_path = os.path.join(temp_dir, f"{uuid.uuid4()}_correlation.json")
             thread = threading.Thread(

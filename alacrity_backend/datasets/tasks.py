@@ -438,7 +438,7 @@ def perform_t_tests(df):
     t_test_results = {}
 
     for cat_col in categorical_cols:
-        if df[cat_col].nunique() == 2:  # Ensure exactly two groups
+        if df[cat_col].nunique() == 2: 
             groups = list(df[cat_col].unique())
             group1 = df[df[cat_col] == groups[0]]
             group2 = df[df[cat_col] == groups[1]]
@@ -460,7 +460,7 @@ def perform_anova(df):
     anova_results = {}
 
     for cat_col in categorical_cols:
-        if df[cat_col].nunique() >= 3:  # Ensure at least three groups
+        if df[cat_col].nunique() >= 3: 
             for num_col in numerical_cols:
                 groups = [df[df[cat_col] == value][num_col].dropna() for value in df[cat_col].unique()]
                 f_stat, p_value = stats.f_oneway(*groups)
