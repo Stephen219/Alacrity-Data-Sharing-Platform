@@ -119,7 +119,7 @@ class RegisterView(APIView):
         mapped_data = clean_data(request.data)
 
         data1 = request.data
-        print (data1)
+        #print (data1)
         request_data = request.data.copy()
 
         serializer = RegisterSerializer(data=mapped_data)
@@ -141,11 +141,9 @@ class RegisterView(APIView):
                     }
                 }
                 return Response(response_data, status=status.HTTP_201_CREATED)
-            print (23456789)
             print(serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            print("we are here")
             print(e)
             return Response(
                 {"error": "Registration failed", "details": str(e)},
