@@ -33,7 +33,7 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
 }) => {
   const isListView = viewMode === "list";
 
-  // Truncate description internally if too long to prevent layout issues
+  
   const truncatedDescription = description.length > 100 ? description.substring(0, 200) + "..." : description;
 
   return (

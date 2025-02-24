@@ -75,23 +75,7 @@ class DatasetTestCase(TestCase):
 
 
             
-    # def test_dataset_field_constraints(self):
-    #     validation_cases = [
-    #         {'field': 'title', 'invalid_values': ['', 'A' * 101]},  # Ensure title validation catches empty or long strings
-    #         {'field': 'category', 'invalid_values': ['']},
-    #         {'field': 'link', 'invalid_values': ['', 'invalid-url']},
-    #         {'field': 'description', 'invalid_values': ['', 'Short']}
-    #     ]
 
-    #     for case in validation_cases:
-    #         for value in case['invalid_values']:
-    #             # Update mock data with invalid value
-    #             invalid_data = {**self.valid_dataset_data, case['field']: value}
-
-    #             # Create a Dataset instance to trigger validation
-    #             dataset = Dataset(**invalid_data)
-    #             with self.assertRaises(ValidationError, msg=f"Invalid {case['field']} should raise validation error"):
-    #                 dataset.full_clean()  # This explicitly runs validation on the dataset
 
 
     def test_auto_timestamps(self):

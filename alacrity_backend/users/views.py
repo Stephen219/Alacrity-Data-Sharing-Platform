@@ -110,7 +110,7 @@ def clean_data(request_data):
     cleaned_data.pop('phonenumber', None)
  
     
-    cleaned_data['role'] = 'contributor'  
+    cleaned_data['role'] = 'researcher'  
    
     cleaned_data['password2'] = cleaned_data.get('password', cleaned_data.get('password2'))
    
@@ -153,6 +153,21 @@ class RegisterView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
-        
 
 
+
+# get the user information
+
+class UserView(APIView):
+    def get(self, request):
+        user = request.user
+        return Response({
+            "id": user.id,
+            "email": user.email,
+            "firstname": user.first_name,
+            "surname": user.last_name,
+            "phonenumber": user.phone_number,
+            "role": user.role,
+            "organization": user.organization.name if user.organization else None,
+            "field": user.field,
+        }, status=status.HTTP_200_OK)

@@ -198,7 +198,7 @@ export function useAuth(): AuthContextType {
     useEffect(() => {
         const token = localStorage.getItem("access_token");
         if (!token) {
-            router.push("/login");
+            router.push("/auth/sign-in");
         } else {
             scheduleTokenRefresh();
 
@@ -236,7 +236,7 @@ export async function fetchUserData(): Promise<User | null> {
     if (!token) return null;
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/users/me/`);  // TODO :  IMPLEMEENT THE /USERS/ME/ ENDPOINT
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/profile/`);  // TODO :  IMPLEMEENT THE /USERS/ME/ ENDPOINT
         if (response.ok) {
             const userData: User = await response.json();
             return userData;

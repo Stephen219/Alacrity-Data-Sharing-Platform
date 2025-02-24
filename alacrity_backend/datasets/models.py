@@ -7,10 +7,10 @@ from users.models import User
 def generate_id():
     return generate(size=10)
 
-## This is the model for the dataset table in the database holding the dataset information.
 class Dataset(models.Model):
     dataset_id = models.CharField(max_length=10, primary_key=True, default=generate_id , editable=False)
-    # orgid = models.ForeignKey(Organization, on_delete=models.CASCADE)  techinically an uploader has to be in an organization hence the uploaderid is the organization id
+    # orgid = models.ForeignKey(Organization, on_delete=models.CASCADE)  
+    # techinically an uploader has to be in an organization hence the uploaderid is the organization id
     contributor_id = models.ForeignKey(User, on_delete=models.CASCADE , related_name='contributor_id', default="1")
     title = models.CharField(
         max_length=100, 
