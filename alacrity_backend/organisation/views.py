@@ -10,7 +10,7 @@ from users.decorators import role_required
 class AddContributors(APIView):
     permission_classes = [IsAuthenticated]
 
-    @role_required('organization_admin')
+    @role_required('Organization Admin')
     def post(self, request):
         # Create a mutable copy of the request data
         data = request.data.copy()
@@ -29,7 +29,7 @@ class AddContributors(APIView):
         # Validate that the role is either "contributor" or "organization_admin".
         if 'role' not in data:
             data['role'] = 'contributor'
-        elif data['role'] not in ['contributor', 'organization_admin']:
+        elif data['role'] not in ['contributor', 'Organization Admin']:
             return Response(
                 {'error': 'Invalid role. Must be either "contributor" or "organization_admin".'},
                 status=status.HTTP_400_BAD_REQUEST
