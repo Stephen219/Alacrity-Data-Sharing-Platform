@@ -8,6 +8,7 @@ import { formatDistanceToNow } from "date-fns";
 import { BACKEND_URL } from "@/config";
 import { fetchWithAuth } from "@/libs/auth";
 import { DatasetCard } from "@/components/all_datasets/datasetCard";
+import Link from "next/link";
 
 // TODO: Define Dataset type IN THE RIGHT PLACE (not here) BUANA
 interface Dataset {
@@ -302,6 +303,11 @@ function DatasetsPage() {
           className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"}`}
         >
           {paginatedDatasets.map((dataset) => (
+            <Link
+            key={dataset.dataset_id}
+            href={`/analysis/${dataset.dataset_id}`} 
+            className="block" 
+          >
             <DatasetCard
               key={dataset.dataset_id}
               title={dataset.title || "book"} 
@@ -312,11 +318,15 @@ function DatasetsPage() {
               tags={dataset.tags.length > 0 ? dataset.tags : ["Climate", "Environmental", "Global"]}
               category={dataset.category || "category1"} 
               entries={dataset.entries || 150000}
-              size={dataset.size || "N/A"}
+              size={dataset.size || "N/A MBs"}
               viewMode={viewMode}
               darkMode={isDarkMode}
             />
+          </Link>
           ))}
+          
+         
+          
         </div>
 
         {/* Pagination */}
