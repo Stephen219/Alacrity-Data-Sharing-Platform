@@ -99,38 +99,44 @@ export async function refreshToken(): Promise<string | null> {
  */
 
 
-
-
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
-    let accessToken = localStorage.getItem("access_token");
-
-    if (!accessToken) {
-        console.error("No access token found in localStorage.");
-        logout();
-        return new Response(null, { status: 401 });
-    }
-
-    console.log("Using access token:", accessToken);
-
-    const response = await fetch(url, {
-        ...options,
-        headers: {
-            ...options.headers,
-            Authorization: `Bearer ${accessToken}`,
-        },
-    });
-
-    if (response.status === 401) {
-        console.warn("Access token expired. Trying to refresh...");
-        accessToken = await refreshToken();
-        if (!accessToken) return response; 
+    const executeRequest = async (token: string): Promise<Response> => {
         return fetch(url, {
             ...options,
             headers: {
                 ...options.headers,
-                Authorization: `Bearer ${accessToken}`,
+                'Authorization': `Bearer ${token}`,
             },
         });
+    };
+
+    const accessToken = localStorage.getItem("access_token");
+    
+    if (!accessToken) {
+        console.error("No access token found");
+        logout();
+        return new Response(null, { status: 401 });
+    }
+
+    
+    let response = await executeRequest(accessToken);
+
+   
+    if (response.status === 401) {
+        try {
+            const newToken = await refreshToken();
+            if (!newToken) {
+                logout();
+                return new Response(null, { status: 401 });
+            }
+            
+           
+            response = await executeRequest(newToken);
+        } catch (error) {
+            console.error("Token refresh failed:", error);
+            logout();
+            return new Response(null, { status: 401 });
+        }
     }
 
     return response;
@@ -148,7 +154,7 @@ export function scheduleTokenRefresh() {
 
    
     setInterval(async () => {
-        await refreshToken(); }, 1000 * 60 * 10); 
+        await refreshToken(); }, 1000 * 60 * 10);  // Refresh every 10 minutes
 }
 
 
@@ -180,36 +186,7 @@ type User = {
  */
 
 // FIXME   THIS FUNCTION IS WOIRKING BUT TYPESCRIPT IS COMPLAINING ABOUT THE RETURN TYPE
-// export function useAuth() {
-//     const [user, setUser] = useState<unknown | null>(null);
-//     const [loading, setLoading] = useState(true); 
-//     const router = useRouter();
 
-//     useEffect(() => {
-//         const token = localStorage.getItem("access_token");
-//         if (!token) {
-//             router.push("/login");
-//         } else {
-//             scheduleTokenRefresh();
-
-//             const storedUser = localStorage.getItem("user");
-//             if (storedUser) {
-//                 setUser(JSON.parse(storedUser));
-//                 setLoading(false);
-//             } else {
-//                 fetchUserData().then((data) => {
-//                     if (data) {
-//                         setUser(data);
-//                         localStorage.setItem("user", JSON.stringify(data));
-//                     }
-//                     setLoading(false);
-//                 });
-//             }
-//         }
-//     }, [router]);
-
-//     return { user, loading }; // Return user and loading state
-// }
 
 
 
@@ -250,35 +227,6 @@ export function useAuth(): AuthContextType {
  * 
  * @returns {Promise<any | null>} - The user data or null if fetching fails.
  */
-
-// export async function fetchUserData() {
-//     const token = localStorage.getItem("access_token");
-
-//     if (!token) return null;
-
-//     try {
-//         // const response = await fetch(`${API_BASE_URL}/users/me/`, {
-//         //     method: "GET",
-//         //     headers: {
-//         //         "Authorization": `Bearer ${token}`,
-//         //     },
-//         // });
-//         // lets use fetchWithAuth instead
-
-//         const response = await fetchWithAuth(`${API_BASE_URL}/users/me/`); // TODO :  IMPLEMEENT THE /USERS/ME/ ENDPOINT
-//         if (response.ok) {
-//             const userData = await response.json();
-//             return userData;
-//         } else {
-//             console.error("Failed to fetch user data");
-//             return null;
-//         }
-//     } catch (error) {
-//         console.error("Network error", error);
-//         return null;
-//     }
-// }
-
 
 
 
