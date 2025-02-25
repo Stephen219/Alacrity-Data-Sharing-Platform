@@ -1,20 +1,13 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-
-class Organization(models.Model):
-    name = models.CharField(max_length=255, unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.name
+from organisation.models import Organization
 
 class User(AbstractUser):
     ROLE_CHOICES = [
         ('organization_admin', 'Organization Admin'),
         ('admin', 'Admin'),
-        ('contributor', 'Contributor'),
-        ('researcher', 'Researcher'),
-        ('user', 'User'), 
+        ('contributor', 'organization_employee'), 
+        ('researcher', 'Researcher'), # default role
     ]
     
     email = models.EmailField(
@@ -52,7 +45,7 @@ class User(AbstractUser):
         return self.role == 'admin'
 
     def is_contributor(self):
-        return self.role == 'contributor'
+        return self.role == 'employee'
 
     def is_researcher(self):
         return self.role == 'researcher'

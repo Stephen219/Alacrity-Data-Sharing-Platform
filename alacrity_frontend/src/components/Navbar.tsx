@@ -5,9 +5,11 @@ import Link from "next/link";
 import { buttonVariants } from "./ui/button";
 import { usePathname } from "next/navigation";
 
+//// edit the function below
 const getUserRole = (): "organisation" | "researcher" | null => {
-  return "organisation"; // Simulated user role
+  return "organisation"; // You can modify this to return the appropriate value dynamically
 };
+
 
 type NavbarProps = {
   toggleSidebar: () => void;
