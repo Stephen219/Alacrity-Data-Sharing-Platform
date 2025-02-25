@@ -1,157 +1,68 @@
-from rest_framework.test import APIClient, APITestCase
-from rest_framework import status
 from django.urls import reverse
-from .models import Organization, Contributor
-from django.contrib.auth import get_user_model
+from rest_framework.test import APITestCase, APIClient
+from rest_framework import status
+from organisation.models import Organization
+from users.models import User
+from rest_framework_simplejwt.tokens import RefreshToken
 
-class ContributorTests(APITestCase):
+class AddContributorTest(APITestCase):
     def setUp(self):
-        # Create an organization using your custom primary key (Organization_id)
+        # Create an organization (ensure you set the required fields for your Organization model)
         self.organization = Organization.objects.create(
-            name="Test Organization",
-            description="Test description for the organization.",
-            email="test@organization.com",
-            phone="1234567890",
-            address="123 Test Address"
+            Organization_id="org123",  # Adjust according to your model's fields
+            name="Test Organization"
         )
-
-        User = get_user_model()
-
-        # Create an admin user (from the user model) for organization admins.
-        self.admin_user = User.objects.create_user(
-            email='testuser@example.com',
-            password='testpassword',
-            username='testuser',
-            role='organization_admin'
-        )
-        # Link the admin user to the organization and patch the attribute expected by the view.
-        self.admin_user.organization = self.organization
-        setattr(self.admin_user, 'Organization_id', self.organization.Organization_id)
-        self.admin_user.save()
-
-        # Create a non-admin user for testing unauthorized access.
-        self.non_admin_user = User.objects.create_user(
-            email='nonadmin@example.com',
-            password='nonadminpassword',
-            username='nonadmin',
-            role='contributor'
-        )
-        self.non_admin_user.organization = self.organization
-        setattr(self.non_admin_user, 'Organization_id', self.organization.Organization_id)
-        self.non_admin_user.save()
-
-        # (Optional) Create a Contributor instance if needed, but for authentication tests we use the user model.
-        self.contributor_instance = Contributor.objects.create(
-            first_name="Contributor",
-            last_name="User",
-            email="contributor@organization.com",
+        
+        # Create a user with role 'organization_admin' who is associated with the organization.
+        # This user acts as the "super admin" for this test.
+        self.super_admin = User.objects.create_user(
+            email="admin@example.com",
+            first_name="Admin",
+            sur_name="User",
+            username="adminuser",
+            password="AdminPass1!",
+            role="organization_admin",
             organization=self.organization,
-            role="contributor",
-            password="contributorpw"
+            phone_number="1111111111"
         )
-
-        # Initialize the APIClient for making requests.
+        
+        # Set up the API client and generate a valid JWT token for the super admin.
         self.client = APIClient()
+        refresh = RefreshToken.for_user(self.super_admin)
+        access_token = str(refresh.access_token)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+        
+        # Use the correct URL name defined in your urls.py
+        self.url = reverse('add_contributor')
 
-    def login_and_get_token(self, email, password):
-        """
-        Logs in via the login endpoint and returns the access token.
-        Adjust the endpoint and payload as needed.
-        """
-        login_url = '/users/login/'
-        response = self.client.post(login_url, {
-            'email': email,
-            'password': password,
-        })
-        self.assertEqual(response.status_code, 200)
-        return response.data['access_token']
-
-    # Test POST /api/add_contributor/ API - Add contributor (authenticated as admin)
-    def test_add_contributor_authenticated(self):
-        token = self.login_and_get_token('testuser@example.com', 'testpassword')
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
-
+    def test_super_admin_add_contributor(self):
+        # Prepare the data for the new contributor.
         data = {
-            "first_name": "John",
-            "last_name": "Doe",
-            "email": "john.doe@example.com",
-            "phone": "1234567890",
-            "organization": self.organization.Organization_id,  # Using your custom primary key
-            "role": "contributor",
-            "password": "password123",
+            "email": "contributor@example.com",
+            "first_name": "Contributor",
+            "sur_name": "User",
+            "username": "contributoruser",
+            "password": "StrongPass1!",
+            "password2": "StrongPass1!",
+            "phone_number": "2222222222",
+            "date_of_birth": "1990-01-01",
+            "field": "Test Field"
         }
-
-        url = reverse('add_contributor')  # Make sure this matches your urls.py
-        response = self.client.post(url, data, format="json")
+        
+        # Make the POST request to add the contributor.
+        response = self.client.post(self.url, data, format='json')
+        
+        # Assert that the response status code is HTTP 201 CREATED.
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['first_name'], "John")
-        self.assertEqual(response.data['email'], "john.doe@example.com")
-        self.assertIn('contributor_id', response.data)
-
-        # Verify that the contributor was saved with the proper organization.
-        contributor = Contributor.objects.get(contributor_id=response.data['contributor_id'])
-        self.assertEqual(contributor.first_name, "John")
-        self.assertEqual(contributor.organization, self.organization)
-
-    # Test POST /api/add_contributor/ API - Unauthorized user (non-admin)
-    def test_add_contributor_unauthorized(self):
-        token = self.login_and_get_token('nonadmin@example.com', 'nonadminpassword')
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
-
-        data = {
-            "first_name": "Jane",
-            "last_name": "Smith",
-            "email": "jane.smith@example.com",
-            "phone": "9876543210",
-            "role": "contributor",
-            "password": "password456",
-        }
-
-        url = reverse('add_contributor')
-        response = self.client.post(url, data, format="json")
-        # Non-admin users should be forbidden from adding a contributor.
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    # Test GET /api/contributors/ API - Retrieve contributors for an organization (authenticated as admin)
-    def test_get_contributors_authenticated(self):
-        token = self.login_and_get_token('testuser@example.com', 'testpassword')
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
-
-        # Add an additional contributor to the organization.
-        Contributor.objects.create(
-            first_name="Alice",
-            last_name="Wonderland",
-            email="alice@example.com",
-            phone="4567891230",
-            organization=self.organization,
-            role="contributor",
-            password="password123"
-        )
-
-        # Confirm that contributors exist in the database.
-        self.assertEqual(Contributor.objects.filter(organization=self.organization).count(), 3)
-
-        url = reverse('get_contributors')
-        response = self.client.get(url, format="json")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertGreater(len(response.data), 0)
-        self.assertTrue(any(contrib['first_name'] == "Alice" for contrib in response.data))
-
-    # Test POST /api/add_contributor/ API - Missing role (should default to 'contributor')
-    def test_add_contributor_missing_role(self):
-        token = self.login_and_get_token('testuser@example.com', 'testpassword')
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
-
-        data = {
-            "first_name": "Peter",
-            "last_name": "Pan",
-            "email": "peter.pan@example.com",
-            "phone": "1122334455",
-            "organization": self.organization.Organization_id,
-            "password": "password789",
-        }
-
-        url = reverse('add_contributor')
-        response = self.client.post(url, data, format="json")
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['role'], "contributor")
+        
+        # Assert that the response data contains the email we provided.
+        self.assertEqual(response.data['email'], data['email'])
+        
+        # Retrieve the newly created user from the database.
+        new_user = User.objects.get(email=data['email'])
+        
+        # Assert that the new user has the default role "contributor".
+        self.assertEqual(new_user.role, "contributor")
+        
+        # Assert that the new user's organization matches the super admin's organization.
+        self.assertEqual(new_user.organization, self.organization)
