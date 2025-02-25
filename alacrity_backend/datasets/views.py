@@ -117,7 +117,7 @@ def create_dataset(request):
 
 @api_view(['GET'])
 @role_required(['organization_admin', 'contributor', 'researcher'])
-@permission_classes([IsAuthenticated])
+#@permission_classes([IsAuthenticated])
 def get_datasets(request):
     # Get datasets for the user's organization only
     organization = request.user.organization
