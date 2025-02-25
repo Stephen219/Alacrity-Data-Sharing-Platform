@@ -109,6 +109,7 @@ def clean_data(request_data):
     cleaned_data['password2'] = cleaned_data.get('password', cleaned_data.get('password2'))
    
     cleaned_data['username'] = generate_username(cleaned_data.get('first_name'), cleaned_data.get('sur_name'))
+    print(cleaned_data)
  
     return cleaned_data
 
@@ -117,13 +118,7 @@ class RegisterView(APIView):
 
     def post(self, request):
         mapped_data = clean_data(request.data)
-
-        data1 = request.data
-        #print (data1)
-        request_data = request.data.copy()
-
         serializer = RegisterSerializer(data=mapped_data)
-
         try:
             if serializer.is_valid():
                 user = serializer.save()
@@ -149,4 +144,6 @@ class RegisterView(APIView):
                 {"error": "Registration failed", "details": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+        
+        
 
