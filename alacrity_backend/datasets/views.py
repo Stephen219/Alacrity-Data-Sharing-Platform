@@ -23,7 +23,7 @@ def is_valid_url(url):
 @csrf_protect
 @role_required(['organization_admin', 'contributor'])
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+#@permission_classes([IsAuthenticated])
 def create_dataset(request):
     if request.method != 'POST':
         return Response({'error': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
