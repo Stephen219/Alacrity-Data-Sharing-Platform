@@ -96,11 +96,12 @@ IS_GITLAB_CI = os.getenv('CI', 'false').lower() == 'true'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'project_db',
-        'USER': 'root',
-        'PASSWORD': "comsc",
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': os.getenv('DJANGO_DATABASE_NAME', 'alacrity_db'),
+        'USER': os.getenv('DJANGO_DATABASE_USER', 'root'),
+
+        'PASSWORD':"" if IS_GITLAB_CI else os.getenv('DJANGO_DATABASE_PASSWORD', 'comsc'),
+        'HOST': os.getenv('DJANGO_DATABASE_HOST', 'mysql'),
+        'PORT': os.getenv('DJANGO_DATABASE_PORT', '3306'),
         'TEST': {
             'NAME': 'alacrity_db',
         }
