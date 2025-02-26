@@ -1,54 +1,48 @@
 import io
-from django.shortcuts import get_object_or_404, render
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_protect, csrf_exempt
-from minio import Minio
-import pandas as pd
-from rest_framework.decorators import api_view
-from django.views.decorators.http import require_http_methods
-from .models import Dataset
-from urllib.parse import urlparse
 import json
-import uuid
-from storages.backends.s3boto3 import S3Boto3Storage
-from django.core.files.storage import default_storage 
-import re
-from users.decorators import role_required
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.renderers import JSONRenderer
-from scipy.stats import mode
-from django.core.cache import cache
-
-default_storage = S3Boto3Storage() 
-from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status
 import logging
-from datetime import datetime
 import os
-import json
-import uuid
+import re
+import tempfile
 import threading
+import uuid
+from datetime import datetime
+from urllib.parse import urlparse
+import boto3
+import pandas as pd
+from cryptography.fernet import Fernet
+from django.core.cache import cache
+from django.core.files.storage import default_storage
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, render
 from django.utils.decorators import method_decorator
 from django.views import View
-from django.http import JsonResponse
-from .tasks import compute_correlation, fetch_json_from_minio
-from django.views.decorators.csrf import csrf_exempt
-from alacrity_backend.settings import MINIO_URL, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, MINIO_BUCKET_NAME
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.views.decorators.http import require_http_methods
+from minio import Minio
+from nanoid import generate
+from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.negotiation import DefaultContentNegotiation
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.renderers import JSONRenderer
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from scipy.stats import mode
+from storages.backends.s3boto3 import S3Boto3Storage
 
+from alacrity_backend.settings import (MINIO_ACCESS_KEY, MINIO_BUCKET_NAME,
+                                     MINIO_SECRET_KEY, MINIO_URL)
+from users.decorators import role_required
 
+from .models import Dataset
+from .serializer import DatasetSerializer
+# from .tasks import compute_correlation, fetch_json_from_minio
+
+default_storage = S3Boto3Storage()
 
 logger = logging.getLogger(__name__)
-
-
-
-#renderer = JSONRenderer()
-
-
-# this view creates the datases in the database, in future it will be updated to include the organization and user id by checking in the user who is logged in while making the request
 
 def is_valid_url(url):
     try:
@@ -57,147 +51,120 @@ def is_valid_url(url):
     except:
         return False
 
-    
 
 
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
-import os
-import uuid
-import tempfile
-import threading
-from datetime import datetime
-import logging
-
-from nanoid import generate
-logger = logging.getLogger(__name__)
-
-
+minio_client = Minio(
+    endpoint="10.72.98.137:9000",
+    access_key="admin",
+    secret_key="Notgood1",
+    secure=False  
+)
+BUCKET = MINIO_BUCKET_NAME
 
 def generate_id():
-    return generate(size=10)
+    return str(uuid.uuid4())
 
 
 
 @method_decorator(csrf_exempt, name='dispatch')
 # @method_decorator(role_required(['organization_admin', 'contributor']), name='dispatch')
 class CreateDatasetView(APIView):
-    from rest_framework.negotiation import DefaultContentNegotiation
     content_negotiation_class = DefaultContentNegotiation
     renderer_classes = [JSONRenderer]
-    print (renderer_classes)
-    # configure accepter renderer
-
     parser_classes = [MultiPartParser, FormParser]
 
     @role_required(['organization_admin', 'contributor'])
 
     def post(self, request, *args, **kwargs):
-        print("inside the post method")
+        print("Inside POST method")
         print(request.FILES)
-        print("receive the post now processing it")
-
-        
         start = datetime.now()
-        print("start time is ", start)
+        print("Start time:", start)
 
         try:
             file = request.FILES.get('file')
             if not file:
-                return Response({"error": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST)
+                logger.error("No file uploaded")
+                return Response({"error": "No file uploaded"}, status=400)
 
             file_extension = file.name.split(".")[-1]
             file_basename = file.name.split(".")[0]
-            unique_filename = f"{uuid.uuid4()}_{file_basename}.{file_extension}"
+            unique_filename = f"{uuid.uuid4()}_{file_basename}.parquet.enc"
 
-            # Get a temp directory compatible with Windows/Linux/macOS
-            temp_dir = tempfile.gettempdir()
-            temp_file_path = os.path.join(temp_dir, unique_filename)
+            # Load and compress to Parquet
+            logger.info(f"Reading CSV: {file.name}")
+            df = pd.read_csv(file)
+            buffer = io.BytesIO()
+            logger.info("Converting to Parquet with zstd")
+            df.to_parquet(buffer, compression="zstd", compression_level=19, engine="pyarrow")
+            buffer.seek(0)
 
-            # Save the file locally first
-            with open(temp_file_path, "wb") as f:
-                for chunk in file.chunks():
-                    f.write(chunk)
+          
+            key = Fernet.generate_key()
+            cipher = Fernet(key)
+            logger.info("Encrypting data")
+            encrypted_data = cipher.encrypt(buffer.getvalue())
 
-            print(f"File saved locally at: {temp_file_path}")
+            # 
+            file_key = f"encrypted/{unique_filename}"
+            logger.info(f"Uploading to MinIO: {file_key}")
+            minio_client.put_object(
+                bucket_name=BUCKET,
+                object_name=file_key,
+                data=io.BytesIO(encrypted_data),
+                length=len(encrypted_data)
+            )
+            file_url = f"{MINIO_URL}/{BUCKET}/{file_key}"
+            # file_url = f"s3://{BUCKET}/{file_key}"
 
-            # Upload to MinIO / S3 storage
-            file_name = default_storage.save(unique_filename, file)
-            file_url = default_storage.url(file_name)
-            print(f"File uploaded to MinIO at: {file_url}")
-
-            # Extract form data
+            # Extract and validate form data
             title = request.POST.get('title')
             category = request.POST.get('category')
             description = request.POST.get('description')
-
-            # Validate form data
             if not title or len(title) > 100:
-                return Response({"error": "Invalid title"}, status=status.HTTP_400_BAD_REQUEST)
+                logger.error("Invalid title")
+                return Response({"error": "Invalid title"}, status=400)
             if not description or len(description) < 10 or len(description) > 100000:
-                return Response({"error": "Invalid description"}, status=status.HTTP_400_BAD_REQUEST)
+                logger.error("Invalid description")
+                return Response({"error": "Invalid description"}, status=400)
 
-            dataset_id1 = generate_id()
-            print(dataset_id1)
-            print("above is the dataset id")
+            dataset_id = generate_id()
+            print("Dataset ID:", dataset_id)
+            print("Dataset ID:", dataset_id)
+            print("Dataset ID:", dataset_id)
+            schema = {col: str(t) for col, t in df.dtypes.items()}
 
-            stop = datetime.now()
-            print("end time is ", stop)
-            print("time taken is ", stop - start)
-
-            # Save dataset to database
+            # Save to database
+            logger.info(f"Saving dataset metadata: {dataset_id}")
             dataset = Dataset.objects.create(
-                dataset_id=dataset_id1,
+                dataset_id=dataset_id,
                 title=title,
                 category=category,
                 link=file_url,
-                description=description
+                description=description,
+                encryption_key=key.decode(),
+                schema=schema
             )
-          # TODO: add tags and also the contributor id who will bring the organization id
-          # TODO: REMOVE THE FILE IO OPERATIONS FROM THE MAIN THREAD AND USE THREADING TO DO THE FILE OPERATIONS AND OPTIMIZE THE CODE
-            # Start background thread for correlation calculation
-            correlation_json_path = os.path.join(temp_dir, f"{uuid.uuid4()}_correlation.json")
-            thread = threading.Thread(
-                target=compute_correlation,
-                args=(temp_file_path, correlation_json_path, dataset_id1)
-            )
-            thread.start()
 
-            return Response({"message": "Dataset created successfully"}, status=status.HTTP_201_CREATED)
+            stop = datetime.now()
+            print("End time:", stop)
+            print("Time taken:", stop - start)
+            logger.info(f"Upload completed in {stop - start}")
+
+            return Response({"message": "Dataset created successfully", "dataset_id": dataset_id, "file_url": file_url}, status=201)
 
         except Exception as e:
             logger.error(f"Error: {e}", exc_info=True)
-            return Response({"error": "Something went wrong"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        
-
-
-# this view is used to get the datasets from the database and display them in the frontend
-
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
-from .models import Dataset
-from .serializer import DatasetSerializer
-
-@api_view(['GET'])
-def all_datasets_view(request):
-    # Fetch all datasets with related contributor and organization data
-    datasets = Dataset.objects.select_related('contributor_id__organization').all()
-    # Serialize the data
-    serializer = DatasetSerializer(datasets, many=True)
-    return Response({"datasets": serializer.data}, status=status.HTTP_200_OK)
-    
+            return Response({"error": "Something went wrong"}, status=500)
 
 
 
 
-#analysis
 
+
+
+# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 minio_client = Minio(
     endpoint="10.72.98.137:9000",
     access_key="admin",
@@ -457,34 +424,6 @@ def filter_and_clean_dataset(request, dataset_id):
 
 
 
-
-@api_view(['GET'])
-def correlation_analysis(request, dataset_id):
-    """Retrieve precomputed correlation JSON from MinIO using dataset_id."""
-    print("Fetching correlation analysis...")
-
-    dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
-
-    # Get analysis file URL from database
-    analysis_link = dataset.analysis_link
-    print("Fetching correlation ananalysis linkd...")
-    print(analysis_link)
-    if not analysis_link:
-        return Response({"error": "No correlation analysis found for this dataset"}, status=404)
-
-    try:
-        
-        correlation_data = fetch_json_from_minio(analysis_link)
-
-        if correlation_data is None:
-            return Response({"error": "Failed to retrieve analysis file"}, status=500)
-
-        return Response({
-            "dataset_id": dataset_id,
-            "correlation_analysis": correlation_data
-        })
-    except Exception as e:
-        return Response({"error": f"Server error: {str(e)}"}, status=500)
 
 
 

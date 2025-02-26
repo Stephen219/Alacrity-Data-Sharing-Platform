@@ -7,6 +7,10 @@ nanoid
 pandas
 scipy
 statsmodels
+duckdb
+cryptography
+hashlib
+
 
 # dotenv
 python-dotenv
@@ -32,6 +36,10 @@ rest_framework_simplejwt
 # djangorestframework-jwt
 djangorestframework-simplejwt
 Pillow
+
+
+
+
 
 
 

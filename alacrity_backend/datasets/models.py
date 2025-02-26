@@ -8,7 +8,7 @@ def generate_id():
     return generate(size=10)
 
 class Dataset(models.Model):
-    dataset_id = models.CharField(max_length=10, primary_key=True, default=generate_id , editable=False)
+    dataset_id = models.CharField(max_length=100, primary_key=True, default=generate_id , editable=False)
     # orgid = models.ForeignKey(Organization, on_delete=models.CASCADE)  
     # techinically an uploader has to be in an organization hence the uploaderid is the organization id
     contributor_id = models.ForeignKey(User, on_delete=models.CASCADE , related_name='contributor_id', default="1")
@@ -41,10 +41,14 @@ class Dataset(models.Model):
 
 
     tags = models.JSONField(default=list)
+    description = models.TextField()
+    encryption_key = models.CharField(max_length=255)  
+    schema = models.JSONField()  
 
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
 
     class Meta:
         unique_together = ['title', 'link'] 

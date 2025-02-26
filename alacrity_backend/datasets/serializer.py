@@ -14,6 +14,8 @@ class DatasetSerializer(serializers.ModelSerializer):
             'contributor_name',  
             'organization_name', 
             'category',
+            'schema', 
+
            
             'analysis_link',
             'description',
