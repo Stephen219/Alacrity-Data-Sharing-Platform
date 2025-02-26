@@ -19,7 +19,7 @@ class User(AbstractUser):
 
     first_name = models.CharField(max_length=30)  
     sur_name = models.CharField(max_length=30) 
-    username = models.CharField(max_length=30)
+    username = models.CharField(max_length=300, unique=True)
     phone_number = models.CharField(max_length=15, unique=True, blank=True, null=True) 
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True)

@@ -58,7 +58,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       };
     
     
-      const isAuthenticated = autheticated();
+  const isAuthenticated = autheticated();
   const noNavPaths: string[] = ["/auth/sign-in", "/auth/sign-up", "/auth/forgot-password", "/auth/reset-password", "/not-found"];
   const hideSidebarPaths: string[] = ["/"];
 

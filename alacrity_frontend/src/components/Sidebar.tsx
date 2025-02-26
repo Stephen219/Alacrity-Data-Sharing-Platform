@@ -4,7 +4,7 @@ import React, {  useEffect, useState } from "react";
 import NavItems from "./NavItems";
 import { fetchUserData } from "@/libs/auth";
 
-type UserRole = "organisation" | "researcher"| "contributor" | null;
+type UserRole = "organization_admin" | "researcher"| "contributor" | null;
 
 type SidebarProps = {
   isOpen: boolean;
@@ -19,7 +19,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
     const fetchRole = async () => {
       try {
         const userData = await fetchUserData();
-        if (userData && (userData.role === "organisation" || userData.role === "contributor" ||
+        if (userData && (userData.role === "organization_admin" || userData.role === "contributor" ||
           userData.role === "researcher") ) {
           setUserRole(userData.role);
         }

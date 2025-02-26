@@ -5,7 +5,7 @@ import { NAV_ITEMS } from "@/components/config/index";
 import NavItem from "./NavItem";
 import { useOnClickOutside } from "@/hooks/use-on-click-outside";
 
-export type UserRole = "organisation" | "researcher" |"contributor" |null;
+export type UserRole = "organization_admin" | "researcher" |"contributor" |null;
 
 interface NavItemsProps {
   userRole: UserRole; 

@@ -28,8 +28,8 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
     getUserData();
   }, []);
 
-  const getUserRole = (): "organisation" | "researcher" | 'contributor' | null => {
-    if (user && (user.role === "organisation" || user.role === "researcher" || user.role === "contributor")) {
+  const getUserRole = (): "organization_admin" | "researcher" | 'contributor' | null => {
+    if (user && (user.role === "organization_admin" || user.role === "researcher" || user.role === "contributor")) {
       return user.role;
     }
     return null;

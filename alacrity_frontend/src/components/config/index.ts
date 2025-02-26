@@ -4,7 +4,7 @@ export const NAV_ITEMS = [
     {
       label: "Datasets",
       value: "datasets" as const,
-      roles: ["organisation", "contributor"], 
+      roles: ["organization_admin"], 
       // roles: ["organisation", "contributor"],
       featured: [
         {
@@ -27,7 +27,7 @@ export const NAV_ITEMS = [
     {
       label: "Review",
       value: "review" as const,
-      roles: ["organisation", "contributor"],
+      roles: ["organization_admin", "contributor"],
       featured: [
         {
           name: "Approve Access",
