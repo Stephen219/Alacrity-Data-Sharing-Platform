@@ -1,18 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { fetchUserData } from "@/libs/auth";
-
-interface User {
-  id: number;
-  email: string;
-  firstname: string;
-  surname: string;
-  phonenumber: string;
-  role: string;
-  organization: string | null;
-  field: string;
-}
+import { fetchUserData} from "@/libs/auth"; // Import User interface from auth
+import { User } from "@/types/types";
 
 const ProfileDisplay: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -22,6 +12,7 @@ const ProfileDisplay: React.FC = () => {
   useEffect(() => {
     const loadUserData = async () => {
       const userData = await fetchUserData();
+
       if (userData) {
         setUser(userData);
       } else {
@@ -71,12 +62,12 @@ const ProfileDisplay: React.FC = () => {
         <div className="flex items-center gap-4 mb-6">
           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
             <span className="text-2xl font-bold text-blue-600">
-              {user.firstname.charAt(0) + (user.surname.charAt(0) || "")}
+              {user.firstname.charAt(0) + (user.lastname.charAt(0) || "")}
             </span>
           </div>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              {user.firstname} {user.surname || ""}
+              {user.firstname} {user.lastname || ""}
             </h1>
             <p className="text-sm text-gray-600">{user.role}</p>
           </div>
@@ -101,7 +92,7 @@ const ProfileDisplay: React.FC = () => {
             <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
               <p className="text-sm text-gray-500">Organization</p>
               <p className="text-lg font-medium text-gray-800">
-                {user.organization || "Not provided"}
+                {user.organization|| "Not provided"}
               </p>
             </div>
             <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -114,6 +105,7 @@ const ProfileDisplay: React.FC = () => {
         </div>
 
         <div className="mt-6 text-center">
+          {/* Uncomment if needed */}
           {/* <button
             onClick={() => window.location.reload()}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"

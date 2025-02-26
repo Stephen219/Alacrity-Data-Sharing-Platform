@@ -41,8 +41,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }, []);
       useEffect(() => {
         const getUserData = async () => {
-          const userData = await fetchUserData();
-          setUser(userData);
+          const userData: User | null = await fetchUserData();
+          if (userData) {
+            setUser(userData);
+          }
         };
     
         getUserData();

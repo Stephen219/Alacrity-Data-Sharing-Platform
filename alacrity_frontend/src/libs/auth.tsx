@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation"
 import { BACKEND_URL } from "@/config";
+import { User } from "@/types/types";
 
 
 const API_BASE_URL = BACKEND_URL;
@@ -154,7 +155,7 @@ export function scheduleTokenRefresh() {
 
    
     setInterval(async () => {
-        await refreshToken(); }, 1000 * 60 * 10);  // Refresh every 10 minutes
+        await refreshToken(); }, 1000 * 60 * 10);  
 }
 
 
@@ -163,14 +164,13 @@ export function scheduleTokenRefresh() {
 
 
 
-type User = {
-    username: string;
-    email: string;
-    role: string;
-    phone_number: string;
-    address: string;
-  };
+
   
+
+
+
+
+
   type AuthContextType = {
     user: User | null;
     loading: boolean;

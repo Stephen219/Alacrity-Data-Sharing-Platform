@@ -1,14 +1,17 @@
 
 // to avoid types being in the camponents  define them here
+
 type User = {
-  id: string;
-  name: string;
+  id: number;
   email: string;
-  phone_number: string;
-  role: "organisation" | "researcher" | "contributor";
+  username: string;
+  firstname: string;
+  lastname: string;
+  phonenumber: string;
+  organization: string | null;
+  role: string;
   field: string;
+}
 
-
-};
 
 export type { User };
