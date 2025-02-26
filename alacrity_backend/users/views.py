@@ -76,12 +76,6 @@ class CSRFTokenView(View):
         return JsonResponse({"csrfToken": get_token(request)})
     
 
-
-
-
-
-
-
 def generate_username(first_name: str, last_name: str) -> str:
     """
     Generates a unique username based on the first name and last name.
@@ -110,7 +104,7 @@ def clean_data(request_data):
     cleaned_data.pop('phonenumber', None)
  
     
-    cleaned_data['role'] = 'researcher'  
+    cleaned_data['role'] = 'organization_admin'  
    
     cleaned_data['password2'] = cleaned_data.get('password', cleaned_data.get('password2'))
    
@@ -142,11 +136,9 @@ class RegisterView(APIView):
                     }
                 }
                 return Response(response_data, status=status.HTTP_201_CREATED)
-            print (23456789)
             print(serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            print("we are here")
             print(e)
             return Response(
                 {"error": "Registration failed", "details": str(e)},

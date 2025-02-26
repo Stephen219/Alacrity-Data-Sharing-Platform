@@ -9,6 +9,7 @@ import { User } from "@/types/types";
 
 
 
+
 type NavbarProps = {
   toggleSidebar: () => void;
 };

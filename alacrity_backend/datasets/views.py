@@ -1,7 +1,21 @@
-import io
+
 import json
 import logging
 import os
+
+from django.shortcuts import get_object_or_404, render
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_protect, csrf_exempt
+from minio import Minio
+import pandas as pd
+from rest_framework.decorators import api_view
+from django.views.decorators.http import require_http_methods
+from .models import Dataset
+from urllib.parse import urlparse
+import uuid
+from storages.backends.s3boto3 import S3Boto3Storage
+from django.core.files.storage import default_storage 
+
 import re
 import tempfile
 import threading
@@ -47,7 +61,7 @@ logger = logging.getLogger(__name__)
 def is_valid_url(url):
     try:
         result = urlparse(url)
-        return all([result.scheme, result.netloc, result.path])  
+        return all([result.scheme, result.netloc, result.path])
     except:
         return False
 
@@ -164,7 +178,33 @@ class CreateDatasetView(APIView):
 
 
 
-# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+
+@api_view(['GET'])
+@role_required(['organization_admin', 'contributor', 'researcher'])
+#@permission_classes([IsAuthenticated])
+def get_datasets(request):
+    # Get datasets for the user's organization only
+    organization = request.user.organization
+    datasets = Dataset.objects.filter(orgid=organization)
+    
+    data = []
+    for dataset in datasets:
+        data.append({
+            'id': dataset.dataset_id,
+            'title': dataset.title,
+            'category': dataset.category,
+            'link': dataset.link,
+            'description': dataset.description,
+            'uploader': f"{dataset.uploaderid.first_name} {dataset.uploaderid.last_name}",
+            'created_at': dataset.created_at,
+            'updated_at': dataset.updated_at
+        })
+    return Response(data, status=200)
+
+#analysis
+
 minio_client = Minio(
     endpoint="10.72.98.137:9000",
     access_key="admin",
@@ -414,6 +454,7 @@ def filter_and_clean_dataset(request, dataset_id):
     print(f"Total rows before filtering: {total_before}")
     print(f"Filtered dataset to {total_after} rows. Session ID: {session_id}")
 
+<
     return Response({"filtered_data": filtered_results, "session_id": session_id}, status=200)
 
 
@@ -430,9 +471,11 @@ def filter_and_clean_dataset(request, dataset_id):
 
 
 
-# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-# fetching the dataset for display
 
 
 
+
+
+
+    return Response({"filtered_data": filtered_results, "session_id": session_id}, status=200)
 
