@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'datasets',
     'storages',
     'users',
+    'research',
 
     'rest_framework_simplejwt',
 
@@ -226,6 +227,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
+        #"rest_framework.permissions.AllowAny",
     ],
     'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler'
 }
@@ -315,6 +317,15 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "apikey"
 EMAIL_HOST_PASSWORD = os.getenv("SENDGRID_API_KEY")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")  
+
+
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+if DEBUG:
+    import mimetypes
+    mimetypes.add_type("application/javascript", ".js", True)
 
 
 
