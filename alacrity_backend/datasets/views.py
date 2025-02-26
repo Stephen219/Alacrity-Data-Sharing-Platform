@@ -1,4 +1,10 @@
+
+import json
+import logging
+import os
 import io
+import uuid
+
 from django.shortcuts import get_object_or_404, render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
@@ -11,20 +17,48 @@ from urllib.parse import urlparse
 import uuid
 from storages.backends.s3boto3 import S3Boto3Storage
 from django.core.files.storage import default_storage 
+
 import re
-from users.decorators import role_required
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.renderers import JSONRenderer
-from scipy.stats import mode
+import tempfile
+import threading
+import uuid
+from datetime import datetime
+from urllib.parse import urlparse
+import boto3
+import pandas as pd
+from cryptography.fernet import Fernet
 from django.core.cache import cache
+from django.core.files.storage import default_storage
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, render
+from django.utils.decorators import method_decorator
+from django.views import View
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.views.decorators.http import require_http_methods
+from minio import Minio
+from nanoid import generate
+from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.negotiation import DefaultContentNegotiation
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.renderers import JSONRenderer
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from scipy.stats import mode
+from storages.backends.s3boto3 import S3Boto3Storage
 
-default_storage = S3Boto3Storage() 
+from alacrity_backend.settings import (MINIO_ACCESS_KEY, MINIO_BUCKET_NAME,
+                                     MINIO_SECRET_KEY, MINIO_URL)
+from users.decorators import role_required
 
-#renderer = JSONRenderer()
+from .models import Dataset
+from .serializer import DatasetSerializer
+# from .tasks import compute_correlation, fetch_json_from_minio
 
+default_storage = S3Boto3Storage()
 
-# this view creates the datases in the database, in future it will be updated to include the organization and user id by checking in the user who is logged in while making the request
+logger = logging.getLogger(__name__)
 
 def is_valid_url(url):
     try:
@@ -33,87 +67,121 @@ def is_valid_url(url):
     except:
         return False
 
-    
+
+
+
+minio_client = Minio(
+    endpoint="10.72.98.137:9000",
+    access_key="admin",
+    secret_key="Notgood1",
+    secure=False  
+)
+BUCKET = MINIO_BUCKET_NAME
+
+def generate_id():
+    return str(uuid.uuid4())
+
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+# @method_decorator(role_required(['organization_admin', 'contributor']), name='dispatch')
+class CreateDatasetView(APIView):
+    content_negotiation_class = DefaultContentNegotiation
+    renderer_classes = [JSONRenderer]
+    parser_classes = [MultiPartParser, FormParser]
+
+    @role_required(['organization_admin', 'contributor'])
+
+    def post(self, request, *args, **kwargs):
+        print("Inside POST method")
+        print(request.FILES)
+        start = datetime.now()
+        print("Start time:", start)
+
+        try:
+            file = request.FILES.get('file')
+            if not file:
+                logger.error("No file uploaded")
+                return Response({"error": "No file uploaded"}, status=400)
+
+            file_extension = file.name.split(".")[-1]
+            file_basename = file.name.split(".")[0]
+            unique_filename = f"{uuid.uuid4()}_{file_basename}.parquet.enc"
+
+            # Load and compress to Parquet
+            logger.info(f"Reading CSV: {file.name}")
+            df = pd.read_csv(file)
+            buffer = io.BytesIO()
+            logger.info("Converting to Parquet with zstd")
+            df.to_parquet(buffer, compression="zstd", compression_level=19, engine="pyarrow")
+            buffer.seek(0)
+
+          
+            key = Fernet.generate_key()
+            cipher = Fernet(key)
+            logger.info("Encrypting data")
+            encrypted_data = cipher.encrypt(buffer.getvalue())
+
+            # 
+            file_key = f"encrypted/{unique_filename}"
+            logger.info(f"Uploading to MinIO: {file_key}")
+            minio_client.put_object(
+                bucket_name=BUCKET,
+                object_name=file_key,
+                data=io.BytesIO(encrypted_data),
+                length=len(encrypted_data)
+            )
+            file_url = f"{MINIO_URL}/{BUCKET}/{file_key}"
+            # file_url = f"s3://{BUCKET}/{file_key}"
+
+            # Extract and validate form data
+            title = request.POST.get('title')
+            category = request.POST.get('category')
+            description = request.POST.get('description')
+            if not title or len(title) > 100:
+                logger.error("Invalid title")
+                return Response({"error": "Invalid title"}, status=400)
+            if not description or len(description) < 10 or len(description) > 100000:
+                logger.error("Invalid description")
+                return Response({"error": "Invalid description"}, status=400)
+
+            dataset_id = generate_id()
+            print("Dataset ID:", dataset_id)
+            print("Dataset ID:", dataset_id)
+            print("Dataset ID:", dataset_id)
+            schema = {col: str(t) for col, t in df.dtypes.items()}
+
+            # Save to database
+            logger.info(f"Saving dataset metadata: {dataset_id}")
+            dataset = Dataset.objects.create(
+                dataset_id=dataset_id,
+                title=title,
+                category=category,
+                link=file_url,
+                description=description,
+                encryption_key=key.decode(),
+                schema=schema
+            )
+
+            stop = datetime.now()
+            print("End time:", stop)
+            print("Time taken:", stop - start)
+            logger.info(f"Upload completed in {stop - start}")
+
+            return Response({"message": "Dataset created successfully", "dataset_id": dataset_id, "file_url": file_url}, status=201)
+
+        except Exception as e:
+            logger.error(f"Error: {e}", exc_info=True)
+            return Response({"error": "Something went wrong"}, status=500)
 
 
 
 
-@csrf_protect
-@role_required(['organization_admin', 'contributor'])
-@api_view(['POST'])
-#@permission_classes([IsAuthenticated])
-def create_dataset(request):
-    if request.method != 'POST':
-        return Response({'error': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-    file = request.FILES.get('file')  # ✅ FIXED
-
-    if not file:
-        return Response({'error': 'No file uploaded'}, status=status.HTTP_400_BAD_REQUEST)
-
-    # Get the authenticated contributor and their organization
-    contributor = request.user  # Assuming request.user is the authenticated Contributor
-    organization = contributor.organization
-
-    file_extension = file.name.split(".")[-1]
-    file1 = file.name.split(".")[0]
-    unique_filename = f"{uuid.uuid4()}_{file1}.{file_extension}"
-
-    file_name = default_storage.save(unique_filename, file)
-    file_url = default_storage.url(file_name)
-
-    print(f"File uploaded successfully: {file_url}")
-
-    # Extract data
-    title = request.data.get('title')
-    category = request.data.get('category')
-    link = file_url  # ✅ FIXED
-    description = request.data.get('description')
-
-    # Validation
-    errors = {}
-    if not title:
-        errors['title'] = 'Title is required'
-    elif len(title) > 100:
-        errors['title'] = 'Title is too long'
-
-    if not link:
-        errors['link'] = 'Link is required'
-    elif not is_valid_url(link):
-        errors['link'] = 'Invalid link'
-
-    if not description:
-        errors['description'] = 'Description is required'
-    elif len(description) < 10:
-        errors['description'] = 'Description is too short'
-    elif len(description) > 1000:
-        errors['description'] = 'Description is too long'
-
-    if errors:
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
-
-    # Create dataset with organization and contributor information
-    dataset = Dataset(
-        title=title,
-        category=category,
-        link=link,
-        description=description,
-        orgid=organization,
-        uploaderid=contributor
-    )
-
-    try:
-        dataset.save()
-    except Exception as e:
-        print(f"An error occurred while creating the dataset: {e}")
-        return Response({'error': "An error occurred while creating the dataset"},
-                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    return Response({'message': 'Dataset created successfully'}, status=status.HTTP_201_CREATED)
 
 
 
-# let me test the auth with auth 
+
+
 
 @api_view(['GET'])
 @role_required(['organization_admin', 'contributor', 'researcher'])
@@ -388,4 +456,25 @@ def filter_and_clean_dataset(request, dataset_id):
     print(f"Total rows before filtering: {total_before}")
     print(f"Filtered dataset to {total_after} rows. Session ID: {session_id}")
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     return Response({"filtered_data": filtered_results, "session_id": session_id}, status=200)
+

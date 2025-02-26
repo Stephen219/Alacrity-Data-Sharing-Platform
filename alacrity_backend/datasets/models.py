@@ -2,17 +2,17 @@ from django.db import models
 from django.core.validators import MinLengthValidator, MaxLengthValidator, URLValidator
 from nanoid import generate
 from organisation.models import Organization
-#from users.models import User
+from users.models import User
 
 
 def generate_id():
     return generate(size=10)
 
-## This is the model for the dataset table in the database holding the dataset information.
 class Dataset(models.Model):
-    dataset_id = models.CharField(max_length=10, primary_key=True, default=generate_id , editable=False)
-    orgid = models.ForeignKey(Organization, on_delete=models.CASCADE)  # Foreign key to the Organization table, uncomment when Organization model is created
-  #  uploaderid = models.ForeignKey(User, on_delete=models.CASCADE)  # Foreign key to the User table, uncomment when User model is created
+    dataset_id = models.CharField(max_length=100, primary_key=True, default=generate_id , editable=False)
+    # orgid = models.ForeignKey(Organization, on_delete=models.CASCADE)  
+    # techinically an uploader has to be in an organization hence the uploaderid is the organization id
+    contributor_id = models.ForeignKey(User, on_delete=models.CASCADE , related_name='contributor_id', default="1")
     title = models.CharField(
         max_length=100, 
         validators=[
@@ -28,15 +28,42 @@ class Dataset(models.Model):
         max_length=255, 
         validators=[URLValidator()]
     )
+    analysis_link = models.CharField(
+        max_length=255, 
+        validators=[URLValidator()],
+        default= None, 
+        blank=True,
+        null=True
+    )
+    
     description = models.TextField(
         validators=[MinLengthValidator(10)]
     )
+
+
+    tags = models.JSONField(default=list)
+    description = models.TextField()
+    encryption_key = models.CharField(max_length=255)  
+    schema = models.JSONField()  
+
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
 
     class Meta:
-        unique_together = ['title', 'link']  # Ensure unique combination of title and link
+        unique_together = ['title', 'link'] 
 
         
     def __str__(self):
-        return self.title  # Corrected from self.name to self.title
+        return self.title  
+    
+    @property
+    def contributor_name(self):
+        """Returns the full name of the contributor."""
+        return f"{self.contributor_id.first_name} {self.contributor_id.last_name}".strip()
+
+    @property
+    def organization_name(self):
+        """Returns the name of the organization, if it exists."""
+        return self.contributor_id.organization.name if self.contributor_id.organization else "No organization"

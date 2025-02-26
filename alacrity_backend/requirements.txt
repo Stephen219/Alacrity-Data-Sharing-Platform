@@ -6,6 +6,11 @@ django-cors-headers
 nanoid
 pandas
 scipy
+statsmodels
+duckdb
+cryptography
+
+
 
 
 # dotenv
@@ -32,6 +37,10 @@ rest_framework_simplejwt
 # djangorestframework-jwt
 djangorestframework-simplejwt
 Pillow
+
+
+
+
 
 
 

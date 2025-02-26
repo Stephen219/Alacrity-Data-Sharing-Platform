@@ -69,6 +69,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'alacrity_backend.urls'
 
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -108,10 +109,11 @@ DATABASES = {
     }
 }
 
+ENCRYPTION_KEY = "EHqnpsZeTQrwcmGfADez0GCRcJ_vQNCg5ch_pQg83Z0="
 
 
 CORS_ALLOWED_ORIGINS = [
-    # FRONTEND_URL, 
+    FRONTEND_URL, 
     "http://127.0.0.1:3000",
     "http://localhost:3000",
 ]
@@ -124,10 +126,32 @@ CORS_ALLOW_HEADERS = [
     'origin',
     'x-requested-with',
     'x-csrftoken',
+    'x-requested-with',
+    'accept-encoding',
+    'accept-language',
+    'cache-control',
+    'connection',
+    'content-length',
+    'content-type',
+    'cookie',
+    'host',
+    'origin',
+]
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_ALLOW_ALL = False
+
+CORS_ALLOW_CREDENTIALS = True
+
 
 
 
@@ -142,6 +166,9 @@ MINIO_BUCKET_NAME = "alacrity"
 
 
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 524288000  
+FILE_UPLOAD_MAX_MEMORY_SIZE = 524288000 
 
 
 AWS_ACCESS_KEY_ID = MINIO_ACCESS_KEY
@@ -186,7 +213,11 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',  # Add this
+        'rest_framework.renderers.BrowsableAPIRenderer',  
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.TemplateHTMLRenderer',
+        'rest_framework.renderers.MultiPartRenderer',
+        
     ],
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',
@@ -199,6 +230,10 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler'
 }
 
+if DEBUG:
+    REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'].append('rest_framework.renderers.BrowsableAPIRenderer')
+
+
 
 
 AUTHENTICATION_BACKENDS = [
@@ -208,7 +243,7 @@ from datetime import timedelta
 
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=300),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,
