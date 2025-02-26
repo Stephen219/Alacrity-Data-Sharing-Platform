@@ -2,7 +2,7 @@ from django.db import models
 from django.core.validators import MinLengthValidator, MaxLengthValidator, URLValidator
 from nanoid import generate
 from organisation.models import Organization
-#from users.models import User
+from users.models import User
 
 
 def generate_id():
