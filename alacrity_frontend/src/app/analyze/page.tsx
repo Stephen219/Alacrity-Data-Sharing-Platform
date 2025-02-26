@@ -33,8 +33,9 @@ const DatasetsPage = () => {
         const response = await fetchWithAuth(`${BACKEND_URL}/datasets/`);
         if (!response.ok) throw new Error("Failed to fetch datasets");
         const data = await response.json();
-        setDatasets(data.datasets); // Assuming backend returns {"datasets": [...]}
+        setDatasets(data.datasets); 
       } catch (err) {
+        console.error("Failed to fetch datasets", err);
         setError("Could not load datasets");
         router.push("/auth/sign-in");
       } finally {

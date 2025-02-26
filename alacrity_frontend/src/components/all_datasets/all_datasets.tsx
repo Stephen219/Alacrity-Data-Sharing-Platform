@@ -3,8 +3,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import Image from "next/image";
-import { formatDistanceToNow } from "date-fns";
+// import Image from "next/image";
+// import { formatDistanceToNow } from "date-fns";
 import { BACKEND_URL } from "@/config";
 import { fetchWithAuth } from "@/libs/auth";
 import { DatasetCard } from "@/components/all_datasets/datasetCard";
@@ -78,6 +78,7 @@ function DatasetsPage() {
       if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
       const data = await response.json();
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mappedDatasets: Dataset[] = data.datasets.map((item: any) => ({
         dataset_id: item.dataset_id,
         title: item.title,

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 "use client";
 
@@ -137,7 +138,7 @@ const AnalyzePage = () => {
     const opConfig = typeOps.find((o) => o.value === op);
     if (!opConfig) return [];
     return Object.entries(dataset.schema)
-      .filter(([_, type]) => opConfig.types.includes("any") || opConfig.types.includes(type))
+      .filter(([, type]) => opConfig.types.includes("any") || opConfig.types.includes(type))
       .map(([name, type]) => ({ value: name, label: `${name} (${type})` }));
   };
 

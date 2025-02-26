@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ['picsum.photos'], // Add picsum.photos to allowed domains
+    domains: ['picsum.photos'],
   },
   reactStrictMode: true,
   /* config options here */
