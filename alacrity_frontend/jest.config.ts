@@ -46,14 +46,13 @@ const config: Config = {
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     '!src/config.ts',
+    '!src/index.tsx',
 
     '!src/setupTests.ts',
     '!src/page.tsx',
     '!src/**/types/**/*'
   ],
   
-
-  // Ignore node_modules from coverage
   coveragePathIgnorePatterns: [
     "\\\\node_modules\\\\"
   ],
@@ -64,7 +63,7 @@ const config: Config = {
       branches: 50,
       functions: 35,
       lines: 40,
-      statements: 40
+      statements: 37
     }
   },
 

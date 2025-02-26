@@ -4,19 +4,39 @@ import { Bell, Menu } from "lucide-react";
 import Link from "next/link";
 import { buttonVariants } from "./ui/button";
 import { usePathname } from "next/navigation";
+import { fetchUserData } from "@/libs/auth";
+import { User } from "@/types/types";
 
-const getUserRole = (): "organisation" | "researcher" | null => {
-  return "organisation"; // Simulated user role
-};
+
+
 
 type NavbarProps = {
   toggleSidebar: () => void;
 };
 
 const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
-  const userRole = getUserRole();
   const pathname = usePathname();
   const [isSignUpPage, setIsSignUpPage] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const getUserData = async () => {
+      const userData = await fetchUserData();
+      setUser(userData);
+    };
+
+    getUserData();
+  }, []);
+
+  const getUserRole = (): "organization_admin" | "researcher" | 'contributor' | null => {
+    if (user && (user.role === "organization_admin" || user.role === "researcher" || user.role === "contributor")) {
+      return user.role;
+    }
+    return null;
+  };
+
+
+  const userRole = getUserRole();
 
   useEffect(() => {
     setIsSignUpPage(pathname === "/auth/sign-up");

@@ -55,8 +55,23 @@ python manage.py migrate
 6. The backend will be accessible at `localhost:8000`.
 
 
+please note that after every pull from main, it is important to install the requirement.txt through
 
+```bash
+pip install -r requirements.txt
+```
 
+in order to get the necessary changes that might be pushed by other users or developers 
+also  python manage.py make migrations to get any changes in the databases that might have been made.
+
+```bash
+python manage.py makemigrations
+```
+
+or 
+```bash
+python manage.py makemigrations alacrity_backend
+```
 
 ### Frontend Setup
 To run the frontend manually:

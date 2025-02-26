@@ -1,20 +1,13 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-
-class Organization(models.Model):
-    name = models.CharField(max_length=255, unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.name
+from organisation.models import Organization
 
 class User(AbstractUser):
     ROLE_CHOICES = [
         ('organization_admin', 'Organization Admin'),
         ('admin', 'Admin'),
-        ('contributor', 'Contributor'),
-        ('researcher', 'Researcher'),
-        ('user', 'User'), 
+        ('contributor', 'organization_employee'), 
+        ('researcher', 'Researcher'), # default role
     ]
     
     email = models.EmailField(
@@ -26,7 +19,7 @@ class User(AbstractUser):
 
     first_name = models.CharField(max_length=30)  
     sur_name = models.CharField(max_length=30) 
-    #username = models.CharField(max_length=30)
+    username = models.CharField(max_length=300, unique=True)
     phone_number = models.CharField(max_length=15, unique=True, blank=True, null=True) 
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True)
@@ -52,7 +45,7 @@ class User(AbstractUser):
         return self.role == 'admin'
 
     def is_contributor(self):
-        return self.role == 'contributor'
+        return self.role == 'employee'
 
     def is_researcher(self):
         return self.role == 'researcher'

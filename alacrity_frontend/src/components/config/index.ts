@@ -4,11 +4,12 @@ export const NAV_ITEMS = [
     {
       label: "Datasets",
       value: "datasets" as const,
-      roles: ["organisation"],
+      roles: ["organization_admin"], 
+      // roles: ["organisation", "contributor"],
       featured: [
         {
           name: "Upload Dataset",
-          href: "/datasets",
+          href: "/datasets/add",
           imageSrc: "/navbar/datasets/uploadDataset.png",
         },
         {
@@ -26,7 +27,7 @@ export const NAV_ITEMS = [
     {
       label: "Review",
       value: "review" as const,
-      roles: ["organisation"],
+      roles: ["organization_admin", "contributor"],
       featured: [
         {
           name: "Approve Access",
@@ -49,7 +50,7 @@ export const NAV_ITEMS = [
       featured: [
         {
           name: "Explore Datasets",
-          href: "#",
+          href: "/datasets/all",
           imageSrc: "/navbar/researcher/browseDatasets.png",
         },
       ],
@@ -101,7 +102,7 @@ export const NAV_ITEMS = [
     {
       label: "My Account",
       value: "my-account",
-      roles: ["researcher", "organisation"],
+      roles: ["researcher", "organisation", "contributor"],
       featured: [
         {
           name: "Edit Profile",
@@ -135,5 +136,21 @@ export const NAV_ITEMS = [
         },
       ],
     },
+
+
+
+
+
+
   ];
+
+
+
+
+
+
+
+
+
+
   

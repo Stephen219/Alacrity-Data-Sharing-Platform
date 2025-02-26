@@ -1,8 +1,10 @@
+'use client'
 import LandingPage from "@/components/LandingPage";
 import { Button, buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
+import { withAccessControl } from "@/components/auth_guard/AccessControl";
 
-export default function researcher(){
+function researcher(){
     return <>
         <LandingPage/>
         <div className="justify-center flex flex-col sm:flex-row gap-4 mb-12">
@@ -11,3 +13,6 @@ export default function researcher(){
         </div>
     </>
 }
+
+
+export default withAccessControl(researcher, ['organization_admin', 'researcher', 'contributor']);

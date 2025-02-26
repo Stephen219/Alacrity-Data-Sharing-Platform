@@ -1,10 +1,10 @@
-"use client";
-import React from "react";
-import NavItems from "./NavItems";
 
-const getUserRole = (): "organisation" | "researcher" | null => {
-  return "organisation"; // authentication needs to be implemented
-};
+"use client";
+import React, {  useEffect, useState } from "react";
+import NavItems from "./NavItems";
+import { fetchUserData } from "@/libs/auth";
+
+type UserRole = "organization_admin" | "researcher"| "contributor" | null;
 
 type SidebarProps = {
   isOpen: boolean;
@@ -12,7 +12,26 @@ type SidebarProps = {
 };
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
-  const userRole = getUserRole();
+  const [userRole, setUserRole] = useState<UserRole>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRole = async () => {
+      try {
+        const userData = await fetchUserData();
+        if (userData && (userData.role === "organization_admin" || userData.role === "contributor" ||
+          userData.role === "researcher") ) {
+          setUserRole(userData.role);
+        }
+      } catch (error) {
+        console.error("Error fetching user role:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRole();
+  }, []); 
   return (
     <aside
       className={`fixed left-0 top-0 h-full w-40 bg-white shadow-md transition-transform duration-300 ${
@@ -24,7 +43,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         <button onClick={toggleSidebar}></button>
       </div>
       <nav className="flex flex-col space-y-4">
-        {userRole && <NavItems userRole={userRole} />}
+        {isLoading ? (
+          <div>Loading...</div>
+        ) : (
+          userRole && <NavItems userRole={userRole} />
+        )}
       </nav>
     </aside>
   );

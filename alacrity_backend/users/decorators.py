@@ -46,7 +46,7 @@ def role_required(allowed_roles=[]):
 
     def decorator(view_func):
         @wraps(view_func)
-        def wrapped_view(request, *args, **kwargs):
+        def wrapped_view(self,request, *args, **kwargs):
             try:
                 print("Incoming Headers:", request.headers)
                 
@@ -65,7 +65,7 @@ def role_required(allowed_roles=[]):
 
                 if user.role in allowed_roles:
                     request.user = user
-                    return view_func(request, *args, **kwargs)
+                    return view_func(self, request, *args, **kwargs)
                 else:
                     print (f"User role {user.role} not in allowed roles {allowed_roles}")
                     return Response({'error': 'Insufficient permissions'}, status=status.HTTP_403_FORBIDDEN)
