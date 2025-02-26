@@ -9,6 +9,10 @@ export default {
   ],
   theme: {
   	extend: {
+		maxWidth: {
+			//'4xl': '90rem', // Custom size for 4xl (~1440px)
+			'8xl': '120rem', // Custom size for 8xl (~1920px)
+		  },
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',

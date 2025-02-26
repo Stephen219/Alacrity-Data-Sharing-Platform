@@ -37,6 +37,7 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'corsheaders',
+    'django_extensions',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -48,6 +49,7 @@ INSTALLED_APPS = [
     'datasets',
     'storages',
     'users',
+    'research',
 
     'rest_framework_simplejwt',
 
@@ -110,7 +112,7 @@ DATABASES = {
 
 
 CORS_ALLOWED_ORIGINS = [
-    # FRONTEND_URL, 
+     FRONTEND_URL, 
     "http://127.0.0.1:3000",
     "http://localhost:3000",
 ]
@@ -198,6 +200,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
+        #"rest_framework.permissions.AllowAny",
     ],
     'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler'
 }
@@ -283,6 +286,15 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "apikey"
 EMAIL_HOST_PASSWORD = os.getenv("SENDGRID_API_KEY")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")  
+
+
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+if DEBUG:
+    import mimetypes
+    mimetypes.add_type("application/javascript", ".js", True)
 
 
 

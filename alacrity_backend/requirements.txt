@@ -6,6 +6,7 @@ django-cors-headers
 nanoid
 pandas
 scipy
+django-extensions
 
 # dotenv
 python-dotenv
