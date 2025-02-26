@@ -8,7 +8,6 @@ from rest_framework.decorators import api_view
 from django.views.decorators.http import require_http_methods
 from .models import Dataset
 from urllib.parse import urlparse
-import json
 import uuid
 from storages.backends.s3boto3 import S3Boto3Storage
 from django.core.files.storage import default_storage 
@@ -30,7 +29,7 @@ default_storage = S3Boto3Storage()
 def is_valid_url(url):
     try:
         result = urlparse(url)
-        return all([result.scheme, result.netloc, result.path])  
+        return all([result.scheme, result.netloc, result.path])
     except:
         return False
 
@@ -42,6 +41,7 @@ def is_valid_url(url):
 @csrf_protect
 @role_required(['organization_admin', 'contributor'])
 @api_view(['POST'])
+#@permission_classes([IsAuthenticated])
 def create_dataset(request):
     if request.method != 'POST':
         return Response({'error': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
@@ -50,6 +50,10 @@ def create_dataset(request):
 
     if not file:
         return Response({'error': 'No file uploaded'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Get the authenticated contributor and their organization
+    contributor = request.user  # Assuming request.user is the authenticated Contributor
+    organization = contributor.organization
 
     file_extension = file.name.split(".")[-1]
     file1 = file.name.split(".")[0]
@@ -68,7 +72,6 @@ def create_dataset(request):
 
     # Validation
     errors = {}
-
     if not title:
         errors['title'] = 'Title is required'
     elif len(title) > 100:
@@ -89,11 +92,18 @@ def create_dataset(request):
     if errors:
         return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
-    dataset = Dataset(title=title, category=category, link=link, description=description)
+    # Create dataset with organization and contributor information
+    dataset = Dataset(
+        title=title,
+        category=category,
+        link=link,
+        description=description,
+        orgid=organization,
+        uploaderid=contributor
+    )
 
     try:
         dataset.save()
-        print(f"Dataset created successfully: {dataset}")
     except Exception as e:
         print(f"An error occurred while creating the dataset: {e}")
         return Response({'error': "An error occurred while creating the dataset"},
@@ -107,18 +117,23 @@ def create_dataset(request):
 
 @api_view(['GET'])
 @role_required(['organization_admin', 'contributor', 'researcher'])
-
+#@permission_classes([IsAuthenticated])
 def get_datasets(request):
-    datasets = Dataset.objects.all()
+    # Get datasets for the user's organization only
+    organization = request.user.organization
+    datasets = Dataset.objects.filter(orgid=organization)
+    
     data = []
-    print(datasets.values())
     for dataset in datasets:
         data.append({
             'id': dataset.dataset_id,
             'title': dataset.title,
             'category': dataset.category,
             'link': dataset.link,
-            'description': dataset.description
+            'description': dataset.description,
+            'uploader': f"{dataset.uploaderid.first_name} {dataset.uploaderid.last_name}",
+            'created_at': dataset.created_at,
+            'updated_at': dataset.updated_at
         })
     return Response(data, status=200)
 

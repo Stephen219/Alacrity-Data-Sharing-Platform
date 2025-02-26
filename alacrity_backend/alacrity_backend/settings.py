@@ -159,10 +159,6 @@ AWS_S3_REGION_NAME = 'us-east-1'
 
 import pymysql
 pymysql.install_as_MySQLdb()
-
-
-
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
