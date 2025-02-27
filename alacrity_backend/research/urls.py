@@ -1,31 +1,28 @@
 from django.urls import path
 from .views import (
-    get_recently_deleted,
-    get_user_bookmarks,
-    permanently_delete_submission,
-    restore_submission,
-    save_submission,
-    get_analysis_submissions,  
-    get_draft_submissions,  
-    edit_analysis_submission,
-    delete_analysis_submission,
-    toggle_bookmark,
-    view_submissions,
-    delete_draft_submission
+    SaveSubmissionView,
+    AnalysisSubmissionsView,
+    DraftSubmissionsView,
+    EditSubmissionView,
+    DeleteSubmissionView,
+    RestoreSubmissionView,
+    GetRecentlyDeletedView,
+    PermanentlyDeleteSubmissionView,
+    ViewSubmissionsView,
+    ToggleBookmarkView,
+    UserBookmarksView,
 )
 
 urlpatterns = [
-    path("submissions/save/", save_submission, name="save_submission"),
-    path("submissions/", get_analysis_submissions, name="get_analysis_submissions"),  
-    path("drafts/", get_draft_submissions, name="get_draft_submissions"),  
-    path("submissions/edit/<int:submission_id>/", edit_analysis_submission, name="edit_analysis_submission"),
-    path("submissions/delete/<int:submission_id>/", delete_analysis_submission, name="delete_analysis_submission"),
-    path("submissions/restore/<int:submission_id>/", restore_submission, name="restore_submission"),
-    path("submissions/permanent-delete/<int:submission_id>/", permanently_delete_submission, name="permanently_delete_submission"),
-    path("submissions/recently-deleted/", get_recently_deleted, name="get_recently_deleted"),
-    path("submissions/view/", view_submissions, name="view_submissions"),
-    path('bookmark/<int:submission_id>/', toggle_bookmark, name='toggle-bookmark'),
-    path('bookmarks/', get_user_bookmarks, name='get-user-bookmarks'),
-    path("drafts/delete/<int:submission_id>/", delete_draft_submission, name="delete_draft"),
+    path("submissions/save/", SaveSubmissionView.as_view(), name="save_submission"),
+    path("submissions/", AnalysisSubmissionsView.as_view(), name="get_analysis_submissions"),  
+    path("drafts/", DraftSubmissionsView.as_view(), name="get_draft_submissions"),  
+    path("submissions/edit/<int:submission_id>/", EditSubmissionView.as_view(), name="edit_analysis_submission"),
+    path("submissions/delete/<int:submission_id>/", DeleteSubmissionView.as_view(), name="delete_analysis_submission"),
+    path("submissions/restore/<int:submission_id>/", RestoreSubmissionView.as_view(), name="restore_submission"),
+    path("submissions/permanent-delete/<int:submission_id>/", PermanentlyDeleteSubmissionView.as_view(), name="permanently_delete_submission"),  # ✅ Now added!
+    path("submissions/recently-deleted/", GetRecentlyDeletedView.as_view(), name="get_recently_deleted"),
+    path("submissions/view/", ViewSubmissionsView.as_view(), name="view_submissions"),
+    path("bookmark/<int:submission_id>/", ToggleBookmarkView.as_view(), name="toggle-bookmark"),
+    path("bookmarks/", UserBookmarksView.as_view(), name="get-user-bookmarks"),
 ]
-
