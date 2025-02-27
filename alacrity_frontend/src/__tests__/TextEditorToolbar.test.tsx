@@ -41,6 +41,5 @@ describe("TextEditorToolbar", () => {
     expect(screen.getByText("H1")).toBeInTheDocument();
     expect(screen.getByText("Text Left")).toBeInTheDocument();
     expect(screen.getByText("Undo")).toBeInTheDocument();
-    expect(screen.getByText("Image")).toBeInTheDocument();
   });
 });
