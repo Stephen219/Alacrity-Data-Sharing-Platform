@@ -456,25 +456,5 @@ def filter_and_clean_dataset(request, dataset_id):
     print(f"Total rows before filtering: {total_before}")
     print(f"Filtered dataset to {total_after} rows. Session ID: {session_id}")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     return Response({"filtered_data": filtered_results, "session_id": session_id}, status=200)
 
