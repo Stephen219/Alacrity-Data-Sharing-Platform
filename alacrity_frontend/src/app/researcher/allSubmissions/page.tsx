@@ -3,6 +3,7 @@
 import { BACKEND_URL } from "@/config";
 import { fetchWithAuth } from "@/libs/auth";
 import { useEffect, useState } from "react";
+import parse from "html-react-parser";
 
 interface Analysis {
   id: number;
@@ -77,8 +78,8 @@ const PublicSubmissions = () => {
                 <span className="text-indigo-600 font-medium mb-3 block">
                   {submission.submitted_at ? new Date(submission.submitted_at).toLocaleString() : "N/A"}
                 </span>
-                <h4 className="text-xl text-gray-900 font-medium leading-8 mb-5">{submission.title}</h4>
-                <p className="text-gray-500 leading-6 mb-10">{submission.description}</p>
+                <h4 className="prose text-xl text-gray-900 font-medium leading-8 mb-5">{parse(submission.title)}</h4>
+                <div className="prose text-gray-500 leading-6 mb-10">{parse(submission.description)}</div>
                 <button 
                   onClick={() => toggleBookmark(submission.id)}
                   className="text-lg text-indigo-600 font-semibold"
@@ -106,8 +107,8 @@ const PublicSubmissions = () => {
                 <span className="text-indigo-600 font-medium mb-3 block">
                   {submission.submitted_at ? new Date(submission.submitted_at).toLocaleString() : "N/A"}
                 </span>
-                <h4 className="text-xl text-gray-900 font-medium leading-8 mb-5">{submission.title}</h4>
-                <p className="text-gray-500 leading-6 mb-10">{submission.description}</p>
+                <h4 className="text-xl text-gray-900 font-medium leading-8 mb-5">{parse(submission.title)}</h4>
+                <div className="text-gray-500 leading-6 mb-10">{parse(submission.description)}</div>
                 <button 
                   onClick={() => toggleBookmark(submission.id)}
                   className="text-lg text-indigo-600 font-semibold"
