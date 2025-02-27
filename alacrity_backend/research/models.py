@@ -15,7 +15,7 @@ class AnalysisSubmission(models.Model):
         settings.AUTH_USER_MODEL,  
         on_delete=models.CASCADE
     )
-    title = models.CharField(max_length=255)
+    title = models.TextField(blank=True, null=True) 
     description = models.TextField(blank=True, null=True)  
     raw_results = models.TextField(blank=True, null=True)
     summary = models.TextField(blank=True, null=True)
@@ -33,4 +33,4 @@ class AnalysisSubmission(models.Model):
         return self.deleted_at is not None
 
     def __str__(self):
-        return f"{self.title} - {self.researcher.email} ({self.status})"
+        return f"{self.title[:50]} - {self.researcher.email} ({self.status})"  # Limit title length in __str__
