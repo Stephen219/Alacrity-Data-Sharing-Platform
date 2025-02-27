@@ -104,7 +104,7 @@ def clean_data(request_data):
     cleaned_data.pop('phonenumber', None)
  
     
-    cleaned_data['role'] = 'contributor'  
+    cleaned_data['role'] = 'researcher'  
    
     cleaned_data['password2'] = cleaned_data.get('password', cleaned_data.get('password2'))
    
