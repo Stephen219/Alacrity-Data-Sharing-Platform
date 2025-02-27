@@ -68,41 +68,52 @@ const TextEditorToolbar = ({ editor }: ToolbarProps) => {
 
       {/* Headings */}
       <Button
-        variant="outline"
-        size="sm"
-        aria-pressed={editor.isActive("heading", { level: 1 })}
-        className={cn(editor.isActive("heading", { level: 1 }) ? "bg-alacrityyellow" : "bg-white")}
-        onClick={() => {
-          editor.chain().focus().toggleHeading({ level: 1 }).run();
-          forceUpdate(prev => prev + 1);
-        }}
-      >
-        H1
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        aria-pressed={editor.isActive("heading", { level: 2 })}
-        className={cn(editor.isActive("heading", { level: 2 }) ? "bg-alacrityyellow" : "bg-white")}
-        onClick={() => {
-          editor.chain().focus().toggleHeading({ level: 2 }).run();
-          forceUpdate(prev => prev + 1);
-        }}
-      >
-        H2
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        aria-pressed={editor.isActive("heading", { level: 3 })}
-        className={cn(editor.isActive("heading", { level: 3 }) ? "bg-alacrityyellow" : "bg-white")}
-        onClick={() => {
-          editor.chain().focus().toggleHeading({ level: 3 }).run();
-          forceUpdate(prev => prev + 1);
-        }}
-      >
-        H3
-      </Button>
+  variant="outline"
+  size="sm"
+  aria-pressed={editor.isActive("heading", { level: 1 })}
+  className={cn(editor.isActive("heading", { level: 1 }) ? "bg-alacrityyellow" : "bg-white")}
+  onClick={() => {
+    editor.chain().focus().toggleHeading({ level: 1 }).run();
+    if (editor.isActive("heading", { level: 1 })) {
+      editor.chain().focus().setParagraph().run();
+    }
+    forceUpdate(prev => prev + 1);
+  }}
+>
+  H1
+</Button>
+
+<Button
+  variant="outline"
+  size="sm"
+  aria-pressed={editor.isActive("heading", { level: 2 })}
+  className={cn(editor.isActive("heading", { level: 2 }) ? "bg-alacrityyellow" : "bg-white")}
+  onClick={() => {
+    editor.chain().focus().toggleHeading({ level: 2 }).run();
+    if (editor.isActive("heading", { level: 2 })) {
+      editor.chain().focus().setParagraph().run();
+    }
+    forceUpdate(prev => prev + 1);
+  }}
+>
+  H2
+</Button>
+
+<Button
+  variant="outline"
+  size="sm"
+  aria-pressed={editor.isActive("heading", { level: 3 })}
+  className={cn(editor.isActive("heading", { level: 3 }) ? "bg-alacrityyellow" : "bg-white")}
+  onClick={() => {
+    editor.chain().focus().toggleHeading({ level: 3 }).run();
+    if (editor.isActive("heading", { level: 3 })) {
+      editor.chain().focus().setParagraph().run();
+    }
+    forceUpdate(prev => prev + 1);
+  }}
+>
+  H3
+</Button>
 
       {/* Lists */}
       <Button
