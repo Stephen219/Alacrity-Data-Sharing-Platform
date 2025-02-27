@@ -29,7 +29,7 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance }: AnalysisFo
   });
 
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [,setMessage] = useState("");
 
   useEffect(() => {
     console.log("Updated formData:", formData);
@@ -71,7 +71,7 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance }: AnalysisFo
       } else {
         setMessage(`Error: ${data.error || "Failed to save."}`);
       }
-    } catch (error) {
+    } catch {
       setMessage("Failed to save.");
     }
 

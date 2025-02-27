@@ -3,15 +3,16 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useRef } from "react";
+import { Editor } from "@tiptap/react";
 
 interface ToolbarProps {
-  editor: any;
+  editor: Editor | null;
 }
 
 const TextEditorToolbar = ({ editor }: ToolbarProps) => {
-  if (!editor) return null;
-
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
+  if (!editor) return null;
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

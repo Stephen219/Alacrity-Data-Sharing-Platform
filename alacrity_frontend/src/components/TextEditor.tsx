@@ -21,20 +21,23 @@ import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import { useEffect } from "react";
 import Image from "@tiptap/extension-image";
+import { Editor } from "@tiptap/react";
 
 interface EditorProps {
   content: string;
   onChange: (content: string) => void;
-  editorInstance: any;
-  setEditorInstance: (editor: any) => void;
+  editorInstance: Editor | null;
+  setEditorInstance: (editor: Editor | null) => void;
   autoFocus?: boolean;
+  className?: string;
   placeholder?: string;
   small?: boolean;
-  className?: string;
 }
 
+
 const TextEditor = ({ content, onChange, editorInstance, setEditorInstance, 
-  autoFocus = false, placeholder, small = false, className = '',
+  autoFocus = false, className = '', 
+  //placeholder, small = false, 
 
 }: EditorProps) => {
   const editor = useEditor({

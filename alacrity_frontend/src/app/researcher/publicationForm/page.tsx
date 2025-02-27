@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import MaxWidthWrapper from "@/components/MaxWidthWrapper";
 import TextEditorToolbar from "@/components/TextEditorToolbar";
 import { Editor } from "@tiptap/react";
