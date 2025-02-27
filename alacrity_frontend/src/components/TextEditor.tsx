@@ -57,9 +57,12 @@ const TextEditor = ({ content, onChange, editorInstance, setEditorInstance,
       Highlight,
       CodeBlock,
       HorizontalRule,
-      Table.configure({ resizable: true }),
+      Table.configure({
+        resizable: true,
+      }),
       TableRow,
-      TableCell,
+      TableCell.configure({
+      }),
       TableHeader,
     ],
     content,
@@ -79,7 +82,7 @@ const TextEditor = ({ content, onChange, editorInstance, setEditorInstance,
 
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content, false); 
+      editor?.commands.setContent(content, false); 
     }
   }, [content, editor]);
 

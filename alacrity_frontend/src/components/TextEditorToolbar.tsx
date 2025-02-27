@@ -9,6 +9,7 @@ interface ToolbarProps {
   editor: Editor | null;
 }
 
+
 const TextEditorToolbar = ({ editor }: ToolbarProps) => {
     const [, forceUpdate] = useState(0);
   if (!editor) return null;
@@ -217,19 +218,62 @@ const TextEditorToolbar = ({ editor }: ToolbarProps) => {
         Delete Table
       </Button>
       <Button variant="outline" size="sm"         onClick={() => {
+          editor.chain().focus().addColumnAfter().run();
+          forceUpdate(prev => prev + 1);
+        }}
+      >
+        Add Col After
+      </Button>
+      <Button variant="outline" size="sm"         onClick={() => {
+          editor.chain().focus().addRowAfter().run();
+          forceUpdate(prev => prev + 1);
+        }}
+      >
+        Add Row After
+      </Button>
+      <Button variant="outline" size="sm"         onClick={() => {
           editor.chain().focus().addColumnBefore().run();
           forceUpdate(prev => prev + 1);
         }}
       >
-        Add Col
+        Add Col Before
       </Button>
       <Button variant="outline" size="sm"         onClick={() => {
           editor.chain().focus().addRowBefore().run();
           forceUpdate(prev => prev + 1);
         }}
       >
-        Add Row
+        Add Row Before
       </Button>
+      <Button
+  variant="outline"
+  size="sm"
+  onClick={() => editor.chain().focus().deleteRow().run()}
+>
+  Delete Row
+</Button>
+
+<Button
+  variant="outline"
+  size="sm"
+  onClick={() => editor.chain().focus().deleteColumn().run()}
+>
+  Delete Col
+</Button>
+
+
+      <Button
+  variant="outline"
+  size="sm"
+  onClick={() => {
+    editor.commands.insertContentAt(editor.state.doc.content.size, "<p><br/></p>");
+    editor.commands.focus(); 
+  }}
+>
+  Exit Table
+</Button>
+
+
 
     </div>
   );
