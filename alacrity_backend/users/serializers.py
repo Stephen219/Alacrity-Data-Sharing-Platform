@@ -25,7 +25,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('email', 'first_name', 'sur_name','username', 'password', 'password2', 'role', 
-                  'organization', 'phone_number', 'date_of_birth', 'field')
+                  'organization_id', 'phone_number', 'date_of_birth', 'field')
         extra_kwargs = {'password': {'write_only': True}}
 
     def validate(self, attrs):
@@ -48,6 +48,15 @@ class RegisterSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        role = validated_data.get('role', 'researcher')
+
+        if role == 'contributor':
+            is_active = False
+        else:
+            is_active = True
+
+
+
         user = User.objects.create_user(
             email=validated_data['email'],
             first_name=validated_data['first_name'],
@@ -55,11 +64,13 @@ class RegisterSerializer(serializers.ModelSerializer):
             username=validated_data['username'],
             password=validated_data['password'],  
             role=validated_data.get('role'),
-            organization=validated_data.get('organization'),
+            organization_id=validated_data.get('organization_id'),
             phone_number=validated_data.get('phone_number'),
          
             date_of_birth=validated_data.get('date_of_birth'),
-            field=validated_data.get('field')
+            field=validated_data.get('field'),
+            is_active=is_active
+
         )
         return user
     

@@ -185,9 +185,9 @@ class CreateDatasetView(APIView):
 
 @api_view(['GET'])
 @role_required(['organization_admin', 'contributor', 'researcher'])
-#@permission_classes([IsAuthenticated])
+
 def get_datasets(request):
-    # Get datasets for the user's organization only
+  
     organization = request.user.organization
     datasets = Dataset.objects.filter(orgid=organization)
     

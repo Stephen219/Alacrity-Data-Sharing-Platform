@@ -35,6 +35,9 @@ class Dataset(models.Model):
         blank=True,
         null=True
     )
+    encryption_key = models.CharField(max_length=255),
+    encrypted_numerical_data = models.JSONField(default=list)
+    fhe_context = models.JSONField(default=list)
     
     description = models.TextField(
         validators=[MinLengthValidator(10)]
