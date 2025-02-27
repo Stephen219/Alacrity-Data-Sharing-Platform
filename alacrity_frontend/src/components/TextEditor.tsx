@@ -20,6 +20,7 @@ import TableRow from "@tiptap/extension-table-row";
 import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import { useEffect } from "react";
+import Image from "@tiptap/extension-image";
 
 interface EditorProps {
   content: string;
@@ -29,12 +30,17 @@ interface EditorProps {
   autoFocus?: boolean;
   placeholder?: string;
   small?: boolean;
+  className?: string;
 }
 
-const TextEditor = ({ content, onChange, editorInstance, setEditorInstance, autoFocus = false, placeholder, small = false }: EditorProps) => {
+const TextEditor = ({ content, onChange, editorInstance, setEditorInstance, 
+  autoFocus = false, placeholder, small = false, className = '',
+
+}: EditorProps) => {
   const editor = useEditor({
     extensions: [
       StarterKit,
+      Image,
       Heading.configure({ levels: [1, 2, 3] }),
       Bold,
       Italic,
@@ -54,6 +60,7 @@ const TextEditor = ({ content, onChange, editorInstance, setEditorInstance, auto
       TableHeader,
     ],
     content,
+    immediatelyRender: false,
     onUpdate: ({ editor }) => {
       const newContent = editor.getHTML();
       if (newContent !== content) {
@@ -84,8 +91,9 @@ const TextEditor = ({ content, onChange, editorInstance, setEditorInstance, auto
   }
 
   return (
-    <div className="prose relative border border-gray-300 rounded-lg bg-white shadow-sm p-2">
-      <EditorContent editor={editor} className="p-2 text-sm bg-transparent focus:outline-none" />
+    <div tabIndex={0} className={`w-full max-w-4xl prose relative border border-gray-300 rounded-lg bg-white shadow-sm ${className}`}
+    onClick={() => editor.commands.focus()}>
+      <EditorContent editor={editor} className=" text-lg bg-transparent " />
     </div>
   );
 };
