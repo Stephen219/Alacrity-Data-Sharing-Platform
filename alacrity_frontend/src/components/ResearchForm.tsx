@@ -29,7 +29,7 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance }: AnalysisFo
   });
 
   const [loading, setLoading] = useState(false);
-  const [,setMessage] = useState("");
+  const [message ,setMessage] = useState("");
 
   useEffect(() => {
     console.log("Updated formData:", formData);
@@ -145,6 +145,11 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance }: AnalysisFo
           {loading ? "Submitting..." : "Submit"}
         </Button>
       </div>
+      {message && (
+  <div className={`mt-4 text-center font-medium ${message.startsWith("Error") ? "text-red-500" : "text-green-600"}`}>
+    {message}
+  </div>
+)}
     </form>
   );
 };
