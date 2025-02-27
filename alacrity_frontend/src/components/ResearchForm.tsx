@@ -103,7 +103,6 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance }: AnalysisFo
           editorInstance={editorInstance}
           setEditorInstance={setEditorInstance}
           placeholder="Describe your analysis process..."
-          className="h-32"
         />
       </div>
 
@@ -116,7 +115,6 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance }: AnalysisFo
           editorInstance={editorInstance}
           setEditorInstance={setEditorInstance}
           placeholder="Enter raw results..."
-          className="h-32"
         />
       </div>
 
@@ -129,7 +127,6 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance }: AnalysisFo
           editorInstance={editorInstance}
           setEditorInstance={setEditorInstance}
           placeholder="Summarize your findings..."
-          className="h-48"
         />
       </div>
 

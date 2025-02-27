@@ -2,6 +2,8 @@
 
 import { fetchWithAuth } from "@/libs/auth";
 import { useEffect, useState } from "react";
+import parse from "html-react-parser";
+import { Button } from "@/components/ui/button";
 
 interface Analysis {
   id: number;
@@ -59,22 +61,28 @@ const AnalysisList = () => {
   if (error) return <p>Error: {error}</p>;
 
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white shadow-md rounded-lg">
-      <h2 className="text-2xl font-bold mb-4">Your Analysis Submissions</h2>
+    <div className="py-16 mx-auto text-center items-center max-w-3xl ">
+      <h2 className="text-2xl font-bold sm:text-5xl tracking-tight">Your Research
+      </h2>
       {submissions.length === 0 ? (
         <p>No submissions found.</p>
       ) : (
         <ul className="space-y-4">
           {submissions.map((submission) => (
-            <li key={submission.id} className="p-4 border rounded shadow">
-              <h3 className="text-lg font-semibold">{submission.title}</h3>
-              <p className="text-gray-700">{submission.description}</p>
-              <button
+            <li
+              key={submission.id}
+              className="border rounded-lg p-6 flex justify-between items-center bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out transform hover:scale-105 hover:bg-gray-50">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 transition-colors duration-300 ease-in-out">
+                  {parse(submission.title)}
+                </h3>
+                <p className="text-gray-600">{parse(submission.description)}</p>
+              </div>
+              <Button
                 onClick={() => handleSoftDelete(submission.id)}
-                className="bg-red-500 text-white px-4 py-2 mt-2 ml-2 rounded hover:bg-red-600"
-              >
-                Move to Recently Deleted
-              </button>
+                className="bg-alacrityred transition-transform transform hover:scale-110 hover:bg-red-400 duration-300 ease-in-out">
+                Delete
+              </Button>
             </li>
           ))}
         </ul>

@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useRef } from "react";
 import { Editor } from "@tiptap/react";
 
 interface ToolbarProps {
@@ -10,22 +9,7 @@ interface ToolbarProps {
 }
 
 const TextEditorToolbar = ({ editor }: ToolbarProps) => {
-  
-  const fileInputRef = useRef<HTMLInputElement>(null);
   if (!editor) return null;
-
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (reader.result) {
-        editor.chain().focus().setImage({ src: reader.result as string }).run();
-      }
-    };
-    reader.readAsDataURL(file);
-  };
 
   return (
     <div className="flex flex-wrap gap-2">
@@ -164,17 +148,20 @@ const TextEditorToolbar = ({ editor }: ToolbarProps) => {
         Redo
       </Button>
 
-      {/* Images */}
-      <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-        Image
+        {/* Tables (Fixed Table Features) */}
+    <Button variant="outline" size="sm" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3 }).run()}>
+        Table
       </Button>
-      <input
-        type="file"
-        accept="image/*"
-        ref={fileInputRef}
-        className="hidden"
-        onChange={handleImageUpload}
-      />
+      <Button variant="outline" size="sm" onClick={() => editor.chain().focus().deleteTable().run()}>
+        Delete Table
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => editor.chain().focus().addColumnBefore().run()}>
+        Add Col
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => editor.chain().focus().addRowBefore().run()}>
+        Add Row
+      </Button>
+
     </div>
   );
 };
