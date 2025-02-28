@@ -33,7 +33,16 @@ def get_jwt_hash(request):
     if auth_header.startswith("Bearer "):
         token = auth_header.split(" ")[1]
         return hashlib.sha256(token.encode()).hexdigest()
+    
+
     return None
+
+"""
+this function is used to load the dataset into the cache
+the function takes in the request and the dataset_id
+the function then loads the dataset into the cache
+
+"""
 
 def load_dataset_into_cache(request, dataset_id):
     jwt_hash = get_jwt_hash(request)
@@ -106,6 +115,14 @@ def dataset_detail(request, dataset_id):
         return Response({"error": str(e)}, status=400)
     except Exception as e:
         return Response({"error": "Failed to load dataset"}, status=500)
+    """
+    this function is used to clear the cache of the dataset
+
+    IT TAKES IN THE DATASET ID AND THE JWT HASH AND THEN CLEARS THE CACHE
+
+
+
+    """
 
 @api_view(['POST'])
 def clear_dataset_cache(request, dataset_id):
@@ -124,6 +141,15 @@ def clear_dataset_cache(request, dataset_id):
         logger.error(f"Error clearing cache for {dataset_id}: {e}", exc_info=True)
         return Response({"error": "Failed to clear cache"}, status=500)
 
+
+
+"""
+this function is used to analyze the dataset
+the function takes in the dataset_id and the operation to be performed on the dataset
+The function then performs the operation on the dataset and returns the result
+TODO: Add more operations
+TODO: Add more error handling AND ALSO REFACTOR THE CODE
+"""
 @api_view(['GET'])
 def analyze_dataset(request, dataset_id):
     operation = request.GET.get("operation")
@@ -242,6 +268,10 @@ def analyze_dataset(request, dataset_id):
 
 @api_view(['GET'])
 def all_datasets_view(request):
+    """
+    Fetch all datasets with related contributor and organization details.
+    Returns serialized data including contributor_name and organization_name.
+    """
     datasets = Dataset.objects.select_related('contributor_id__organization').all()
     serializer = DatasetSerializer(datasets, many=True)
     print(serializer.data.organization_name)

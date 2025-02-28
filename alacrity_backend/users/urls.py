@@ -2,7 +2,7 @@ from django.urls import path
 from .views import  RegisterView
 # from rest_framfework_simplejwt.views import TokenRefreshView
 # add login vhiejw
-from .views import  RegisterView, LoginView, UserView
+from .views import  RegisterView, LoginView, UserView, CSRFTokenView
 from rest_framework_simplejwt.views import TokenRefreshView
 
  
@@ -12,6 +12,12 @@ urlpatterns = [
     path("login/", LoginView.as_view(), name="login"),
 
     path("profile/", UserView.as_view(), name="user"),
+
+
+
+   
+    path('csrf-token/', CSRFTokenView.as_view(), name='csrf-token'),
+    
 
 
 
