@@ -28,9 +28,11 @@ class LoginView(APIView):
                     'error': 'Please provide both email and password'
                 }, status=status.HTTP_400_BAD_REQUEST)
             User = get_user_model()
+            print(User)
             
             try:
                 user = User.objects.get(email=email)
+                print(user)
                 if user.is_active == False:
                     return Response({
                         'error': 'your account is not active, please contact the admin'
@@ -40,13 +42,14 @@ class LoginView(APIView):
                     'error': 'No user found with this email'
                 }, status=status.HTTP_404_NOT_FOUND)
             user = authenticate(request, username=email, password=password)
+            print("we are here")
             
             if user is not None:
                 user.last_login = timezone.now()
-                user.save()
+                # user.save()
                 refresh = RefreshToken.for_user(user)
 
-                
+                print(refresh)
                 return Response({
                     'status': 'success',
                     'message': 'Login successful',
@@ -55,7 +58,7 @@ class LoginView(APIView):
                         'email': user.email,
                         'username': user.username,
                         'role': user.role,
-                        'organization': user.organization.name if user.organization else None,
+                        'organization': user.organization if user.organization else None,
                         'phone_number': user.phone_number,
                     },
                     'access_token': str(refresh.access_token),
@@ -68,6 +71,8 @@ class LoginView(APIView):
 
         except Exception as e:
             print(e)
+            import traceback
+            print(traceback.format_exc())
             return Response({
 
                 'error': 'An error occurred while trying to log you in',

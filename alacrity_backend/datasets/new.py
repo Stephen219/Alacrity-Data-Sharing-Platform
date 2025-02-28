@@ -268,6 +268,6 @@ def analyze_dataset(request, dataset_id):
 
 @api_view(['GET'])
 def all_datasets_view(request):
-    datasets = Dataset.objects.select_related('contributor_id__organization_id').all()
+    datasets = Dataset.objects.select_related('contributor_id__organization').all()
     serializer = DatasetSerializer(datasets, many=True)
     return Response({"datasets": serializer.data}, status=status.HTTP_200_OK)

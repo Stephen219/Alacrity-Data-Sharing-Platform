@@ -24,7 +24,7 @@ class User(AbstractUser):
     username = models.CharField(max_length=30, unique=True)
     phone_number = models.CharField(max_length=15, unique=True, blank=True, null=True) 
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
-    organization_id = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True)
+    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True)
     # organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True)
     field = models.TextField(blank=True, null=True)
     date_of_birth = models.DateField(blank=True, null=True)
@@ -37,8 +37,10 @@ class User(AbstractUser):
     REQUIRED_FIELDS = ['username', 'role']
 
     @property
-    def organization(self):
-        return self.organization_id  
+    # If organization is a ForeignKey or field, no need for @property
+    def get_organization(self):
+        return self.organization if self.organization else None
+
 
     class Meta:
         verbose_name = "user"
