@@ -10,14 +10,7 @@ from .new import analyze_dataset , dataset_detail, all_datasets_view, clear_data
 urlpatterns = [
 
     path('create_dataset/', CreateDatasetView.as_view(), name='create_dataset'),
-
     path('clear_cache/<str:dataset_id>/', clear_dataset_cache, name='clear_dataset_cache'),
-    
-
-
-
-
-
     path('testget/',get_datasets, name='testget'),
     # path('correlation/<str:dataset_id>/',correlation_analysis, name='correlation_analysis'),
     path('details/<str:dataset_id>/', dataset_detail, name='dataset_detail'),

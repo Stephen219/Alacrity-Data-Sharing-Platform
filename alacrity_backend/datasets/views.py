@@ -67,9 +67,6 @@ def is_valid_url(url):
     except:
         return False
 
-
-
-
 minio_client = Minio(
     endpoint="10.72.98.137:9000",
     access_key="admin",
@@ -83,6 +80,7 @@ def generate_id():
 
 
 
+# this will be the view where they will be able to upload the dataset
 @method_decorator(csrf_exempt, name='dispatch')
 # @method_decorator(role_required(['organization_admin', 'contributor']), name='dispatch')
 class CreateDatasetView(APIView):
@@ -173,15 +171,6 @@ class CreateDatasetView(APIView):
         except Exception as e:
             logger.error(f"Error: {e}", exc_info=True)
             return Response({"error": "Something went wrong"}, status=500)
-
-
-
-
-
-
-
-
-
 
 @api_view(['GET'])
 @role_required(['organization_admin', 'contributor', 'researcher'])
@@ -452,29 +441,7 @@ def filter_and_clean_dataset(request, dataset_id):
 
     session_id = str(uuid.uuid4())
     cache.set(session_id, filtered_results, timeout=3600)
-
     print(f"Total rows before filtering: {total_before}")
     print(f"Filtered dataset to {total_after} rows. Session ID: {session_id}")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     return Response({"filtered_data": filtered_results, "session_id": session_id}, status=200)
 

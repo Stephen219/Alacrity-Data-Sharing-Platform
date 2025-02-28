@@ -1,4 +1,3 @@
-import { logout } from '../../libs/auth';
 
 export const NAV_ITEMS = [
     // Organisation navigation
@@ -114,16 +113,7 @@ export const NAV_ITEMS = [
           name: "Account Preferences",
           href: "#",
           imageSrc: "/navbar/account/preferences.png",
-        },
-        {
-          name: "Sign Out",
-          href: "#",
-          imageSrc: "/navbar/account/signout.png",
-          onClick: (e: React.MouseEvent<HTMLAnchorElement>) => {
-            e.preventDefault();
-            logout();
-          },
-        },        
+        },      
       ],
     },    
     {

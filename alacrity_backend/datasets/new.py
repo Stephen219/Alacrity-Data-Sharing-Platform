@@ -244,4 +244,5 @@ def analyze_dataset(request, dataset_id):
 def all_datasets_view(request):
     datasets = Dataset.objects.select_related('contributor_id__organization').all()
     serializer = DatasetSerializer(datasets, many=True)
+    print(serializer.data.organization_name)
     return Response({"datasets": serializer.data}, status=status.HTTP_200_OK)

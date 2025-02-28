@@ -6,6 +6,7 @@ class DatasetSerializer(serializers.ModelSerializer):
     contributor_name = serializers.ReadOnlyField()
     organization_name = serializers.ReadOnlyField()
 
+# this is the data that will be returned when a dataset is queried
     class Meta:
         model = Dataset
         fields = [

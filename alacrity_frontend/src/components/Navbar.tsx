@@ -6,6 +6,7 @@ import { buttonVariants } from "./ui/button";
 import { usePathname } from "next/navigation";
 import { fetchUserData } from "@/libs/auth";
 import { User } from "@/types/types";
+import { logout } from '@/libs/auth';
 
 
 
@@ -63,6 +64,9 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
           {userRole ? (
             <>
               <Bell className="w-5 h-5 text-primary hover:fill-primary" />
+              <button onClick={logout} className={buttonVariants({ variant: "ghost" })}>
+                Logout
+              </button>
             </>
           ) : (
             <>

@@ -31,16 +31,19 @@ interface Dataset {
 }
 
 const FILTER_CATEGORIES = [
+  // TODO: Add more filter categories such that it checks the categories in the database
   {
     id: "category",
     label: "Category",
     options: ["All", "category1", "category2"],
   },
+  // TODO: check why organization is not working and also make it suggests from organization in the dataset
   {
     id: "organization_name",
     label: "Organization",
     options: ["All", "No organization"],
   },
+  /// TODO: Add check why all time is not working
   {
     id: "dateAdded",
     label: "Date Added",
@@ -73,6 +76,7 @@ function DatasetsPage() {
   };
 
   const fetchDatasets = async () => {
+    // fetching the datasets from the backend and setting the datasets
     try {
       const response = await fetchWithAuth(`${BACKEND_URL}/datasets/all`);
       if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
