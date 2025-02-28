@@ -96,8 +96,24 @@ class DraftSubmissionsView(APIView):
         Retrieve only draft submissions for the logged-in researcher.
         """
         researcher = request.user
-        drafts = AnalysisSubmission.objects.filter(researcher=researcher, status="draft").values()
-        return Response(drafts)
+        sort_order = request.GET.get("sort", "newest")
+
+        if sort_order == "oldest":
+            drafts = AnalysisSubmission.objects.filter(
+                researcher=researcher, 
+                status="draft", 
+                deleted_at__isnull=True 
+            ).order_by("submitted_at")
+        else:
+            drafts = AnalysisSubmission.objects.filter(
+                researcher=researcher, 
+                status="draft", 
+                deleted_at__isnull=True 
+            ).order_by("-submitted_at")
+
+        return Response(drafts.values())
+
+
 
 
 class ViewSubmissionsView(APIView):

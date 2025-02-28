@@ -33,4 +33,4 @@ class AnalysisSubmission(models.Model):
         return self.deleted_at is not None
 
     def __str__(self):
-        return f"{self.title[:50]} - {self.researcher.email} ({self.status})"  # Limit title length in __str__
+        return f"{self.title[:50]} - {self.researcher.email} ({self.status})"  

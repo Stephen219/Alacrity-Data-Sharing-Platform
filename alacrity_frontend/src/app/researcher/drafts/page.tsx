@@ -20,11 +20,15 @@ const DraftList = () => {
   const [editingDraft, setEditingDraft] = useState<Analysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
   useEffect(() => {
     const fetchDrafts = async () => {
+      setLoading(true);
       try {
-        const response = await fetchWithAuth("http://127.0.0.1:8000/research/drafts/");
+        const response = await fetchWithAuth(
+          `http://127.0.0.1:8000/research/drafts/?sort=${sortOrder}`
+        );
         if (!response.ok) throw new Error("Failed to fetch drafts.");
         const data = await response.json();
         setDrafts(Array.isArray(data) ? data : []);
@@ -33,8 +37,10 @@ const DraftList = () => {
       }
       setLoading(false);
     };
+  
     fetchDrafts();
-  }, []);
+  }, [sortOrder]);
+  
 
   const handleSoftDeleteDraft = async (id: number) => {
     const confirmDelete = window.confirm("Move this draft to Recently Deleted?");
@@ -105,19 +111,26 @@ const DraftList = () => {
 
   return (
     <Published
-    header = "My drafts"
-      submissions={drafts} 
-      sortOrder="newest"
-      setSortOrder={() => {}}
-      renderButtons={(id, status) => (
-        <SubmissionButtons
-          onDelete={() => handleSoftDeleteDraft(id)}
-          onSecondaryAction={() => handleEdit(drafts.find((d) => d.id === id)!)} 
-          secondaryActionLabel="Edit"
-        />
-      )}
+      header="My Drafts"
+      submissions={drafts}
+      sortOrder={sortOrder}
+      setSortOrder={setSortOrder}
+      renderButtons={(id) => {
+        const draft = drafts.find((d) => d.id === id);
+  
+        if (!draft) return null;
+  
+        return (
+          <SubmissionButtons
+            onDelete={() => handleSoftDeleteDraft(id)}
+            onSecondaryAction={() => handleEdit(draft)}
+            secondaryActionLabel="Edit"
+          />
+        );
+      }}
     />
   );
+  
 }; 
 
 export default DraftList;
