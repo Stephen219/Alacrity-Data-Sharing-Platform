@@ -20,8 +20,11 @@ const RecentlyDeleted = () => {
 
   useEffect(() => {
     const fetchDeletedSubmissions = async () => {
+      setLoading(true);
       try {
-        const response = await fetchWithAuth("http://127.0.0.1:8000/research/submissions/recently-deleted/");
+        const response = await fetchWithAuth(
+          `http://127.0.0.1:8000/research/submissions/recently-deleted/?sort=${sortOrder}` 
+        );
         if (!response.ok) throw new Error("Failed to fetch deleted submissions.");
         const data = await response.json();
         setDeletedSubmissions(Array.isArray(data) ? data : []);
@@ -30,8 +33,10 @@ const RecentlyDeleted = () => {
       }
       setLoading(false);
     };
+  
     fetchDeletedSubmissions();
-  }, []);
+  }, [sortOrder]); 
+  
 
   const handleRestore = async (id: number) => {
     try {

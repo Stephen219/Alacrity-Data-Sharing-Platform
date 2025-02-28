@@ -278,11 +278,22 @@ class GetRecentlyDeletedView(APIView):
 
     def get(self, request):
         """
-        Retrieve all submissions in 'Recently Deleted'.
+        Retrieve all submissions in 'Recently Deleted' with sorting.
         """
         researcher = request.user
-        deleted_submissions = AnalysisSubmission.objects.filter(researcher=researcher, deleted_at__isnull=False).values()
-        return Response(deleted_submissions)
+        sort_order = request.GET.get("sort", "newest")  
+
+        if sort_order == "oldest":
+            deleted_submissions = AnalysisSubmission.objects.filter(
+                researcher=researcher, deleted_at__isnull=False
+            ).order_by("deleted_at")  
+        else:
+            deleted_submissions = AnalysisSubmission.objects.filter(
+                researcher=researcher, deleted_at__isnull=False
+            ).order_by("-deleted_at")  
+
+        return Response(deleted_submissions.values())
+
 
 class DeleteDraftView(APIView):
     permission_classes = [IsAuthenticated]
