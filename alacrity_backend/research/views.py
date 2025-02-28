@@ -267,3 +267,26 @@ class GetRecentlyDeletedView(APIView):
         researcher = request.user
         deleted_submissions = AnalysisSubmission.objects.filter(researcher=researcher, deleted_at__isnull=False).values()
         return Response(deleted_submissions)
+
+class DeleteDraftView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, submission_id):
+        """
+        Soft deletes a draft by setting 'deleted_at'.
+        """
+        try:
+            researcher = request.user
+            draft = get_object_or_404(AnalysisSubmission, id=submission_id, researcher=researcher, status="draft")
+
+            if draft.deleted_at:
+                return Response({"error": "Draft is already deleted"}, status=400)
+
+            draft.deleted_at = now()
+            draft.save()
+
+            return Response({"message": "Draft moved to Recently Deleted"}, status=200)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
+
