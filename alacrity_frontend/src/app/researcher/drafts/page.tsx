@@ -71,8 +71,13 @@ const DraftList = () => {
     setEditingDraft({ ...draft });
   };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSave = async (publish = false) => {
     if (!editingDraft) return;
+    if (false) {
+      handleSave();
+    }
+    
 
     try {
       const response = await fetchWithAuth(
