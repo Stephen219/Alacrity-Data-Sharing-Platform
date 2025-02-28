@@ -155,6 +155,7 @@ class CreateDatasetView(APIView):
             logger.info(f"Saving dataset metadata: {dataset_id}")
             dataset = Dataset.objects.create(
                 dataset_id=dataset_id,
+                contributor_id=request.user,
                 title=title,
                 category=category,
                 link=file_url,

@@ -12,7 +12,7 @@ import string
 from alacrity_backend.config import FRONTEND_URL
 from django.core.mail import send_mail
 from alacrity_backend.settings import DEFAULT_FROM_EMAIL
-
+from django.db import transaction   
 from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 
@@ -21,16 +21,10 @@ def generate_username(first_name: str, last_name: str) -> str:
     Generates a unique username based on the first name and last name.
     It appends a random string to ensure uniqueness.
     """
-  
     first_name = first_name.strip().lower()
     last_name = last_name.strip().lower()
- 
- 
     random_string = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
- 
-    
     username = f"{last_name}_{first_name}_{random_string}"
- 
     return username
 
 def generate_password():
@@ -41,23 +35,8 @@ def generate_password():
     random.shuffle(pwd)
     return ''.join(pwd)
 
-
 def send_activation_email(recipient_email, recipient_name, link):
-    """
-    Sends an activation email to the user with a single-use token link.
-    
-    Args:
-        recipient_email (str): The email address of the recipient.
-        recipient_name (str): The name of the recipient for personalization.
-        token (str): The activation token to include in the link.
-    
-    Returns:
-        bool: True if email was sent successfully, False otherwise.
-    """
     try:
-        # Construct the activation link
-        
-        
         subject = 'Activate Your Account'
         message = (
             f'Hello {recipient_name},\n\n'
@@ -65,22 +44,20 @@ def send_activation_email(recipient_email, recipient_name, link):
             f'This link expires in 30 days.\n\n'
             f'Best regards,\nYour Team'
         )
-        
-        # Send the email using settings from EMAIL_CONFIG
         send_mail(
             subject=subject,
             message=message,
-            from_email= DEFAULT_FROM_EMAIL,
+            from_email=DEFAULT_FROM_EMAIL,
             recipient_list=[recipient_email],
-            fail_silently=False,  
-
+            fail_silently=False,
         )
-        
-        print(f"Activation email sent to {recipient_email}: {link}")
+        print(f"Activation email sent to {recipient_email}")
         return True
-    
     except Exception as e:
-        print(f"Failed to send activation email to {recipient_email}: {str(e)}")
+        # print the stack trace
+        import traceback
+        traceback.print_exc()
+        print(f"Failed to send email: {str(e)}")
         return False
     
 
@@ -108,9 +85,6 @@ class AddContributors(APIView):
                 {'error': 'Authenticated user does not have an associated organization.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        # Set role default to "contributor" if not provided.
-        # Validate that the role is either "contributor" or "organization_admin".
         if 'role' not in data:
             data['role'] = 'contributor'
         elif data['role'] not in ['contributor', 'organization_admin']:
@@ -127,20 +101,32 @@ class AddContributors(APIView):
         )
       
         print (serializer.is_valid())
-        print (serializer.errors)
+        serializer = RegisterSerializer(data=data)
         if serializer.is_valid():
-
             try:
-                new_user = serializer.save()
-                token = token = ActivationToken.objects.create(user=new_user)
-                activation_path = '/organisation/contributors/activate/'
-                activation_link = f"{FRONTEND_URL}{activation_path}?token={token.token}"
-                link = activation_link
-                send_activation_email(new_user.email, new_user.first_name, link)
+                with transaction.atomic():
+                    new_user = serializer.save()
+                    token = ActivationToken.objects.create(user=new_user)
+                    activation_path = '/organisation/contributors/activate/'
+                    activation_link = f"{FRONTEND_URL}{activation_path}?token={token.token}"
+                    print(f"Generated activation link: {activation_link}")
+
+                    email_sent = send_activation_email(new_user.email, new_user.first_name, activation_link)
+                    if not email_sent:
+                        raise Exception("Failed to send activation email")
+
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
-            except ValidationError as e:
-                return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            except Exception as e:
+                return Response(
+                    {
+                        'error': f"Failed to add contributor: {str(e)}"
+                        }
+                        ,
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
 
@@ -154,35 +140,26 @@ class ActivateContributorAccount(APIView):
         activation_token = get_object_or_404(ActivationToken, token=token)
         
         if not activation_token.is_valid():
-            return Response({'error': 'Invalid or expired token'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        return Response({'message': 'Token valid. Please set your password.'}, status=status.HTTP_200_OK)
+            return Response({'error': 'The activation Link has been used. Please contact your admin'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'message': 'Please set your password.'}, status=status.HTTP_200_OK)
     
-    
+
     permission_classes = [AllowAny]
     def post(self, request):
         token = request.data.get('token')
         password = request.data.get('password')
         confirm_password = request.data.get('confirm_password')  #
-        
         if not token or not password:
             return Response({'error': 'Token and password are required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Optional: Server-side password confirmation check
         if confirm_password and password != confirm_password:
             return Response({'error': 'Passwords do not match'}, status=status.HTTP_400_BAD_REQUEST)
-
         activation_token = get_object_or_404(ActivationToken, token=token)
-        
         if not activation_token.is_valid():
             return Response({'error': 'Invalid or expired token'}, status=status.HTTP_400_BAD_REQUEST)
-        
         user = activation_token.user
         user.set_password(password)
         user.is_active = True
         user.save()
-        
         activation_token.used = True
         activation_token.save()
-        
         return Response({'message': 'Account activated successfully'}, status=status.HTTP_200_OK)
