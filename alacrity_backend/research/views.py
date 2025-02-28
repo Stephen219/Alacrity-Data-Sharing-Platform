@@ -35,6 +35,13 @@ class SaveSubmissionView(APIView):
             submission.summary = data.get("summary", submission.summary)
             submission.status = data.get("status", submission.status)
 
+            if len(submission.title.split()) > 15:
+                raise ValidationError("Title cannot exceed 15 words.")
+
+            if len(submission.summary.split()) > 250:
+                raise ValidationError("Summary cannot exceed 250 words.")
+
+
             if "image" in request.FILES:
                 submission.image = request.FILES["image"]
 
@@ -66,10 +73,18 @@ class AnalysisSubmissionsView(APIView):
         Excludes soft-deleted submissions.
         """
         researcher = request.user
-        submissions = AnalysisSubmission.objects.filter(
-            researcher=researcher, status="published", deleted_at__isnull=True
-        ).values()
-        return Response(submissions)
+        sort_order = request.GET.get('sort', 'newest') 
+
+        if sort_order == 'oldest':
+            submissions = AnalysisSubmission.objects.filter(
+                researcher=researcher, status="published", deleted_at__isnull=True
+            ).order_by('submitted_at')
+        else:
+            submissions = AnalysisSubmission.objects.filter(
+                researcher=researcher, status="published", deleted_at__isnull=True
+            ).order_by('-submitted_at')
+
+        return Response(submissions.values())
 
 
 class DraftSubmissionsView(APIView):
@@ -171,7 +186,7 @@ class DeleteSubmissionView(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=400)
-
+        
 
 class ToggleBookmarkView(APIView):
     permission_classes = [IsAuthenticated]
