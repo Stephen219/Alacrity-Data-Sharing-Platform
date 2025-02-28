@@ -1,10 +1,11 @@
+import { logout } from '../../libs/auth';
 
 export const NAV_ITEMS = [
     // Organisation navigation
     {
       label: "Datasets",
       value: "datasets" as const,
-      roles: ["organization_admin"], 
+      roles: ["organization_admin", "contributor"], 
       // roles: ["organisation", "contributor"],
       featured: [
         {
@@ -48,11 +49,11 @@ export const NAV_ITEMS = [
       value: "browse-datasets",
       roles: ["researcher"],
       featured: [
-        {
-          name: "Explore Datasets",
-          href: "/datasets/all",
-          imageSrc: "/navbar/researcher/browseDatasets.png",
-        },
+      {
+        name: "Explore Datasets",
+        href: "/datasets/all",
+        imageSrc: "/navbar/researcher/browseDatasets.png",
+      },
       ],
     },
     {
@@ -60,26 +61,26 @@ export const NAV_ITEMS = [
       value: "analysis-tools",
       roles: ["researcher"],
       featured: [
+      {
+        name: "Pre Analysis",
+        href: "/analysis/pre-analysis",
+        imageSrc: "/navbar/analysis/pre.png",
+        },
+      {
+        name: "Descriptive Statistics",
+        href: "/analysis/descriptive",
+        imageSrc: "/navbar/analysis/descriptive.png",
+        },
         {
-            name: "Pre Analysis",
-            href: "/analysis/pre-analysis",
-            imageSrc: "/navbar/analysis/pre.png",
-          },
+        name: "Inferential Statistics",
+        href: "/analysis/inferential",
+        imageSrc: "/navbar/analysis/inferential.png",
+        },
         {
-            name: "Descriptive Statistics",
-            href: "/analysis/descriptive",
-            imageSrc: "/navbar/analysis/descriptive.png",
-          },
-          {
-            name: "Inferential Statistics",
-            href: "/analysis/inferential",
-            imageSrc: "/navbar/analysis/inferential.png",
-          },
-          {
-            name: "Correlational Analysis",
-            href: "/analysis/correlational",
-            imageSrc: "/navbar/analysis/correlational.png",
-          },
+        name: "Correlational Analysis",
+        href: "/analysis/correlational",
+        imageSrc: "/navbar/analysis/correlational.png",
+        },
       ],
     },
     {
@@ -87,22 +88,22 @@ export const NAV_ITEMS = [
       value: "view-pending",
       roles: ["researcher"],
       featured: [
-        {
-          name: "Dataset Requests",
-          href: "#",
-          imageSrc: "/navbar/researcher/pendingApprovals.png",
-        },
-        {
-          name: "Research Requests",
-          href: "#",
-          imageSrc: "/navbar/researcher/reviewRequests.png",
-        },
+      {
+        name: "Dataset Requests",
+        href: "#",
+        imageSrc: "/navbar/researcher/pendingApprovals.png",
+      },
+      {
+        name: "Research Requests",
+        href: "#",
+        imageSrc: "/navbar/researcher/reviewRequests.png",
+      },
       ],
     },
     {
       label: "My Account",
       value: "my-account",
-      roles: ["researcher", "organisation", "contributor"],
+      roles: ["researcher", "organization_admin", "contributor"],
       featured: [
         {
           name: "Edit Profile",
@@ -110,15 +111,26 @@ export const NAV_ITEMS = [
           imageSrc: "/navbar/account/editProfile.png",
         },
         {
-          name: "Security & Login",
-          href: "#",
-          imageSrc: "/navbar/account/login.png",
-        },
-        {
           name: "Account Preferences",
           href: "#",
           imageSrc: "/navbar/account/preferences.png",
         },
+        {
+          name: "Sign Out",
+          href: "#",
+          imageSrc: "/navbar/account/signout.png",
+          onClick: (e: React.MouseEvent<HTMLAnchorElement>) => {
+            e.preventDefault();
+            logout();
+          },
+        },        
+      ],
+    },    
+    {
+      label: "purchases",
+      value: "purchases",
+      roles: ["researcher"],
+      featured: [
         {
           name: "Subscription & Billing",
           href: "#",
@@ -128,20 +140,9 @@ export const NAV_ITEMS = [
           name: "Purchase History",
           href: "#",
           imageSrc: "/navbar/account/purchases.png",
-        },
-        {
-          name: "Sign Out",
-          href: "#",
-          imageSrc: "/navbar/account/signout.png",
-        },
-      ],
-    },
-
-
-
-
-
-
+        }
+      ]
+    }    
   ];
 
 
