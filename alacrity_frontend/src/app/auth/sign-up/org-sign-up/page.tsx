@@ -111,7 +111,7 @@ const AddOrganizationForm: React.FC = () => {
       return;
     }
     
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
     if (!passwordRegex.test(formData.admin.password)) {
       setAdminPasswordError(
         "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, and one number."

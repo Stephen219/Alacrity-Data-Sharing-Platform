@@ -58,7 +58,7 @@ class LoginView(APIView):
                         'email': user.email,
                         'username': user.username,
                         'role': user.role,
-                        'organization': user.organization if user.organization else None,
+                        'organization': user.organization.name if user.organization else None,
                         'phone_number': user.phone_number,
                     },
                     'access_token': str(refresh.access_token),
