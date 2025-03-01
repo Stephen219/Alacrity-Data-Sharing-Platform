@@ -13,7 +13,7 @@ from .models import AnalysisSubmission
 
 class SaveSubmissionView(APIView):
     permission_classes = [IsAuthenticated]
-    
+
     @role_required(['contributor'])
     def post(self, request):
         """
@@ -24,44 +24,24 @@ class SaveSubmissionView(APIView):
             researcher = request.user
             submission_id = data.get("id")
 
-            if submission_id:
-                submission = get_object_or_404(AnalysisSubmission, id=submission_id, researcher=researcher)
-            else:
-                submission = AnalysisSubmission(researcher=researcher)
+            submission = AnalysisSubmission.objects.filter(id=submission_id, researcher=researcher).first()
+            if not submission:
+                submission = AnalysisSubmission(researcher=researcher, status="draft")
 
             submission.title = data.get("title", submission.title)
             submission.description = data.get("description", submission.description)
             submission.raw_results = data.get("rawResults", submission.raw_results)
             submission.summary = data.get("summary", submission.summary)
-            submission.status = data.get("status", submission.status)
 
-            if len(submission.title.split()) > 15:
-                raise ValidationError("Title cannot exceed 15 words.")
-
-            if len(submission.summary.split()) > 250:
-                raise ValidationError("Summary cannot exceed 250 words.")
-
-
-            if "image" in request.FILES:
-                submission.image = request.FILES["image"]
-
-            if submission.status == "published":
-                if not all([submission.title, submission.description, submission.raw_results, submission.summary]):
-                    raise ValidationError("All fields must be filled before publishing.")
+            if submission.status != "published":
+                submission.status = "draft"
 
             submission.save()
-            return Response({
-                "message": "Submission saved successfully!",
-                "id": submission.id,
-                "status": submission.status,
-                "image": request.build_absolute_uri(submission.image.url) if submission.image else None
-            }, status=200)
 
-        except ValidationError as e:
-            return Response({"error": str(e)}, status=400)
+            return Response({"message": "Draft saved successfully!", "id": submission.id}, status=200)
+
         except Exception as e:
             return Response({"error": str(e)}, status=400)
-
 
 class AnalysisSubmissionsView(APIView):
     permission_classes = [IsAuthenticated]
@@ -316,4 +296,27 @@ class DeleteDraftView(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=400)
+        
+
+class SingleDraftView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, submission_id):
+        """
+        Retrieve a specific draft submission.
+        """
+        researcher = request.user
+        draft = get_object_or_404(AnalysisSubmission, id=submission_id, researcher=researcher, status="draft")
+
+        return Response({
+            "id": draft.id,
+            "title": draft.title,
+            "description": draft.description,
+            "raw_results": draft.raw_results,
+            "summary": draft.summary,
+            "status": draft.status,
+            "image": request.build_absolute_uri(draft.image.url) if draft.image else None,
+        })
+
+
 

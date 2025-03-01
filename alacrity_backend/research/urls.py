@@ -9,6 +9,7 @@ from .views import (
     RestoreSubmissionView,
     GetRecentlyDeletedView,
     PermanentlyDeleteSubmissionView,
+    SingleDraftView,
     ViewSubmissionsView,
     ToggleBookmarkView,
     UserBookmarksView,
@@ -27,4 +28,5 @@ urlpatterns = [
     path("bookmark/<int:submission_id>/", ToggleBookmarkView.as_view(), name="toggle-bookmark"),
     path("bookmarks/", UserBookmarksView.as_view(), name="get-user-bookmarks"),
     path("drafts/delete/<int:submission_id>/", DeleteDraftView.as_view(), name="soft_delete_draft"),
+    path("drafts/<int:submission_id>/", SingleDraftView.as_view(), name="single_draft"),
 ]

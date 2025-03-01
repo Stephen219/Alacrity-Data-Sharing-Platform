@@ -7,9 +7,18 @@ import { fetchWithAuth } from "@/libs/auth";
 interface AnalysisFormProps {
   editorInstance: Editor | null;
   setEditorInstance: React.Dispatch<React.SetStateAction<Editor | null>>;
+  initialData?: {
+    id: number | null;
+    title: string;
+    description: string;
+    rawResults: string;
+    summary: string;
+    status: string;
+    image: string | null;
+  };
 }
 
-const AnalysisFormComponent = ({ editorInstance, setEditorInstance }: AnalysisFormProps) => {
+const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData }: AnalysisFormProps) => {
   const [formData, setFormData] = useState<{
     id: null | number;
     title: string;
@@ -18,6 +27,7 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance }: AnalysisFo
     summary: string;
     status: string;
     image: File | null;
+    imageUrl: string | null;
   }>({
     id: null,
     title: "",
@@ -26,14 +36,28 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance }: AnalysisFo
     summary: "",
     status: "draft",
     image: null,
+    imageUrl: null,
   });
+  
 
   const [loading, setLoading] = useState(false);
   const [message ,setMessage] = useState("");
 
   useEffect(() => {
-    console.log("Updated formData:", formData);
-  }, [formData]);
+    if (initialData) {
+      console.log("Preloading form data:", initialData);
+      setFormData((prev) => ({
+        ...prev,
+        id: initialData.id,
+        title: initialData.title,
+        description: initialData.description,
+        rawResults: initialData.rawResults,
+        summary: initialData.summary,
+        status: initialData.status,
+        imageUrl: initialData.image || null,
+      }));
+    }
+  }, [initialData]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
