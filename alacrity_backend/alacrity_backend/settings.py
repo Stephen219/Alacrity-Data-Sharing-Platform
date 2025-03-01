@@ -105,7 +105,7 @@ DATABASES = {
         'HOST': os.getenv('DJANGO_DATABASE_HOST', 'mysql'),
         'PORT': os.getenv('DJANGO_DATABASE_PORT', '3306'),
         'TEST': {
-            'NAME': 'alacrity_db',
+            'NAME': 'alacrity_dbtes',
         }
     }
 }
