@@ -15,6 +15,8 @@ from alacrity_backend.settings import DEFAULT_FROM_EMAIL
 from django.db import transaction   
 from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
+from .serializer import OrganizationRegisterSerializer
+from django.db import transaction
 
 def generate_username(first_name: str, last_name: str) -> str:
     """
@@ -163,3 +165,27 @@ class ActivateContributorAccount(APIView):
         activation_token.used = True
         activation_token.save()
         return Response({'message': 'Account activated successfully'}, status=status.HTTP_200_OK)
+    
+
+
+
+class RegisterOrganizationView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        data = request.data.copy()
+        data['admin']['username'] = generate_username(data['admin']['first_name'], data['admin']['sur_name'])
+        data['admin']['password2'] = data['admin']['password']
+        serializer = OrganizationRegisterSerializer(data=data)
+        if serializer.is_valid():
+            try:
+                with transaction.atomic():
+                    organization = serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                print(f"Error during save: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        print(f"Serializer errors: {serializer.errors}")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
