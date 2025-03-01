@@ -155,6 +155,7 @@ class CreateDatasetView(APIView):
             logger.info(f"Saving dataset metadata: {dataset_id}")
             dataset = Dataset.objects.create(
                 dataset_id=dataset_id,
+                contributor_id=request.user,
                 title=title,
                 category=category,
                 link=file_url,
@@ -185,9 +186,9 @@ class CreateDatasetView(APIView):
 
 @api_view(['GET'])
 @role_required(['organization_admin', 'contributor', 'researcher'])
-#@permission_classes([IsAuthenticated])
+
 def get_datasets(request):
-    # Get datasets for the user's organization only
+  
     organization = request.user.organization
     datasets = Dataset.objects.filter(orgid=organization)
     
@@ -455,26 +456,6 @@ def filter_and_clean_dataset(request, dataset_id):
 
     print(f"Total rows before filtering: {total_before}")
     print(f"Filtered dataset to {total_after} rows. Session ID: {session_id}")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     return Response({"filtered_data": filtered_results, "session_id": session_id}, status=200)
 

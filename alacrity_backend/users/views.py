@@ -1,24 +1,20 @@
 import random
 import string
 from django.shortcuts import render
-
 from django.views import View
 from django.http import JsonResponse
 from django.contrib.auth.hashers import make_password, check_password
 from django.middleware.csrf import get_token
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model
 from rest_framework.views import APIView
 from rest_framework.response import Response
-
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
-from django.contrib.auth import get_user_model, authenticate
 from django.db import transaction
 from rest_framework.permissions import AllowAny
 from rest_framework import status
-
 from .serializers import RegisterSerializer
-
+from django.utils import timezone
 class LoginView(APIView):
     permission_classes = [AllowAny]
     def post(self, request):
@@ -32,18 +28,28 @@ class LoginView(APIView):
                     'error': 'Please provide both email and password'
                 }, status=status.HTTP_400_BAD_REQUEST)
             User = get_user_model()
+            print(User)
             
             try:
                 user = User.objects.get(email=email)
+                print(user)
+                if user.is_active == False:
+                    return Response({
+                        'error': 'your account is not active, please contact the admin'
+                    }, status=status.HTTP_401_UNAUTHORIZED)
             except User.DoesNotExist:
                 return Response({
                     'error': 'No user found with this email'
                 }, status=status.HTTP_404_NOT_FOUND)
             user = authenticate(request, username=email, password=password)
+            print("we are here")
             
             if user is not None:
+                user.last_login = timezone.now()
+                # user.save()
                 refresh = RefreshToken.for_user(user)
-                
+
+                print(refresh)
                 return Response({
                     'status': 'success',
                     'message': 'Login successful',
@@ -52,7 +58,7 @@ class LoginView(APIView):
                         'email': user.email,
                         'username': user.username,
                         'role': user.role,
-                        'organization': user.organization.name if user.organization else None,
+                        'organization': user.organization if user.organization else None,
                         'phone_number': user.phone_number,
                     },
                     'access_token': str(refresh.access_token),
@@ -65,6 +71,8 @@ class LoginView(APIView):
 
         except Exception as e:
             print(e)
+            import traceback
+            print(traceback.format_exc())
             return Response({
 
                 'error': 'An error occurred while trying to log you in',
@@ -84,13 +92,8 @@ def generate_username(first_name: str, last_name: str) -> str:
   
     first_name = first_name.strip().lower()
     last_name = last_name.strip().lower()
- 
- 
     random_string = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
- 
-    
     username = f"{last_name}_{first_name}_{random_string}"
- 
     return username
 
 def clean_data(request_data):
@@ -98,19 +101,15 @@ def clean_data(request_data):
     cleaned_data['first_name'] = cleaned_data.get('firstname', cleaned_data.get('first_name'))
     cleaned_data['sur_name'] = cleaned_data.get('surname', cleaned_data.get('sur_name'))
     cleaned_data['phone_number'] = cleaned_data.get('phonenumber', cleaned_data.get('phone_number'))
-   
     cleaned_data.pop('firstname', None)
     cleaned_data.pop('surname', None)
     cleaned_data.pop('phonenumber', None)
- 
-    
-    cleaned_data['role'] = 'contributor'  
-   
+    cleaned_data['role'] = 'organization_admin'  
+
     cleaned_data['password2'] = cleaned_data.get('password', cleaned_data.get('password2'))
    
     cleaned_data['username'] = generate_username(cleaned_data.get('first_name'), cleaned_data.get('sur_name'))
-    print(cleaned_data)
- 
+
     return cleaned_data
 
 class RegisterView(APIView):
@@ -148,7 +147,7 @@ class RegisterView(APIView):
 
 
 
-# get the user information
+
 
 class UserView(APIView):
     def get(self, request):

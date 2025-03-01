@@ -76,6 +76,7 @@ def role_required(allowed_roles=[]):
                 return Response({'error': 'Invalid or expired token'}, status=status.HTTP_401_UNAUTHORIZED)
 
             except Exception as e:
+                print(f"An error occurred: {e}")
                 return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         return wrapped_view
     return decorator
