@@ -113,7 +113,7 @@ class AddContributors(APIView):
 
                     email_sent = send_activation_email(new_user.email, new_user.first_name, activation_link)
                     if not email_sent:
-                        raise Exception("Failed to send activation email")
+                        raise Exception("Failed to send activation email and user was not saved.")
 
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
 
