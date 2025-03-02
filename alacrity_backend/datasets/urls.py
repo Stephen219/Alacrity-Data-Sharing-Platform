@@ -5,7 +5,7 @@ get_datasets, get_filter_options, CreateDatasetView,
 
  pre_analysis)
 
-from .new import analyze_dataset , dataset_detail, all_datasets_view, clear_dataset_cache
+from .new import analyze_dataset , dataset_detail, all_datasets_view, clear_dataset_cache, dataset_view
 
 urlpatterns = [
 
@@ -24,5 +24,6 @@ urlpatterns = [
     path("analysis/descriptive/<str:dataset_id>/", descriptive_statistics, name="descriptive-statistics"),
     path('analysis/filter-options/<str:dataset_id>/', get_filter_options, name='get_filter_options'),
     path('analysis/filter/<str:dataset_id>/', filter_and_clean_dataset, name='filter_clean_aggregate_dataset'),
+    path('<str:dataset_id>/', dataset_view, name='dataset_detail'),
 ]
 

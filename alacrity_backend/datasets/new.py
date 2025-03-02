@@ -274,5 +274,20 @@ def all_datasets_view(request):
     """
     datasets = Dataset.objects.select_related('contributor_id__organization').all()
     serializer = DatasetSerializer(datasets, many=True)
-    print(serializer.data.organization_name)
     return Response({"datasets": serializer.data}, status=status.HTTP_200_OK)
+
+# gets the dataset by its dataset_id and returns the serialized data this will be used im the description phase
+@api_view(['GET'])
+def dataset_view(request, dataset_id):
+    """
+    Fetch a dataset by its dataset_id.
+    Returns serialized data including  organization_name.
+    """
+    try:
+        dataset = Dataset.objects.select_related('contributor_id__organization').get(dataset_id=dataset_id)
+        serializer = DatasetSerializer(dataset)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Dataset.DoesNotExist:
+        return Response({"error": "Dataset not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": "Failed to fetch dataset"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

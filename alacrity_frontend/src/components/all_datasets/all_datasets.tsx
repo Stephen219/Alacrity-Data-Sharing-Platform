@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -102,6 +101,7 @@ function DatasetsPage() {
         disease: "N/A",
       }));
 
+      
       setDatasets(mappedDatasets);
     } catch (err) {
       console.error("Fetch error:", err);
@@ -310,7 +310,7 @@ function DatasetsPage() {
           {paginatedDatasets.map((dataset) => (
             <Link
             key={dataset.dataset_id}
-            href={`/analysis/${dataset.dataset_id}`} 
+            href={`/datasets/description?id=${ dataset.dataset_id}`} 
             className="block" 
           >
             <DatasetCard
