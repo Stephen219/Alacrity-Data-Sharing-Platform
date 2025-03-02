@@ -52,38 +52,44 @@ export default function DatasetDetail() {
   if (!dataset) return <div>No dataset found.</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col p-6">
-      {/* Display the dataset title */}
-      <h1 className="text-3xl font-bold mb-4">{dataset.title}</h1>
-      
-      {/* Display the dataset description */}
-      <p className="text-gray-700 mb-4">{dataset.description}</p>
-      
-      {/* Display the organization name */}
-      <p className="text-gray-500 mb-4">
-        <strong>Organization:</strong> {dataset.organization_name}
-      </p>
-      
-      {/* Display the date added (formatted from created_at) */}
-      <p className="text-gray-500 mb-4">
-        <strong>Date Added:</strong> {new Date(dataset.created_at).toLocaleDateString()}
-      </p>
-
-      {/* Buttons to make a request or go back */}
-      <div className="flex gap-4 mt-auto">
-        <button
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          onClick={() => router.push(`/request?id=${dataset.dataset_id}`)}
-        >
-          Request
-        </button>
-        <button
-          className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-          onClick={() => router.back()}
-        >
-          Back
-        </button>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+      <div className="max-w-3xl w-full p-8 bg-white rounded-lg shadow-lg">
+        {/* Centered Title */}
+        <div className="flex items-center justify-center mb-6">
+          <h1 className="text-4xl font-bold text-center">{dataset.title}</h1>
+        </div>
+        {/* Dataset Description */}
+        <div className="mb-4">
+          <p className="text-gray-700 text-lg">{dataset.description}</p>
+        </div>
+        {/* Organization Name */}
+        <div className="mb-4">
+          <p className="text-gray-600">
+            <span className="font-semibold">Organization:</span> {dataset.organization_name}
+          </p>
+        </div>
+        {/* Date Added */}
+        <div className="mb-4">
+          <p className="text-gray-600">
+            <span className="font-semibold">Date Added:</span> {new Date(dataset.created_at).toLocaleDateString()}
+          </p>
+        </div>
+        {/* Buttons */}
+        <div className="flex gap-4 mt-8 justify-center">
+          <button
+            className="bg-orange-200 text-black px-6 py-2 rounded hover:bg-orange-300 transition-colors"
+            onClick={() => router.push(`/request?id=${dataset.dataset_id}`)}
+          >
+            Request
+          </button>
+          <button
+            className="bg-black text-white px-6 py-2 rounded hover:bg-gray-800 transition-colors"
+            onClick={() => router.back()}
+          >
+            Back
+          </button>
+        </div>
       </div>
     </div>
-  );
+  );  
 }

@@ -291,3 +291,4 @@ def dataset_view(request, dataset_id):
         return Response({"error": "Dataset not found"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({"error": "Failed to fetch dataset"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
