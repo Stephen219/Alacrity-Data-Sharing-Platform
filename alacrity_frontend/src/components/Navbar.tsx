@@ -6,7 +6,7 @@ import { buttonVariants } from "./ui/button";
 import { usePathname } from "next/navigation";
 import { fetchUserData } from "@/libs/auth";
 import { User } from "@/types/types";
-import { useOnClickOutside } from "@/hooks/use-on-click-outside";
+
 import TopBarProfile from "./ui/TopbarProfile";
 
 
@@ -21,7 +21,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
   const pathname = usePathname();
   const [isSignUpPage, setIsSignUpPage] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [isProfileOpen, setIsProfileOpen] = useState(false)
+ 
 
 
 
