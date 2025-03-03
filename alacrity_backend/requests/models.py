@@ -21,8 +21,7 @@ class DatasetRequest(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
-class Meta:
-        unique_together = ['dataset_id', 'researcher_id']
+
 
 def __str__(self):
         return f"{self.user_id.first_name} {self.user_id.sur_name} - {self.dataset_id.title}"

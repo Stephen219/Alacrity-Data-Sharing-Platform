@@ -26,12 +26,12 @@ export default function DatasetDetail() {
   const datasetId = searchParams.get("id");
   const [dataset, setDataset] = useState<Dataset | null>(null);
   const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!datasetId) return;
     const fetchDatasetDetail = async () => {
       try {
-        // Assuming your backend has an endpoint to get a single dataset by ID
         const response = await fetchWithAuth(`${BACKEND_URL}/datasets/${datasetId}`);
         if (!response.ok) {
           throw new Error(`HTTP Error: ${response.status}`);
@@ -47,6 +47,29 @@ export default function DatasetDetail() {
 
     fetchDatasetDetail();
   }, [datasetId]);
+
+  // Function to send the POST request to create a dataset request
+  const handleRequest = async () => {
+    if (!dataset) return;
+    try {
+      const response = await fetchWithAuth(`${BACKEND_URL}/requests/makerequest/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        // Only include the dataset_id; the researcher will be determined by the backend (request.user)
+        body: JSON.stringify({ dataset_id: dataset.dataset_id }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to create request");
+      }
+      setMessage("Request created successfully");
+      // Optionally, you can redirect or update UI here
+    } catch (error: any) {
+      setMessage(error.message);
+    }
+  };
 
   if (loading) return <div>Loading...</div>;
   if (!dataset) return <div>No dataset found.</div>;
@@ -74,11 +97,13 @@ export default function DatasetDetail() {
             <span className="font-semibold">Date Added:</span> {new Date(dataset.created_at).toLocaleDateString()}
           </p>
         </div>
+        {/* Display message if available */}
+        {message && <div className="mb-4 text-center text-green-600">{message}</div>}
         {/* Buttons */}
         <div className="flex gap-4 mt-8 justify-center">
           <button
             className="bg-orange-200 text-black px-6 py-2 rounded hover:bg-orange-300 transition-colors"
-            onClick={() => router.push(`/request?id=${dataset.dataset_id}`)}
+            onClick={handleRequest}
           >
             Request
           </button>
@@ -91,5 +116,5 @@ export default function DatasetDetail() {
         </div>
       </div>
     </div>
-  );  
+  );
 }
