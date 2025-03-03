@@ -7,6 +7,9 @@ import { usePathname } from "next/navigation";
 import { fetchUserData } from "@/libs/auth";
 import { User } from "@/types/types";
 
+import TopBarProfile from "./ui/TopbarProfile";
+
+
 
 
 
@@ -18,12 +21,18 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
   const pathname = usePathname();
   const [isSignUpPage, setIsSignUpPage] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+ 
+
+
+
 
   useEffect(() => {
     const getUserData = async () => {
       const userData = await fetchUserData();
       setUser(userData);
+      console.log(userData);
     };
+
 
     getUserData();
   }, []);
@@ -61,9 +70,11 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
             About
           </Link>
           {userRole ? (
-            <>
+            <div className="flex items-center space-x-3">
               <Bell className="w-5 h-5 text-primary hover:fill-primary" />
-            </>
+                {user && <TopBarProfile User={user} />}
+            </div>
+
           ) : (
             <>
               <Link href="/auth/sign-in" className={buttonVariants({ variant: "ghost" })}>

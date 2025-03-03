@@ -1,67 +1,50 @@
 
+"use client";
 
-"use client"
-
-import type React from "react"
-import { useState, useEffect, useMemo } from "react"
-import { DatasetCard } from "./datasetCard"
-import { BACKEND_URL } from "@/config"
-import { fetchWithAuth } from "@/libs/auth"
+import type React from "react";
+import { useState, useEffect, useMemo } from "react";
+import { DatasetCard } from "./datasetCard";
+import { BACKEND_URL } from "@/config";
+import { fetchWithAuth } from "@/libs/auth";
 
 interface Dataset {
-  dataset_id: string
-  title: string
-  contributor_name: string
-  organization_name: string
-  description: string
-  tags: string[]
-  category: string
-  created_at: string
-  analysis_link: string | null
-  updated_at: string
-  size?: string
-  entries?: number
-  imageUrl?: string
+  dataset_id: string;
+  title: string;
+  contributor_name: string;
+  organization_name: string;
+  description: string;
+  tags: string[];
+  category: string;
+  created_at: string;
+  analysis_link: string | null;
+  updated_at: string;
+  size?: string;
+  entries?: number;
+  imageUrl?: string;
 }
 
-const FILTER_CATEGORIES = [
-  {
-    id: "category",
-    label: "Category",
-    options: ["All", "category1", "category2"],
-  },
-  {
-    id: "organization_name",
-    label: "Organization",
-    options: ["All", "No organization"],
-  },
-  {
-    id: "dateAdded",
-    label: "Date Added",
-    options: ["All Time", "Today", "This Week", "This Month", "This Year"],
-  },
-]
-
-const ITEMS_PER_PAGE = 6
+const ITEMS_PER_PAGE = 6;
 
 const DatasetsPage: React.FC = () => {
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [filters, setFilters] = useState<Record<string, string>>({})
-  const [currentPage, setCurrentPage] = useState(1)
-  const [isDarkMode, setIsDarkMode] = useState(false)
-  const [activeFilterCategory, setActiveFilterCategory] = useState<string | null>(null)
-  const [datasets, setDatasets] = useState<Dataset[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState<Record<string, string[]>>({}); // Changed to string[]
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [activeFilterCategory, setActiveFilterCategory] = useState<string | null>(null);
+  const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [filterCategories, setFilterCategories] = useState<
+    { id: string; label: string; options: string[] }[]
+  >([]);
 
   useEffect(() => {
     const fetchDatasets = async () => {
       try {
-        // Simulating API call
-        const response = await fetchWithAuth(`${BACKEND_URL}/datasets/all`) 
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`)
-        const data = await response.json()
+        const response = await fetchWithAuth(`${BACKEND_URL}/datasets/all`);
+        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+        const data = await response.json();
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const mappedDatasets: Dataset[] = data.datasets.map((item: any) => ({
@@ -69,30 +52,43 @@ const DatasetsPage: React.FC = () => {
           size: item.size || "N/A",
           entries: item.entries || 0,
           imageUrl: item.imageUrl || `https://picsum.photos/300/200?random=${item.dataset_id}`,
-        }))
+          tags: typeof item.tags === "string" ? item.tags.split(",").map((tag: string) => tag.trim()) : item.tags || [],
+        }));
 
-        setDatasets(mappedDatasets)
+        setDatasets(mappedDatasets);
+
+        const uniqueCategories = ["All", ...new Set(mappedDatasets.map((d) => d.category))];
+        const uniqueOrgs = ["All", ...new Set(mappedDatasets.map((d) => d.organization_name || "No organization"))];
+        const uniqueTags = ["All", ...new Set(mappedDatasets.flatMap((d) => d.tags))];
+        const staticDateOptions = ["All Time", "Today", "This Week", "This Month", "This Year"];
+
+        setFilterCategories([
+          { id: "category", label: "Category", options: uniqueCategories },
+          { id: "organization_name", label: "Organization", options: uniqueOrgs },
+          { id: "tags", label: "Tags", options: uniqueTags },
+          { id: "dateAdded", label: "Date Added", options: staticDateOptions },
+        ]);
       } catch (err) {
-        console.error("Fetch error:", err)
-        setError(`Error fetching datasets: ${err}`)
+        console.error("Fetch error:", err);
+        setError(`Error fetching datasets: ${err}`);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchDatasets()
-  }, [])
+    fetchDatasets();
+  }, []);
 
   useEffect(() => {
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-    setIsDarkMode(prefersDark)
-    document.documentElement.classList.toggle("dark", prefersDark)
-  }, [])
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    setIsDarkMode(prefersDark);
+    document.documentElement.classList.toggle("dark", prefersDark);
+  }, []);
 
   const toggleDarkMode = () => {
-    setIsDarkMode((prev) => !prev)
-    document.documentElement.classList.toggle("dark")
-  }
+    setIsDarkMode((prev) => !prev);
+    document.documentElement.classList.toggle("dark");
+  };
 
   const filteredDatasets = useMemo(() => {
     return datasets.filter((dataset) => {
@@ -100,10 +96,11 @@ const DatasetsPage: React.FC = () => {
         searchQuery === "" ||
         dataset.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         dataset.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        dataset.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-
-      const matchesFilters = Object.entries(filters).every(([key, value]) => {
-        if (value === "All" || value === "") return true
+        dataset.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+  
+      const matchesFilters = Object.entries(filters).every(([key, values]) => {
+        const safeValues = Array.isArray(values) ? values : [];
+        if (safeValues.length === 0 || safeValues.includes("All") || safeValues.includes("All Time")) return true;
         if (key === "dateAdded") {
           const dateMap: Record<string, (date: string) => boolean> = {
             Today: (date) => new Date(date).toDateString() === new Date().toDateString(),
@@ -112,36 +109,63 @@ const DatasetsPage: React.FC = () => {
               new Date(date).getMonth() === new Date().getMonth() &&
               new Date(date).getFullYear() === new Date().getFullYear(),
             "This Year": (date) => new Date(date).getFullYear() === new Date().getFullYear(),
-          }
-          return dateMap[value](dataset.created_at)
+          };
+          return safeValues.some((value) => dateMap[value]?.(dataset.created_at));
         }
-        if (key === "organization_name") return dataset.organization_name === value
-        return dataset[key as keyof Dataset] === value
-      })
+        if (key === "organization_name") return safeValues.includes(dataset.organization_name);
+        if (key === "category") return safeValues.includes(dataset.category);
+        if (key === "tags") return safeValues.some((value) => dataset.tags.includes(value));
+        return true;
+      });
+  
+      return matchesSearch && matchesFilters;
+    });
+  }, [searchQuery, filters, datasets]);
 
-      return matchesSearch && matchesFilters
-    })
-  }, [searchQuery, filters, datasets])
+  const paginatedDatasets = filteredDatasets.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
-  const paginatedDatasets = filteredDatasets.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
-
-  const totalPages = Math.ceil(filteredDatasets.length / ITEMS_PER_PAGE)
+  const totalPages = Math.ceil(filteredDatasets.length / ITEMS_PER_PAGE);
 
   const handleFilterChange = (categoryId: string, value: string) => {
-    setFilters((prev) => ({ ...prev, [categoryId]: value }))
-    setCurrentPage(1)
-  }
+    setFilters((prev) => {
+      const currentValues = prev[categoryId] || [];
+      if (value === "All" || value === "All Time") {
+        // Selecting "All" or "All Time" resets this filter
+        return { ...prev, [categoryId]: [value] };
+      }
+      if (currentValues.includes(value)) {
+        // Remove the value if already selected
+        const newValues = currentValues.filter((v) => v !== value);
+        return { ...prev, [categoryId]: newValues.length > 0 ? newValues : [] };
+      }
+      // Add the value to the selection
+      return { ...prev, [categoryId]: [...currentValues.filter((v) => v !== "All" && v !== "All Time"), value] };
+    });
+    setCurrentPage(1);
+  };
+
+  const removeFilter = (categoryId: string, value: string) => {
+    setFilters((prev) => {
+      const currentValues = prev[categoryId] || [];
+      const newValues = currentValues.filter((v) => v !== value);
+      return { ...prev, [categoryId]: newValues.length > 0 ? newValues : [] };
+    });
+    setCurrentPage(1);
+  };
 
   const toggleFilterCategory = (categoryId: string) => {
-    setActiveFilterCategory((prev) => (prev === categoryId ? null : categoryId))
-  }
+    setActiveFilterCategory((prev) => (prev === categoryId ? null : categoryId));
+  };
 
   if (isLoading) {
-    return <div className="flex justify-center items-center h-screen">Loading datasets...</div>
+    return <div className="flex justify-center items-center h-screen">Loading datasets...</div>;
   }
 
   if (error) {
-    return <div className="text-red-500 text-center mt-4">{error}</div>
+    return <div className="text-red-500 text-center mt-4">{error}</div>;
   }
 
   return (
@@ -175,9 +199,38 @@ const DatasetsPage: React.FC = () => {
           />
         </div>
 
+        {/* Display Selected Filters */}
+        <div className="mb-6">
+          {Object.entries(filters).length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {Object.entries(filters).flatMap(([categoryId, values]) =>
+                values.map((value) => (
+                  <div
+                    key={`${categoryId}-${value}`}
+                    className={`flex items-center px-3 py-1 rounded-full text-sm ${
+                      isDarkMode ? "bg-gray-700 text-white" : "bg-gray-200 text-gray-700"
+                    }`}
+                  >
+                    <span>
+                      {filterCategories.find((c) => c.id === categoryId)?.label}: {value}
+                    </span>
+                    <button
+                      onClick={() => removeFilter(categoryId, value)}
+                      className="ml-2 text-red-500 hover:text-red-700"
+                      aria-label={`Remove ${value} from ${categoryId} filter`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+
         <div className="mb-6">
           <div className="flex flex-wrap gap-2 mb-4">
-            {FILTER_CATEGORIES.map((category) => (
+            {filterCategories.map((category) => (
               <button
                 key={category.id}
                 onClick={() => toggleFilterCategory(category.id)}
@@ -185,8 +238,8 @@ const DatasetsPage: React.FC = () => {
                   activeFilterCategory === category.id
                     ? "bg-orange-500 text-white"
                     : isDarkMode
-                      ? "bg-gray-700 text-white hover:bg-gray-600"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    ? "bg-gray-700 text-white hover:bg-gray-600"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                 }`}
               >
                 {category.label}
@@ -196,24 +249,26 @@ const DatasetsPage: React.FC = () => {
           {activeFilterCategory && (
             <div className={`rounded-lg p-4 ${isDarkMode ? "bg-gray-800" : "bg-white"} shadow-md`}>
               <h3 className="font-semibold mb-2">
-                {FILTER_CATEGORIES.find((c) => c.id === activeFilterCategory)?.label}
+                {filterCategories.find((c) => c.id === activeFilterCategory)?.label}
               </h3>
               <div className="flex flex-wrap gap-2">
-                {FILTER_CATEGORIES.find((c) => c.id === activeFilterCategory)?.options.map((option) => (
-                  <button
-                    key={option}
-                    onClick={() => handleFilterChange(activeFilterCategory, option)}
-                    className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                      filters[activeFilterCategory] === option
-                        ? "bg-orange-500 text-white"
-                        : isDarkMode
+                {filterCategories
+                  .find((c) => c.id === activeFilterCategory)
+                  ?.options.map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => handleFilterChange(activeFilterCategory, option)}
+                      className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                        (filters[activeFilterCategory] || []).includes(option)
+                          ? "bg-orange-500 text-white"
+                          : isDarkMode
                           ? "bg-gray-700 text-white hover:bg-gray-600"
                           : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                    }`}
-                  >
-                    {option}
-                  </button>
-                ))}
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
               </div>
             </div>
           )}
@@ -315,10 +370,7 @@ const DatasetsPage: React.FC = () => {
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default DatasetsPage
-
-
-
+export default DatasetsPage;

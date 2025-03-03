@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     'research',
 
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
+
 
     'contact',
     'organisation',
@@ -251,6 +253,7 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY, 
+    'BLACKLIST_ENABLED': True,
     'VERIFYING_KEY': None,
     'AUTH_HEADER_TYPES': ('Bearer',),
     'USER_ID_FIELD': 'id',

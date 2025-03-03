@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { BACKEND_URL } from "@/config";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function SignUp() {
   const router = useRouter();
@@ -132,8 +133,13 @@ export default function SignUp() {
             ALACRITY
           </h1>
           <p className="text-gray-600 text-lg">Join us today and get access to quick data</p>
+          <div className="flex flex-col space-y-2"><Link href="/auth/sign-up/org-sign-up" className="text-[#f97316] text-sm text-center">
+            Sign up as an organization
+          </Link>
+          <Link href="/auth/sign-in/" className="text-[#f97316] text-sm text-center">
+           Have an account? Sign in
+          </Link> </div>
         </div>
-
         <form className="space-y-6" onSubmit={handleFormSubmit} noValidate>
           <div className="grid grid-cols-2 gap-4">
             <div className="relative">
@@ -152,8 +158,6 @@ export default function SignUp() {
                 aria-describedby={serverError ? "error-message" : undefined}
                 required
               />
-
-
 
             </div>
             <div className="relative">
@@ -293,6 +297,7 @@ export default function SignUp() {
               {loading ? "Signing Up..." : "Sign Up"}
             </Button>
           </div>
+         
 
           <div
               role="alert"

@@ -137,6 +137,8 @@ class CreateDatasetView(APIView):
             # Extract and validate form data
             title = request.POST.get('title')
             category = request.POST.get('category')
+            tags = request.POST.get('tags')
+            print("Tags:", tags)
             description = request.POST.get('description')
             if not title or len(title) > 100:
                 logger.error("Invalid title")
@@ -157,12 +159,14 @@ class CreateDatasetView(APIView):
                 dataset_id=dataset_id,
                 contributor_id=request.user,
                 title=title,
+                tags=tags,
                 category=category,
                 link=file_url,
                 description=description,
                 encryption_key=key.decode(),
                 schema=schema
             )
+            dataset.save()
 
             stop = datetime.now()
             print("End time:", stop)
@@ -174,12 +178,6 @@ class CreateDatasetView(APIView):
         except Exception as e:
             logger.error(f"Error: {e}", exc_info=True)
             return Response({"error": "Something went wrong"}, status=500)
-
-
-
-
-
-
 
 
 

@@ -164,3 +164,27 @@ class UserView(APIView):
             "organization": user.organization.name if user.organization else None,
             "field": user.field,
         }, status=status.HTTP_200_OK)
+    
+
+
+class LogoutView(APIView):
+    def post(self, request):
+        try:
+            refresh_token = request.data.get('refresh_token')
+            print (request.data)
+            if not refresh_token:
+                return Response({
+                    'error': 'Refresh token is required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            token = RefreshToken(refresh_token)
+            re = token.blacklist()
+            print(re)
+            return Response({
+                'message': 'Logout successful'
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(f"Logout error: {str(e)}")
+            return Response({
+                'error': f'An error occurred while trying to log you out: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
