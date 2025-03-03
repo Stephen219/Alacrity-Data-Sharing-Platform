@@ -89,7 +89,7 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => (
+            {/* {tags.map((tag) => (
               <span
                 key={tag}
                 className={`${
@@ -98,7 +98,7 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
               >
                 {tag}
               </span>
-            ))}
+            ))} */}
           </div>
         </div>
       </div>

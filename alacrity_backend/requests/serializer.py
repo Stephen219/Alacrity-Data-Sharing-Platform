@@ -4,7 +4,8 @@ from users.models import User  # Import User model
 
 class DatasetRequestSerializer(serializers.ModelSerializer):
     researcher_name = serializers.SerializerMethodField()  # Use method field
-    dataset_title = serializers.CharField()
+    # dataset_title = serializers.CharField()
+    dataset_title = serializers.CharField(source='dataset_id.title', read_only=True)
     request_status = serializers.CharField()
     message = serializers.CharField()
     created_at = serializers.DateTimeField()
@@ -25,7 +26,7 @@ class DatasetRequestSerializer(serializers.ModelSerializer):
         """
         Returns the full name of the researcher (first name + sur_name).
         """
-        researcher = obj.user_id  # Assuming researcher_id is a FK to User
+        researcher = obj.researcher_id
         if isinstance(researcher, User):
             return f"{researcher.first_name} {researcher.sur_name}".strip()
         return "Unknown Researcher"

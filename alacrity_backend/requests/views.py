@@ -57,14 +57,28 @@ class Make_request(APIView):
         return Response({'message': 'Request created successfully'}, status=201)
 
 
-# this is a view that will be used when the user wants to view all the requests that have been made
-@role_required(['organization_admin', 'contributor'])
-@api_view(['GET'])
-def view_requests(request):
-    # get all the requests from the DatasetRequest table according to the contributor with the same organization as the requester
-    requests = DatasetRequest.objects.filter(dataset_id__organization_id=request.user.organization_id)
-    # serialize the requests
-    serializer = DatasetRequestSerializer(requests, many=True)
-    print(serializer.data)
-    return Response(serializer.data, status=status.HTTP_200_OK)
-    
+ # this is a view that will be used when the user wants to view all the requests that have been made
+class ViewAllDatasetRequests(APIView):
+    @role_required(['organization_admin', 'contributor'])
+    def get(self, request):
+        try:
+           # get all the requests from the DatasetRequest table according to the contributor with the same organization as the requester
+            requests = DatasetRequest.objects.filter(dataset_id__contributor_id__organization=request.user.organization).select_related('dataset_id', 'researcher_id')
+            # serialize the requests
+            
+            serializer = DatasetRequestSerializer(requests, many=True)
+            print(serializer.data) 
+            return Response(serializer.data, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            import traceback
+            print(traceback.format_exc())
+            print("end o ftraceback")
+            print(e)
+            print("nfnjfnfnnfjf above")
+            return Response(
+                {
+                    'error': 'An error occurred'
+                 },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
