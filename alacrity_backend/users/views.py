@@ -164,3 +164,66 @@ class UserView(APIView):
             "organization": user.organization.name if user.organization else None,
             "field": user.field,
         }, status=status.HTTP_200_OK)
+    
+
+
+class LogoutView(APIView):
+    def post(self, request):
+        try:
+            refresh_token = request.data.get('refresh_token')
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response({
+                "message": "Logout successful"
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                "error": "An error occurred while trying to log you out",
+                "details": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .decorators import role_required
+from datasets.models import Dataset
+
+from .models import User
+
+class UserDashboardView(APIView):
+    # permission_classes = [AllowAny]  # Ensure user is authenticated
+
+    @role_required(["organisation_admin", "researcher", "contributor"]) 
+    def get(self, request):
+        user = request.user
+
+        # if user.role == "admin":
+        organization = user.organization
+        print(organization)
+        organization_id = organization.name
+        data = {
+            "total_datasets": Dataset.objects.filter(contributor_id__organization=organization).count(),
+            "total_datasets": Dataset.objects.count( ),
+            "pending_requests":3,
+            "approved_requests": 3,
+            "total_users": User.objects.filter(organization=organization).count(),
+        }
+        # elif user.role == "researcher":
+        #     data = {
+        #         "datasets_accessed": Dataset.objects.filter(accessed_by=user).count(),
+        #         "pending_reviews": DatasetRequest.objects.filter(requested_by=user, status="pending").count(),
+        #         "research_submitted": user.research_set.count(),
+        #     }
+        # elif user.role == "collaborator":
+        #     data = {
+        #         "datasets_contributed": Dataset.objects.filter(uploaded_by=user).count(),
+        #         "pending_contributions": DatasetRequest.objects.filter(assigned_to=user, status="pending").count(),
+        #     }
+        # else:
+        #     return Response({"error": "Invalid role"}, status=403)
+        print(data)
+
+        return Response(data)
+
+    

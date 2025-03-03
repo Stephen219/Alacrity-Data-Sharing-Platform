@@ -118,6 +118,7 @@ class CreateDatasetView(APIView):
 
           
             key = Fernet.generate_key()
+            print("Key:", key)
             cipher = Fernet(key)
             logger.info("Encrypting data")
             encrypted_data = cipher.encrypt(buffer.getvalue())

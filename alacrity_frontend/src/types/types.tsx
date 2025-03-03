@@ -14,4 +14,9 @@ type User = {
 }
 
 
+
+
+
 export type { User };
+
+export type UserRole = "organization_admin" | "contributor" | "researcher" | null;

@@ -2,8 +2,9 @@ from django.urls import path
 from .views import  RegisterView
 # from rest_framfework_simplejwt.views import TokenRefreshView
 # add login vhiejw
-from .views import  RegisterView, LoginView, UserView, CSRFTokenView
+from .views import  RegisterView, LoginView, UserView, CSRFTokenView , UserDashboardView
 from rest_framework_simplejwt.views import TokenRefreshView
+
 
  
 urlpatterns = [
@@ -12,6 +13,8 @@ urlpatterns = [
     path("login/", LoginView.as_view(), name="login"),
 
     path("profile/", UserView.as_view(), name="user"),
+    path("dashboard/", UserDashboardView.as_view(), name
+    ="dashboard"),
 
 
 
