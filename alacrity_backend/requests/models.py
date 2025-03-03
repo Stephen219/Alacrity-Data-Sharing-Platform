@@ -18,6 +18,7 @@ class DatasetRequest(models.Model):
     dataset_id = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name='requests')
     researcher_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name='requests')
     request_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    message = models.TextField(blank=True, null=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

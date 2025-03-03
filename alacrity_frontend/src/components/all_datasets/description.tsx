@@ -27,6 +27,7 @@ export default function DatasetDetail() {
   const [dataset, setDataset] = useState<Dataset | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
+  const [objective, setObjective] = useState("");
 
   useEffect(() => {
     if (!datasetId) return;
@@ -48,7 +49,7 @@ export default function DatasetDetail() {
     fetchDatasetDetail();
   }, [datasetId]);
 
-  // Function to send the POST request to create a dataset request
+  // Function to send the POST request to create a dataset request with the objective message
   const handleRequest = async () => {
     if (!dataset) return;
     try {
@@ -57,15 +58,17 @@ export default function DatasetDetail() {
         headers: {
           "Content-Type": "application/json",
         },
-        // Only include the dataset_id; the researcher will be determined by the backend (request.user)
-        body: JSON.stringify({ dataset_id: dataset.dataset_id }),
+        body: JSON.stringify({ 
+          dataset_id: dataset.dataset_id,
+          objective: objective,
+        }),
       });
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to create request");
       }
       setMessage("Request created successfully");
-      // Optionally, you can redirect or update UI here
+      setObjective("");
     } catch (error: any) {
       setMessage(error.message);
     }
@@ -75,40 +78,50 @@ export default function DatasetDetail() {
   if (!dataset) return <div>No dataset found.</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="max-w-3xl w-full p-8 bg-white rounded-lg shadow-lg">
-        {/* Centered Title */}
-        <div className="flex items-center justify-center mb-6">
-          <h1 className="text-4xl font-bold text-center">{dataset.title}</h1>
-        </div>
-        {/* Dataset Description */}
-        <div className="mb-4">
-          <p className="text-gray-700 text-lg">{dataset.description}</p>
-        </div>
-        {/* Organization Name */}
-        <div className="mb-4">
-          <p className="text-gray-600">
+    <div className="min-h-screen bg-gray-50">
+      <div className="w-full max-w-4xl mx-auto">
+        {/* Title */}
+        <h1 className="text-2xl font-bold text-left my-4 px-4">{dataset.title}</h1>
+        {/* Description */}
+        <p className="text-gray-700 text-base text-left my-2 px-4">
+          {dataset.description}
+        </p>
+        {/* Organization & Date */}
+        <div className="text-left my-2 text-sm text-gray-600 px-4">
+          <p>
             <span className="font-semibold">Organization:</span> {dataset.organization_name}
           </p>
-        </div>
-        {/* Date Added */}
-        <div className="mb-4">
-          <p className="text-gray-600">
-            <span className="font-semibold">Date Added:</span> {new Date(dataset.created_at).toLocaleDateString()}
+          <p>
+            <span className="font-semibold">Date Added:</span>{" "}
+            {new Date(dataset.created_at).toLocaleDateString()}
           </p>
         </div>
+        {/* Objective Form (moved below Organization & Date) */}
+        <div className="my-4 px-4">
+          <label className="block text-gray-600 text-sm mb-1" htmlFor="objective">
+            Please write the main objective as to why you need the data:
+          </label>
+          <textarea
+            id="objective"
+            className="w-full border border-black p-2 rounded text-sm focus:outline-none focus:ring-2 focus:ring-orange-200"
+            rows={4}
+            placeholder="Enter your objective here..."
+            value={objective}
+            onChange={(e) => setObjective(e.target.value)}
+          />
+        </div>
         {/* Display message if available */}
-        {message && <div className="mb-4 text-center text-green-600">{message}</div>}
+        {message && <div className="text-left text-green-600 text-sm my-2 px-4">{message}</div>}
         {/* Buttons */}
-        <div className="flex gap-4 mt-8 justify-center">
+        <div className="flex gap-4 mt-4 mb-4 px-4">
           <button
-            className="bg-orange-200 text-black px-6 py-2 rounded hover:bg-orange-300 transition-colors"
+            className="bg-orange-200 text-black px-4 py-2 rounded hover:bg-orange-300 transition-colors text-sm"
             onClick={handleRequest}
           >
             Request
           </button>
           <button
-            className="bg-black text-white px-6 py-2 rounded hover:bg-gray-800 transition-colors"
+            className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition-colors text-sm"
             onClick={() => router.back()}
           >
             Back
