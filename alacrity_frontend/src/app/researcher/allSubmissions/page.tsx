@@ -1,126 +1,435 @@
-"use client";
 
-import { BACKEND_URL } from "@/config";
-import { fetchWithAuth } from "@/libs/auth";
-import { useEffect, useState } from "react";
+
+"use client"
+
+import { BACKEND_URL } from "@/config"
+import { fetchWithAuth } from "@/libs/auth"
+import { useEffect, useState } from "react"
+import parse from "html-react-parser"
 
 interface Analysis {
-  id: number;
-  title: string;
-  description: string;
-  raw_results: string;
-  summary: string;
-  submitted_at?: string;
-  image?: string;
+  id: number
+  title: string
+  description: string
+  raw_results: string
+  summary: string
+  submitted_at?: string
+  image?: string
 }
 
 const PublicSubmissions = () => {
-  const [recentSubmissions, setRecentSubmissions] = useState<Analysis[]>([]);
-  const [popularSubmissions, setPopularSubmissions] = useState<Analysis[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [submissions, setSubmissions] = useState<Analysis[]>([])
+  const [filteredSubmissions, setFilteredSubmissions] = useState<Analysis[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [sortBy, setSortBy] = useState("recent")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(6)
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list")
+
+  // Calculate total pages
+  const totalPages = Math.ceil(filteredSubmissions.length / itemsPerPage)
+
+  // Get current items
+  const indexOfLastItem = currentPage * itemsPerPage
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage
+  const currentItems = filteredSubmissions.slice(indexOfFirstItem, indexOfLastItem)
 
   const toggleBookmark = async (submissionId: number) => {
     try {
       const response = await fetchWithAuth(`${BACKEND_URL}research/bookmark/${submissionId}/`, {
         method: "POST",
-      });
+      })
 
-      const data = await response.json();
-      alert(data.message);
+      const data = await response.json()
+      alert(data.message)
     } catch (error) {
-      console.error("Bookmark error:", error);
+      console.error("Bookmark error:", error)
     }
-  };
+  }
 
   useEffect(() => {
     const fetchSubmissions = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:8000/research/submissions/view/");
-        if (!response.ok) throw new Error(`Failed to fetch submissions. Status: ${response.status}`);
+        const response = await fetch("http://127.0.0.1:8000/research/submissions/view/")
+        if (!response.ok) throw new Error(`Failed to fetch submissions. Status: ${response.status}`)
 
-        const data = await response.json();
+        const data = await response.json()
 
-        setRecentSubmissions(Array.isArray(data.recent_submissions) ? data.recent_submissions : []);
-        setPopularSubmissions(Array.isArray(data.popular_submissions) ? data.popular_submissions : []);
+        // Combine recent and popular submissions
+        const allSubmissions = [
+          ...(Array.isArray(data.recent_submissions) ? data.recent_submissions : []),
+          ...(Array.isArray(data.popular_submissions) ? data.popular_submissions : []),
+        ]
+
+        // Remove duplicates based on id
+        const uniqueSubmissions = Array.from(new Map(allSubmissions.map((item) => [item.id, item])).values())
+
+        setSubmissions(uniqueSubmissions)
+        setFilteredSubmissions(uniqueSubmissions)
       } catch (err) {
-        setError((err as Error).message);
+        setError((err as Error).message)
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    fetchSubmissions();
-  }, []);
+    fetchSubmissions()
+  }, [])
 
-  if (loading) return <p className="text-center text-gray-600">Loading submissions...</p>;
-  if (error) return <p className="text-center text-red-500">Error: {error}</p>;
+  // Handle search and filtering
+  useEffect(() => {
+    let result = [...submissions]
+
+    // Apply search filter
+    if (searchTerm) {
+      result = result.filter(
+        (item) =>
+          item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.description.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
+    }
+
+    // Apply sorting
+    if (sortBy === "recent") {
+      result.sort((a, b) => {
+        const dateA = a.submitted_at ? new Date(a.submitted_at).getTime() : 0
+        const dateB = b.submitted_at ? new Date(b.submitted_at).getTime() : 0
+        return dateB - dateA
+      })
+    } else if (sortBy === "popular") {
+      // For demo purposes, we'll sort by ID as a proxy for popularity
+      result.sort((a, b) => b.id - a.id)
+    } else if (sortBy === "title") {
+      result.sort((a, b) => a.title.localeCompare(b.title))
+    }
+
+    setFilteredSubmissions(result)
+    setCurrentPage(1) // Reset to first page when filters change
+  }, [searchTerm, sortBy, submissions])
+
+  // Pagination controls
+  const paginate = (pageNumber: number) => setCurrentPage(pageNumber)
+  const nextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+  const prevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1))
+
+  if (loading) return <p className="text-center text-gray-600">Loading submissions...</p>
+  if (error) return <p className="text-center text-red-500">Error: {error}</p>
 
   return (
-    <section className="py-24 bg-white">
+    <section className="py-12 bg-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <h2 className="text-4xl font-bold text-gray-900 text-center mb-16">Public Analysis Submissions</h2>
+        <h2 className="text-4xl font-bold text-gray-900 text-center mb-12">Public Analysis Submissions</h2>
 
-        {/* Recently Uploaded Section */}
-        <h3 className="text-3xl font-semibold mb-8 text-center">Recently Uploaded</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {recentSubmissions.map((submission) => (
-            <div key={submission.id} className="group border border-gray-300 rounded-2xl shadow-lg">
-              <div className="flex items-center">
-                <img
-                  src={submission.image || "https://via.placeholder.com/500"}
-                  alt={submission.title}
-                  className="rounded-t-2xl w-full object-cover h-56"
-                />
-              </div>
-              <div className="p-4 lg:p-6 transition-all duration-300 rounded-b-2xl group-hover:bg-gray-50">
-                <span className="text-indigo-600 font-medium mb-3 block">
-                  {submission.submitted_at ? new Date(submission.submitted_at).toLocaleString() : "N/A"}
-                </span>
-                <h4 className="text-xl text-gray-900 font-medium leading-8 mb-5">{submission.title}</h4>
-                <p className="text-gray-500 leading-6 mb-10">{submission.description}</p>
-                <button 
-                  onClick={() => toggleBookmark(submission.id)}
-                  className="text-lg text-indigo-600 font-semibold"
-                >
-                  Bookmark
-                </button>
-              </div>
-            </div>
-          ))}
+        {/* Search and Filter Controls */}
+        <div className="mb-8 flex flex-col md:flex-row gap-4 justify-between">
+          <div className="relative w-full md:w-1/2">
+            <input
+              type="text"
+              placeholder="Search submissions..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+            <button className="absolute right-3 top-1/2 transform -translate-y-1/2" onClick={() => setSearchTerm("")}>
+              {searchTerm && <span className="text-gray-500 hover:text-gray-700">✕</span>}
+            </button>
+          </div>
+
+          <div className="flex gap-4">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              <option value="recent">Most Recent</option>
+              <option value="popular">Most Popular</option>
+              <option value="title">Title (A-Z)</option>
+            </select>
+
+            <select
+              value={itemsPerPage}
+              onChange={(e) => setItemsPerPage(Number(e.target.value))}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              <option value={3}>3 per page</option>
+              <option value={6}>6 per page</option>
+              <option value={9}>9 per page</option>
+            </select>
+          </div>
         </div>
 
-        {/* Most Popular Section */}
-        <h3 className="text-3xl font-semibold mt-16 mb-8 text-center">Most Popular</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {popularSubmissions.map((submission) => (
-            <div key={submission.id} className="group border border-gray-300 rounded-2xl shadow-lg">
-              <div className="flex items-center">
-                <img
-                  src={submission.image || "https://via.placeholder.com/500"}
-                  alt={submission.title}
-                  className="rounded-t-2xl w-full object-cover h-56"
-                />
-              </div>
-              <div className="p-4 lg:p-6 transition-all duration-300 rounded-b-2xl group-hover:bg-gray-50">
-                <span className="text-indigo-600 font-medium mb-3 block">
-                  {submission.submitted_at ? new Date(submission.submitted_at).toLocaleString() : "N/A"}
-                </span>
-                <h4 className="text-xl text-gray-900 font-medium leading-8 mb-5">{submission.title}</h4>
-                <p className="text-gray-500 leading-6 mb-10">{submission.description}</p>
-                <button 
-                  onClick={() => toggleBookmark(submission.id)}
-                  className="text-lg text-indigo-600 font-semibold"
-                >
-                  Bookmark
-                </button>
-              </div>
-            </div>
-          ))}
+        {/* Results count and view toggle */}
+        <div className="flex justify-between items-center mb-6">
+          <p className="text-gray-600">
+            Showing {filteredSubmissions.length > 0 ? indexOfFirstItem + 1 : 0} -{" "}
+            {Math.min(indexOfLastItem, filteredSubmissions.length)} of {filteredSubmissions.length} results
+          </p>
+
+          <div className="flex items-center gap-2">
+            <span className="text-gray-600">View:</span>
+            <button
+              onClick={() => setViewMode("list")}
+              className={`p-2 rounded-md ${viewMode === "list" ? "bg-orange-500 text-white" : "bg-gray-200 text-gray-700"}`}
+              aria-label="List view"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="8" y1="6" x2="21" y2="6"></line>
+                <line x1="8" y1="12" x2="21" y2="12"></line>
+                <line x1="8" y1="18" x2="21" y2="18"></line>
+                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+              </svg>
+            </button>
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`p-2 rounded-md ${viewMode === "grid" ? "bg-orange-500 text-white" : "bg-gray-200 text-gray-700"}`}
+              aria-label="Grid view"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+            </button>
+          </div>
         </div>
+
+        {/* Submissions Grid/List */}
+        <div
+          className={
+            viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8" : "grid grid-cols-1 gap-8"
+          }
+        >
+          {currentItems.length > 0 ? (
+            currentItems.map((submission) => (
+              <div
+                key={submission.id}
+                className="group border border-gray-300 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
+              >
+                {viewMode === "grid" ? (
+                  // Grid view layout
+                  <div className="flex flex-col h-full">
+                    <div className="relative">
+                      <img
+                        src={submission.image || `https://picsum.photos/300/200?random=${submission.id}`}
+                        alt={submission.title}
+                        className="w-full h-48 object-cover rounded-t-lg"
+                      />
+                      <span className="absolute top-2 right-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded-full flex items-center">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                          <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        <span className="ml-1">20 views</span>
+                      </span>
+                    </div>
+                    <div className="p-4 flex flex-col flex-grow">
+                      <span className="text-orange-500 font-medium mb-2">
+                        {submission.submitted_at ? new Date(submission.submitted_at).toLocaleString() : "N/A"}
+                      </span>
+                      <h4 className="text-xl text-gray-900 font-medium leading-7 mb-2">{parse(submission.title)}</h4>
+                      <div className="text-gray-600 leading-6 mb-4 line-clamp-3 flex-grow">
+                        {parse(submission.description)}
+                      </div>
+                      <div className="flex justify-between items-center mt-auto">
+                        <button
+                          onClick={() => toggleBookmark(submission.id)}
+                          className="text-orange-500 font-semibold hover:text-orange-600 transition-colors"
+                        >
+                          Bookmark
+                        </button>
+                        <button className="px-3 py-1 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm">
+                          View Details
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  // List view layout
+                  <div className="flex flex-col md:flex-row">
+                    <div className="md:w-1/3 lg:w-1/4 relative">
+                      <img
+                        src={submission.image || `https://picsum.photos/300/200?random=${submission.id}`}
+                        alt={submission.title}
+                        className="w-full h-56 md:h-full object-cover rounded-t-lg md:rounded-l-lg md:rounded-tr-none"
+                      />
+                      <span className="absolute top-2 right-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded-full flex items-center">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                          <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        <span className="ml-1">20 views</span>
+                      </span>
+                    </div>
+                    <div className="p-6 md:w-2/3 lg:w-3/4">
+                      <div className="flex justify-between items-start mb-3">
+                        <span className="text-orange-500 font-medium">
+                          {submission.submitted_at ? new Date(submission.submitted_at).toLocaleString() : "N/A"}
+                        </span>
+                      </div>
+                      <h4 className="text-xl text-gray-900 font-medium leading-8 mb-3">{parse(submission.title)}</h4>
+                      <div className="text-gray-600 leading-6 mb-6 line-clamp-3">{parse(submission.description)}</div>
+                      <div className="flex justify-between items-center">
+                        <button
+                          onClick={() => toggleBookmark(submission.id)}
+                          className="text-orange-500 font-semibold hover:text-orange-600 transition-colors"
+                        >
+                          Bookmark
+                        </button>
+                        <button className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+                          View Details
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <p className="text-center text-gray-600 py-8 col-span-full">
+              No submissions found matching your search criteria.
+            </p>
+          )}
+        </div>
+
+        {/* Pagination */}
+        {filteredSubmissions.length > 0 && (
+          <div className="mt-8 flex justify-center">
+            <nav className="flex items-center gap-1">
+              <button
+                onClick={prevPage}
+                disabled={currentPage === 1}
+                className={`px-3 py-1 rounded-md ${
+                  currentPage === 1 ? "text-gray-400 cursor-not-allowed" : "text-orange-500 hover:bg-orange-50"
+                }`}
+              >
+                <span className="sr-only">Previous</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m15 18-6-6 6-6"></path>
+                </svg>
+              </button>
+
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                // Show pages around current page
+                let pageNum
+                if (totalPages <= 5) {
+                  pageNum = i + 1
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i
+                } else {
+                  pageNum = currentPage - 2 + i
+                }
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => paginate(pageNum)}
+                    className={`w-8 h-8 flex items-center justify-center rounded-md ${
+                      currentPage === pageNum ? "bg-orange-500 text-white" : "text-gray-700 hover:bg-orange-50"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                )
+              })}
+
+              {totalPages > 5 && currentPage < totalPages - 2 && (
+                <>
+                  <span className="px-2">...</span>
+                  <button
+                    onClick={() => paginate(totalPages)}
+                    className="w-8 h-8 flex items-center justify-center rounded-md text-gray-700 hover:bg-orange-50"
+                  >
+                    {totalPages}
+                  </button>
+                </>
+              )}
+
+              <button
+                onClick={nextPage}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1 rounded-md ${
+                  currentPage === totalPages ? "text-gray-400 cursor-not-allowed" : "text-orange-500 hover:bg-orange-50"
+                }`}
+              >
+                <span className="sr-only">Next</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m9 18 6-6-6-6"></path>
+                </svg>
+              </button>
+            </nav>
+          </div>
+        )}
       </div>
     </section>
-  );
-};
+  )
+}
 
-export default PublicSubmissions;
+export default PublicSubmissions
+

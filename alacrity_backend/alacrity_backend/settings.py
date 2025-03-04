@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     'research',
 
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
+
 
     'contact',
     'organisation',
@@ -106,7 +108,7 @@ DATABASES = {
         'HOST': os.getenv('DJANGO_DATABASE_HOST', 'mysql'),
         'PORT': os.getenv('DJANGO_DATABASE_PORT', '3306'),
         'TEST': {
-            'NAME': 'alacrity_db',
+            'NAME': 'alacrity_dbtes',
         }
     }
 }
@@ -252,6 +254,7 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY, 
+    'BLACKLIST_ENABLED': True,
     'VERIFYING_KEY': None,
     'AUTH_HEADER_TYPES': ('Bearer',),
     'USER_ID_FIELD': 'id',

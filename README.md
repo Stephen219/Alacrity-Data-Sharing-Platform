@@ -135,6 +135,7 @@ We welcome contributions! To contribute:
 
 ## Guides
 1.  A complete guide on how the authentication is implementesd and how to interact with it can be found [here](https://git.cardiff.ac.uk/c2051028/alacrity/-/wikis/authentication)
+2. A complete guide on how the remote object stoage is done and inplemnted can be found [here](https://git.cardiff.ac.uk/c2051028/alacrity/-/wikis/Minio-object-storage)
 
 
 ## Authors
