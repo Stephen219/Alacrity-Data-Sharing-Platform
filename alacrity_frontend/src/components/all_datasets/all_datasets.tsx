@@ -1,8 +1,9 @@
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import type React from "react";
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link"; // Added missing import
 import { DatasetCard } from "./datasetCard";
 import { BACKEND_URL } from "@/config";
 import { fetchWithAuth } from "@/libs/auth";
@@ -28,7 +29,7 @@ const ITEMS_PER_PAGE = 6;
 const DatasetsPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
-  const [filters, setFilters] = useState<Record<string, string[]>>({}); // Changed to string[]
+  const [filters, setFilters] = useState<Record<string, string[]>>({}); 
   const [currentPage, setCurrentPage] = useState(1);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [activeFilterCategory, setActiveFilterCategory] = useState<string | null>(null);
@@ -46,7 +47,6 @@ const DatasetsPage: React.FC = () => {
         if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
         const data = await response.json();
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const mappedDatasets: Dataset[] = data.datasets.map((item: any) => ({
           ...item,
           size: item.size || "N/A",
@@ -133,15 +133,12 @@ const DatasetsPage: React.FC = () => {
     setFilters((prev) => {
       const currentValues = prev[categoryId] || [];
       if (value === "All" || value === "All Time") {
-        // Selecting "All" or "All Time" resets this filter
         return { ...prev, [categoryId]: [value] };
       }
       if (currentValues.includes(value)) {
-        // Remove the value if already selected
         const newValues = currentValues.filter((v) => v !== value);
         return { ...prev, [categoryId]: newValues.length > 0 ? newValues : [] };
       }
-      // Add the value to the selection
       return { ...prev, [categoryId]: [...currentValues.filter((v) => v !== "All" && v !== "All Time"), value] };
     });
     setCurrentPage(1);
@@ -315,24 +312,24 @@ const DatasetsPage: React.FC = () => {
         >
           {paginatedDatasets.map((dataset) => (
             <Link
-            key={dataset.dataset_id}
-            href={`/datasets/description?id=${ dataset.dataset_id}`} 
-            className="block" 
-          >
-            <DatasetCard
               key={dataset.dataset_id}
-              title={dataset.title}
-              description={dataset.description}
-              organization={dataset.organization_name}
-              dateUploaded={new Date(dataset.created_at).toLocaleDateString()}
-              imageUrl={dataset.imageUrl || ""}
-              tags={dataset.tags}
-              category={dataset.category}
-              entries={dataset.entries || 0}
-              size={dataset.size || "N/A"}
-              viewMode={viewMode}
-              darkMode={isDarkMode}
-            />
+              href={`/datasets/description?id=${dataset.dataset_id}`} 
+              className="block" 
+            >
+              <DatasetCard
+                title={dataset.title}
+                description={dataset.description}
+                organization={dataset.organization_name}
+                dateUploaded={new Date(dataset.created_at).toLocaleDateString()}
+                imageUrl={dataset.imageUrl || ""}
+                tags={dataset.tags}
+                category={dataset.category}
+                entries={dataset.entries || 0}
+                size={dataset.size || "N/A"}
+                viewMode={viewMode}
+                darkMode={isDarkMode}
+              />
+            </Link>
           ))}
         </div>
 

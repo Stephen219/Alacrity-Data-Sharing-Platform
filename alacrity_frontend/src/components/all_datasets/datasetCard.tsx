@@ -2,7 +2,7 @@
 
 import React from "react";
 
-import { Calendar, Building2, Database, HardDrive } from "lucide-react";
+import { Building2, Database, HardDrive } from "lucide-react";
 
 interface DatasetCardProps {
  // dataset_id: string; // link that will be used to navigate to the dataset detail page
@@ -137,7 +137,7 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {tags.map((tag) => (
+          {/* {tags.map((tag) => (
             <span
               key={tag}
               className={`
@@ -147,7 +147,7 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
             >
               {tag}
             </span>
-          ))}
+          ))} */}
         </div>
       </div>
     </div>

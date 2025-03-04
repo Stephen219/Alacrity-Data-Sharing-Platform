@@ -6,7 +6,7 @@ import { buttonVariants } from "./ui/button";
 import { usePathname } from "next/navigation";
 import { fetchUserData } from "@/libs/auth";
 import { User } from "@/types/types";
-import { logout } from '@/libs/auth';
+
 
 import TopBarProfile from "./ui/TopbarProfile";
 
