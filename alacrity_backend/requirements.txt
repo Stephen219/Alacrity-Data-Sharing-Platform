@@ -9,7 +9,7 @@ scipy
 statsmodels
 duckdb
 cryptography
-bleach
+pyarrow
 
 
 

@@ -1,30 +1,32 @@
+"use client";
 
+import React from "react";
 
-
-import type React from "react"
 import { Building2, Database, HardDrive } from "lucide-react";
 
 interface DatasetCardProps {
-  title: string
-  description: string
-  organization: string
-  dateUploaded: string
-  imageUrl: string
-  tags: string[]
-  category: string
-  entries: number
-  size: string
-  viewMode: "grid" | "list"
-  darkMode: boolean
+ // dataset_id: string; // link that will be used to navigate to the dataset detail page
+  title: string;
+  description: string;
+  organization: string;
+  dateUploaded: string;
+  imageUrl: string;
+  tags: string[];
+  category: string;
+  entries: number;
+  size: string;
+  viewMode: "grid" | "list";
+  darkMode: boolean;
 }
 
 export const DatasetCard: React.FC<DatasetCardProps> = ({
+  //dataset_id,
   title,
   description,
   organization,
   dateUploaded,
   imageUrl,
-  tags,
+  // tags,
   category,
   entries,
   size,
@@ -135,7 +137,7 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {tags.map((tag) => (
+          {/* {tags.map((tag) => (
             <span
               key={tag}
               className={`
@@ -145,7 +147,7 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
             >
               {tag}
             </span>
-          ))}
+          ))} */}
         </div>
       </div>
     </div>

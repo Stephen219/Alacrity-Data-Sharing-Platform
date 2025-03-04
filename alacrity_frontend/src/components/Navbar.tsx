@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { fetchUserData } from "@/libs/auth";
 import { User } from "@/types/types";
 
+
 import TopBarProfile from "./ui/TopbarProfile";
 
 

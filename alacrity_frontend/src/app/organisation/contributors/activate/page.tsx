@@ -40,7 +40,15 @@ export default function ActivateAccount() {
     } catch (err: unknown) {
       if (err instanceof Error) {
         if (err instanceof Error) {
-          setError(err.message)
+          if (err instanceof Error) {
+            if (err instanceof Error) {
+              setError(err.message)
+            } else {
+              setError("An unknown error occurred")
+            }
+          } else {
+            setError("An unknown error occurred")
+          }
         } else {
           setError("An unknown error occurred")
         }

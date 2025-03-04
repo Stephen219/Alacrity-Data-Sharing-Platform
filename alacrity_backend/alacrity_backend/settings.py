@@ -56,6 +56,7 @@ INSTALLED_APPS = [
 
     'contact',
     'organisation',
+    'dataset_requests',
 
 ]
 

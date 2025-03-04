@@ -58,7 +58,7 @@ class LoginView(APIView):
                         'email': user.email,
                         'username': user.username,
                         'role': user.role,
-                        'organization': user.organization.name if user.organization else None,
+                        'organization': user.organization.name if user.organization else None, # gets the organization name from the database
                         'phone_number': user.phone_number,
                     },
                     'access_token': str(refresh.access_token),
@@ -144,10 +144,6 @@ class RegisterView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
-
-
-
-
 
 class UserView(APIView):
     def get(self, request):
