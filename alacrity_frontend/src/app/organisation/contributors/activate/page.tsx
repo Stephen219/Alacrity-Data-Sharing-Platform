@@ -40,7 +40,15 @@ export default function ActivateAccount() {
     } catch (err: unknown) {
       if (err instanceof Error) {
         if (err instanceof Error) {
-          setError(err.message)
+          if (err instanceof Error) {
+            if (err instanceof Error) {
+              setError(err.message)
+            } else {
+              setError("An unknown error occurred")
+            }
+          } else {
+            setError("An unknown error occurred")
+          }
         } else {
           setError("An unknown error occurred")
         }
@@ -81,7 +89,8 @@ export default function ActivateAccount() {
       setMessage(data.message)
       alert("Account activated! You can now log in.")
       window.location.href = "/login"
-    } catch (err: unknown) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
       setError(err.message)
     } finally {
       setLoading(false)

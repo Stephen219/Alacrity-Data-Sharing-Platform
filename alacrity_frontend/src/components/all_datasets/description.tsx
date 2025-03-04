@@ -69,6 +69,7 @@ export default function DatasetDetail() {
       }
       setMessage("Request created successfully");
       setObjective("");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       setMessage(error.message);
     }

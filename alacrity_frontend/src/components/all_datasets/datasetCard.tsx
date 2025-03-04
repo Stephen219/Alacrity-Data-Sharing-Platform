@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+
 import { Calendar, Building2, Database, HardDrive } from "lucide-react";
 
 interface DatasetCardProps {
@@ -26,7 +26,7 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
   organization,
   dateUploaded,
   imageUrl,
-  tags,
+  // tags,
   category,
   entries,
   size,
