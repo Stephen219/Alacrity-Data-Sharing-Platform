@@ -47,15 +47,35 @@ export async function login(email: string, password: string) {
  * Logs out the user by removing authentication tokens from local storage
  * and redirecting to the sign-in page.
  */
+export async function logout() {
+    const refreshToken = localStorage.getItem("refresh_token");
 
+    if (refreshToken) {
+        try {
+            const response = await fetchWithAuth(`${API_BASE_URL}/users/logout/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    refresh_token: refreshToken,
+                }),
+            });
 
-export function logout() {
+            if (!response.ok) {
+                throw new Error("Logout failed");
+            }
+
+            const data = await response.json();
+            console.log(data.message);
+        } catch (error) {
+            console.error("Error during logout:", error);
+         
+        }
+    }
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
-    window.location.href = "/auth/sign-in";}
-
-
+    window.location.href = "/auth/sign-in";
+}
 /**
  * Attempts to refresh the access token using the stored refresh token.
  * If successful, updates the stored access token.

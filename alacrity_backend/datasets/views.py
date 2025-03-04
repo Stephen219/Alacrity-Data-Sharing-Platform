@@ -67,9 +67,6 @@ def is_valid_url(url):
     except:
         return False
 
-
-
-
 minio_client = Minio(
     endpoint="10.72.98.137:9000",
     access_key="admin",
@@ -83,6 +80,7 @@ def generate_id():
 
 
 
+# this will be the view where they will be able to upload the dataset
 @method_decorator(csrf_exempt, name='dispatch')
 # @method_decorator(role_required(['organization_admin', 'contributor']), name='dispatch')
 class CreateDatasetView(APIView):
@@ -137,6 +135,8 @@ class CreateDatasetView(APIView):
             # Extract and validate form data
             title = request.POST.get('title')
             category = request.POST.get('category')
+            tags = request.POST.get('tags')
+            print("Tags:", tags)
             description = request.POST.get('description')
             if not title or len(title) > 100:
                 logger.error("Invalid title")
@@ -155,13 +155,16 @@ class CreateDatasetView(APIView):
             logger.info(f"Saving dataset metadata: {dataset_id}")
             dataset = Dataset.objects.create(
                 dataset_id=dataset_id,
+                contributor_id=request.user,
                 title=title,
+                tags=tags,
                 category=category,
                 link=file_url,
                 description=description,
                 encryption_key=key.decode(),
                 schema=schema
             )
+            dataset.save()
 
             stop = datetime.now()
             print("End time:", stop)
@@ -177,17 +180,11 @@ class CreateDatasetView(APIView):
 
 
 
-
-
-
-
-
-
 @api_view(['GET'])
 @role_required(['organization_admin', 'contributor', 'researcher'])
-#@permission_classes([IsAuthenticated])
+
 def get_datasets(request):
-    # Get datasets for the user's organization only
+  
     organization = request.user.organization
     datasets = Dataset.objects.filter(orgid=organization)
     
@@ -452,29 +449,8 @@ def filter_and_clean_dataset(request, dataset_id):
 
     session_id = str(uuid.uuid4())
     cache.set(session_id, filtered_results, timeout=3600)
-
     print(f"Total rows before filtering: {total_before}")
     print(f"Filtered dataset to {total_after} rows. Session ID: {session_id}")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     return Response({"filtered_data": filtered_results, "session_id": session_id}, status=200)
 

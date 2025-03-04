@@ -9,6 +9,7 @@ scipy
 statsmodels
 duckdb
 cryptography
+pyarrow
 
 
 
