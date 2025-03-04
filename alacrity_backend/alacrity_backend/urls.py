@@ -28,7 +28,7 @@ urlpatterns = [
     path("", include("contact.urls")),
 
     path("research/", include("research.urls")),
-    path("requests/", include("requests.urls")),
+    path("requests/", include("dataset_requests.urls")),
 
     
 ]
