@@ -12,6 +12,7 @@ interface DashboardData {
   total_users: number;
   pending_requests: number;
   approved_requests: number;
+  total_researches: number;
   pending_datasets: Array<{
     request_id: string;
     dataset_id_id: string;
@@ -104,14 +105,25 @@ const AdminDashboard: React.FC = () => {
         <MetricCard
           title="Total Datasets"
           value={data.total_datasets.toString()}
-          icon="📊"
+          icon={
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          }
+          change="+12% from last month"
+          changeColor="text-green-500"
+        />
+         <MetricCard
+          title="Total researches"
+          value={data.total_researches.toString()}
+          icon="📑"
           change="+12% from last month"
           changeColor="text-green-500"
         />
         <MetricCard
           title="Pending Access Requests"
           value={data.pending_requests.toString()}
-          icon="📋"
+          icon="📝"
           change="8 require urgent review"
           changeColor="text-[#FF6B1A]"
         />
@@ -120,7 +132,11 @@ const AdminDashboard: React.FC = () => {
         <MetricCard
           title="Active Employees"
           value={data.total_users.toString()}
-          icon="👥"
+          icon={
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+            </svg>
+          }
           change=""
           changeColor="text-[#FF6B1A]"
         />)}
@@ -241,7 +257,7 @@ const AdminDashboard: React.FC = () => {
 interface MetricCardProps {
   title: string;
   value: string;
-  icon: string;
+  icon: React.ReactNode;
   change: string;
   changeColor: string;
 }
@@ -251,7 +267,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon, change, cha
     <div className="p-6">
       <div className="flex items-center">
         <div className="flex-shrink-0 bg-[#FF6B1A] bg-opacity-10 rounded-md p-3">
-          <span className="text-2xl">{icon}</span>
+          <span className="text-3xl ">{icon}</span>
         </div>
         <div className="ml-5 w-0 flex-1">
           <dl>

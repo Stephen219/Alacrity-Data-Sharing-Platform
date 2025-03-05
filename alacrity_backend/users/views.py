@@ -188,6 +188,9 @@ from datasets.models import Dataset
 
 from .models import User
 
+
+# TODO: REFACTOR THIS VIEW BUT FOR NOW I HAVE TO MAKE IT WORK
+
 class UserDashboardView(APIView):
     permission_classes = [IsAuthenticated]
     @role_required(["organization_admin", "researcher", "contributor"]) 
@@ -199,7 +202,11 @@ class UserDashboardView(APIView):
         if user.role == "organization_admin":
             organization = user.organization
             print(organization)
+            total_researches= AnalysisSubmission.objects.filter(dataset__contributor_id__organization=organization).count(), 
+            print(total_researches)
+
             data = {
+            "total_researches":AnalysisSubmission.objects.filter(dataset__contributor_id__organization=organization).count(), 
             "total_datasets": Dataset.objects.filter(contributor_id__organization=organization).count(),
             "all_datasets": Dataset.objects.count(),
             "pending_requests": DatasetRequest.objects.filter(
@@ -286,8 +293,11 @@ class UserDashboardView(APIView):
             'updated_at'
 
         )
+            
+            
+            
             data = {
-                # dataset for the collaborator's organization
+                "total_researches":AnalysisSubmission.objects.filter(dataset__contributor_id__organization=organization).count(), 
                 "total_users": User.objects.filter(organization=organization).count(),
                 "total_datasets": Dataset.objects.filter(contributor_id__organization=organization).count(),
                 "pending_requests": DatasetRequest.objects.filter(
