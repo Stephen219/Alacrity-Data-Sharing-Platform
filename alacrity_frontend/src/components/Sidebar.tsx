@@ -3,8 +3,9 @@
 import React, {  useEffect, useState } from "react";
 import NavItems from "./NavItems";
 import { fetchUserData } from "@/libs/auth";
+import type { UserRole } from "@/types/types";
 
-type UserRole = "organization_admin" | "researcher"| "contributor" | null;
+
 
 type SidebarProps = {
   isOpen: boolean;

@@ -3,7 +3,9 @@ from .views import  RegisterView
 # from rest_framfework_simplejwt.views import TokenRefreshView
 # add login vhiejw
 from .views import  RegisterView, LoginView, UserView, CSRFTokenView, LogoutView
+from .views import  RegisterView, LoginView, UserView, CSRFTokenView , UserDashboardView
 from rest_framework_simplejwt.views import TokenRefreshView
+
 
  
 urlpatterns = [
@@ -13,6 +15,7 @@ urlpatterns = [
 
     path("profile/", UserView.as_view(), name="user"),
     path("logout/", LogoutView.as_view(), name="logout"),
+    path("dashboard/", UserDashboardView.as_view(), name="dashboard"),
 
 
 

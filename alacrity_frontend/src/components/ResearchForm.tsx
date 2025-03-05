@@ -1,8 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import TextEditor from "@/components/TextEditor";
 import { Editor } from "@tiptap/react";
 import { fetchWithAuth } from "@/libs/auth";
+import { useSearchParams } from "next/navigation"; 
 
 interface AnalysisFormProps {
   editorInstance: Editor | null;
@@ -10,6 +12,7 @@ interface AnalysisFormProps {
 }
 
 const AnalysisFormComponent = ({ editorInstance, setEditorInstance }: AnalysisFormProps) => {
+  const searchParams = useSearchParams(); 
   const [formData, setFormData] = useState<{
     id: null | number;
     title: string;
@@ -18,6 +21,7 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance }: AnalysisFo
     summary: string;
     status: string;
     image: File | null;
+    datasetId?: string; 
   }>({
     id: null,
     title: "",
@@ -26,10 +30,22 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance }: AnalysisFo
     summary: "",
     status: "draft",
     image: null,
+    datasetId: undefined,
   });
 
   const [loading, setLoading] = useState(false);
-  const [message ,setMessage] = useState("");
+  const [message, setMessage] = useState("");
+
+
+  useEffect(() => {
+    const datasetId = searchParams.get("id");
+    console.log("Dataset ID:", datasetId);
+    console.log("Dataset ID:", datasetId);
+    console.log("Dataset ID:", datasetId);
+    if (datasetId) {
+      setFormData((prev) => ({ ...prev, datasetId }));
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     console.log("Updated formData:", formData);
@@ -52,10 +68,18 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance }: AnalysisFo
     requestData.append("rawResults", formData.rawResults);
     requestData.append("summary", formData.summary);
     requestData.append("status", publish ? "published" : "draft");
-
+    if (formData.datasetId) {
+      requestData.append("dataset_id", formData.datasetId); 
+    }
     if (formData.image) {
       requestData.append("image", formData.image);
     }
+
+    // TODO: I CAN OPTIONNALY MAKE THE THE PAGE NOT TO RENDER WITHOUT THE DATASET ID OR 
+    // MAKE THE DATASET ID A REQUIRED PARAMETER BY THE URL STRUCTURE
+    // BUT FOR NOW IT WORKS BUT CANNOT SUBMITT WITHOUT THE DATASET ID
+    
+
 
     try {
       const response = await fetchWithAuth("http://127.0.0.1:8000/research/submissions/save/", {
@@ -146,10 +170,10 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance }: AnalysisFo
         </Button>
       </div>
       {message && (
-  <div className={`mt-4 text-center font-medium ${message.startsWith("Error") ? "text-red-500" : "text-green-600"}`}>
-    {message}
-  </div>
-)}
+        <div className={`mt-4 text-center font-medium ${message.startsWith("Error") ? "text-red-500" : "text-green-600"}`}>
+          {message}
+        </div>
+      )}
     </form>
   );
 };

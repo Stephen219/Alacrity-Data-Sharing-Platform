@@ -15,6 +15,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework import status
 from .serializers import RegisterSerializer
 from django.utils import timezone
+from dataset_requests.models import DatasetRequest
 class LoginView(APIView):
     permission_classes = [AllowAny]
     def post(self, request):
@@ -167,20 +168,143 @@ class LogoutView(APIView):
     def post(self, request):
         try:
             refresh_token = request.data.get('refresh_token')
-            print (request.data)
-            if not refresh_token:
-                return Response({
-                    'error': 'Refresh token is required'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
             token = RefreshToken(refresh_token)
-            re = token.blacklist()
-            print(re)
+            token.blacklist()
             return Response({
-                'message': 'Logout successful'
+                "message": "Logout successful"
             }, status=status.HTTP_200_OK)
         except Exception as e:
-            print(f"Logout error: {str(e)}")
             return Response({
-                'error': f'An error occurred while trying to log you out: {str(e)}'
+                "error": "An error occurred while trying to log you out",
+                "details": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .decorators import role_required
+from datasets.models import Dataset
+
+from .models import User
+
+class UserDashboardView(APIView):
+    permission_classes = [IsAuthenticated]
+    @role_required(["organization_admin", "researcher", "contributor"]) 
+    def get(self, request):
+        user = request.user
+        organization = user.organization
+        from research.models import AnalysisSubmission
+
+        if user.role == "organization_admin":
+            organization = user.organization
+            print(organization)
+            data = {
+            "total_datasets": Dataset.objects.filter(contributor_id__organization=organization).count(),
+            "all_datasets": Dataset.objects.count(),
+            "pending_requests": DatasetRequest.objects.filter(
+                dataset_id__contributor_id__organization=organization
+            ).select_related('dataset_id', 'researcher_id').count(),
+            "approved_requests": 2,
+            "total_users": User.objects.filter(organization=organization).count(),
+            "total_publishes_for_organization_data": AnalysisSubmission.objects.filter(researcher__organization=organization).count(),
+        
+        }
+            pending_datasets = DatasetRequest.objects.filter(
+            dataset_id__contributor_id__organization=organization
+            # ideally this should be done in a serializer kindof way but for now this is okay
+        ).select_related('dataset_id', 'researcher_id').values(
+            'request_id',  
+            'dataset_id_id',  
+            'dataset_id__title', 
+            'researcher_id_id',
+            'researcher_id__first_name', 
+            'researcher_id__sur_name', 
+            'researcher_id__profile_picture', 
+            'request_status' ,
+            'created_at',
+            'updated_at'
+
+        )
+            if pending_datasets:
+                data['pending_datasets'] = list(pending_datasets)
+            else:
+                pending = []
+                print(pending_datasets)
+                data['pending_datasets'] = pending
+        
+            return JsonResponse(data)
+       
+        elif user.role == "researcher":
+            all_requests= DatasetRequest.objects.filter(researcher_id=user).values(
+                'request_id',  
+                'dataset_id_id',  
+                'dataset_id__title', 
+                'researcher_id__profile_picture', 
+                'request_status'  ,
+                'request_status' ,
+                'created_at',
+                'updated_at'
+            ) 
+            datasets_having_access = Dataset.objects.filter(
+            requests__researcher_id=user,  
+            requests__request_status="approved"  
+        ).values(
+            'dataset_id',  
+            'title',
+            'description',
+            'contributor_id__organization__name',  
+            'requests__updated_at', 
+            'tags',
+            'category'
+        )
+            data = {
+                "datasets_accessed": 1,
+                "pending_reviews": DatasetRequest.objects.filter(researcher_id=user, request_status="pending").count(),
+                "research_submitted": 1,
+                "requests_approved": DatasetRequest.objects.filter(researcher_id=user, request_status="approved").count(),
+                    
+            }
+            
+            data["all_datasets_requests"] = list(all_requests)
+            data["datasets_having_access"] = list(datasets_having_access)
+            return JsonResponse(data)
+        elif user.role == "contributor":
+            pending_datasets = DatasetRequest.objects.filter(
+                dataset_id__contributor_id__organization=organization
+            # ideally this should be done in a serializer kindof way but for now this is okay
+        ).select_related('dataset_id', 'researcher_id').values(
+            'request_id',  
+            'dataset_id_id',  
+            'dataset_id__title', 
+            'researcher_id_id',
+            'researcher_id__first_name', 
+            'researcher_id__sur_name', 
+            'researcher_id__profile_picture', 
+            'request_status' ,
+            'created_at',
+            'updated_at'
+
+        )
+            data = {
+                # dataset for the collaborator's organization
+                "total_users": User.objects.filter(organization=organization).count(),
+                "total_datasets": Dataset.objects.filter(contributor_id__organization=organization).count(),
+                "pending_requests": DatasetRequest.objects.filter(
+                dataset_id__contributor_id__organization=organization
+            ).select_related('dataset_id', 'researcher_id').count(),
+
+
+
+            }
+            if pending_datasets:
+                data['pending_datasets'] = list(pending_datasets)
+            else:
+                pending = []
+                print(pending_datasets)
+                data['pending_datasets'] = pending
+            return JsonResponse(data)
+        else:
+            return Response({"error": "Invalid role"}, status=403)
+
+    
