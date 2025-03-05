@@ -72,13 +72,47 @@ class ViewAllDatasetRequests(APIView):
             
         except Exception as e:
             import traceback
-            print(traceback.format_exc())
-            print("end o ftraceback")
-            print(e)
-            print("nfnjfnfnnfjf above")
+            #print(traceback.format_exc())
             return Response(
                 {
                     'error': 'An error occurred'
                  },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+        
+# this view is used to accept / reject a request when the admin is viewing all the requests
+class AcceptRejectRequest(APIView):
+    @role_required(['organization_admin', 'contributor'])
+    def get(self, request):
+        try:
+            requests = DatasetRequest.objects.filter(
+                dataset_id__contributor_id__organization=request.user.organization
+            ).select_related('dataset_id', 'researcher_id')  # Optimized query
+
+            serializer = DatasetRequestSerializer(requests, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception:
+            return Response({'error': 'An error occurred'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def post(self, request):
+        request_id = request.data.get('request_id')
+        action = request.data.get('action')
+        print(request_id, action)
+        if not request_id:
+            return Response({'error': 'Please provide a request_id'}, status=status.HTTP_400_BAD_REQUEST)
+        if not action:
+            return Response({'error': 'Please provide an action'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            dataset_request = DatasetRequest.objects.get(id=request_id)
+        except DatasetRequest.DoesNotExist:
+            return Response({'error': 'Request does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        if action == 'accept':
+            dataset_request.request_status = 'accepted'
+            dataset_request.save()
+            return Response({'message': 'Request accepted successfully'}, status=status.HTTP_200_OK)
+        elif action == 'reject':
+            dataset_request.request_status = 'rejected'
+            dataset_request.save()
+            return Response({'message': 'Request rejected successfully'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)

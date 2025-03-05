@@ -28,6 +28,7 @@ class User(AbstractUser):
     # organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True)
     field = models.TextField(blank=True, null=True)
     date_of_birth = models.DateField(blank=True, null=True)
+    descritpion = models.TextField(blank=True, null=True)
     
     #TODO PROFILE PIC 
     profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
