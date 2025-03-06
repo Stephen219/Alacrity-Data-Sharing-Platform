@@ -23,7 +23,7 @@ from .models import AnalysisSubmission
 
 class SaveSubmissionView(APIView):
     permission_classes = [IsAuthenticated]
-
+    
     @role_required(['contributor'])
     def post(self, request):
         """
@@ -35,40 +35,31 @@ class SaveSubmissionView(APIView):
             submission_id = data.get("id")
 
             if submission_id:
-                submission = get_object_or_404(
-                    AnalysisSubmission.objects.only(
-                        "id", "title", "description", "raw_results", "summary", "status", "image"
-                    ),
-                    id=submission_id, researcher=researcher
-                )
+                submission = get_object_or_404(AnalysisSubmission, id=submission_id, researcher=researcher)
             else:
                 submission = AnalysisSubmission(researcher=researcher)
 
-            fields_to_update = {}
-            for field in ["title", "description", "rawResults", "summary", "status"]:
-                if field in data:
-                    fields_to_update[field] = data[field]
+            submission.title = data.get("title", submission.title)
+            submission.description = data.get("description", submission.description)
+            submission.raw_results = data.get("rawResults", submission.raw_results)
+            submission.summary = data.get("summary", submission.summary)
+            submission.status = data.get("status", submission.status)
 
-            for field, value in fields_to_update.items():
-                setattr(submission, field, value)
-
-            if "title" in fields_to_update and len(submission.title.split()) > 15:
+            if len(submission.title.split()) > 15:
                 raise ValidationError("Title cannot exceed 15 words.")
 
-            if "summary" in fields_to_update and len(submission.summary.split()) > 250:
+            if len(submission.summary.split()) > 250:
                 raise ValidationError("Summary cannot exceed 250 words.")
+
+
+            if "image" in request.FILES:
+                submission.image = request.FILES["image"]
 
             if submission.status == "published":
                 if not all([submission.title, submission.description, submission.raw_results, submission.summary]):
                     raise ValidationError("All fields must be filled before publishing.")
 
-            if "image" in request.FILES:
-                submission.image = request.FILES["image"]
-
             submission.save()
-
-            cache.delete(f"submission_{submission.id}")
-
             return Response({
                 "message": "Submission saved successfully!",
                 "id": submission.id,
@@ -193,7 +184,7 @@ class EditSubmissionView(APIView):
             # Update fields
             submission.title = data.get("title", submission.title)
             submission.description = data.get("description", submission.description)
-            submission.raw_results = data.get("rawResults", submission.raw_results)
+            submission.raw_results = data.get("raw_results", submission.raw_results)
             submission.summary = data.get("summary", submission.summary)
             submission.status = data.get("status", submission.status)
 
