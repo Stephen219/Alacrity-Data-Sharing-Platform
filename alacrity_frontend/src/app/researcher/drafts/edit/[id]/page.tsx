@@ -1,7 +1,7 @@
 "use client";
 
 import { fetchWithAuth } from "@/libs/auth";
-import { useRouter, useParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import MaxWidthWrapper from "@/components/MaxWidthWrapper";
 import TextEditorToolbar from "@/components/TextEditorToolbar";
@@ -18,7 +18,6 @@ interface Analysis {
 }
 
 const EditDraft = () => {
-  const router = useRouter();
   const params = useParams();
   const id = params?.id as string;
   const [draft, setDraft] = useState<Analysis | null>(null);
