@@ -3,6 +3,7 @@ from .models import DatasetRequest
 from users.models import User  # Import User model
 
 class DatasetRequestSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(source='request_id',read_only=True)
     researcher_name = serializers.SerializerMethodField()  
     dataset_title = serializers.CharField(source='dataset_id.title', read_only=True)
     researcher_field = serializers.SerializerMethodField()  
@@ -15,6 +16,7 @@ class DatasetRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = DatasetRequest
         fields = [
+            'id',
             'dataset_title',
             'researcher_name',
             'researcher_field',
@@ -40,7 +42,7 @@ class DatasetRequestSerializer(serializers.ModelSerializer):
         """
         researcher = obj.researcher_id
         if isinstance(researcher, User):
-            return researcher.research_field  # Assuming this is a field in the User model
+            return researcher.field  # Assuming this is a field in the User model
         return "Unknown Field"
 
     def get_researcher_description(self, obj):

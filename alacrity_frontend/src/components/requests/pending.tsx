@@ -1,12 +1,17 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { BACKEND_URL } from "../../config";
 import { fetchWithAuth } from "@/libs/auth";
 
 interface RequestData {
+  id: number;  // Ensure id is present
   dataset_title: string;
   researcher_name: string;
+  researcher_role: string;
+  researcher_description: string;
+  message: string;
   request_status: string;
   created_at: string;
 }
@@ -15,6 +20,7 @@ export default function PendingRequest() {
   const [requests, setRequests] = useState<RequestData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -25,7 +31,6 @@ export default function PendingRequest() {
         }
         const data = await response.json();
         setRequests(data);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -54,9 +59,14 @@ export default function PendingRequest() {
             </thead>
             <tbody>
               {requests.length > 0 ? (
-                requests.map((request, index) => (
-                  <tr key={index} className="border border-gray-300">
-                    <td className="border border-gray-300 px-4 py-2">{request.researcher_name}</td>
+                requests.map((request) => (
+                  <tr key={request.id} className="border border-gray-300">
+                    <td
+                      className="border border-gray-300 px-4 py-2 text-blue-600 cursor-pointer hover:underline"
+                      onClick={() => router.push(`/requests/approval/${request.id}`)}  //
+                    >
+                      {request.researcher_name}
+                    </td>
                     <td className="border border-gray-300 px-4 py-2">{request.dataset_title}</td>
                     <td className="border border-gray-300 px-4 py-2 text-sm font-semibold text-blue-600">
                       {request.request_status}
