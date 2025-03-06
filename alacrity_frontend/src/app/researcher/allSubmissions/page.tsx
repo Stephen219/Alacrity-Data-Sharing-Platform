@@ -1,11 +1,11 @@
-
-
 "use client"
 
 import { BACKEND_URL } from "@/config"
 import { fetchWithAuth } from "@/libs/auth"
 import { useEffect, useState } from "react"
 import parse from "html-react-parser"
+import { Bookmark } from "lucide-react"
+import { useRouter } from "next/navigation";
 
 interface Analysis {
   id: number
@@ -27,27 +27,8 @@ const PublicSubmissions = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(6)
   const [viewMode, setViewMode] = useState<"grid" | "list">("list")
-
-  // Calculate total pages
-  const totalPages = Math.ceil(filteredSubmissions.length / itemsPerPage)
-
-  // Get current items
-  const indexOfLastItem = currentPage * itemsPerPage
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage
-  const currentItems = filteredSubmissions.slice(indexOfFirstItem, indexOfLastItem)
-
-  const toggleBookmark = async (submissionId: number) => {
-    try {
-      const response = await fetchWithAuth(`${BACKEND_URL}research/bookmark/${submissionId}/`, {
-        method: "POST",
-      })
-
-      const data = await response.json()
-      alert(data.message)
-    } catch (error) {
-      console.error("Bookmark error:", error)
-    }
-  }
+  const [bookmarkedSubmissions, setBookmarkedSubmissions] = useState<number[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchSubmissions = async () => {
@@ -77,6 +58,22 @@ const PublicSubmissions = () => {
 
     fetchSubmissions()
   }, [])
+
+  useEffect(() => {
+    const fetchBookmarks = async () => {
+      try {
+        const response = await fetchWithAuth(`${BACKEND_URL}research/bookmarks/`);
+        if (!response.ok) throw new Error("Failed to fetch bookmarks.");
+
+        const data = await response.json();
+        setBookmarkedSubmissions(data.map((bookmark: { id: number }) => bookmark.id));
+      } catch (err) {
+        console.error("Error fetching bookmarks:", err);
+      }
+    };
+
+    fetchBookmarks();
+  }, []);
 
   // Handle search and filtering
   useEffect(() => {
@@ -117,10 +114,58 @@ const PublicSubmissions = () => {
   if (loading) return <p className="text-center text-gray-600">Loading submissions...</p>
   if (error) return <p className="text-center text-red-500">Error: {error}</p>
 
+  // Calculate total pages
+  const totalPages = Math.ceil(filteredSubmissions.length / itemsPerPage)
+
+  // Get current items
+  const indexOfLastItem = currentPage * itemsPerPage
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage
+  const currentItems = filteredSubmissions.slice(indexOfFirstItem, indexOfLastItem)
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    
+    const day = date.getDate();
+    const suffix = (day: number) => {
+      if (day > 3 && day < 21) return "th";
+      switch (day % 10) {
+        case 1: return "st";
+        case 2: return "nd";
+        case 3: return "rd";
+        default: return "th";
+      }
+    };
+  
+    return `${date.toLocaleDateString("en-UK", { weekday: "long" })}, ${day}${suffix(day)} ${date.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}`;
+  };
+
+
+  const toggleBookmark = async (submissionId: number) => {
+    try {
+      const response = await fetchWithAuth(`${BACKEND_URL}research/bookmark/${submissionId}/`, {
+        method: "POST",
+      });
+
+      const data = await response.json();
+
+      setBookmarkedSubmissions((prev) =>
+        prev.includes(submissionId)
+          ? prev.filter((id) => id !== submissionId)
+          : [...prev, submissionId]
+      );
+    } catch (error) {
+      console.error("Bookmark error:", error);
+    }
+  };
+
+  if (loading) return <p className="text-center text-gray-600">Loading submissions...</p>;
+  if (error) return <p className="text-center text-red-500">Error: {error}</p>;
+
+
   return (
     <section className="py-12 bg-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <h2 className="text-4xl font-bold text-gray-900 text-center mb-12">Public Analysis Submissions</h2>
+        <div className="text-4xl font-bold text-gray-900 text-center mb-12">Public Analysis Submissions</div>
 
         {/* Search and Filter Controls */}
         <div className="mb-8 flex flex-col md:flex-row gap-4 justify-between">
@@ -162,10 +207,10 @@ const PublicSubmissions = () => {
 
         {/* Results count and view toggle */}
         <div className="flex justify-between items-center mb-6">
-          <p className="text-gray-600">
+          <div className="text-gray-600">
             Showing {filteredSubmissions.length > 0 ? indexOfFirstItem + 1 : 0} -{" "}
             {Math.min(indexOfLastItem, filteredSubmissions.length)} of {filteredSubmissions.length} results
-          </p>
+          </div>
 
           <div className="flex items-center gap-2">
             <span className="text-gray-600">View:</span>
@@ -258,21 +303,27 @@ const PublicSubmissions = () => {
                       </span>
                     </div>
                     <div className="p-4 flex flex-col flex-grow">
-                      <span className="text-orange-500 font-medium mb-2">
-                        {submission.submitted_at ? new Date(submission.submitted_at).toLocaleString() : "N/A"}
+                      <span className="text-sm text-gray-400 mb-2">
+                      {submission.submitted_at ? formatDate(submission.submitted_at) : "N/A"}
                       </span>
-                      <h4 className="text-xl text-gray-900 font-medium leading-7 mb-2">{parse(submission.title)}</h4>
+                      <div className="text-xl text-gray-900 font-medium leading-7 mb-2">{parse(submission.title)}</div>
                       <div className="text-gray-600 leading-6 mb-4 line-clamp-3 flex-grow">
                         {parse(submission.description)}
                       </div>
                       <div className="flex justify-between items-center mt-auto">
-                        <button
-                          onClick={() => toggleBookmark(submission.id)}
-                          className="text-orange-500 font-semibold hover:text-orange-600 transition-colors"
-                        >
-                          Bookmark
-                        </button>
-                        <button className="px-3 py-1 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm">
+                        {/* Bookmark Icon */}
+              <button
+                onClick={() => toggleBookmark(submission.id)}
+                aria-label="Bookmark"
+              >
+                <Bookmark
+                  size={24}
+                  className={bookmarkedSubmissions.includes(submission.id) ? "fill-alacrityred text-alacrityred" : "text-gray-400"}
+                />
+              </button>
+                        <button 
+                        onClick={() => router.push(`/researcher/allSubmissions/view/${submission.id}`)}
+                        className="px-3 py-1 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm">
                           View Details
                         </button>
                       </div>
@@ -306,21 +357,27 @@ const PublicSubmissions = () => {
                       </span>
                     </div>
                     <div className="p-6 md:w-2/3 lg:w-3/4">
-                      <div className="flex justify-between items-start mb-3">
-                        <span className="text-orange-500 font-medium">
-                          {submission.submitted_at ? new Date(submission.submitted_at).toLocaleString() : "N/A"}
+                      <div className="flex justify-between items-start mb-2">
+                      <span className="text-sm text-gray-400 mb-2">
+                        {submission.submitted_at ? formatDate(submission.submitted_at) : "N/A"}
                         </span>
                       </div>
-                      <h4 className="text-xl text-gray-900 font-medium leading-8 mb-3">{parse(submission.title)}</h4>
+                      <div className="text-xl text-gray-900 font-medium leading-8 mb-3">{parse(submission.title)}</div>
                       <div className="text-gray-600 leading-6 mb-6 line-clamp-3">{parse(submission.description)}</div>
                       <div className="flex justify-between items-center">
-                        <button
-                          onClick={() => toggleBookmark(submission.id)}
-                          className="text-orange-500 font-semibold hover:text-orange-600 transition-colors"
-                        >
-                          Bookmark
-                        </button>
-                        <button className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+                        {/* Bookmark Icon */}
+              <button
+                onClick={() => toggleBookmark(submission.id)}
+                aria-label="Bookmark"
+              >
+                <Bookmark
+                  size={24}
+                  className={bookmarkedSubmissions.includes(submission.id) ? "fill-alacrityred text-alacrityred" : "text-gray-400"}
+                />
+              </button>
+                        <button 
+                        onClick={() => router.push(`/researcher/allSubmissions/view/${submission.id}`)}
+                        className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
                           View Details
                         </button>
                       </div>
@@ -330,9 +387,9 @@ const PublicSubmissions = () => {
               </div>
             ))
           ) : (
-            <p className="text-center text-gray-600 py-8 col-span-full">
+            <div className="text-center text-gray-600 py-8 col-span-full">
               No submissions found matching your search criteria.
-            </p>
+            </div>
           )}
         </div>
 

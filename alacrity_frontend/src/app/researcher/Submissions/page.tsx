@@ -4,6 +4,7 @@ import { fetchWithAuth } from "@/libs/auth";
 import { useEffect, useState } from "react";
 import Published from "@/components/Published";
 import SubmissionButtons from "@/components/SubmissionsButtons";
+import router, { useRouter } from "next/navigation";
 
 interface Analysis {
   id: number;
@@ -60,8 +61,10 @@ const AnalysisList = () => {
     }
   };
 
+  const router = useRouter();
+
   const handleRead = (id: number) => {
-    console.log("Reading submission:", id);
+    router.push(`/researcher/Submissions/view/${id}`);
   };
 
   if (loading) return <p>Loading...</p>;

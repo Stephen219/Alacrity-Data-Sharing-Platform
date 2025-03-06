@@ -346,4 +346,46 @@ class GetDraftView(APIView):
             "image": request.build_absolute_uri(draft.image.url) if draft.image else None
         }, status=200)
 
+class ViewSingleSubmissionView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, submission_id):
+        """
+        Retrieve a single submission.
+        """
+        submission = get_object_or_404(AnalysisSubmission, id=submission_id, status="published", deleted_at__isnull=True)
+
+        return Response({
+            "id": submission.id,
+            "title": submission.title,
+            "description": submission.description,
+            "raw_results": submission.raw_results,
+            "summary": submission.summary,
+            "submitted_at": submission.submitted_at,
+            "image": request.build_absolute_uri(submission.image.url) if submission.image else None
+        })
+    
+class ViewSingleBookmarkedSubmissionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, submission_id):
+        """
+        Retrieve a single bookmarked submission for the logged-in user.
+        """
+        user = request.user
+        submission = get_object_or_404(AnalysisSubmission, id=submission_id, status="published", deleted_at__isnull=True)
+
+        if not submission.bookmarked_by.filter(id=user.id).exists():
+            return Response({"error": "Submission is not bookmarked by the user"}, status=403)
+
+        return Response({
+            "id": submission.id,
+            "title": submission.title,
+            "description": submission.description,
+            "raw_results": submission.raw_results,
+            "summary": submission.summary,
+            "submitted_at": submission.submitted_at,
+            "image": request.build_absolute_uri(submission.image.url) if submission.image else None
+        })
+
 
