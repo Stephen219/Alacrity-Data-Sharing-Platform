@@ -316,4 +316,34 @@ class DeleteDraftView(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=400)
+        
+
+class GetDraftView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @role_required(['contributor'])
+    def get(self, request, submission_id):
+        """
+        Retrieve a single draft submission by ID for editing.
+        """
+        researcher = request.user
+        draft = get_object_or_404(
+            AnalysisSubmission, 
+            id=submission_id, 
+            researcher=researcher, 
+            status="draft", 
+            deleted_at__isnull=True
+        )
+
+        return Response({
+            "id": draft.id,
+            "title": draft.title,
+            "description": draft.description,
+            "raw_results": draft.raw_results,
+            "summary": draft.summary,
+            "status": draft.status,
+            "submitted_at": draft.submitted_at,
+            "image": request.build_absolute_uri(draft.image.url) if draft.image else None
+        }, status=200)
+
 

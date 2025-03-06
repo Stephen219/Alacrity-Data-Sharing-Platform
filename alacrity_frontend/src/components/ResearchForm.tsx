@@ -4,36 +4,45 @@ import TextEditor from "@/components/TextEditor";
 import { Editor } from "@tiptap/react";
 import { fetchWithAuth } from "@/libs/auth";
 
+interface Analysis {
+  id: number | null;
+  title: string;
+  description: string;
+  raw_results: string;
+  summary: string;
+  status: string;
+  image?: File | null;
+}
+
 interface AnalysisFormProps {
   editorInstance: Editor | null;
   setEditorInstance: React.Dispatch<React.SetStateAction<Editor | null>>;
+  initialData?: Analysis;
 }
 
-const AnalysisFormComponent = ({ editorInstance, setEditorInstance }: AnalysisFormProps) => {
-  const [formData, setFormData] = useState<{
-    id: null | number;
-    title: string;
-    description: string;
-    rawResults: string;
-    summary: string;
-    status: string;
-    image: File | null;
-  }>({
-    id: null,
-    title: "",
-    description: "",
-    rawResults: "",
-    summary: "",
-    status: "draft",
+const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData }: AnalysisFormProps) => {
+  const [formData, setFormData] = useState<Analysis>(() => ({
+    id: initialData?.id || null,
+    title: initialData?.title || "",
+    description: initialData?.description || "",
+    raw_results: initialData?.raw_results || "",
+    summary: initialData?.summary || "",
+    status: initialData?.status || "draft",
     image: null,
-  });
+  }));
 
   const [loading, setLoading] = useState(false);
-  const [message ,setMessage] = useState("");
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
-    console.log("Updated formData:", formData);
-  }, [formData]);
+    if (initialData) {
+      setFormData((prev) => ({
+        ...prev,
+        ...initialData,
+        image: null, 
+      }));
+    }
+  }, [initialData]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -49,7 +58,7 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance }: AnalysisFo
     const requestData = new FormData();
     requestData.append("title", formData.title);
     requestData.append("description", formData.description);
-    requestData.append("rawResults", formData.rawResults);
+    requestData.append("rawResults", formData.raw_results);
     requestData.append("summary", formData.summary);
     requestData.append("status", publish ? "published" : "draft");
 
@@ -58,10 +67,13 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance }: AnalysisFo
     }
 
     try {
-      const response = await fetchWithAuth("http://127.0.0.1:8000/research/submissions/save/", {
-        method: "POST",
-        body: requestData,
-      });
+      const response = await fetchWithAuth(
+        `http://127.0.0.1:8000/research/submissions/edit/${formData.id}/`,
+        {
+          method: "PUT",
+          body: requestData,
+        }
+      );
 
       const data = await response.json();
 
@@ -110,8 +122,8 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance }: AnalysisFo
       <div>
         <label className="block text-sm font-medium dark:text-gray-300">Raw Results</label>
         <TextEditor
-          content={formData.rawResults}
-          onChange={(content) => setFormData((prev) => ({ ...prev, rawResults: content }))}
+          content={formData.raw_results}
+          onChange={(content) => setFormData((prev) => ({ ...prev, raw_results: content }))}
           editorInstance={editorInstance}
           setEditorInstance={setEditorInstance}
           placeholder="Enter raw results..."
@@ -136,7 +148,6 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance }: AnalysisFo
         <input type="file" accept="image/*" onChange={handleImageChange} className="w-full p-2 border rounded" />
       </div>
 
-      {/* Buttons (Save as Draft & Submit) */}
       <div className="flex justify-center gap-4 mt-6">
         <Button type="button" variant={"ghost"} className="border" onClick={() => handleSave(false)} disabled={loading}>
           {loading ? "Saving..." : "Save as Draft"}
@@ -145,11 +156,12 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance }: AnalysisFo
           {loading ? "Submitting..." : "Submit"}
         </Button>
       </div>
+
       {message && (
-  <div className={`mt-4 text-center font-medium ${message.startsWith("Error") ? "text-red-500" : "text-green-600"}`}>
-    {message}
-  </div>
-)}
+        <div className={`mt-4 text-center font-medium ${message.startsWith("Error") ? "text-red-500" : "text-green-600"}`}>
+          {message}
+        </div>
+      )}
     </form>
   );
 };

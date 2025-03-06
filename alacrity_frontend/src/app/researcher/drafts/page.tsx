@@ -4,6 +4,7 @@ import { fetchWithAuth } from "@/libs/auth";
 import { useEffect, useState } from "react";
 import Published from "@/components/Published";
 import SubmissionButtons from "@/components/SubmissionsButtons";
+import { useRouter } from "next/navigation";
 
 interface Analysis {
   id: number;
@@ -16,6 +17,7 @@ interface Analysis {
 }
 
 const DraftList = () => {
+  const router = useRouter();
   const [drafts, setDrafts] = useState<Analysis[]>([]);
   const [editingDraft, setEditingDraft] = useState<Analysis | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,7 +70,7 @@ const DraftList = () => {
   
 
   const handleEdit = (draft: Analysis) => {
-    setEditingDraft({ ...draft });
+    router.push(`/researcher/drafts/edit/${draft.id}`);
   };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
