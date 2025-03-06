@@ -4,7 +4,7 @@ import { fetchWithAuth } from "@/libs/auth";
 import { useEffect, useState } from "react";
 import Published from "@/components/Published";
 import SubmissionButtons from "@/components/SubmissionsButtons";
-import router, { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 interface Analysis {
   id: number;

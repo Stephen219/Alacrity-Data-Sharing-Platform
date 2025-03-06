@@ -145,18 +145,22 @@ const PublicSubmissions = () => {
       const response = await fetchWithAuth(`${BACKEND_URL}research/bookmark/${submissionId}/`, {
         method: "POST",
       });
-
-      const data = await response.json();
-
+  
+      if (!response.ok) throw new Error("Failed to toggle bookmark.");
+  
+      const data = await response.json(); 
+  
       setBookmarkedSubmissions((prev) =>
-        prev.includes(submissionId)
-          ? prev.filter((id) => id !== submissionId)
-          : [...prev, submissionId]
+        data.bookmarked
+          ? [...prev, submissionId]
+          : prev.filter((id) => id !== submissionId)
       );
+  
     } catch (error) {
       console.error("Bookmark error:", error);
     }
   };
+  
 
   if (loading) return <p className="text-center text-gray-600">Loading submissions...</p>;
   if (error) return <p className="text-center text-red-500">Error: {error}</p>;
