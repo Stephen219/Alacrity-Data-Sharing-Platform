@@ -31,6 +31,8 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
     image: null,
   }));
 
+  const [lastSavedData, setLastSavedData] = useState<Analysis | null>(null);
+  const [lastPublishedData, setLastPublishedData] = useState<Analysis | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -39,8 +41,12 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
       setFormData((prev) => ({
         ...prev,
         ...initialData,
-        image: null, 
+        image: null,
       }));
+      setLastSavedData(initialData);
+      if (initialData.status === "published") {
+        setLastPublishedData(initialData);
+      }
     }
   }, [initialData]);
 
@@ -51,7 +57,27 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
     }
   };
 
+  const isContentSame = (newData: Analysis, oldData: Analysis | null) => {
+    if (!oldData) return false;
+    return (
+      newData.title === oldData.title &&
+      newData.description === oldData.description &&
+      newData.raw_results === oldData.raw_results &&
+      newData.summary === oldData.summary
+    );
+  };
+
   const handleSave = async (publish = false) => {
+    if (!publish && isContentSame(formData, lastSavedData)) {
+      setMessage("This draft has already been saved.");
+      return;
+    }
+
+    if (publish && isContentSame(formData, lastPublishedData)) {
+      setMessage("This research has already been published.");
+      return;
+    }
+
     setLoading(true);
     setMessage("");
 
@@ -68,9 +94,9 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
 
     try {
       const response = await fetchWithAuth(
-        `http://127.0.0.1:8000/research/submissions/edit/${formData.id}/`,
+        `http://127.0.0.1:8000/research/submissions/save/`,
         {
-          method: "PUT",
+          method: "POST",
           body: requestData,
         }
       );
@@ -80,6 +106,12 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
       if (response.ok) {
         setMessage(publish ? "Research Published Successfully!" : "Draft Saved Successfully!");
         setFormData((prev) => ({ ...prev, id: data.id, image: null }));
+
+        if (publish) {
+          setLastPublishedData({ ...formData, id: data.id });
+        } else {
+          setLastSavedData({ ...formData, id: data.id });
+        }
       } else {
         setMessage(`Error: ${data.error || "Failed to save."}`);
       }
@@ -148,11 +180,24 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
         <input type="file" accept="image/*" onChange={handleImageChange} className="w-full p-2 border rounded" />
       </div>
 
+      {/* Buttons */}
       <div className="flex justify-center gap-4 mt-6">
-        <Button type="button" variant={"ghost"} className="border" onClick={() => handleSave(false)} disabled={loading}>
+        <Button 
+          type="button" 
+          variant={"ghost"} 
+          className="border" 
+          onClick={() => handleSave(false)} 
+          disabled={loading}
+        >
           {loading ? "Saving..." : "Save as Draft"}
         </Button>
-        <Button type="button" className="primary" onClick={() => handleSave(true)} disabled={loading}>
+
+        <Button 
+          type="button" 
+          className="primary" 
+          onClick={() => handleSave(true)} 
+          disabled={loading}
+        >
           {loading ? "Submitting..." : "Submit"}
         </Button>
       </div>
