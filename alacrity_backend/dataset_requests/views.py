@@ -63,8 +63,9 @@ class ViewAllDatasetRequests(APIView):
     @role_required(['organization_admin', 'contributor'])
     def get(self, request):
         try:
+            request_status = request.query_params.get('request_status', 'pending')
            # get all the requests from the DatasetRequest table according to the contributor with the same organization as the requester
-            requests = DatasetRequest.objects.filter(dataset_id__contributor_id__organization=request.user.organization_id).select_related('dataset_id', 'researcher_id')
+            requests = DatasetRequest.objects.filter(dataset_id__contributor_id__organization=request.user.organization_id,request_status=request_status).select_related('dataset_id', 'researcher_id')
             # serialize the requests
             
             serializer = DatasetRequestSerializer(requests, many=True)

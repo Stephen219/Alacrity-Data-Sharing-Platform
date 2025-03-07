@@ -12,6 +12,8 @@ interface RequestDetails {
   researcher_field: string;
   researcher_description: string;
   message: string;
+    dataset_title: string;
+    dataset_description: string;
   created_at: string;
 }
 
@@ -117,6 +119,12 @@ export default function ApproveRequest({ requestId }: ApproveRequestProps) {
               <p>
                 <strong>Message:</strong> {request.message}
               </p>
+              <p>
+                <strong>Dataset<title></title>:</strong> {request.dataset_title}
+                </p>
+                <p>
+                <strong>Dataset description:</strong> {request.dataset_description}
+                </p>
             </div>
 
             <div className="mt-6 flex justify-end space-x-4">
