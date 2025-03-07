@@ -63,7 +63,7 @@ export default function ApproveRequest({ requestId }: ApproveRequestProps) {
       }
 
       const idToUse = request?.request_id || requestId;
-      const endpoint = `${BACKEND_URL}/requests/acceptreject/`;
+      const endpoint = `${BACKEND_URL}/requests/acceptreject/${requestId}/`;
 
       const response = await fetchWithAuth(endpoint, {
         method: "POST",

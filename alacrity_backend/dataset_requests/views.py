@@ -94,9 +94,9 @@ class AcceptRejectRequest(APIView):
                 request_id=id,  # Changed from `id` to `request_id`
                 dataset_id__contributor_id__organization=request.user.organization
             )
-            print(dataset_request)
-            print("I am here")
-            print("# debugging")
+            #print(dataset_request)
+            # print("I am here")
+            # print("# debugging")
             serializer = DatasetRequestSerializer(dataset_request)
             print(serializer.data)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -106,9 +106,10 @@ class AcceptRejectRequest(APIView):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     # The POST part remains unchanged
-    def post(self, request):
-        request_id = request.data.get('request_id')
+    def post(self, request,id):
+        request_id = id
         action = request.data.get('action')
+        print(request_id, action)
 
         if not request_id:
             return Response({'error': 'Please provide a request_id'}, status=status.HTTP_400_BAD_REQUEST)
@@ -118,9 +119,9 @@ class AcceptRejectRequest(APIView):
         dataset_request = get_object_or_404(DatasetRequest, request_id=request_id)
 
         if action == 'accept':
-            dataset_request.request_status = 'accepted'
+            dataset_request.request_status = 'approved'
         elif action == 'reject':
-            dataset_request.request_status = 'rejected'
+            dataset_request.request_status = 'denied'
         else:
             return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
 
