@@ -1,11 +1,9 @@
 "use client";
 
 import React from "react";
-
 import { Building2, Database, HardDrive } from "lucide-react";
 
 interface DatasetCardProps {
- // dataset_id: string; // link that will be used to navigate to the dataset detail page
   title: string;
   description: string;
   organization: string;
@@ -20,21 +18,20 @@ interface DatasetCardProps {
 }
 
 export const DatasetCard: React.FC<DatasetCardProps> = ({
-  //dataset_id,
   title,
   description,
   organization,
   dateUploaded,
   imageUrl,
-  // tags,
+  tags,
   category,
   entries,
   size,
   viewMode,
   darkMode,
 }) => {
-  const isListView = viewMode === "list"
-  const truncatedDescription = description.length > 200 ? description.substring(0, 200) + "..." : description
+  const isListView = viewMode === "list";
+  const truncatedDescription = description.length > 200 ? description.substring(0, 200) + "..." : description;
 
   return (
     <div
@@ -51,10 +48,9 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
           alt={title}
           className="w-full h-full object-cover"
           onError={(e) => {
-            ; (e.target as HTMLImageElement).src = "https://via.placeholder.com/300x200.png?text=No+Image"
+            (e.target as HTMLImageElement).src = "https://via.placeholder.com/300x200.png?text=No+Image";
           }}
         />
-
         <div className="absolute top-2 right-2 bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
           {category}
         </div>
@@ -62,7 +58,9 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
       <div className={`p-6 flex flex-col justify-between ${isListView ? "w-2/3" : "w-full"}`}>
         <div>
           <h3 className="text-xl font-semibold mb-2 line-clamp-2">{title}</h3>
-          <p className={`${darkMode ? "text-gray-300" : "text-gray-600"} mb-4 line-clamp-3`}>{truncatedDescription}</p>
+          <p className={`${darkMode ? "text-gray-300" : "text-gray-600"} mb-4 line-clamp-3`}>
+            {truncatedDescription}
+          </p>
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
@@ -89,33 +87,12 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
             <Database size={16} className="text-[#ff6b2c]" />
             <span className={darkMode ? "text-gray-300" : "text-gray-500"}>{entries.toLocaleString()} entries</span>
           </div>
-
-
           <div className="flex items-center gap-2">
-            {/* <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 text-orange-500"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M2 9.5A3.5 3.5 0 005.5 13H9v2.586l-1.293-1.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 15.586V13h2.5a4.5 4.5 0 10-.616-8.958 4.002 4.002 0 10-7.753 1.977A3.5 3.5 0 002 9.5zm9 3.5H9V8a1 1 0 012 0v5z"
-                clipRule="evenodd"
-              />
-            </svg> */}
             <HardDrive size={16} className="text-[#ff6b2c]" />
             <span className={darkMode ? "text-gray-300" : "text-gray-500"}>{size}</span>
-
-
-
-
-
-
           </div>
 
-
-          <span className="absolute top-2 left-2 bg-black  text-white text-xs px-2 py-1 rounded-full flex items-center">
+          <span className="absolute top-2 left-2 bg-black text-white text-xs px-2 py-1 rounded-full flex items-center">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="12"
@@ -132,26 +109,24 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
             </svg>
             <span className="ml-1">20 views</span>
           </span>
-
-
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {/* {tags.map((tag) => (
-            <span
-              key={tag}
-              className={`
-                ${darkMode ? "bg-gray-700 text-orange-400" : "bg-orange-100 text-orange-800"}
-                px-2 py-1 rounded-full text-sm font-medium
-              `}
-            >
-              {tag}
-            </span>
-          ))} */}
+          {tags
+            .filter((tag) => tag.trim() !== "")
+            .map((tag, index) => (
+              <span
+                key={`${tag}-${index}`}
+                className={`
+                  ${darkMode ? "bg-gray-700 text-orange-400" : "bg-orange-100 text-orange-800"}
+                  px-2 py-1 rounded-full text-sm font-medium
+                `}
+              >
+                {tag}
+              </span>
+            ))}
         </div>
       </div>
     </div>
-  )
-}
-
-
+  );
+};

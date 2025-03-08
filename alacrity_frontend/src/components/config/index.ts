@@ -1,6 +1,19 @@
 
 export const NAV_ITEMS = [
-    // Organisation navigation
+
+   
+    {
+      label: "Dashboard",
+      value: "dashboard" as const,
+      roles: ["organization_admin", "contributor", "researcher"],
+      featured: [
+        {
+          name: "View Dashboard",
+          href: "/dashboard",
+          imageSrc: "/navbar/account/viewDashboard.png",
+        },
+      ],
+    },
     {
       label: "Datasets",
       value: "datasets" as const,

@@ -11,19 +11,11 @@ from rest_framework.decorators import permission_classes
 from users.decorators import role_required
 from .models import AnalysisSubmission
 
-from django.core.cache import cache
-from django.core.exceptions import ValidationError
-from django.utils.timezone import now
-from django.shortcuts import get_object_or_404
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from users.decorators import role_required
-from .models import AnalysisSubmission
+from datasets.models import Dataset
+
 
 class SaveSubmissionView(APIView):
     permission_classes = [IsAuthenticated]
-    
     @role_required(['contributor'])
     def post(self, request):
         """
@@ -33,6 +25,7 @@ class SaveSubmissionView(APIView):
             data = request.data
             researcher = request.user
             submission_id = data.get("id")
+            dataset_id = data.get("dataset_id")
 
             if submission_id:
                 submission = get_object_or_404(AnalysisSubmission, id=submission_id, researcher=researcher)
@@ -45,13 +38,16 @@ class SaveSubmissionView(APIView):
             submission.summary = data.get("summary", submission.summary)
             submission.status = data.get("status", submission.status)
 
+            if dataset_id:
+                dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
+                submission.dataset = dataset
+            elif submission.status == "published" and not submission.dataset:
+                raise ValidationError("A dataset must be linked before publishing.")
+
             if len(submission.title.split()) > 15:
                 raise ValidationError("Title cannot exceed 15 words.")
-
             if len(submission.summary.split()) > 250:
                 raise ValidationError("Summary cannot exceed 250 words.")
-
-
             if "image" in request.FILES:
                 submission.image = request.FILES["image"]
 
@@ -64,7 +60,8 @@ class SaveSubmissionView(APIView):
                 "message": "Submission saved successfully!",
                 "id": submission.id,
                 "status": submission.status,
-                "image": request.build_absolute_uri(submission.image.url) if submission.image else None
+                "image": request.build_absolute_uri(submission.image.url) if submission.image else None,
+                "dataset_id": submission.dataset.dataset_id if submission.dataset else None
             }, status=200)
 
         except ValidationError as e:

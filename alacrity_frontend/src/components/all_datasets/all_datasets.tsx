@@ -46,22 +46,27 @@ const DatasetsPage: React.FC = () => {
         const response = await fetchWithAuth(`${BACKEND_URL}/datasets/all`);
         if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
         const data = await response.json();
-
+  
         const mappedDatasets: Dataset[] = data.datasets.map((item: any) => ({
           ...item,
           size: item.size || "N/A",
           entries: item.entries || 0,
           imageUrl: item.imageUrl || `https://picsum.photos/300/200?random=${item.dataset_id}`,
-          tags: typeof item.tags === "string" ? item.tags.split(",").map((tag: string) => tag.trim()) : item.tags || [],
+          tags: typeof item.tags === "string"
+            ? item.tags
+                .split(",")
+                .map((tag: string) => tag.trim()) // Trim whitespace
+                .filter((tag: string) => tag.trim() !== "") // Remove empty or whitespace-only tags
+            : item.tags || [],
         }));
-
+  
         setDatasets(mappedDatasets);
-
+  
         const uniqueCategories = ["All", ...new Set(mappedDatasets.map((d) => d.category))];
         const uniqueOrgs = ["All", ...new Set(mappedDatasets.map((d) => d.organization_name || "No organization"))];
         const uniqueTags = ["All", ...new Set(mappedDatasets.flatMap((d) => d.tags))];
         const staticDateOptions = ["All Time", "Today", "This Week", "This Month", "This Year"];
-
+  
         setFilterCategories([
           { id: "category", label: "Category", options: uniqueCategories },
           { id: "organization_name", label: "Organization", options: uniqueOrgs },
@@ -75,7 +80,7 @@ const DatasetsPage: React.FC = () => {
         setIsLoading(false);
       }
     };
-
+  
     fetchDatasets();
   }, []);
 
@@ -313,7 +318,7 @@ const DatasetsPage: React.FC = () => {
           {paginatedDatasets.map((dataset) => (
             <Link
               key={dataset.dataset_id}
-              href={`/datasets/description?id=${dataset.dataset_id}`} 
+              href={`/researcher/publicationForm?id=${dataset.dataset_id}`} 
               className="block" 
             >
               <DatasetCard

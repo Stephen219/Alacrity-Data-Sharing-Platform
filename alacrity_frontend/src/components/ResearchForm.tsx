@@ -1,10 +1,13 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import TextEditor from "@/components/TextEditor";
 import { Editor } from "@tiptap/react";
 import { fetchWithAuth } from "@/libs/auth";
+import { useSearchParams } from "next/navigation";
 
 interface Analysis {
+  datasetId?: unknown; 
   id: number | null;
   title: string;
   description: string;
@@ -21,6 +24,18 @@ interface AnalysisFormProps {
 }
 
 const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData }: AnalysisFormProps) => {
+  const searchParams = useSearchParams();
+  const initialFormState: Analysis = {
+    id: null,
+    title: "",
+    description: "",
+    raw_results: "",
+    summary: "",
+    status: "draft",
+    image: null,
+    datasetId: initialData?.datasetId || null,
+  };
+
   const [formData, setFormData] = useState<Analysis>(() => ({
     id: initialData?.id || null,
     title: initialData?.title || "",
@@ -29,6 +44,7 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
     summary: initialData?.summary || "",
     status: initialData?.status || "draft",
     image: null,
+    datasetId: initialData?.datasetId || null,
   }));
 
   const [lastSavedData, setLastSavedData] = useState<Analysis | null>(null);
@@ -36,6 +52,16 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
+  // Handle datasetId from URL query parameter
+  useEffect(() => {
+    const datasetId = searchParams.get("id");
+    
+    if (datasetId && !formData.datasetId) {
+      setFormData((prev) => ({ ...prev, datasetId }));
+    }
+  }, [searchParams]);
+
+  // Handle initialData updates
   useEffect(() => {
     if (initialData) {
       setFormData((prev) => ({
@@ -87,7 +113,9 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
     requestData.append("rawResults", formData.raw_results);
     requestData.append("summary", formData.summary);
     requestData.append("status", publish ? "published" : "draft");
-
+    if (formData.datasetId) {
+      requestData.append("dataset_id", String(formData.datasetId));
+    }
     if (formData.image) {
       requestData.append("image", formData.image);
     }
@@ -105,8 +133,10 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
 
       if (response.ok) {
         setMessage(publish ? "Research Published Successfully!" : "Draft Saved Successfully!");
-        setFormData((prev) => ({ ...prev, id: data.id, image: null }));
-
+        setFormData({
+          ...initialFormState,
+          datasetId: formData.datasetId, // Preserve datasetId
+        });
         if (publish) {
           setLastPublishedData({ ...formData, id: data.id });
         } else {
@@ -124,7 +154,6 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
 
   return (
     <form className="space-y-6">
-      {/* Title */}
       <div>
         <label className="block text-sm font-medium dark:text-gray-300">Title</label>
         <TextEditor
@@ -137,8 +166,6 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
           small={true}
         />
       </div>
-
-      {/* Description */}
       <div>
         <label className="block text-sm font-medium dark:text-gray-300">Description</label>
         <TextEditor
@@ -149,8 +176,6 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
           placeholder="Describe your analysis process..."
         />
       </div>
-
-      {/* Raw Results */}
       <div>
         <label className="block text-sm font-medium dark:text-gray-300">Raw Results</label>
         <TextEditor
@@ -161,8 +186,6 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
           placeholder="Enter raw results..."
         />
       </div>
-
-      {/* Summary */}
       <div>
         <label className="block text-sm font-medium dark:text-gray-300">Summary</label>
         <TextEditor
@@ -173,35 +196,29 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
           placeholder="Summarize your findings..."
         />
       </div>
-
-      {/* Image Upload */}
       <div>
         <label className="block text-sm font-medium dark:text-gray-300">Upload Image</label>
         <input type="file" accept="image/*" onChange={handleImageChange} className="w-full p-2 border rounded" />
       </div>
-
-      {/* Buttons */}
       <div className="flex justify-center gap-4 mt-6">
-        <Button 
-          type="button" 
-          variant={"ghost"} 
-          className="border" 
-          onClick={() => handleSave(false)} 
+        <Button
+          type="button"
+          variant={"ghost"}
+          className="border"
+          onClick={() => handleSave(false)}
           disabled={loading}
         >
           {loading ? "Saving..." : "Save as Draft"}
         </Button>
-
-        <Button 
-          type="button" 
-          className="primary" 
-          onClick={() => handleSave(true)} 
+        <Button
+          type="button"
+          className="primary"
+          onClick={() => handleSave(true)}
           disabled={loading}
         >
           {loading ? "Submitting..." : "Submit"}
         </Button>
       </div>
-
       {message && (
         <div className={`mt-4 text-center font-medium ${message.startsWith("Error") ? "text-red-500" : "text-green-600"}`}>
           {message}
