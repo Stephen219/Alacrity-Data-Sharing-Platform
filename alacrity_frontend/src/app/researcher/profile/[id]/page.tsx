@@ -1,4 +1,22 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+
+/**
+ * @fileoverview Researcher profile page
+ * @package @alacrity/researcher
+ * This file defines the ResearcherProfilePage component, which is responsible for displaying and managing the profile of a researcher.
+ * The component fetches the profile data from the backend, allows the profile owner to edit their information, and displays the research publications and bookmarks.
+ * 
+ * The main functionalities include:
+ * - Fetching and displaying the researcher's profile data.
+ * - Allowing the profile owner to edit and save their profile information.
+ * - Displaying the research publications and bookmarks of the researcher.
+ * - Handling loading and error states during data fetching.
+ * 
+ * The component uses various hooks such as useState and useEffect to manage state and side effects.
+ * It also utilizes the useParams hook from Next.js for dynamic routing based on the researcher's ID.
+ * 
+ * The component is wrapped with an access control HOC (withAccessControl) to restrict access to certain user roles.
+ */
 "use client"
 
 import { useState, useEffect } from "react";

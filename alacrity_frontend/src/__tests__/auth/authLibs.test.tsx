@@ -1,6 +1,6 @@
 
 import { renderHook } from "@testing-library/react";
-import { waitFor } from "@testing-library/react"; // Added import
+import { waitFor } from "@testing-library/react"; 
 import {
   login,
   logout,
@@ -9,7 +9,7 @@ import {
   scheduleTokenRefresh,
   useAuth,
   fetchUserData,
-} from "../../libs/auth"; // Adjusted path
+} from "../../libs/auth"; 
 import { useRouter } from "next/navigation";
 import { User } from "@/types/types";
 import { BACKEND_URL } from "@/config";
@@ -107,7 +107,7 @@ describe("Authentication Functions", () => {
         expect.objectContaining({
           method: "POST",
           headers: expect.objectContaining({
-            "Authorization": "Bearer access123", // Corrected expectation
+            "Authorization": "Bearer access123", 
             "Content-Type": "application/json",
           }),
           body: JSON.stringify({ refresh_token: "refresh123" }),

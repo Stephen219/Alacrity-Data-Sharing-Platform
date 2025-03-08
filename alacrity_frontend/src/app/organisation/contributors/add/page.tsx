@@ -1,3 +1,19 @@
+/**
+ * @fileoverview Add Contributor Page
+ * 
+ * This file contains the AddContributorForm component, which provides a form for adding new contributors to an organization.
+ * The form collects the contributor's first name, last name, email, phone number, and role.
+ * It handles form submission, including validation and error handling, and sends the data to the backend server.
+ * Upon successful submission, the user is redirected to the dashboard.
+ * 
+ * The component uses React hooks for state management and Next.js router for navigation.
+ * It also includes loading and success states to provide feedback to the user during the form submission process.
+ */
+/**
+ * @fileoverview Add contributor page
+ * 
+ */
+
 "use client";
 
 import type React from "react";

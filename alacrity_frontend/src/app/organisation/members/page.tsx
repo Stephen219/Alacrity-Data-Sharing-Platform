@@ -1,5 +1,15 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
+/**
+ * @fileoverview All members page
+ * @package @alacrity/organisation
+ * it should display a list of all members in the organization
+ * it should display a search input to filter members by name, email, or phone number
+ * it should display a button to add new members
+ * it should display a button to view a member's profile
+ * it should display a message when there are no members found
+ */
+
 "use client"
 
 import { useState, useEffect } from "react"

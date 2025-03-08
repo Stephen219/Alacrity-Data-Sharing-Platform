@@ -1,3 +1,46 @@
+/**
+ * @fileoverview Admin dashboard page
+ * @package @alacrity/frontend
+ * 
+ * This file contains the implementation of the Admin Dashboard component.
+ * The Admin Dashboard provides an overview of the organization's datasets and activities.
+ * It displays metrics such as total datasets, total researches, pending access requests, and active employees.
+ * The dashboard also includes a table of pending access requests and a section for dataset analytics.
+ * 
+ * @component
+ * @example
+ * <AdminDashboard />
+ * 
+ * @remarks
+ * This component fetches data from the backend and displays it in a user-friendly manner.
+ * It uses the `fetchWithAuth` function to make authenticated requests to the backend.
+ * The component also handles loading and error states.
+ * 
+ * @requires React
+ * @requires fetchWithAuth
+ * @requires useEffect
+ * @requires useState
+ * @requires BACKEND_URL
+ * @requires fetchUserData
+ * @requires User
+ * @requires Link
+ * 
+ * @interface DashboardData
+ * @property {number} total_datasets - The total number of datasets.
+ * @property {number} total_users - The total number of users.
+ * @property {number} pending_requests - The number of pending access requests.
+ * @property {number} approved_requests - The number of approved access requests.
+ * @property {number} total_researches - The total number of researches.
+ * @property {Array<Object>} pending_datasets - The list of pending datasets.
+ * 
+ * @interface MetricCardProps
+ * @property {string} title - The title of the metric card.
+ * @property {string} value - The value of the metric.
+ * @property {React.ReactNode} icon - The icon to display on the metric card.
+ * @property {React.ReactNode} change - The change indicator for the metric.
+ * @property {string} changeColor - The color of the change indicator.
+ */
+
 "use client";
 
 import type React from "react";

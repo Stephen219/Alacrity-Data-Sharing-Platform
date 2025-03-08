@@ -1,8 +1,66 @@
-
-
-
-
-// @/components/ResearcherProfile.tsx
+/**
+ * @fileoverview Researcher Profile component
+ * @package @alacrity/frontend
+ * 
+ * This component displays the profile of a researcher, including their personal information,
+ * research publications, and bookmarked research papers. It allows the profile owner to edit
+ * their profile information.
+ * 
+ * @component
+ * @example
+ * <ResearcherProfile profileId="123" />
+ * 
+ * @param {ResearcherProfileProps} props - The props for the ResearcherProfile component.
+ * @param {string} props.profileId - The ID of the profile to display.
+ * 
+ * @typedef {Object} Profile
+ * @property {string} id - The unique identifier of the profile.
+ * @property {string} [email] - The email address of the profile owner.
+ * @property {string} username - The username of the profile owner.
+ * @property {string} firstname - The first name of the profile owner.
+ * @property {string} lastname - The last name of the profile owner.
+ * @property {string|null} profile_picture - The URL of the profile picture.
+ * @property {string} date_joined - The date the profile owner joined.
+ * @property {string|null} bio - The biography of the profile owner.
+ * @property {string|null} [phonenumber] - The phone number of the profile owner.
+ * @property {string} role - The role of the profile owner.
+ * @property {string|null} organization - The organization of the profile owner.
+ * @property {string|null} field - The field of expertise of the profile owner.
+ * @property {AnalysisSubmission[]} researches - The list of research submissions by the profile owner.
+ * @property {BookmarkedResearch[]} [bookmarked_researches] - The list of bookmarked research papers.
+ * 
+ * @typedef {Object} AnalysisSubmission
+ * @property {string} id - The unique identifier of the research submission.
+ * @property {string} title - The title of the research submission.
+ * @property {string} description - The description of the research submission.
+ * @property {string} status - The status of the research submission.
+ * @property {string} submitted_at - The date the research submission was submitted.
+ * 
+ * @typedef {Object} BookmarkedResearch
+ * @property {string} id - The unique identifier of the bookmarked research.
+ * @property {string} title - The title of the bookmarked research.
+ * @property {string} description - The description of the bookmarked research.
+ * @property {string} [publisher] - The publisher of the bookmarked research.
+ * @property {string} [date] - The date of the bookmarked research.
+ * 
+ * @function fetchProfileData
+ * @async
+ * @description Fetches the profile data for a given profile ID.
+ * @param {string} profileId - The ID of the profile to fetch.
+ * @returns {Promise<Profile|null>} The profile data or null if an error occurs.
+ * 
+ * @function updateProfile
+ * @async
+ * @description Updates the profile data for a given user ID.
+ * @param {string} userId - The ID of the user to update.
+ * @param {Partial<Profile>} updatedData - The updated profile data.
+ * @returns {Promise<Profile|null>} The updated profile data or null if an error occurs.
+ * 
+ * @function ResearcherProfile
+ * @description The main component for displaying and editing a researcher's profile.
+ * @param {ResearcherProfileProps} props - The props for the component.
+ * @returns {JSX.Element} The rendered component.
+ */
 "use client"
 
 import { useState, useEffect } from "react";

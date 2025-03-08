@@ -1,3 +1,42 @@
+/**
+ * @fileoverview Researcher dashboard component
+ * @package @alacrity/frontend
+ * 
+ * This component represents the dashboard for researchers, providing an overview of datasets, requests, and active research projects.
+ * 
+ * @component
+ * @example
+ * <ResearcherDashboard />
+ * 
+ * @remarks
+ * This component fetches data from the backend and displays various metrics and lists related to the researcher's activities.
+ * 
+ * @requires React
+ * @requires fetchWithAuth from "@/libs/auth"
+ * @requires useEffect, useState from "react"
+ * @requires BACKEND_URL from "@/config"
+ * 
+ * @interface DashboardData
+ * @property {number} total_datasets - The total number of datasets available.
+ * @property {number} total_users - The total number of users.
+ * @property {number} pending_requests - The number of pending requests.
+ * @property {number} approved_requests - The number of approved requests.
+ * 
+ * @interface MetricCardProps
+ * @property {string} title - The title of the metric.
+ * @property {string} value - The value of the metric.
+ * @property {string} icon - The icon representing the metric.
+ * 
+ * @interface DatasetCardProps
+ * @property {string} title - The title of the dataset.
+ * @property {string} description - A brief description of the dataset.
+ * @property {string[]} tags - An array of tags associated with the dataset.
+ */
+/**
+ * @fileoverview Researcher dashboard
+ * @package @alacrity/frontend  
+ * 
+ */
 import type React from "react"
 import { fetchWithAuth } from "@/libs/auth"
 import { useEffect, useState } from "react"

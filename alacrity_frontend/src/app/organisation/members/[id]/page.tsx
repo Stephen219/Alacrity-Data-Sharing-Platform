@@ -16,10 +16,6 @@
  */
 
 
-
-
-
-
 "use client"
 import React from "react"
 import { useState, useEffect } from "react"
@@ -180,6 +176,7 @@ export default function MemberProfilePage({ params: paramsPromise }: { params: P
         // Set member data with requests
         const memberWithRequests = {
           ...fetchedMember,
+          // TODO: UNHARDCODE THIS ONE LATER  
           requests_processed: fetchedMember.requests_processed || [
             { id: "1", title: "Data Analysis Request", date_processed: "2025-03-05", status: "approved" },
             { id: "2", title: "Report Generation", date_processed: "2025-03-06", status: "rejected" },
