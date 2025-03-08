@@ -27,10 +27,12 @@ class User(AbstractUser):
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True)
     # organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True)
     field = models.TextField(blank=True, null=True)
+    date_joined = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    bio = models.TextField(blank=True, null=True, default='No bio provided')
     date_of_birth = models.DateField(blank=True, null=True)
     
-    #TODO PROFILE PIC 
-    profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
+    #TODO PROFILE PIC  but as a url
+    profile_picture = models.URLField(blank=True, null=True)
 
     # Email is used as primary field
     USERNAME_FIELD = 'email'

@@ -1,11 +1,21 @@
+
+
+
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import ResearchForm from "@/components/ResearchForm";
 import { Editor } from "@tiptap/react";
 import { fetchWithAuth } from "@/libs/auth";
 import "@testing-library/jest-dom";
+import { useSearchParams } from "next/navigation"; 
 
 jest.mock("@/libs/auth", () => ({
   fetchWithAuth: jest.fn(),
+}));
+
+jest.mock("next/navigation", () => ({
+  useSearchParams: jest.fn(() => ({
+    get: jest.fn(() => null), // Mock default behavior: no "id" param
+  })),
 }));
 
 import { ReactNode } from "react";
@@ -27,24 +37,23 @@ jest.mock("@/components/ui/button", () => ({
 }));
 
 jest.mock("@/components/TextEditor", () => ({
-    __esModule: true,
-    default: ({
-      content,
-      onChange,
-      placeholder,
-    }: {
-      content: string;
-      onChange: (value: string) => void;
-      placeholder: string;
-    }) => (
-      <textarea
-        data-testid={`editor-${placeholder}`}
-        value={content}
-        onChange={(e) => onChange(e.target.value)}
-      />
-    ),
-  }));
-  
+  __esModule: true,
+  default: ({
+    content,
+    onChange,
+    placeholder,
+  }: {
+    content: string;
+    onChange: (value: string) => void;
+    placeholder: string;
+  }) => (
+    <textarea
+      data-testid={`editor-${placeholder}`}
+      value={content}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  ),
+}));
 
 const createMockEditor = () =>
   ({
@@ -69,9 +78,14 @@ const createMockEditor = () =>
 
 describe("ResearchForm", () => {
   let mockEditor: Editor;
+
   beforeEach(() => {
     mockEditor = createMockEditor();
     jest.clearAllMocks();
+    
+    (useSearchParams as jest.Mock).mockReturnValue({
+      get: jest.fn(() => null), 
+    });
   });
 
   test("renders form fields correctly", () => {

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { BACKEND_URL } from "@/config";
 import { fetchUserData } from "@/libs/auth";
 import { User } from "@/types/types";
+import Link from "next/link";
 
 interface DashboardData {
   total_datasets: number;
@@ -106,8 +107,8 @@ const AdminDashboard: React.FC = () => {
           title="Total Datasets"
           value={data.total_datasets.toString()}
           icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
           </svg>
           }
           change="+12% from last month"
@@ -124,7 +125,11 @@ const AdminDashboard: React.FC = () => {
           title="Pending Access Requests"
           value={data.pending_requests.toString()}
           icon="📝"
-          change="8 require urgent review"
+          change= {
+            <Link href="/requests/pending" className="px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f] transition-colors">
+              View All
+            </Link>
+          }
           changeColor="text-[#FF6B1A]"
         />
       
@@ -137,7 +142,14 @@ const AdminDashboard: React.FC = () => {
               <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
             </svg>
           }
-          change=""
+          
+          change= {
+            <Link href="/organisation/members" className="px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f] transition-colors  ">
+               
+              View All
+            </Link>
+           
+          }
           changeColor="text-[#FF6B1A]"
         />)}
       </div>
@@ -258,7 +270,7 @@ interface MetricCardProps {
   title: string;
   value: string;
   icon: React.ReactNode;
-  change: string;
+  change: React.ReactNode;
   changeColor: string;
 }
 

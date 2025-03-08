@@ -44,6 +44,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         <button onClick={toggleSidebar}></button>
       </div>
       <nav className="flex flex-col space-y-4">
+      
         {isLoading ? (
           <div>Loading...</div>
         ) : (

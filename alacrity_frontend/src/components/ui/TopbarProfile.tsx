@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { User } from "@/types/types";
 import  { logout } from "@/libs/auth";
+import Link from "next/link";
 
 function TopBarProfile({ User }: { User: User }) {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -30,7 +31,10 @@ function TopBarProfile({ User }: { User: User }) {
                 </div>
                 {isProfileOpen && (
                   <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5">
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    {/* i need this link to be dynamic if it org_admin// contributor   its organisation/members./userid e;lse researche/usrd */}
+                    <Link 
+                     href={User.role === "organization_admin" || User.role === "contributor" ? `/organisation/members/${User.id}` : `/researcher/profile/${User.id}`}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                       <svg
                         className="inline-block w-5 h-5 mr-2 -mt-1"
                         fill="none"
@@ -46,7 +50,7 @@ function TopBarProfile({ User }: { User: User }) {
                         />
                       </svg>
                       Your Profile
-                    </a>
+                    </Link>
                     <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                       <svg
                         className="inline-block w-5 h-5 mr-2 -mt-1"

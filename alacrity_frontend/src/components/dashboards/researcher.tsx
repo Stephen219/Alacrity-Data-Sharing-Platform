@@ -12,8 +12,8 @@ interface DashboardData {
 
 const ResearcherDashboard: React.FC = () => {
     const [data, setData] = useState<DashboardData | null>(null)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
+    const [, setLoading] = useState(true)
+    const [, setError] = useState<unknown>(null)
 
     const getData = async () => {
         try {

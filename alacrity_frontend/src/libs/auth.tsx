@@ -30,7 +30,7 @@ export async function login(email: string, password: string) {
             localStorage.setItem("refresh_token", data.refresh_token);
             localStorage.setItem("user", JSON.stringify(data.user));
 
-            // Start auto-refreshing the access token
+            
             scheduleTokenRefresh(); 
 
             return { success: true, user: data.user };
@@ -49,12 +49,18 @@ export async function login(email: string, password: string) {
  */
 export async function logout() {
     const refreshToken = localStorage.getItem("refresh_token");
+    const accessToken = localStorage.getItem("access_token");
+
 
     if (refreshToken) {
         try {
-            const response = await fetchWithAuth(`${API_BASE_URL}/users/logout/`, {
+            const response = await fetch(`${API_BASE_URL}/users/logout/`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${accessToken}`,
+                },
+
                 body: JSON.stringify({
                     refresh_token: refreshToken,
                 }),
@@ -135,8 +141,14 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
     
     if (!accessToken) {
         console.error("No access token found");
-        logout();
-        return new Response(null, { status: 401 });
+         await logout();
+         return new (class MockResponse {
+            ok = false;
+            status = 401;
+            json = async () => ({});
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        })() as any; 
+    
     }
 
     
@@ -155,7 +167,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
             response = await executeRequest(newToken);
         } catch (error) {
             console.error("Token refresh failed:", error);
-            logout();
+            await logout();
             return new Response(null, { status: 401 });
         }
     }

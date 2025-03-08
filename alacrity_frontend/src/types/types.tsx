@@ -2,15 +2,20 @@
 // to avoid types being in the camponents  define them here
 
 type User = {
-  id: number;
+  date_joined: string;
+  profile_picture: string;
+  date_of_birth: string;
+  bio: string;
+  id: unknown;
   email: string;
-  username: string;
+  username: string; 
   firstname: string;
   lastname: string;
   phonenumber: string;
   organization: string | null;
   role: string;
   field: string;
+  
 }
 
 
