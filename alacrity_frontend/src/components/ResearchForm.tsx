@@ -1,5 +1,4 @@
 
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import TextEditor from "@/components/TextEditor";
@@ -8,7 +7,7 @@ import { fetchWithAuth } from "@/libs/auth";
 import { useSearchParams } from "next/navigation";
 
 interface Analysis {
-  datasetId: unknown;
+  datasetId?: unknown; 
   id: number | null;
   title: string;
   description: string;
@@ -56,7 +55,7 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
   // Handle datasetId from URL query parameter
   useEffect(() => {
     const datasetId = searchParams.get("id");
-    console.log("Dataset ID:", datasetId);
+    
     if (datasetId && !formData.datasetId) {
       setFormData((prev) => ({ ...prev, datasetId }));
     }
@@ -134,10 +133,9 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
 
       if (response.ok) {
         setMessage(publish ? "Research Published Successfully!" : "Draft Saved Successfully!");
-       
         setFormData({
           ...initialFormState,
-          datasetId: formData.datasetId, 
+          datasetId: formData.datasetId, // Preserve datasetId
         });
         if (publish) {
           setLastPublishedData({ ...formData, id: data.id });
@@ -156,7 +154,6 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
 
   return (
     <form className="space-y-6">
-      {/* Title */}
       <div>
         <label className="block text-sm font-medium dark:text-gray-300">Title</label>
         <TextEditor
@@ -169,8 +166,6 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
           small={true}
         />
       </div>
-
-      {/* Description */}
       <div>
         <label className="block text-sm font-medium dark:text-gray-300">Description</label>
         <TextEditor
@@ -181,8 +176,6 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
           placeholder="Describe your analysis process..."
         />
       </div>
-
-      {/* Raw Results */}
       <div>
         <label className="block text-sm font-medium dark:text-gray-300">Raw Results</label>
         <TextEditor
@@ -193,8 +186,6 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
           placeholder="Enter raw results..."
         />
       </div>
-
-      {/* Summary */}
       <div>
         <label className="block text-sm font-medium dark:text-gray-300">Summary</label>
         <TextEditor
@@ -205,14 +196,10 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
           placeholder="Summarize your findings..."
         />
       </div>
-
-      {/* Image Upload */}
       <div>
         <label className="block text-sm font-medium dark:text-gray-300">Upload Image</label>
         <input type="file" accept="image/*" onChange={handleImageChange} className="w-full p-2 border rounded" />
       </div>
-
-      {/* Buttons */}
       <div className="flex justify-center gap-4 mt-6">
         <Button
           type="button"
@@ -223,7 +210,6 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
         >
           {loading ? "Saving..." : "Save as Draft"}
         </Button>
-
         <Button
           type="button"
           className="primary"
@@ -233,7 +219,6 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
           {loading ? "Submitting..." : "Submit"}
         </Button>
       </div>
-
       {message && (
         <div className={`mt-4 text-center font-medium ${message.startsWith("Error") ? "text-red-500" : "text-green-600"}`}>
           {message}
