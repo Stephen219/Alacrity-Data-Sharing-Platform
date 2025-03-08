@@ -1,12 +1,14 @@
 
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import TextEditor from "@/components/TextEditor";
 import { Editor } from "@tiptap/react";
 import { fetchWithAuth } from "@/libs/auth";
-import { useSearchParams } from "next/navigation"; 
+import { useSearchParams } from "next/navigation";
 
 interface Analysis {
+  datasetId: unknown;
   id: number | null;
   title: string;
   description: string;
@@ -22,30 +24,19 @@ interface AnalysisFormProps {
   initialData?: Analysis;
 }
 
-
-const AnalysisFormComponent = ({ editorInstance, setEditorInstance }: AnalysisFormProps) => {
-  const searchParams = useSearchParams(); 
-  const [formData, setFormData] = useState<{
-    id: null | number;
-    title: string;
-    description: string;
-    rawResults: string;
-    summary: string;
-    status: string;
-    image: File | null;
-    datasetId?: string; 
-  }>({
+const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData }: AnalysisFormProps) => {
+  const searchParams = useSearchParams();
+  const initialFormState: Analysis = {
     id: null,
     title: "",
     description: "",
-    rawResults: "",
+    raw_results: "",
     summary: "",
     status: "draft",
     image: null,
-    datasetId: undefined,
-  });
+    datasetId: initialData?.datasetId || null,
+  };
 
-const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData }: AnalysisFormProps) => {
   const [formData, setFormData] = useState<Analysis>(() => ({
     id: initialData?.id || null,
     title: initialData?.title || "",
@@ -54,27 +45,24 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
     summary: initialData?.summary || "",
     status: initialData?.status || "draft",
     image: null,
+    datasetId: initialData?.datasetId || null,
   }));
-
 
   const [lastSavedData, setLastSavedData] = useState<Analysis | null>(null);
   const [lastPublishedData, setLastPublishedData] = useState<Analysis | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-
-
+  // Handle datasetId from URL query parameter
   useEffect(() => {
     const datasetId = searchParams.get("id");
     console.log("Dataset ID:", datasetId);
-    console.log("Dataset ID:", datasetId);
-    console.log("Dataset ID:", datasetId);
-    if (datasetId) {
+    if (datasetId && !formData.datasetId) {
       setFormData((prev) => ({ ...prev, datasetId }));
     }
   }, [searchParams]);
 
-
+  // Handle initialData updates
   useEffect(() => {
     if (initialData) {
       setFormData((prev) => ({
@@ -127,17 +115,11 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
     requestData.append("summary", formData.summary);
     requestData.append("status", publish ? "published" : "draft");
     if (formData.datasetId) {
-      requestData.append("dataset_id", formData.datasetId); 
+      requestData.append("dataset_id", String(formData.datasetId));
     }
     if (formData.image) {
       requestData.append("image", formData.image);
     }
-
-    // TODO: I CAN OPTIONNALY MAKE THE THE PAGE NOT TO RENDER WITHOUT THE DATASET ID OR 
-    // MAKE THE DATASET ID A REQUIRED PARAMETER BY THE URL STRUCTURE
-    // BUT FOR NOW IT WORKS BUT CANNOT SUBMITT WITHOUT THE DATASET ID
-    
-
 
     try {
       const response = await fetchWithAuth(
@@ -152,8 +134,11 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
 
       if (response.ok) {
         setMessage(publish ? "Research Published Successfully!" : "Draft Saved Successfully!");
-        setFormData((prev) => ({ ...prev, id: data.id, image: null }));
-
+       
+        setFormData({
+          ...initialFormState,
+          datasetId: formData.datasetId, 
+        });
         if (publish) {
           setLastPublishedData({ ...formData, id: data.id });
         } else {
@@ -229,20 +214,20 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
 
       {/* Buttons */}
       <div className="flex justify-center gap-4 mt-6">
-        <Button 
-          type="button" 
-          variant={"ghost"} 
-          className="border" 
-          onClick={() => handleSave(false)} 
+        <Button
+          type="button"
+          variant={"ghost"}
+          className="border"
+          onClick={() => handleSave(false)}
           disabled={loading}
         >
           {loading ? "Saving..." : "Save as Draft"}
         </Button>
 
-        <Button 
-          type="button" 
-          className="primary" 
-          onClick={() => handleSave(true)} 
+        <Button
+          type="button"
+          className="primary"
+          onClick={() => handleSave(true)}
           disabled={loading}
         >
           {loading ? "Submitting..." : "Submit"}
