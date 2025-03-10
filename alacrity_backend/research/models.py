@@ -20,6 +20,15 @@ class AnalysisSubmission(models.Model):
     raw_results = models.TextField(blank=True, null=True)
     summary = models.TextField(blank=True, null=True)
     submitted_at = models.DateTimeField(auto_now_add=True)
+    # ideally a reseach published by a researcher should be linked to a dataset id using the dataset model
+    dataset = models.ForeignKey(
+        'datasets.Dataset', 
+        on_delete=models.DO_NOTHING, 
+        related_name='submissions',
+      
+        default=None
+    )
+
     status = models.CharField(
         max_length=10, 
         choices=STATUS_CHOICES, 

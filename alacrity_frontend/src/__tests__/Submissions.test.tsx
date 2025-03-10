@@ -3,6 +3,12 @@ import Submissions from "@/app/researcher/Submissions/page";
 import { fetchWithAuth } from "@/libs/auth";
 import "@testing-library/jest-dom";
 
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: jest.fn(), 
+  }),
+}));
+
 jest.mock("@/libs/auth", () => ({
   fetchWithAuth: jest.fn(),
 }));

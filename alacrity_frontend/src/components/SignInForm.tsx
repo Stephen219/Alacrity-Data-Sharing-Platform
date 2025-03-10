@@ -27,19 +27,20 @@ const SignInForm: React.FC = () => {
 
 
     if (result.success) {
-      console.log(result.user);
-      if (result.user.role === "admin") {
-        // technically i should us to redirec as it prevents the page reload   but i am using window.location.href for now to avoid the need to mock the router in the test file.
-        // consider this resource https://www.npmjs.com/package/next-router-mock when implementing it 
-        // i used 5 hrs to try to implement it but i could not get it to work so add the counter as you try
-        // counter 5
-        window.location.href = "/organization";
-      } else if (result.user.role === "researcher" || result.user.role === "contributor") {
-        window.location.href = "/researcher";
-      } else {
-        window.location.href = "/dashboard";
-      }
+      // console.log(result.user);
+      // if (result.user.role === "admin") {
+      //   // technically i should us to redirec as it prevents the page reload   but i am using window.location.href for now to avoid the need to mock the router in the test file.
+      //   // consider this resource https://www.npmjs.com/package/next-router-mock when implementing it 
+      //   // i used 5 hrs to try to implement it but i could not get it to work so add the counter as you try
+      //   // counter 5
+      //   window.location.href = "/organization";
+      // } else if (result.user.role === "researcher" || result.user.role === "contributor") {
+      //   window.location.href = "/researcher";
+      // } else {
+      //   window.location.href = "/dashboard";
+      // }
       // router.push("/dashboard");
+      window.location.href = "/dashboard";
 
     } else {
       setError(result.error);

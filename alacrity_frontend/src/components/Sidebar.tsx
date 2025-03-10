@@ -3,8 +3,9 @@
 import React, {  useEffect, useState } from "react";
 import NavItems from "./NavItems";
 import { fetchUserData } from "@/libs/auth";
+import type { UserRole } from "@/types/types";
 
-type UserRole = "organization_admin" | "researcher"| "contributor" | null;
+
 
 type SidebarProps = {
   isOpen: boolean;
@@ -43,6 +44,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         <button onClick={toggleSidebar}></button>
       </div>
       <nav className="flex flex-col space-y-4">
+      
         {isLoading ? (
           <div>Loading...</div>
         ) : (

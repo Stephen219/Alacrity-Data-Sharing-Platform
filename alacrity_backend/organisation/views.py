@@ -18,6 +18,7 @@ from django.core.mail import send_mail
 from .serializer import OrganizationRegisterSerializer
 from django.db import transaction
 
+
 def generate_username(first_name: str, last_name: str) -> str:
     """
     Generates a unique username based on the first name and last name.

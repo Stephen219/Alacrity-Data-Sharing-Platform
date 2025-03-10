@@ -1,3 +1,22 @@
+/**
+ * @fileoverview Activate Account Page Component
+ * 
+ * This file contains the React component for the Activate Account page.
+ * It handles the activation of a user's account by verifying the token
+ * and allowing the user to set a new password. The component interacts
+ * with the backend to validate the token and update the user's password.
+ * 
+ * The component performs the following tasks:
+ * - Extracts the activation token from the URL query parameters.
+ * - Verifies the token by making a GET request to the backend.
+ * - Displays appropriate messages based on the token verification result.
+ * - Provides a form for the user to set a new password.
+ * - Submits the new password to the backend for account activation.
+ * - Displays loading indicators and error messages during the process.
+ * 
+ * @package @alacrity/organisation
+ * 
+ */
 "use client"
 
 import type React from "react"

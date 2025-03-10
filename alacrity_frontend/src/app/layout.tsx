@@ -36,6 +36,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import Layout from "@/components/Layout"; // Your custom Layout
+import QueryProvider from "@/components/QueryProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -57,7 +58,9 @@ export default function RootLayout({
           inter.className
         )}
       >
+        <QueryProvider>
         <Layout>{children}</Layout>
+        </QueryProvider>
       </body>
     </html>
   );

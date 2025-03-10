@@ -11,9 +11,11 @@ from rest_framework.decorators import permission_classes
 from users.decorators import role_required
 from .models import AnalysisSubmission
 
+from datasets.models import Dataset
+
+
 class SaveSubmissionView(APIView):
     permission_classes = [IsAuthenticated]
-    
     @role_required(['contributor'])
     def post(self, request):
         """
@@ -23,6 +25,7 @@ class SaveSubmissionView(APIView):
             data = request.data
             researcher = request.user
             submission_id = data.get("id")
+            dataset_id = data.get("dataset_id")
 
             if submission_id:
                 submission = get_object_or_404(AnalysisSubmission, id=submission_id, researcher=researcher)
@@ -35,13 +38,16 @@ class SaveSubmissionView(APIView):
             submission.summary = data.get("summary", submission.summary)
             submission.status = data.get("status", submission.status)
 
+            if dataset_id:
+                dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
+                submission.dataset = dataset
+            elif submission.status == "published" and not submission.dataset:
+                raise ValidationError("A dataset must be linked before publishing.")
+
             if len(submission.title.split()) > 15:
                 raise ValidationError("Title cannot exceed 15 words.")
-
             if len(submission.summary.split()) > 250:
                 raise ValidationError("Summary cannot exceed 250 words.")
-
-
             if "image" in request.FILES:
                 submission.image = request.FILES["image"]
 
@@ -54,13 +60,15 @@ class SaveSubmissionView(APIView):
                 "message": "Submission saved successfully!",
                 "id": submission.id,
                 "status": submission.status,
-                "image": request.build_absolute_uri(submission.image.url) if submission.image else None
+                "image": request.build_absolute_uri(submission.image.url) if submission.image else None,
+                "dataset_id": submission.dataset.dataset_id if submission.dataset else None
             }, status=200)
 
         except ValidationError as e:
             return Response({"error": str(e)}, status=400)
         except Exception as e:
             return Response({"error": str(e)}, status=400)
+
 
 
 class AnalysisSubmissionsView(APIView):
@@ -113,9 +121,6 @@ class DraftSubmissionsView(APIView):
 
         return Response(drafts.values())
 
-
-
-
 class ViewSubmissionsView(APIView):
     permission_classes = [AllowAny]
 
@@ -123,30 +128,42 @@ class ViewSubmissionsView(APIView):
         """
         Retrieve all publicly available research (published submissions only).
         Excludes soft-deleted submissions.
+        Uses caching for faster response times.
         """
-        recent_submissions = AnalysisSubmission.objects.filter(
-            status="published", deleted_at__isnull=True
-        ).order_by('-submitted_at')[:10]
+        cache_key = "all_submissions"
+        cached_data = cache.get(cache_key)
 
-        popular_submissions = AnalysisSubmission.objects.filter(
-            status="published", deleted_at__isnull=True
-        ).annotate(bookmark_count=Count('bookmarked_by')).order_by('-bookmark_count', '-submitted_at')[:10]
+        if cached_data:
+            return Response(cached_data)
 
-        def serialize_submission(submission):
-            return {
-                "id": submission.id,
-                "title": submission.title,
-                "description": submission.description,
-                "raw_results": submission.raw_results,
-                "summary": submission.summary,
-                "submitted_at": submission.submitted_at,
-                "image": request.build_absolute_uri(submission.image.url) if submission.image else None
-            }
+        # Fetches only necessary fields now n uses values() for faster query
+        recent_submissions = list(
+            AnalysisSubmission.objects.filter(
+                status="published", deleted_at__isnull=True
+            )
+            .only("id", "title", "summary", "submitted_at", "image")
+            .order_by('-submitted_at')[:10]
+            .values()
+        )
 
-        return Response({
-            "recent_submissions": [serialize_submission(sub) for sub in recent_submissions],
-            "popular_submissions": [serialize_submission(sub) for sub in popular_submissions]
-        })
+        popular_submissions = list(
+            AnalysisSubmission.objects.filter(
+                status="published", deleted_at__isnull=True
+            )
+            .annotate(bookmark_count=Count("bookmarked_by"))
+            .only("id", "title", "summary", "submitted_at", "image")
+            .order_by('-bookmark_count', '-submitted_at')[:10]
+            .values()
+        )
+
+        response_data = {
+            "recent_submissions": recent_submissions,
+            "popular_submissions": popular_submissions
+        }
+
+        cache.set(cache_key, response_data, timeout=60) 
+        return Response(response_data)
+
 
 
 class EditSubmissionView(APIView):
@@ -164,7 +181,7 @@ class EditSubmissionView(APIView):
             # Update fields
             submission.title = data.get("title", submission.title)
             submission.description = data.get("description", submission.description)
-            submission.raw_results = data.get("rawResults", submission.raw_results)
+            submission.raw_results = data.get("raw_results", submission.raw_results)
             submission.summary = data.get("summary", submission.summary)
             submission.status = data.get("status", submission.status)
 
@@ -316,4 +333,109 @@ class DeleteDraftView(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=400)
+        
+
+class GetDraftView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @role_required(['contributor'])
+    def get(self, request, submission_id):
+        """
+        Retrieve a single draft submission by ID for editing.
+        """
+        researcher = request.user
+        draft = get_object_or_404(
+            AnalysisSubmission, 
+            id=submission_id, 
+            researcher=researcher, 
+            status="draft", 
+            deleted_at__isnull=True
+        )
+
+        return Response({
+            "id": draft.id,
+            "title": draft.title,
+            "description": draft.description,
+            "raw_results": draft.raw_results,
+            "summary": draft.summary,
+            "status": draft.status,
+            "submitted_at": draft.submitted_at,
+            "image": request.build_absolute_uri(draft.image.url) if draft.image else None
+        }, status=200)
+
+from django.core.cache import cache
+
+class ViewSingleSubmissionView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, submission_id):
+        """
+        Retrieve a single submission (excluding image). Uses caching for faster access.
+        """
+        cache_key = f"submission_{submission_id}"
+        cached_submission = cache.get(cache_key)
+
+        if cached_submission:
+            return Response(cached_submission)
+
+        submission = get_object_or_404(
+            AnalysisSubmission.objects.only(
+                "id", "title", "description", "raw_results", "summary", "submitted_at"
+            ),
+            id=submission_id, status="published", deleted_at__isnull=True
+        )
+
+        response_data = {
+            "id": submission.id,
+            "title": submission.title,
+            "description": submission.description,
+            "raw_results": submission.raw_results,
+            "summary": submission.summary,
+            "submitted_at": submission.submitted_at
+        }
+
+        cache.set(cache_key, response_data, timeout=60)
+        return Response(response_data)
+
+    
+from django.core.cache import cache
+
+class ViewSingleBookmarkedSubmissionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, submission_id):
+        """
+        Retrieve a single bookmarked submission for the logged-in user.
+        Uses caching for faster responses.
+        """
+        user = request.user
+        cache_key = f"bookmarked_submission_{user.id}_{submission_id}"
+        cached_submission = cache.get(cache_key)
+
+        if cached_submission:
+            return Response(cached_submission)
+
+        submission = get_object_or_404(
+            AnalysisSubmission.objects.only(
+                "id", "title", "description", "raw_results", "summary", "submitted_at"
+            ),
+            id=submission_id, status="published", deleted_at__isnull=True
+        )
+
+        if not submission.bookmarked_by.filter(id=user.id).exists():
+            return Response({"error": "Submission is not bookmarked by the user"}, status=403)
+
+        response_data = {
+            "id": submission.id,
+            "title": submission.title,
+            "description": submission.description,
+            "raw_results": submission.raw_results,
+            "summary": submission.summary,
+            "submitted_at": submission.submitted_at
+        }
+
+        cache.set(cache_key, response_data, timeout=60)
+        return Response(response_data)
+
+
 

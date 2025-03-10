@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import (
     DeleteDraftView,
+    GetDraftView,
     SaveSubmissionView,
     AnalysisSubmissionsView,
     DraftSubmissionsView,
@@ -9,6 +10,8 @@ from .views import (
     RestoreSubmissionView,
     GetRecentlyDeletedView,
     PermanentlyDeleteSubmissionView,
+    ViewSingleBookmarkedSubmissionView,
+    ViewSingleSubmissionView,
     ViewSubmissionsView,
     ToggleBookmarkView,
     UserBookmarksView,
@@ -27,4 +30,8 @@ urlpatterns = [
     path("bookmark/<int:submission_id>/", ToggleBookmarkView.as_view(), name="toggle-bookmark"),
     path("bookmarks/", UserBookmarksView.as_view(), name="get-user-bookmarks"),
     path("drafts/delete/<int:submission_id>/", DeleteDraftView.as_view(), name="soft_delete_draft"),
+    path("drafts/<int:submission_id>/", GetDraftView.as_view(), name="get_single_draft"),
+    path("submissions/<int:submission_id>/", ViewSingleSubmissionView.as_view(), name="view_submission"),
+    path("bookmarks/<int:submission_id>/", ViewSingleBookmarkedSubmissionView.as_view(), name="view_bookmarked_submission"),
+
 ]

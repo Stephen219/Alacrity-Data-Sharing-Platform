@@ -4,6 +4,8 @@ import { fetchWithAuth } from "@/libs/auth";
 import { useEffect, useState } from "react";
 import Published from "@/components/Published";
 import { Button } from "@/components/ui/button";
+import { Bookmark } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface Bookmark {
   id: number;
@@ -17,6 +19,7 @@ const BookmarkList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const router = useRouter();
 
   useEffect(() => {
     const fetchBookmarks = async () => {
@@ -64,12 +67,22 @@ const BookmarkList = () => {
       sortOrder={sortOrder}
       setSortOrder={setSortOrder}
       renderButtons={(id) => (
-        <Button
+        <>
+        <div className="flex flex-col items-center gap-36">
+        <button
           onClick={() => handleUnbookmark(id)}
-          className="hover:bg-orange-400 transition"
+          aria-label="Unbookmark"
         >
-          Unbookmark
-        </Button>
+          <Bookmark size={24} className="fill-alacrityred text-alacrityred hover:fill-white hover:text-gray-400" />
+        </button>
+
+<Button 
+onClick={() => router.push(`/researcher/bookmarks/view/${id}`)}
+className="hover:bg-orange-400 transition">
+Read
+</Button>
+</div>
+</>
       )}
     />
   );
