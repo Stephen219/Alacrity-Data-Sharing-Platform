@@ -139,12 +139,25 @@ class CreateDatasetView(APIView):
             tags = request.POST.get('tags')
             print("Tags:", tags)
             description = request.POST.get('description')
+            price = request.POST.get('price')
+
             if not title or len(title) > 100:
                 logger.error("Invalid title")
                 return Response({"error": "Invalid title"}, status=400)
             if not description or len(description) < 10 or len(description) > 100000:
                 logger.error("Invalid description")
                 return Response({"error": "Invalid description"}, status=400)
+            
+            # Default price to 0.00 if not provided
+            if price is None or price == "":
+                price = 0.00
+            else:
+                try:
+                    price = float(price)  # Ensure price is a valid number
+                    if price < 0:
+                        return Response({"error": "Price cannot be negative"}, status=400)
+                except ValueError:
+                    return Response({"error": "Invalid price format"}, status=400)
 
             dataset_id = generate_id()
             print("Dataset ID:", dataset_id)
@@ -163,7 +176,8 @@ class CreateDatasetView(APIView):
                 link=file_url,
                 description=description,
                 encryption_key=key.decode(),
-                schema=schema
+                schema=schema,
+                price=price,
             )
             dataset.save()
 
@@ -199,7 +213,8 @@ def get_datasets(request):
             'description': dataset.description,
             'uploader': f"{dataset.uploaderid.first_name} {dataset.uploaderid.last_name}",
             'created_at': dataset.created_at,
-            'updated_at': dataset.updated_at
+            'updated_at': dataset.updated_at,
+            'price': dataset.price,
         })
     return Response(data, status=200)
 

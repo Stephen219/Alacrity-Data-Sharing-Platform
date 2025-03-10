@@ -22,6 +22,7 @@ interface Dataset {
   size?: string;
   entries?: number;
   imageUrl?: string;
+  price: number;
 }
 
 const ITEMS_PER_PAGE = 6;
@@ -58,6 +59,7 @@ const DatasetsPage: React.FC = () => {
                 .map((tag: string) => tag.trim()) // Trim whitespace
                 .filter((tag: string) => tag.trim() !== "") // Remove empty or whitespace-only tags
             : item.tags || [],
+            price: item.price || 0,
         }));
   
         setDatasets(mappedDatasets);
@@ -322,6 +324,7 @@ const DatasetsPage: React.FC = () => {
               className="block" 
             >
               <DatasetCard
+                dataset_id={dataset.dataset_id}
                 title={dataset.title}
                 description={dataset.description}
                 organization={dataset.organization_name}
@@ -333,6 +336,7 @@ const DatasetsPage: React.FC = () => {
                 size={dataset.size || "N/A"}
                 viewMode={viewMode}
                 darkMode={isDarkMode}
+                price={dataset.price}
               />
             </Link>
           ))}

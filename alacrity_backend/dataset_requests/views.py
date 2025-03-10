@@ -2,15 +2,15 @@ from django.shortcuts import render
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from payments.models import DatasetPurchase
 from users.decorators import role_required
 from .models import DatasetRequest
 from datasets.models import Dataset
 from users.models import User
 from rest_framework.decorators import api_view
+from django.shortcuts import get_object_or_404
 from .serializer import DatasetRequestSerializer
-
 from .models import DatasetRequest
-
 
 # this is a view that will be used when the user makes a request to the server
 
@@ -82,3 +82,43 @@ class ViewAllDatasetRequests(APIView):
                  },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+class ViewDatasetAccess(APIView):
+    """
+    Handles dataset access verification for researchers.
+    
+    - Ensures that the dataset exists.
+    - Checks if the researcher has an approved request for the dataset.
+    - If the dataset is paid, verifies that payment has been completed.
+    - Grants access by returning the dataset link if all conditions are met.
+    """
+
+    @role_required('researcher')  # Ensures only researchers can access this endpoint
+    def get(self, request, dataset_id):
+        """
+        Retrieves dataset access link for an approved researcher.
+        
+        - Ensures the dataset exists.
+        - Checks if the researcher's request has been approved.
+        - If the dataset requires payment, verifies that it has been purchased.
+        - Returns the dataset link if access is granted.
+        """
+        dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
+        researcher = request.user  # The authenticated researcher requesting access
+
+        # Check if the dataset request is approved
+        dataset_request = DatasetRequest.objects.filter(
+            dataset_id=dataset, researcher_id=researcher, request_status='approved'
+        ).first()
+
+        if not dataset_request:
+            return Response({'error': 'You must have an approved request to access this dataset.'}, status=status.HTTP_403_FORBIDDEN)
+
+        # If the dataset is paid, verify payment completion
+        if dataset.price > 0:
+            purchase = DatasetPurchase.objects.filter(dataset=dataset, buyer=researcher).exists()
+            if not purchase:
+                return Response({'error': 'Payment required before access'}, status=status.HTTP_403_FORBIDDEN)
+
+        # Access granted, return dataset link - needs to be modified 
+        return Response({'dataset_link': dataset.link}, status=status.HTTP_200_OK)

@@ -20,6 +20,15 @@ class DatasetSerializer(serializers.ModelSerializer):
             'description',
             'tags',
             'created_at',
-            'updated_at'
+            'updated_at',
+            'price',
         ]
+
+    def validate_price(self, value):
+        """Ensure price is always a valid non-negative number"""
+        if value is None:
+            return 0.00  # Default to Free (0.00)
+        if value < 0:
+            raise serializers.ValidationError("Price cannot be negative.")
+        return value
 
