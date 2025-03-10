@@ -54,7 +54,7 @@ class DatasetRequestSerializer(serializers.ModelSerializer):
         """
         researcher = obj.researcher_id
         if isinstance(researcher, User):
-            return researcher.description  # Assuming this is a field in the User model
+            return researcher.bio  # Assuming this is a field in the User model
         return "No description currently available"
 
     def get_dataset_title(self, obj):
