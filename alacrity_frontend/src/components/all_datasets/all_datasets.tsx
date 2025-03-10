@@ -316,11 +316,17 @@ const DatasetsPage: React.FC = () => {
           className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"}`}
         >
           {paginatedDatasets.map((dataset) => (
+            // <Link
+            //   key={dataset.dataset_id}
+            //   href={`/researcher/publicationForm?id=${dataset.dataset_id}`} 
+            //   className="block" 
+            // >
             <Link
               key={dataset.dataset_id}
-              href={`/researcher/publicationForm?id=${dataset.dataset_id}`} 
+              href={`/datasets/description?id=${dataset.dataset_id}`} 
               className="block" 
             >
+
               <DatasetCard
                 title={dataset.title}
                 description={dataset.description}
