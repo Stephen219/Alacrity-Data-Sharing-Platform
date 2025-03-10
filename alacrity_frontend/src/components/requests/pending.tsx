@@ -6,7 +6,7 @@ import { BACKEND_URL } from "../../config";
 import { fetchWithAuth } from "@/libs/auth";
 
 interface RequestData {
-  id: number;  // Ensure id is present
+  id: number;
   dataset_title: string;
   researcher_name: string;
   researcher_role: string;
@@ -29,10 +29,14 @@ export default function PendingRequest() {
         if (!response.ok) {
           throw new Error(`Failed to fetch: ${response.statusText}`);
         }
-        const data = await response.json();
+        const data: RequestData[] = await response.json();
         setRequests(data);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("An unknown error occurred");
+        }
       } finally {
         setLoading(false);
       }
@@ -63,7 +67,7 @@ export default function PendingRequest() {
                   <tr key={request.id} className="border border-gray-300">
                     <td
                       className="border border-gray-300 px-4 py-2 text-blue-600 cursor-pointer hover:underline"
-                      onClick={() => router.push(`/requests/approval/${request.id}`)}  //
+                      onClick={() => router.push(`/requests/approval/${request.id}`)}
                     >
                       {request.researcher_name}
                     </td>

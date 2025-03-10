@@ -7,6 +7,7 @@ import { fetchWithAuth } from "@/libs/auth";
 import { BACKEND_URL } from "@/config";
 import Link from "next/link";
 
+// TODO make sure this page shows the analyze options only if the pending request is approved
 type Dataset = {
   dataset_id: string;
   title: string;
@@ -30,7 +31,7 @@ const DatasetsPage = () => {
   useEffect(() => {
     const fetchDatasets = async () => {
       try {
-        const response = await fetchWithAuth(`${BACKEND_URL}/datasets/`);
+        const response = await fetchWithAuth(`${BACKEND_URL}/requests/analyze`);
         if (!response.ok) throw new Error("Failed to fetch datasets");
         const data = await response.json();
         setDatasets(data.datasets); 

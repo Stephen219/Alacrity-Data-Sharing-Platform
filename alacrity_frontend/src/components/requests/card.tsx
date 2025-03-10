@@ -12,8 +12,8 @@ interface RequestDetails {
   researcher_field: string;
   researcher_description: string;
   message: string;
-    dataset_title: string;
-    dataset_description: string;
+  dataset_title: string;
+  dataset_description: string;
   created_at: string;
 }
 
@@ -31,24 +31,26 @@ export default function ApproveRequest({ requestId }: ApproveRequestProps) {
     const fetchRequestDetails = async () => {
       try {
         if (!requestId) {
-          console.error("No request ID provided");
           setError("No request ID provided");
           setLoading(false);
           return;
         }
 
         const endpoint = `${BACKEND_URL}/requests/acceptreject/${requestId}/`;
-        console.log("Calling API endpoint:", endpoint);
 
         const response = await fetchWithAuth(endpoint);
         if (!response.ok) {
           throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
         }
 
-        const data = await response.json();
+        const data: RequestDetails = await response.json();
         setRequest(data);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("An unknown error occurred");
+        }
       } finally {
         setLoading(false);
       }
@@ -79,8 +81,12 @@ export default function ApproveRequest({ requestId }: ApproveRequestProps) {
       }
 
       router.push("/requests/pending");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An unknown error occurred");
+      }
     }
   };
 
@@ -120,11 +126,11 @@ export default function ApproveRequest({ requestId }: ApproveRequestProps) {
                 <strong>Message:</strong> {request.message}
               </p>
               <p>
-                <strong>Dataset<title></title>:</strong> {request.dataset_title}
-                </p>
-                <p>
+                <strong>Dataset Title:</strong> {request.dataset_title}
+              </p>
+              <p>
                 <strong>Dataset description:</strong> {request.dataset_description}
-                </p>
+              </p>
             </div>
 
             <div className="mt-6 flex justify-end space-x-4">
