@@ -18,6 +18,14 @@ pyarrow
 python-dotenv
 
 
+matplotlib
+
+# for payment
+paypalrestsdk
+
+
+
+
 # storage for files
 django-storages
 boto3
