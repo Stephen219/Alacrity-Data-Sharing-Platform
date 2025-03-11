@@ -274,6 +274,7 @@ def all_datasets_view(request):
     """
     datasets = Dataset.objects.select_related('contributor_id__organization').all()
     serializer = DatasetSerializer(datasets, many=True)
+    print(serializer.data)
     return Response({"datasets": serializer.data}, status=status.HTTP_200_OK)
 
 # gets the dataset by its dataset_id and returns the serialized data this will be used im the description phase
