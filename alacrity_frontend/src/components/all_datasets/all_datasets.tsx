@@ -325,9 +325,10 @@ const DatasetsPage: React.FC = () => {
             // >
             <Link
               key={dataset.dataset_id}
-              href={`/datasets/description?id=${dataset.dataset_id}`}
-              className="block"
+              href={`/datasets/description?id=${dataset.dataset_id}`} 
+              className="block" 
             >
+
               <DatasetCard
                 dataset_id={dataset.dataset_id}
                 title={dataset.title}
