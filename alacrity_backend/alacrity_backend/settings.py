@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'storages',
     'users',
     'research',
+    'payments',
 
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
@@ -338,4 +339,10 @@ if DEBUG:
     mimetypes.add_type("application/javascript", ".js", True)
 
 
-
+#paypal integration
+load_dotenv()
+PAYPAL_CLIENT_ID = os.getenv("PAYPAL_CLIENT_ID", "").strip()
+PAYPAL_SECRET = os.getenv("PAYPAL_SECRET", "").strip()
+PAYPAL_MODE = os.getenv("PAYPAL_MODE", "sandbox")  # Default to sandbox
+PAYPAL_RETURN_URL = os.getenv("PAYPAL_RETURN_URL")
+PAYPAL_CANCEL_URL = os.getenv("PAYPAL_CANCEL_URL")

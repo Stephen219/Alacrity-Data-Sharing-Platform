@@ -30,6 +30,7 @@ const DatasetForm = () => {
   const [visible, setVisible] = useState({ error: false, message: false })
   const [progress, setProgress] = useState({ error: 100, message: 100 })
   const [showOverlay, setShowOverlay] = useState(false)
+  const [price, setPrice] = useState("");
 
   useEffect(() => {
     if (serverError || serverMessage) {
@@ -95,6 +96,7 @@ const DatasetForm = () => {
     formData.append("description", description)
     formData.append("category", category)
     formData.append("tags", tags.join(","))
+    formData.append("price", price);
     formData.append("fileUrl","")
     if (file) formData.append("file", file)
     try {
@@ -127,6 +129,7 @@ const DatasetForm = () => {
       setCategory("")
       setTags([])
       setFile(null)
+      setPrice("");
       setAgreedToTerms(false)
       setErrors({})
     } catch (error) {
@@ -424,6 +427,23 @@ const DatasetForm = () => {
             </div>
           </div>
           {errors.agreedToTerms && <p className="text-red-500 text-xs">{errors.agreedToTerms}</p>}
+
+              {/* Price Input */}
+    <div className="space-y-2 relative">
+        <label htmlFor="price" className="flex items-center text-sm font-medium text-gray-700">
+            Dataset Price (£) <span className="text-red-500 ml-1">*</span>
+        </label>
+        <input
+            type="number"
+            id="price"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            min="0"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#FF6B00] focus:border-[#FF6B00]"
+            placeholder="Enter price (£) or leave as 0 for free datasets"
+        />
+        {errors.price && <p className="text-red-500 text-xs">{errors.price}</p>}
+    </div>
 
           <button
             type="submit"

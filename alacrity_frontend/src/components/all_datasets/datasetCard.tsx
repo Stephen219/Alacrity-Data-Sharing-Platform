@@ -2,8 +2,12 @@
 
 import React from "react";
 import { Building2, Database, HardDrive } from "lucide-react";
+import { BACKEND_URL } from "@/config";
+import { fetchWithAuth } from "@/libs/auth";
+import { Button } from "../ui/button";
 
 interface DatasetCardProps {
+  dataset_id: string;
   title: string;
   description: string;
   organization: string;
@@ -15,6 +19,7 @@ interface DatasetCardProps {
   size: string;
   viewMode: "grid" | "list";
   darkMode: boolean;
+  price: number;
 }
 
 export const DatasetCard: React.FC<DatasetCardProps> = ({
@@ -29,9 +34,38 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
   size,
   viewMode,
   darkMode,
+  price,
+  dataset_id,
 }) => {
   const isListView = viewMode === "list";
   const truncatedDescription = description.length > 200 ? description.substring(0, 200) + "..." : description;
+
+  //this may need to be modified but for now it returns paypal checkout 
+  const handlePurchase = async () => {
+    try {
+      const response = await fetchWithAuth(`${BACKEND_URL}/payments/paypal/payment/${dataset_id}/`, { 
+        method: "POST",
+      });
+  
+      if (!response.ok) {
+        throw new Error("Failed to initiate PayPal payment");
+      }
+  
+      const data = await response.json();
+  
+      if (data.approval_url) {
+        console.log("Redirecting to PayPal:", data.approval_url);
+        window.location.href = data.approval_url;
+      } else {
+        console.error("ERROR: No approval URL received");
+        alert("Error: Unable to process payment.");
+      }
+    } catch (error) {
+      console.error("Payment error:", error);
+      alert("Failed to initiate payment. Please try again.");
+    }
+  };
+  
 
   return (
     <div
@@ -126,6 +160,20 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
               </span>
             ))}
         </div>
+
+        {/* Displays Price */}
+          <div className="mt-2 font-bold text-orange-500 flex justify-end">
+          {price > 0 ? `£${price}` : "Free"}
+        </div>
+
+        {/* TODO: modify when access control implemented, 
+        Shows purchase button, should be shown after permission to purchase granted */}
+        {price > 0 && (
+          <Button className="mt-2 hover:bg-orange-400 transition"
+          onClick={handlePurchase}>
+            Purchase Dataset
+          </Button>
+        )}
       </div>
     </div>
   );

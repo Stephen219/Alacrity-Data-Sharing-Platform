@@ -16,7 +16,7 @@ from datasets.models import Dataset
 
 class SaveSubmissionView(APIView):
     permission_classes = [IsAuthenticated]
-    @role_required(['contributor'])
+    @role_required(['contributor', 'organization_admin'])
     def post(self, request):
         """
         Allows researchers to save drafts or submit final research.
@@ -169,6 +169,7 @@ class ViewSubmissionsView(APIView):
 class EditSubmissionView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @role_required(['contributor'])
     def put(self, request, submission_id):
         """
         Allows researchers to edit their drafts or publish them.
@@ -202,6 +203,7 @@ class EditSubmissionView(APIView):
 class DeleteSubmissionView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @role_required(['contributor'])
     def delete(self, request, submission_id):
         """
         Soft deletes a draft or submission by setting 'deleted_at'.
@@ -243,6 +245,7 @@ class ToggleBookmarkView(APIView):
 class UserBookmarksView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @role_required(['contributor', 'organization_admin'])
     def get(self, request):
         """
         Retrieve all bookmarked submissions of the logged-in user.
@@ -271,6 +274,7 @@ class RestoreSubmissionView(APIView):
 class PermanentlyDeleteSubmissionView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @role_required(['contributor'])
     def delete(self, request, submission_id):
         """
         Permanently deletes a soft-deleted submission.
@@ -293,6 +297,7 @@ class PermanentlyDeleteSubmissionView(APIView):
 class GetRecentlyDeletedView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @role_required(['contributor'])
     def get(self, request):
         """
         Retrieve all submissions in 'Recently Deleted' with sorting.
@@ -315,6 +320,7 @@ class GetRecentlyDeletedView(APIView):
 class DeleteDraftView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @role_required(['contributor'])
     def delete(self, request, submission_id):
         """
         Soft deletes a draft by setting 'deleted_at'.
