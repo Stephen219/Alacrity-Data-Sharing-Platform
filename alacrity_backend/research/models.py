@@ -38,6 +38,9 @@ class AnalysisSubmission(models.Model):
     deleted_at = models.DateTimeField(null=True, blank=True)
     image = models.ImageField(upload_to="submission_images/", null=True, blank=True)
 
+    # For private/public status
+    is_private = models.BooleanField(default=False)
+
     def is_deleted(self):
         return self.deleted_at is not None
 

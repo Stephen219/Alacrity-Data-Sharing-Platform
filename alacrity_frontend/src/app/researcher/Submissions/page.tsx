@@ -11,9 +11,10 @@ interface Analysis {
   title: string;
   summary: string;
   status?: string;
+  is_private: boolean;
 }
 
-const AnalysisList = () => {
+const AnalysisList: React.FC = () => {
   const [submissions, setSubmissions] = useState<Analysis[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,19 +71,64 @@ const AnalysisList = () => {
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error}</p>;
 
+  const handleTogglePrivacy = async (id: number, currentStatus: boolean) => {
+    const confirmToggle = window.confirm(
+      `Are you sure you want to make this submission ${currentStatus ? "public" : "private"}?`
+    );
+    if (!confirmToggle) return;
+  
+    try {
+      const response = await fetchWithAuth(
+        `http://127.0.0.1:8000/research/submissions/toggle-privacy/${id}/`,
+        {
+          method: "PATCH",
+        }
+      );
+  
+      const data = await response.json();
+  
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to toggle privacy.");
+      }
+  
+      setSubmissions((prev) =>
+        prev.map((submission) =>
+          submission.id === id ? { ...submission, is_private: !currentStatus } : submission
+        )
+      );
+    } catch (error) {
+      console.error("Error toggling privacy:", error);
+    }
+  };
+  
+
   return (
     <Published
-      header = "My research"
+      header="My Research"
       submissions={submissions}
       sortOrder={sortOrder}
       setSortOrder={setSortOrder}
-      renderButtons={(id) => (
-        <SubmissionButtons
-          onDelete={() => handleSoftDelete(id)}
-          onSecondaryAction={() => handleRead(id)}
-          secondaryActionLabel="Read"
-        />
-      )}
+      renderButtons={(id) => {
+        const submission = submissions.find((s) => s.id === id);
+
+        return (
+          <div className="flex gap-2">
+            <SubmissionButtons
+              onDelete={() => handleSoftDelete(id)}
+              onSecondaryAction={() => handleRead(id)}
+              secondaryActionLabel="Read"
+            />
+
+            {/* Separate Privacy Toggle Button */}
+            <button
+              onClick={() => handleTogglePrivacy(id, submission?.is_private ?? false)}
+              className="px-3 py-1 bg-gray-500 text-white rounded-md hover:bg-gray-700"
+            >
+              {submission?.is_private ? "Make Public" : "Make Private"}
+            </button>
+          </div>
+        );
+      }}
     />
   );
 };
