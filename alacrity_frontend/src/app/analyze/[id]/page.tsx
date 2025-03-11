@@ -22,7 +22,7 @@ type Result =
   | { operation: "anova"; f_stat: number; p_value: number; image?: string; accuracy_note?: string; columns: [string, string] }
   | { operation: "pearson" | "spearman"; correlation: number; p_value: number; image: string; slope: number; intercept: number; columns: [string, string] };
 
-// Constants
+
 const calculationTypes = [
   { value: "descriptive", label: "Descriptive Statistics" },
   { value: "inferential", label: "Inferential Statistics" },
@@ -104,7 +104,6 @@ const reducer = (state: typeof initialState, action: { type: string; value: stri
   }
 };
 
-// Debounce Hook
 const useDebounce = (value: string, delay: number) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
   useEffect(() => {

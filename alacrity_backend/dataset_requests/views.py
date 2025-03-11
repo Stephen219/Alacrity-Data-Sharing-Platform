@@ -126,8 +126,4 @@ class AcceptRejectRequest(APIView):
             return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
 
         dataset_request.save()
-<<<<<<< HEAD
         return Response({'message': f'Request {action}ed successfully'}, status=status.HTTP_200_OK)
-=======
-        return Response({'message': f'Request {action}ed successfully'}, status=status.HTTP_200_OK)
->>>>>>> 5524f00ebdb33e0df9be2315414415e6435c2b7f
