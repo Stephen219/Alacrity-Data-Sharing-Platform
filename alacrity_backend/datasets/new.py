@@ -397,6 +397,7 @@ def all_datasets_view(request):
     """List all datasets."""
     datasets = Dataset.objects.select_related('contributor_id__organization').all()
     serializer = DatasetSerializer(datasets, many=True)
+    print(serializer.data)
     return Response({"datasets": serializer.data}, status=status.HTTP_200_OK)
 
 @api_view(['GET'])

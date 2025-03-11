@@ -21,7 +21,7 @@ class Make_request(APIView):
         dataset_id = request.data.get('dataset_id')
         researcher_id = request.user.id
         message = request.data.get('objective')  # Match frontend field name
-        print(researcher_id, dataset_id, message)
+       # print(researcher_id, dataset_id, message)
     
     # check if the dataset_id is provided
         if not dataset_id:
@@ -62,63 +62,68 @@ class ViewAllDatasetRequests(APIView):
     @role_required(['organization_admin', 'contributor'])
     def get(self, request):
         try:
+            request_status = request.query_params.get('request_status', 'pending')
            # get all the requests from the DatasetRequest table according to the contributor with the same organization as the requester
-            requests = DatasetRequest.objects.filter(dataset_id__contributor_id__organization=request.user.organization).select_related('dataset_id', 'researcher_id')
+            requests = DatasetRequest.objects.filter(dataset_id__contributor_id__organization=request.user.organization_id,request_status=request_status).select_related('dataset_id', 'researcher_id')
             # serialize the requests
             
             serializer = DatasetRequestSerializer(requests, many=True)
-            print(serializer.data) 
+            #print(serializer.data) 
             return Response(serializer.data, status=status.HTTP_200_OK)
             
         except Exception as e:
             import traceback
-            print(traceback.format_exc())
-            print("end o ftraceback")
-            print(e)
-            print("nfnjfnfnnfjf above")
-            return Response(
-                {
-                    'error': 'An error occurred'
-                 },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            print(traceback.format_exc())  # Print full traceback for debugging
+        return Response(
+            {
+            'error': str(e)  # Return the actual error message for debugging
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
-class ViewDatasetAccess(APIView):
-    """
-    Handles dataset access verification for researchers.
-    
-    - Ensures that the dataset exists.
-    - Checks if the researcher has an approved request for the dataset.
-    - If the dataset is paid, verifies that payment has been completed.
-    - Grants access by returning the dataset link if all conditions are met.
-    """
-
-    @role_required('researcher')  # Ensures only researchers can access this endpoint
-    def get(self, request, dataset_id):
-        """
-        Retrieves dataset access link for an approved researcher.
         
-        - Ensures the dataset exists.
-        - Checks if the researcher's request has been approved.
-        - If the dataset requires payment, verifies that it has been purchased.
-        - Returns the dataset link if access is granted.
-        """
-        dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
-        researcher = request.user  # The authenticated researcher requesting access
+# this view is used to accept / reject a request when the admin is viewing all the requests
+class AcceptRejectRequest(APIView):
+    @role_required(['organization_admin', 'contributor'])
+    def get(self, request, id):
+        try:
+            print(f"Received request for ID: {id}")  # Debugging
+            # Fetch by request_id (not id) since request_id is the primary key
+            dataset_request = get_object_or_404(
+                DatasetRequest, 
+                request_id=id,  # Changed from `id` to `request_id`
+                dataset_id__contributor_id__organization=request.user.organization
+            )
+            #print(dataset_request)
+            # print("I am here")
+            # print("# debugging")
+            serializer = DatasetRequestSerializer(dataset_request)
+            print(serializer.data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except DatasetRequest.DoesNotExist:
+            return Response({'error': 'Request does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # Check if the dataset request is approved
-        dataset_request = DatasetRequest.objects.filter(
-            dataset_id=dataset, researcher_id=researcher, request_status='approved'
-        ).first()
+    # The POST part remains unchanged
+    def post(self, request,id):
+        request_id = id
+        action = request.data.get('action')
+        print(request_id, action)
 
-        if not dataset_request:
-            return Response({'error': 'You must have an approved request to access this dataset.'}, status=status.HTTP_403_FORBIDDEN)
+        if not request_id:
+            return Response({'error': 'Please provide a request_id'}, status=status.HTTP_400_BAD_REQUEST)
+        if not action:
+            return Response({'error': 'Please provide an action'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # If the dataset is paid, verify payment completion
-        if dataset.price > 0:
-            purchase = DatasetPurchase.objects.filter(dataset=dataset, buyer=researcher).exists()
-            if not purchase:
-                return Response({'error': 'Payment required before access'}, status=status.HTTP_403_FORBIDDEN)
+        dataset_request = get_object_or_404(DatasetRequest, request_id=request_id)
 
-        # Access granted, return dataset link - needs to be modified 
-        return Response({'dataset_link': dataset.link}, status=status.HTTP_200_OK)
+        if action == 'accept':
+            dataset_request.request_status = 'approved'
+        elif action == 'reject':
+            dataset_request.request_status = 'denied'
+        else:
+            return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
+
+        dataset_request.save()
+        return Response({'message': f'Request {action}ed successfully'}, status=status.HTTP_200_OK)

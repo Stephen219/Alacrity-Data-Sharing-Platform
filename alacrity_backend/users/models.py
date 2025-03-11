@@ -30,6 +30,7 @@ class User(AbstractUser):
     date_joined = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     bio = models.TextField(blank=True, null=True, default='No bio provided')
     date_of_birth = models.DateField(blank=True, null=True)
+    bio = models.TextField(blank=True, null=True)  # Corrected spelling
     
     #TODO PROFILE PIC  but as a url
     profile_picture = models.URLField(blank=True, null=True)
