@@ -9,7 +9,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useReducer, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
+import {  useParams } from "next/navigation";
 import { fetchWithAuth } from "@/libs/auth";
 import { BACKEND_URL } from "@/config";
 
@@ -17,6 +17,10 @@ type Schema = Record<string, string>;
 type Dataset = { dataset_id: string; title: string; schema: Schema; category: string; created_at: string; is_loaded?: boolean };
 type Result = 
   | { operation: "mean" | "median" | "mode"; value: number | string; column: string }
+  | { operation: "t_test"; t_stat: number; p_value: number; image?: string; accuracy_note?: string; columns: [string, string] }
+  | { operation: "chi_square"; chi2: number; p_value: number; degrees_of_freedom: number; contingency_table: Record<string, any>; image?: string; accuracy_note?: string; columns: [string, string] }
+  | { operation: "anova"; f_stat: number; p_value: number; image?: string; accuracy_note?: string; columns: [string, string] }
+  | { operation: "pearson" | "spearman"; correlation: number; p_value: number; image: string; slope: number; intercept: number; columns: [string, string] }
   | { operation: "t_test"; t_stat: number; p_value: number; image?: string; accuracy_note?: string; columns: [string, string] }
   | { operation: "chi_square"; chi2: number; p_value: number; degrees_of_freedom: number; contingency_table: Record<string, any>; image?: string; accuracy_note?: string; columns: [string, string] }
   | { operation: "anova"; f_stat: number; p_value: number; image?: string; accuracy_note?: string; columns: [string, string] }
@@ -114,7 +118,6 @@ const useDebounce = (value: string, delay: number) => {
 };
 
 const AnalyzePage = () => {
-  const router = useRouter();
   const { id } = useParams();
   const [dataset, setDataset] = useState<Dataset | null>(null);
   const [activeTab, setActiveTab] = useState<"analysis" | "results" | "notes">("analysis");
@@ -425,9 +428,9 @@ const AnalyzePage = () => {
                   {presentationOptions[result.operation]?.numbers && (
                     <div className="p-4 bg-gray-50 rounded-md border border-gray-200">
                       <h3 className="text-sm font-semibold text-gray-700 mb-2">Numerical Results</h3>
-                      {["mean", "median", "mode"].includes(result.operation) && result.column && (
+                      {["mean", "median", "mode"].includes(result.operation) && "column" in result && (
                         <p className="text-sm text-gray-600">
-                          {result.operation.charAt(0).toUpperCase() + result.operation.slice(1)} of {result.column}: {result.value}
+                          {result.operation.charAt(0).toUpperCase() + result.operation.slice(1)} of {result.column}: {"value" in result ? result.value : "N/A"}
                         </p>
                       )}
                       {result.operation === "t_test" && (
@@ -446,23 +449,23 @@ const AnalyzePage = () => {
                           ANOVA: F-stat = {result.f_stat.toFixed(3)}, p-value = {result.p_value.toExponential(3)}
                         </p>
                       )}
-                      {["pearson", "spearman"].includes(result.operation) && (
+                      {["pearson", "spearman"].includes(result.operation) && "correlation" in result && (
                         <p className="text-sm text-gray-600">
                           {result.operation.charAt(0).toUpperCase() + result.operation.slice(1)} Correlation: 
                           r = {result.correlation.toFixed(3)}, p-value = {result.p_value.toExponential(3)}
                         </p>
                       )}
-                      {result.accuracy_note && (
+                      {"accuracy_note" in result && result.accuracy_note && (
                         <p className="text-sm text-yellow-600 mt-2">{result.accuracy_note}</p>
                       )}
                     </div>
                   )}
 
-                  {presentationOptions[result.operation]?.graph && result.image && (
+                  {presentationOptions[result.operation]?.graph && 'image' in result && result.image && (
                     <div>
                       <h3 className="text-sm font-semibold text-gray-700 mb-2">Visualization</h3>
                       <img src={result.image} alt={`${result.operation} Plot`} className="max-w-full h-auto rounded-md border border-gray-200" />
-                      {["pearson", "spearman"].includes(result.operation) && result.slope !== undefined && result.intercept !== undefined && (
+                      {["pearson", "spearman"].includes(result.operation) && 'slope' in result && 'intercept' in result && (
                         <p className="mt-2 text-sm text-gray-600">
                           Regression: Slope = {result.slope.toFixed(3)}, Intercept = {result.intercept.toFixed(3)}
                         </p>
@@ -470,7 +473,7 @@ const AnalyzePage = () => {
                     </div>
                   )}
 
-                  {presentationOptions[result.operation]?.table && result.contingency_table && (
+                  {presentationOptions[result.operation]?.table && 'contingency_table' in result && (
                     <div>
                       <h3 className="text-sm font-semibold text-gray-700 mb-2">Table</h3>
                       <table className="w-full text-sm border-collapse border border-gray-300">
@@ -483,11 +486,11 @@ const AnalyzePage = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {Object.entries(result.contingency_table).map(([row, values], index) => (
+                          {result.contingency_table && Object.entries(result.contingency_table).map(([row, values], index) => (
                             <tr key={row} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                               <td className="border border-gray-300 p-2">{row}</td>
                               {Object.values(values).map((value, i) => (
-                                <td key={i} className="border border-gray-300 p-2">{value}</td>
+                                <td key={i} className="border border-gray-300 p-2">{String(value)}</td>
                               ))}
                             </tr>
                           ))}

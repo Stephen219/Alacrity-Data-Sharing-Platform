@@ -5,7 +5,8 @@ import { fetchWithAuth, fetchUserData } from '@/libs/auth';
 
 
 jest.mock('next/link', () => {
-  return ({ children, href }) => <a href={href}>{children}</a>;
+  // eslint-disable-next-line react/display-name
+  return ({ children, href }: { children: React.ReactNode; href: string }) => <a href={href}>{children}</a>;
 });
 
 
