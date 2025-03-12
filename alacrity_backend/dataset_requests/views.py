@@ -2,6 +2,7 @@ from django.shortcuts import render
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from payments.models import DatasetPurchase
 from users.decorators import role_required
 from .models import DatasetRequest
 from datasets.models import Dataset
@@ -9,9 +10,7 @@ from users.models import User
 from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
 from .serializer import DatasetRequestSerializer
-
 from .models import DatasetRequest
-
 
 # this is a view that will be used when the user makes a request to the server
 

@@ -233,11 +233,10 @@ export default function BookmarksPage() {
                 isBookmarked={true}
                 // unboomark logic
                 onToggleBookmark={(e) => {
-                  e.preventDefault(); 
+                  e.preventDefault();
                   e.stopPropagation();
                   handleUnbookmark(bookmark.dataset_id);
-                }}
-              />
+                } } dataset_id={""} price={0}              />
             </Link>
           ))}
         </div>
