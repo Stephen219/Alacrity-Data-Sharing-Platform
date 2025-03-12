@@ -9,4 +9,4 @@ class ResearchSubmissionSerializer(serializers.ModelSerializer):
 class PublishedResearchSerializer(serializers.ModelSerializer):
     class Meta:
         model = PublishedResearch
-        fields = ['research_submission', 'visibility', 'tags', 'likes_count', 'bookmarks_count']
+        fields = ['research_submission', 'visibility', 'tags', 'likes_count', 'bookmarks_count', 'is_private']

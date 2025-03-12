@@ -94,6 +94,9 @@ class AnalysisSubmissionsView(APIView):
 
         return Response(submissions.values())
     
+class TogglePrivacyView(APIView):
+    permission_classes = [IsAuthenticated]
+
     @role_required(['contributor', 'researcher'])
     def patch(self, request, submission_id):
         """
@@ -108,10 +111,13 @@ class AnalysisSubmissionsView(APIView):
             submission.is_private = not submission.is_private
             submission.save()
 
+            cache.delete("all_submissions") 
+
             return Response({"message": "Privacy status updated", "is_private": submission.is_private}, status=200)
 
         except Exception as e:
             return Response({"error": str(e)}, status=400)
+
 
 
 class DraftSubmissionsView(APIView):
@@ -140,6 +146,8 @@ class DraftSubmissionsView(APIView):
 
         return Response(drafts.values())
 
+from django.core.cache import cache
+
 class ViewSubmissionsView(APIView):
     permission_classes = [AllowAny]
 
@@ -150,17 +158,16 @@ class ViewSubmissionsView(APIView):
         Uses caching for faster response times.
         """
         cache_key = "all_submissions"
-        cached_data = cache.get(cache_key)
+        
+        # ❌ Remove cached data before fetching fresh data
+        cache.delete(cache_key)  
 
-        if cached_data:
-            return Response(cached_data)
-
-        # Fetches only necessary fields now n uses values() for faster query
+        # Fetch only necessary fields
         recent_submissions = list(
             AnalysisSubmission.objects.filter(
                 status="published", deleted_at__isnull=True, is_private=False
             )
-            .only("id", "title", "summary", "submitted_at", "image")
+            .only("id", "title", "summary", "submitted_at", "image", "is_private")
             .order_by('-submitted_at')[:10]
             .values()
         )
@@ -170,7 +177,7 @@ class ViewSubmissionsView(APIView):
                 status="published", deleted_at__isnull=True, is_private=False
             )
             .annotate(bookmark_count=Count("bookmarked_by"))
-            .only("id", "title", "summary", "submitted_at", "image")
+            .only("id", "title", "summary", "submitted_at", "image", "is_private")
             .order_by('-bookmark_count', '-submitted_at')[:10]
             .values()
         )
@@ -180,8 +187,11 @@ class ViewSubmissionsView(APIView):
             "popular_submissions": popular_submissions
         }
 
+        # ✅ Cache new data for faster future requests
         cache.set(cache_key, response_data, timeout=60) 
+
         return Response(response_data)
+
 
 
 

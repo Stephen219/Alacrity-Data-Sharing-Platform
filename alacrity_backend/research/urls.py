@@ -10,6 +10,7 @@ from .views import (
     RestoreSubmissionView,
     GetRecentlyDeletedView,
     PermanentlyDeleteSubmissionView,
+    TogglePrivacyView,
     ViewSingleBookmarkedSubmissionView,
     ViewSingleSubmissionView,
     ViewSubmissionsView,
@@ -33,7 +34,7 @@ urlpatterns = [
     path("drafts/<int:submission_id>/", GetDraftView.as_view(), name="get_single_draft"),
     path("submissions/<int:submission_id>/", ViewSingleSubmissionView.as_view(), name="view_submission"),
     path("bookmarks/<int:submission_id>/", ViewSingleBookmarkedSubmissionView.as_view(), name="view_bookmarked_submission"),
-    path("submissions/toggle-privacy/<int:submission_id>/", AnalysisSubmissionsView.as_view(), name="toggle-privacy"),
+    path("submissions/toggle-privacy/<int:submission_id>/", TogglePrivacyView.as_view(), name="toggle_privacy"),
     
 
 ]
