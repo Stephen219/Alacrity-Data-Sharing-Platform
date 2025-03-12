@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Building2, Database, HardDrive } from "lucide-react";
+import { Bookmark, Building2, Database, HardDrive } from "lucide-react";
 
 interface DatasetCardProps {
   title: string;
@@ -15,6 +15,9 @@ interface DatasetCardProps {
   size: string;
   viewMode: "grid" | "list";
   darkMode: boolean;
+  extraActions?: () => void;
+  isBookmarked: boolean;
+  onToggleBookmark: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 export const DatasetCard: React.FC<DatasetCardProps> = ({
@@ -29,6 +32,8 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
   size,
   viewMode,
   darkMode,
+  isBookmarked,
+  onToggleBookmark,
 }) => {
   const isListView = viewMode === "list";
   const truncatedDescription = description.length > 200 ? description.substring(0, 200) + "..." : description;
@@ -126,7 +131,27 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
               </span>
             ))}
         </div>
-      </div>
+{/* Bookmark Button */}
+<button
+  onClick={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onToggleBookmark(e);
+  }}
+  aria-label="Bookmark Dataset"
+>
+  <Bookmark
+    size={24}
+    className={`mt-4 transition-colors duration-300 ${
+      isBookmarked ? "fill-alacrityred text-alacrityred" : "text-gray-400"
+    }`}
+    fill={isBookmarked ? "#FF6B2C" : "none"} 
+  />
+</button>
+
+
+
+    </div>
     </div>
   );
 };

@@ -39,6 +39,7 @@ const DatasetsPage: React.FC = () => {
   const [filterCategories, setFilterCategories] = useState<
     { id: string; label: string; options: string[] }[]
   >([]);
+  const [bookmarkedDatasets, setBookmarkedDatasets] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchDatasets = async () => {
@@ -83,6 +84,71 @@ const DatasetsPage: React.FC = () => {
   
     fetchDatasets();
   }, []);
+
+
+/**
+ * Fetches the datasets bookmarked by the researcher/contributor.
+ * previously bookmarked datasets are displayed properly.
+ */
+const fetchBookmarkedDatasets = async () => {
+  try {
+      console.log("Fetching bookmarked datasets...");
+      const response = await fetchWithAuth(`${BACKEND_URL}/datasets/bookmarks/`);
+
+      if (!response.ok) {
+          throw new Error(`Failed to fetch bookmarked datasets: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Bookmarked datasets response:", data);
+
+      /**
+       * Extract only the dataset IDs from the response.
+       * This allows us to efficiently check which datasets are bookmarked
+       * without needing to store all dataset details.
+       */
+      setBookmarkedDatasets(data.map((ds: { dataset_id: string }) => ds.dataset_id));
+
+  } catch (err) {
+      console.error("Error fetching bookmarks:", err);
+      setError("Error fetching bookmarks.");
+  }
+};
+
+
+//Ensures that the user's bookmarks are loaded when they visit the page.
+
+useEffect(() => {
+  const loadAll = async () => {
+      await fetchBookmarkedDatasets(); 
+  };
+  loadAll();
+}, []);
+
+
+//Toggles the bookmark status of a dataset for rseaercher/contributor.
+
+  const toggleDatasetBookmark = async (datasetId: string) => {
+    try {
+      
+      setBookmarkedDatasets((prev) =>
+        prev.includes(datasetId)
+          ? prev.filter((id) => id !== datasetId)
+          : [...prev, datasetId]
+      );
+
+      const response = await fetchWithAuth(
+        `${BACKEND_URL}/datasets/${datasetId}/bookmark/`,
+        {
+          method: "POST",
+        }
+      );
+      if (!response.ok) throw new Error("Failed to toggle bookmark");
+    } catch (error) {
+      console.error("Dataset bookmark error:", error);
+    }
+  };
+  
 
   useEffect(() => {
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -331,6 +397,9 @@ const DatasetsPage: React.FC = () => {
                 category={dataset.category}
                 entries={dataset.entries || 0}
                 size={dataset.size || "N/A"}
+                extraActions={() => toggleDatasetBookmark(dataset.dataset_id)}
+                isBookmarked={bookmarkedDatasets.includes(dataset.dataset_id)}
+                onToggleBookmark={() => toggleDatasetBookmark(dataset.dataset_id)}
                 viewMode={viewMode}
                 darkMode={isDarkMode}
               />
