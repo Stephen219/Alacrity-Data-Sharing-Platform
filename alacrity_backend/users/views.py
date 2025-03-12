@@ -195,8 +195,13 @@ class UserView(APIView):
         current_user = request.user  # Authenticated user
 
         # Fetch researches for this user
-        researchers = list(AnalysisSubmission.objects.filter(researcher=user)
-                          .values('id', 'title', 'description', 'status', 'submitted_at'))
+        researchers = list(AnalysisSubmission.objects.filter(
+    researcher=user,
+    status="published",  #  Only published research
+    is_private=False,    #  Exclude private research
+    deleted_at__isnull=True  # Ensure it's not soft-deleted
+).values('id', 'title', 'description', 'status', 'submitted_at'))
+
         bookmarked_researches = []  
 
        

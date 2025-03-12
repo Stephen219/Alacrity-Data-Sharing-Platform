@@ -12,6 +12,7 @@ interface SubmissionDetailsProps {
   submissionId: string;
   fetchUrl: string;
   backUrl: string;
+  onBack?: () => void;
 }
 
 const fetchSubmission = async (fetchUrl: string) => {
@@ -20,7 +21,7 @@ const fetchSubmission = async (fetchUrl: string) => {
   return response.json();
 };
 
-const SubmissionDetails = ({ submissionId, fetchUrl, backUrl }: SubmissionDetailsProps) => {
+const SubmissionDetails = ({ submissionId, fetchUrl}: SubmissionDetailsProps) => {
   const router = useRouter();
 
   const { data: submission, isLoading, error } = useQuery({
@@ -93,7 +94,7 @@ const SubmissionDetails = ({ submissionId, fetchUrl, backUrl }: SubmissionDetail
           {/* Back Button */}
           <div className="mt-8">
             <Button
-              onClick={() => router.push(backUrl)}
+              onClick={() => router.back()}
               className="hover:bg-orange-400 transition duration-200"
             >
               Back

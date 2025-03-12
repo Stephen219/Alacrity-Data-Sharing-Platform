@@ -19,11 +19,13 @@
  */
 "use client"
 
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { fetchUserData, fetchWithAuth } from "@/libs/auth";
 import { BACKEND_URL } from "@/config";
 import { withAccessControl } from "@/components/auth_guard/AccessControl";
+import parse from "html-react-parser";
 
 
 type Profile = {
@@ -49,6 +51,7 @@ type AnalysisSubmission = {
   description: string;
   status: string;
   submitted_at: string;
+  is_private: boolean;
 };
 
 type BookmarkedResearch = {
@@ -119,6 +122,13 @@ function ResearcherProfilePage() {
   console.log("Is Owner:", isOwner);
   console.log("Current User:", currentUser);
   console.log("User Data:", params.id);
+
+  const router = useRouter();
+
+const handleRead = (id: string) => {
+  router.push(`/researcher/Submissions/view/${id}`);
+};
+
 
 
   useEffect(() => {
@@ -573,22 +583,29 @@ function ResearcherProfilePage() {
           {activeTab === "research" && (
             <div className="space-y-6">
               {userData.researches.length > 0 ? (
-                userData.researches.map((research) => (
+              userData.researches
+                .filter((research) => 
+                  research.status === "published" && !research.is_private
+                )
+                .map((research) => (
                   <div key={research.id} className="bg-white rounded-lg shadow-md overflow-hidden">
                     <div className="p-6">
                       <div className="flex items-start justify-between">
                         <div>
-                          <h3 className="text-xl font-semibold mb-1">{research.title}</h3>
+                          <h3 className="text-xl font-semibold mb-1">{parse(research.title)}</h3>
                           <p className="text-sm text-gray-500 mb-4">
                             Status: <span className="text-[#F47521]">{research.status}</span> | Submitted on {formatDate(research.submitted_at)}
                           </p>
                         </div>
                       </div>
-                      <p className="mb-4">{truncateDescription(research.description)}</p>
+                      <div className="mb-4">{parse(research.description)}</div>
                       <div className="flex justify-end">
-                        <button className="px-4 py-2 text-sm bg-[#F47521] text-white rounded-md hover:bg-[#E06010] transition-colors">
-                          View Full Paper
-                        </button>
+                      <button
+            onClick={() => handleRead(research.id)}  // ✅ Fix: `research` is now inside the `.map()`
+            className="px-4 py-2 text-sm bg-[#F47521] text-white rounded-md hover:bg-[#E06010] transition-colors"
+          >
+            View Full Paper
+          </button>
                       </div>
                     </div>
                   </div>

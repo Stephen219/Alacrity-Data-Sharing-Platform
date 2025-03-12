@@ -16,7 +16,7 @@ from datasets.models import Dataset
 
 class SaveSubmissionView(APIView):
     permission_classes = [IsAuthenticated]
-    @role_required(['contributor'])
+    @role_required(['contributor', 'organization_admin', 'researcher'])
     def post(self, request):
         """
         Allows researchers to save drafts or submit final research.
@@ -74,10 +74,10 @@ class SaveSubmissionView(APIView):
 class AnalysisSubmissionsView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @role_required(['contributor'])
+    @role_required(['contributor', 'researcher'])
     def get(self, request):
         """
-        Retrieve only published submissions for the logged-in researcher.
+        Retrieve published and private submissions for the logged-in researcher.
         Excludes soft-deleted submissions.
         """
         researcher = request.user
@@ -93,12 +93,37 @@ class AnalysisSubmissionsView(APIView):
             ).order_by('-submitted_at')
 
         return Response(submissions.values())
+    
+class TogglePrivacyView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @role_required(['contributor', 'researcher'])
+    def patch(self, request, submission_id):
+        """
+        Toggle the privacy status of a published submission.
+        """
+        try:
+            researcher = request.user
+            submission = get_object_or_404(
+                AnalysisSubmission, id=submission_id, researcher=researcher, status="published"
+            )
+
+            submission.is_private = not submission.is_private
+            submission.save()
+
+            cache.delete("all_submissions") 
+
+            return Response({"message": "Privacy status updated", "is_private": submission.is_private}, status=200)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
+
 
 
 class DraftSubmissionsView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @role_required(['contributor'])
+    @role_required(['contributor', 'researcher'])
     def get(self, request):
         """
         Retrieve only draft submissions for the logged-in researcher.
@@ -121,37 +146,38 @@ class DraftSubmissionsView(APIView):
 
         return Response(drafts.values())
 
+from django.core.cache import cache
+
 class ViewSubmissionsView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
         """
         Retrieve all publicly available research (published submissions only).
-        Excludes soft-deleted submissions.
+        Excludes soft-deleted and private submissions.
         Uses caching for faster response times.
         """
         cache_key = "all_submissions"
-        cached_data = cache.get(cache_key)
+        
+        # ❌ Remove cached data before fetching fresh data
+        cache.delete(cache_key)  
 
-        if cached_data:
-            return Response(cached_data)
-
-        # Fetches only necessary fields now n uses values() for faster query
+        # Fetch only necessary fields
         recent_submissions = list(
             AnalysisSubmission.objects.filter(
-                status="published", deleted_at__isnull=True
+                status="published", deleted_at__isnull=True, is_private=False
             )
-            .only("id", "title", "summary", "submitted_at", "image")
+            .only("id", "title", "summary", "submitted_at", "image", "is_private")
             .order_by('-submitted_at')[:10]
             .values()
         )
 
         popular_submissions = list(
             AnalysisSubmission.objects.filter(
-                status="published", deleted_at__isnull=True
+                status="published", deleted_at__isnull=True, is_private=False
             )
             .annotate(bookmark_count=Count("bookmarked_by"))
-            .only("id", "title", "summary", "submitted_at", "image")
+            .only("id", "title", "summary", "submitted_at", "image", "is_private")
             .order_by('-bookmark_count', '-submitted_at')[:10]
             .values()
         )
@@ -161,14 +187,18 @@ class ViewSubmissionsView(APIView):
             "popular_submissions": popular_submissions
         }
 
+        # ✅ Cache new data for faster future requests
         cache.set(cache_key, response_data, timeout=60) 
+
         return Response(response_data)
+
 
 
 
 class EditSubmissionView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @role_required(['contributor', 'researcher'])
     def put(self, request, submission_id):
         """
         Allows researchers to edit their drafts or publish them.
@@ -202,6 +232,7 @@ class EditSubmissionView(APIView):
 class DeleteSubmissionView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @role_required(['contributor', 'researcher'])
     def delete(self, request, submission_id):
         """
         Soft deletes a draft or submission by setting 'deleted_at'.
@@ -224,7 +255,7 @@ class DeleteSubmissionView(APIView):
 class ToggleBookmarkView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @role_required(['contributor', 'organization_admin'])
+    @role_required(['contributor', 'organization_admin', 'researcher'])
     def post(self, request, submission_id):
         """
         Allows authenticated users to bookmark/unbookmark an analysis submission.
@@ -243,6 +274,7 @@ class ToggleBookmarkView(APIView):
 class UserBookmarksView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @role_required(['contributor', 'organization_admin', 'researcher'])
     def get(self, request):
         """
         Retrieve all bookmarked submissions of the logged-in user.
@@ -271,6 +303,7 @@ class RestoreSubmissionView(APIView):
 class PermanentlyDeleteSubmissionView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @role_required(['contributor', 'researcher'])
     def delete(self, request, submission_id):
         """
         Permanently deletes a soft-deleted submission.
@@ -293,6 +326,7 @@ class PermanentlyDeleteSubmissionView(APIView):
 class GetRecentlyDeletedView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @role_required(['contributor', 'researcher'])
     def get(self, request):
         """
         Retrieve all submissions in 'Recently Deleted' with sorting.
@@ -315,6 +349,7 @@ class GetRecentlyDeletedView(APIView):
 class DeleteDraftView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @role_required(['contributor', 'researcher'])
     def delete(self, request, submission_id):
         """
         Soft deletes a draft by setting 'deleted_at'.
@@ -338,7 +373,7 @@ class DeleteDraftView(APIView):
 class GetDraftView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @role_required(['contributor'])
+    @role_required(['contributor', 'researcher'])
     def get(self, request, submission_id):
         """
         Retrieve a single draft submission by ID for editing.

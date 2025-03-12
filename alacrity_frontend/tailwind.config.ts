@@ -9,15 +9,14 @@ export default {
   ],
   theme: {
   	extend: {
-		maxWidth: {
-			//'4xl': '90rem', // Custom size for 4xl (~1440px)
-			'8xl': '120rem', // Custom size for 8xl (~1920px)
-		  },
+  		maxWidth: {
+  			'8xl': '120rem'
+  		},
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
-			alacrityred: '#d63741',
-			alacrityyellow: '#f5bd1f',
+  			alacrityred: '#d63741',
+  			alacrityyellow: '#f5bd1f',
   			card: {
   				DEFAULT: 'hsl(var(--card))',
   				foreground: 'hsl(var(--card-foreground))'
