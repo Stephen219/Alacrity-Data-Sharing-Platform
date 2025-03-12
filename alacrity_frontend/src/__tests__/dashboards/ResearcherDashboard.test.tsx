@@ -1,4 +1,8 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+
+
+
+
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import ResearcherDashboard from '@/components/dashboards/researcher';
 import { fetchWithAuth } from '@/libs/auth';
 
@@ -29,12 +33,13 @@ describe('ResearcherDashboard', () => {
     ],
     datasets_having_access: [
       {
-        id: '1',
+        dataset_id: '1',
         title: 'Mock Dataset',
         description: 'A mock dataset for testing',
         tags: ['Mock', 'Test'],
-        organization: 'Mock Org',
-        created_at: '2025-03-01T12:00:00Z',
+        contributor_id__organization__name: 'Mock Org',
+        requests__updated_at: '2025-03-01T12:00:00Z',
+        category: 'Test',
       },
     ],
   };
@@ -53,110 +58,134 @@ describe('ResearcherDashboard', () => {
 
   test('renders dashboard structure after fetch', async () => {
     render(<ResearcherDashboard />);
-
     await waitFor(() => {
       expect(screen.getByText('Researcher Dashboard')).toBeInTheDocument();
       expect(screen.getByText('Dataset Feed')).toBeInTheDocument();
       expect(screen.getByPlaceholderText('Search datasets...')).toBeInTheDocument();
-    }, { timeout: 2000 });
+    });
   });
 
-  test('renders MetricCard titles without checking dynamic values', async () => {
+  test('renders MetricCard values correctly', async () => {
     render(<ResearcherDashboard />);
-
     await waitFor(() => {
-      const metricTitles = [
-        'Datasets Accessed',
-        'Requests Approved',
-        'Pending Reviews',
-        'Research Submitted',
-      ];
-      metricTitles.forEach((title) => {
-        expect(screen.getByText(title)).toBeInTheDocument();
-      });
-    }, { timeout: 2000 });
+      expect(screen.getByText('5')).toBeInTheDocument();
+      expect(screen.getByText('4')).toBeInTheDocument();
+      expect(screen.getByText('2')).toBeInTheDocument();
+      expect(screen.getByText('3')).toBeInTheDocument();
+    });
   });
 
   test('displays error state when fetch fails', async () => {
     (fetchWithAuth as jest.Mock).mockRejectedValue(new Error('Fetch failed'));
     render(<ResearcherDashboard />);
-
     await waitFor(() => {
       expect(screen.getByText('Error loading dashboard data. Please try again.')).toBeInTheDocument();
-    }, { timeout: 2000 });
+    });
   });
 
-  test('renders dataset feed with sample data when no API data is available', async () => {
+  test('renders empty state when no API data is available', async () => {
     (fetchWithAuth as jest.Mock).mockResolvedValue({
-      json: jest.fn().mockResolvedValue({ datasets_having_access: [] }), // Empty API data
+      json: jest.fn().mockResolvedValue({
+        ...mockDashboardData,
+        datasets_having_access: [],
+      }),
     });
     render(<ResearcherDashboard />);
-
     await waitFor(() => {
-      expect(screen.getByText('Healthcare Demographics 2024')).toBeInTheDocument();
-      expect(screen.getByText('Climate Change Patterns')).toBeInTheDocument();
-      expect(screen.getAllByText('Analyze').length).toBeGreaterThan(0);
-    }, { timeout: 2000 });
+      expect(screen.getByText('No datasets found')).toBeInTheDocument();
+    });
   });
 
   test('filters datasets based on search query', async () => {
     render(<ResearcherDashboard />);
-
     await waitFor(() => {
       expect(screen.getByText('Mock Dataset')).toBeInTheDocument();
-    }, { timeout: 2000 });
+    });
 
     const searchInput = screen.getByPlaceholderText('Search datasets...');
     fireEvent.change(searchInput, { target: { value: 'mock' } });
-
     await waitFor(() => {
       expect(screen.getByText('Mock Dataset')).toBeInTheDocument();
-      expect(screen.queryByText('No datasets match your search criteria')).not.toBeInTheDocument();
+      expect(screen.queryByText('No datasets found')).not.toBeInTheDocument();
     });
 
     fireEvent.change(searchInput, { target: { value: 'nonexistent' } });
     await waitFor(() => {
-      expect(screen.getByText('No datasets match your search criteria')).toBeInTheDocument();
+      expect(screen.queryByText('Mock Dataset')).not.toBeInTheDocument();
+      expect(screen.getByText('No datasets found')).toBeInTheDocument();
     });
   });
 
-  test('renders tabs and switches content', async () => {
+  test('renders and switches between tabs', async () => {
     render(<ResearcherDashboard />);
-
     await waitFor(() => {
       expect(screen.getByText('Publication Tracker')).toBeInTheDocument();
       expect(screen.getByText('Dataset Recommendations')).toBeInTheDocument();
       expect(screen.getByText('Research Timeline')).toBeInTheDocument();
-    }, { timeout: 2000 });
-
-    // Default tab: Publication Tracker
-    expect(screen.getByText('Track and manage your research publications')).toBeInTheDocument();
-    expect(screen.getByText('New Publication')).toBeInTheDocument();
-
-    // Switch to Dataset Recommendations
-    fireEvent.click(screen.getByText('Dataset Recommendations'));
-    await waitFor(() => {
-      expect(screen.getByText('Based on your research interests and recent activity, we recommend these datasets:')).toBeInTheDocument();
-      expect(screen.getByText('Global Climate Data 2023')).toBeInTheDocument();
     });
 
-    // Switch to Research Timeline
-    fireEvent.click(screen.getByText('Research Timeline'));
+    expect(screen.getByText('Track and manage your research publications')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Dataset Recommendations'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Based on your research interests and recent activity, we recommend these datasets:')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Research Timeline'));
+    });
     await waitFor(() => {
       expect(screen.getByText('Upcoming research milestones and deadlines:')).toBeInTheDocument();
-      expect(screen.getByText('Research Proposal Deadline')).toBeInTheDocument();
     });
   });
 
-  test('renders publication table headers', async () => {
+  test('renders dataset card with correct data', async () => {
     render(<ResearcherDashboard />);
-
     await waitFor(() => {
-      expect(screen.getByText('Title')).toBeInTheDocument();
-      expect(screen.getByText('Journal/Conference')).toBeInTheDocument();
-      expect(screen.getByText('Status')).toBeInTheDocument();
-      expect(screen.getByText('Metrics')).toBeInTheDocument();
-      expect(screen.getByText('Actions')).toBeInTheDocument();
-    }, { timeout: 2000 });
+      expect(screen.getByText('Mock Dataset')).toBeInTheDocument();
+      expect(screen.getByText('A mock dataset for testing')).toBeInTheDocument();
+      expect(screen.getByText('Mock Org')).toBeInTheDocument();
+      expect(screen.getByText('Mock')).toBeInTheDocument();
+      expect(screen.getByText('Test')).toBeInTheDocument();
+      expect(screen.getByText('Mar 1, 2025')).toBeInTheDocument();
+      expect(screen.getByText('Analyze')).toBeInTheDocument();
+    });
+  });
+
+
+  test('renders recommendations tab content', async () => {
+    render(<ResearcherDashboard />);
+    await waitFor(() => {
+      expect(screen.getByText('Dataset Recommendations')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Dataset Recommendations'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Global Climate Data 2023')).toBeInTheDocument();
+      expect(screen.getByText('Environmental Science')).toBeInTheDocument();
+      expect(screen.getByText('98% match')).toBeInTheDocument();
+      expect(screen.getByText('342 researchers')).toBeInTheDocument();
+    });
+  });
+
+  test('renders timeline tab content', async () => {
+    render(<ResearcherDashboard />);
+    await waitFor(() => {
+      expect(screen.getByText('Research Timeline')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Research Timeline'));
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Research Proposal Deadline')).toBeInTheDocument();
+      expect(screen.getByText('Urban Data Analysis')).toBeInTheDocument();
+      expect(screen.getByText('Due: May 15, 2023')).toBeInTheDocument();
+      expect(screen.getByText('12d')).toBeInTheDocument();
+    });
   });
 });
