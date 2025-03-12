@@ -142,8 +142,8 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
 >
   <Bookmark
     size={24}
-    className={`transition-colors duration-300 ${
-      isBookmarked ? "fill-orange-500 text-orange-500" : "text-gray-400 hover:text-orange-500"
+    className={`mt-4 transition-colors duration-300 ${
+      isBookmarked ? "fill-alacrityred text-alacrityred" : "text-gray-400"
     }`}
     fill={isBookmarked ? "#FF6B2C" : "none"} 
   />
