@@ -38,7 +38,6 @@ export default function BookmarksPage() {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
@@ -80,17 +79,6 @@ export default function BookmarksPage() {
     fetchBookmarks();
   }, []);
 
-  // Dark mode
-  useEffect(() => {
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    setIsDarkMode(prefersDark);
-    document.documentElement.classList.toggle("dark", prefersDark);
-  }, []);
-
-  const toggleDarkMode = () => {
-    setIsDarkMode((prev) => !prev);
-    document.documentElement.classList.toggle("dark");
-  };
 
   // Unbookmark function
   const handleUnbookmark = async (datasetId: string) => {
@@ -146,7 +134,7 @@ export default function BookmarksPage() {
 
   return (
     <div
-      className={`min-h-screen ${isDarkMode ? "bg-gray-900" : "bg-gray-50"} transition-colors duration-200`}
+      className="min-h-screen bg-gray-50 transition-colors duration-200"
     >
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
@@ -155,17 +143,10 @@ export default function BookmarksPage() {
             <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-orange-500 to-orange-300 text-transparent bg-clip-text">
               My Bookmarked Datasets
             </h1>
-            <p className={`${isDarkMode ? "text-gray-300" : "text-gray-600"} text-lg`}>
+            <p className="text-gray-600 text-lg">
               Quickly access (and unbookmark) your saved datasets
             </p>
           </div>
-          <button
-            onClick={toggleDarkMode}
-            className="p-2 rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-colors"
-            aria-label="Toggle dark mode"
-          >
-            {isDarkMode ? "🌞" : "🌙"}
-          </button>
         </header>
 
         {/* Search bar */}
@@ -248,7 +229,7 @@ export default function BookmarksPage() {
                 entries={bookmark.entries ?? 0}
                 size={bookmark.size ?? "N/A"}
                 viewMode={viewMode}
-                darkMode={isDarkMode}
+                //darkMode={isDarkMode}
                 isBookmarked={true}
                 // unboomark logic
                 onToggleBookmark={(e) => {

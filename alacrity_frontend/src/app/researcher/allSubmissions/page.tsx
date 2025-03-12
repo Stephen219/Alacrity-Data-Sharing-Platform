@@ -167,9 +167,9 @@ const PublicSubmissions = () => {
 
 
   return (
-    <section className="py-12 bg-white">
+    <section className="py-12 bg-gray-50 dark:bg-card">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="text-4xl font-bold text-gray-900 text-center mb-12">Public Analysis Submissions</div>
+        <div className="text-4xl font-bold text-gray-900 text-center mb-12 dark:text-gray-100">Public Analysis Submissions</div>
 
         {/* Search and Filter Controls */}
         <div className="mb-8 flex flex-col md:flex-row gap-4 justify-between">
@@ -179,10 +179,10 @@ const PublicSubmissions = () => {
               placeholder="Search submissions..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full dark:bg-gray-700 dark:text-gray-100 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
             <button className="absolute right-3 top-1/2 transform -translate-y-1/2" onClick={() => setSearchTerm("")}>
-              {searchTerm && <span className="text-gray-500 hover:text-gray-700">✕</span>}
+              {searchTerm && <span className="dark:text-gray-100 text-gray-500 hover:text-gray-700">✕</span>}
             </button>
           </div>
 
@@ -190,7 +190,7 @@ const PublicSubmissions = () => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="px-4 py-2 dark:bg-gray-700 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
               <option value="recent">Most Recent</option>
               <option value="popular">Most Popular</option>
@@ -200,7 +200,7 @@ const PublicSubmissions = () => {
             <select
               value={itemsPerPage}
               onChange={(e) => setItemsPerPage(Number(e.target.value))}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="px-4 py-2 dark:bg-gray-700 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
               <option value={3}>3 per page</option>
               <option value={6}>6 per page</option>
@@ -211,13 +211,13 @@ const PublicSubmissions = () => {
 
         {/* Results count and view toggle */}
         <div className="flex justify-between items-center mb-6">
-          <div className="text-gray-600">
+          <div className="text-gray-600 dark:text-gray-100">
             Showing {filteredSubmissions.length > 0 ? indexOfFirstItem + 1 : 0} -{" "}
             {Math.min(indexOfLastItem, filteredSubmissions.length)} of {filteredSubmissions.length} results
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-gray-600">View:</span>
+            <span className="text-gray-600 dark:text-gray-100">View:</span>
             <button
               onClick={() => setViewMode("list")}
               className={`p-2 rounded-md ${viewMode === "list" ? "bg-orange-500 text-white" : "bg-gray-200 text-gray-700"}`}
@@ -277,7 +277,7 @@ const PublicSubmissions = () => {
             currentItems.map((submission) => (
               <div
                 key={submission.id}
-                className="group border border-gray-300 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
+                className="group  border border-gray-300 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
               >
                 {viewMode === "grid" ? (
                   // Grid view layout
@@ -362,12 +362,12 @@ const PublicSubmissions = () => {
                     </div>
                     <div className="p-6 md:w-2/3 lg:w-3/4">
                       <div className="flex justify-between items-start mb-2">
-                      <span className="text-sm text-gray-400 mb-2">
+                      <span className="text-sm text-gray-400 dark:text-gray-200 mb-2">
                         {submission.submitted_at ? formatDate(submission.submitted_at) : "N/A"}
                         </span>
                       </div>
-                      <div className="text-xl text-gray-900 font-medium leading-8 mb-3">{parse(submission.title)}</div>
-                      <div className="text-gray-600 leading-6 mb-6 line-clamp-3">{parse(submission.description)}</div>
+                      <div className="text-xl text-gray-900 dark:text-gray-100 font-medium leading-8 mb-3">{parse(submission.title)}</div>
+                      <div className="text-gray-600 dark:text-gray-100 leading-6 mb-6 line-clamp-3">{parse(submission.description)}</div>
                       <div className="flex justify-between items-center">
                         {/* Bookmark Icon */}
               <button

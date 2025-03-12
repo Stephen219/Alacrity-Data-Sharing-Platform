@@ -35,8 +35,9 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import Layout from "@/components/Layout"; // Your custom Layout
+import Layout from "@/components/Layout"; 
 import QueryProvider from "@/components/QueryProvider";
+import { ThemeProvider } from "@/components/ui/theme-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -51,16 +52,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className="h-full" suppressHydrationWarning>
       <body
         className={cn(
-          "relative h-full font-sans antialiased",
+          "relative h-full font-sans antialiased bg-gray-50 dark:bg-card",
           inter.className
         )}
       >
-        <QueryProvider>
-        <Layout>{children}</Layout>
-        </QueryProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <QueryProvider>
+            <Layout>{children}</Layout>
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

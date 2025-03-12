@@ -31,7 +31,7 @@ const DatasetsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<Record<string, string[]>>({}); 
   const [currentPage, setCurrentPage] = useState(1);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  //const [isDarkMode, setIsDarkMode] = useState(false);
   const [activeFilterCategory, setActiveFilterCategory] = useState<string | null>(null);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -150,16 +150,16 @@ useEffect(() => {
   };
   
 
-  useEffect(() => {
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    setIsDarkMode(prefersDark);
-    document.documentElement.classList.toggle("dark", prefersDark);
-  }, []);
+  // useEffect(() => {
+  //   const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  //   setIsDarkMode(prefersDark);
+  //   document.documentElement.classList.toggle("dark", prefersDark);
+  // }, []);
 
-  const toggleDarkMode = () => {
-    setIsDarkMode((prev) => !prev);
-    document.documentElement.classList.toggle("dark");
-  };
+  // const toggleDarkMode = () => {
+  //   setIsDarkMode((prev) => !prev);
+  //   document.documentElement.classList.toggle("dark");
+  // };
 
   const filteredDatasets = useMemo(() => {
     return datasets.filter((dataset) => {
@@ -237,31 +237,31 @@ useEffect(() => {
   }
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? "bg-gray-900" : "bg-gray-50"} transition-colors duration-200`}>
+    <div className="min-h-screen bg-gray-50 dark:bg-card transition-colors duration-200">
       <div className="container mx-auto px-4 py-8">
         <header className="mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-orange-500 to-orange-300 text-transparent bg-clip-text">
               Explore Datasets
             </h1>
-            <p className={`text-lg ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
+            <p className={"text-lg text-gray-300 "}>
               Discover and analyze high-quality datasets from trusted organizations
             </p>
           </div>
-          <button
+          {/* <button
             onClick={toggleDarkMode}
             className="p-2 rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-colors"
             aria-label="Toggle dark mode"
           >
             {isDarkMode ? "🌞" : "🌙"}
-          </button>
+          </button> */}
         </header>
 
         <div className="mb-6">
           <input
             type="search"
             placeholder="Search datasets..."
-            className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="w-full px-4 py-2 rounded-lg border dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500 dark:focus:outline-white dark:border-white"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -275,10 +275,8 @@ useEffect(() => {
                 values.map((value) => (
                   <div
                     key={`${categoryId}-${value}`}
-                    className={`flex items-center px-3 py-1 rounded-full text-sm ${
-                      isDarkMode ? "bg-gray-700 text-white" : "bg-gray-200 text-gray-700"
-                    }`}
-                  >
+                    className="flex items-center px-3 py-1 rounded-full text-sm bg-gray-200 text-gray-700 dark:text-gray-100">
+                  
                     <span>
                       {filterCategories.find((c) => c.id === categoryId)?.label}: {value}
                     </span>
@@ -300,22 +298,21 @@ useEffect(() => {
           <div className="flex flex-wrap gap-2 mb-4">
             {filterCategories.map((category) => (
               <button
-                key={category.id}
-                onClick={() => toggleFilterCategory(category.id)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  activeFilterCategory === category.id
-                    ? "bg-orange-500 text-white"
-                    : isDarkMode
-                    ? "bg-gray-700 text-white hover:bg-gray-600"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                }`}
-              >
-                {category.label}
-              </button>
+              key={category.id}
+              onClick={() => toggleFilterCategory(category.id)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                activeFilterCategory === category.id
+                  ? "bg-orange-500 text-white"
+                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+              }`}
+            >
+              {category.label}
+            </button>
+            
             ))}
           </div>
           {activeFilterCategory && (
-            <div className={`rounded-lg p-4 ${isDarkMode ? "bg-gray-800" : "bg-white"} shadow-md`}>
+            <div className="rounded-lg p-4 bg-white shadow-md">
               <h3 className="font-semibold mb-2">
                 {filterCategories.find((c) => c.id === activeFilterCategory)?.label}
               </h3>
@@ -324,18 +321,17 @@ useEffect(() => {
                   .find((c) => c.id === activeFilterCategory)
                   ?.options.map((option) => (
                     <button
-                      key={option}
-                      onClick={() => handleFilterChange(activeFilterCategory, option)}
-                      className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                        (filters[activeFilterCategory] || []).includes(option)
-                          ? "bg-orange-500 text-white"
-                          : isDarkMode
-                          ? "bg-gray-700 text-white hover:bg-gray-600"
-                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                      }`}
-                    >
-                      {option}
-                    </button>
+  key={option}
+  onClick={() => handleFilterChange(activeFilterCategory, option)}
+  className={`px-3 py-1 rounded-full text-sm transition-colors ${
+    (filters[activeFilterCategory] || []).includes(option)
+      ? "bg-orange-500 text-white"
+      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+  }`}
+>
+  {option}
+</button>
+
                   ))}
               </div>
             </div>
@@ -401,7 +397,7 @@ useEffect(() => {
                 isBookmarked={bookmarkedDatasets.includes(dataset.dataset_id)}
                 onToggleBookmark={() => toggleDatasetBookmark(dataset.dataset_id)}
                 viewMode={viewMode}
-                darkMode={isDarkMode}
+                //darkMode={isDarkMode}
               />
             </Link>
           ))}

@@ -74,8 +74,8 @@ const ResearcherDashboard: React.FC = () => {
     
 
   return (
-    <div className="p-6 bg-gray-50">
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">Researcher Dashboard</h1>
+    <div className="p-6 bg-gray-50 dark:bg-card transition-colors duration-300-">
+      <h1 className="text-2xl font-semibold text-gray-800 mb-6 dark:text-gray-100">Researcher Dashboard</h1>
 
      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -92,13 +92,13 @@ const ResearcherDashboard: React.FC = () => {
 
       
       <div className="mb-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Dataset Feed</h2>
-        <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-          <div className="p-4 border-b border-gray-200">
+        <h2 className="text-xl font-semibold text-gray-700 mb-4 dark:text-gray-100">Dataset Feed</h2>
+        <div className="bg-white shadow-sm rounded-lg overflow-hidden dark:bg-gray-700 transition-all">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-600">
             <input
               type="text"
               placeholder="Search datasets..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B1A] focus:border-transparent"
+              className="w-full dark:bg-gray-900 dark:border-gray-600 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B1A] focus:border-transparent dark:text-gray-100"
             />
           </div>
           <div className="overflow-y-auto" style={{ maxHeight: "400px" }}>
@@ -116,33 +116,33 @@ const ResearcherDashboard: React.FC = () => {
 
       {/* Active Research Table */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Active Research</h2>
-        <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4 dark:text-gray-100">Active Research</h2>
+        <div className="bg-white shadow-sm rounded-lg overflow-hidden dark:bg-gray-700 transition-on-all">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-900">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">
                   Project
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">
                   Dataset
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">
                   Last Updated
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-gray-200 ">
               {[1, 2, 3, 4, 5].map((item) => (
-                <tr key={item} className="hover:bg-gray-50">
+                <tr key={item} className="hover:bg-gray-50 dark:bg-gray-700">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">Research Project {item}</div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Research Project {item}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500">Dataset {item}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-100">Dataset {item}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
@@ -157,7 +157,7 @@ const ResearcherDashboard: React.FC = () => {
                       {item % 3 === 0 ? "Completed" : item % 3 === 1 ? "In Progress" : "Planning"}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-100">
                     {new Date(Date.now() - item * 86400000).toLocaleDateString()}
                   </td>
                 </tr>
@@ -201,9 +201,9 @@ interface DatasetCardProps {
 }
 
 const DatasetCard: React.FC<DatasetCardProps> = ({ title, description, tags }) => (
-  <div className="p-4 border-b border-gray-200 hover:bg-gray-50">
-    <h3 className="text-lg font-medium text-gray-900 mb-1">{title}</h3>
-    <p className="text-sm text-gray-500 mb-2">{description}</p>
+  <div className="p-4 border-b border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-500 dark:text-gray-100">
+    <h3 className="text-lg font-medium text-gray-900 mb-1 dark:text-gray-100">{title}</h3>
+    <p className="text-sm text-gray-500 mb-2 dark:text-gray-100">{description}</p>
     <div className="flex flex-wrap gap-2">
       {tags.map((tag, index) => (
         <span

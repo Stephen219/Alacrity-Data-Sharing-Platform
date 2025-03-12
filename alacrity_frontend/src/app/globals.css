@@ -33,31 +33,41 @@
   }
 
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-  }
+    --background: 222 47% 11%; /* Dark Navy Blue */
+    --foreground: 210 40% 98%; /* Off-White */
+    
+    --card: 220 40% 13%; /* Slightly lighter than background */
+    --card-foreground: 210 40% 98%; /* Off-White */
+
+    --popover: 220 40% 15%; /* Subtle Popover Background */
+    --popover-foreground: 210 40% 98%; /* Off-White */
+
+    --primary: 220 100% 75%; /* Bright Blue */
+    --primary-foreground: 0 0% 0%; /* Black for contrast */
+
+    --secondary: 228 30% 20%; /* Deep Gray-Blue */
+    --secondary-foreground: 210 40% 98%; /* Off-White */
+
+    --muted: 228 15% 25%; /* Muted Grayish Blue */
+    --muted-foreground: 220 15% 65%; /* Softer Text Gray */
+
+    --accent: 260 70% 55%; /* Soft Purple */
+    --accent-foreground: 210 40% 98%; /* Off-White */
+
+    --destructive: 0 80% 50%; /* Bright Red */
+    --destructive-foreground: 0 0% 100%; /* White */
+
+    --border: 220 20% 30%; /* Subtle Gray Border */
+    --input: 220 20% 25%; /* Darker input background */
+    --ring: 220 90% 60%; /* Glowy Blue Effect */
+
+    /* Chart Colors */
+    --chart-1: 195 85% 60%; /* Bright Cyan */
+    --chart-2: 45 85% 55%; /* Vibrant Yellow */
+    --chart-3: 15 85% 50%; /* Warm Orange */
+    --chart-4: 265 75% 60%; /* Deep Purple */
+    --chart-5: 340 80% 55%; /* Hot Pink */
+}
 }
 
 

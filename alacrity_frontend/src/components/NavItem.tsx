@@ -53,7 +53,7 @@ const NavItem: React.FC<NavItemProps> = ({ handleOpen, isOpen, tools }) => {
       >
         {tools.label}
         <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          <ChevronDown className="h-4 w-4 text-muted-foreground dark:text-muted-foreground" />
         </motion.div>
       </Button>
 
@@ -67,17 +67,17 @@ const NavItem: React.FC<NavItemProps> = ({ handleOpen, isOpen, tools }) => {
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
             className={cn(
-              "w-full mt-2 bg-white rounded-lg",
+              "w-full mt-2 bg-card rounded-lg",
               isScrollable ? "max-h-[80vh] overflow-y-auto scrollbar-custom" : "overflow-visible"
             )}
           >
             <div className="grid gap-2">
               {tools.featured.map(({ name, href, imageSrc }) => (
                 <Link key={name} href={href} className="group block">
-                  <div className="relative aspect-video overflow-hidden rounded-lg border transition-all duration-300 group-hover:border-black">
+                  <div className="relative aspect-video overflow-hidden rounded-lg border transition-all duration-300 group-hover:border-foreground">
                     <Image src={imageSrc} alt={name} fill className="object-cover object-center" />
                   </div>
-                  <span className="mt-2 block text-center font-medium text-black text-xs transition-colors">
+                  <span className="mt-2 block text-center font-medium text-foreground text-xs transition-colors">
                     {name}
                   </span>
                 </Link>

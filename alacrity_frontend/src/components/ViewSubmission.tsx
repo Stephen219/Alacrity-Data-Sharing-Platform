@@ -51,7 +51,7 @@ const SubmissionDetails = ({ submissionId, fetchUrl}: SubmissionDetailsProps) =>
   return (
     <MaxWidthWrapper>
       <Suspense fallback={<div className="text-center text-lg">Rendering...</div>}>
-        <div className="bg-white border-black border shadow-lg rounded-2xl dark:bg-gray-900 p-8 max-w-4xl mx-auto mt-32">
+        <div className="bg-white border-black border shadow-lg rounded-2xl dark:bg-gray-600 p-8 max-w-4xl mx-auto mt-32">
 
           {/* Title */}
           <div className="text-4xl font-bold text-center mb-3 text-gray-900 dark:text-white">

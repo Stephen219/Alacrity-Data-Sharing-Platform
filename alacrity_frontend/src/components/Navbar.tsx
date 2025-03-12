@@ -9,6 +9,7 @@ import { User } from "@/types/types";
 
 
 import TopBarProfile from "./ui/TopbarProfile";
+import { ModeToggle } from "./ui/ModeToggle";
 
 
 
@@ -53,15 +54,17 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
   }, [pathname]);
 
   return (
-    <nav className="fixed top-0 left-0 w-full bg-white border-b border-gray-200 z-50 h-14">
+    <nav className="fixed top-0 left-0 w-full bg-white border-b border-gray-200 z-50 h-14 dark:bg-gray-900 text-gray-900 dark:text-gray-100 
+    border-gray-200 dark:border-gray-700 shadow-md transition-colors">
       <div className="px-5 py-2 flex items-center justify-between">
-        <div className="flex items-center">
+        <div className="flex items-center gap-4">
           <button className="p-2 lg:hidden" onClick={toggleSidebar}>
-            <Menu className="w-6 h-6" />
+            <Menu className="w-6 h-6 dark:text-gray-100" />
           </button>
-          <Link href="/" className="text-lg font-bold text-black ml-2">
+          <Link href="/" className="text-lg font-bold text-black ml-2 dark:text-gray-100">
             ALACRITY
           </Link>
+          <ModeToggle/>
         </div>
         <div className="flex items-center space-x-3">
           <Link href="/" className={buttonVariants({ variant: "ghost" })}>
@@ -70,9 +73,10 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
           <Link href="#" className={buttonVariants({ variant: "ghost" })}>
             About
           </Link>
+        
           {userRole ? (
-            <div className="flex items-center space-x-3">
-              <Bell className="w-5 h-5 text-primary hover:fill-primary" />
+            <div className="flex items-center space-x-3 px-4">
+              <Bell className="w-5 h-5 text-primary hover:fill-primary dark:text-primary dark:hover:fill-primary" />
                 {user && <TopBarProfile User={user} />}
             </div>
 
