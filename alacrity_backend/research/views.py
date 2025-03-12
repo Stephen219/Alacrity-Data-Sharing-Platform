@@ -146,7 +146,7 @@ class DraftSubmissionsView(APIView):
 
         return Response(drafts.values())
 
-from django.core.cache import cache
+
 
 class ViewSubmissionsView(APIView):
     permission_classes = [AllowAny]

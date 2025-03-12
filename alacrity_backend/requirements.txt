@@ -14,7 +14,7 @@ seaborn
 
 
 
-
+matplotlib
 # dotenv
 python-dotenv
 
