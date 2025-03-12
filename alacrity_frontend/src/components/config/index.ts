@@ -57,13 +57,35 @@ export const NAV_ITEMS = [
   
     // Researcher navigation
     {
-      label: "Browse Datasets",
+      label: "Research",
+      value: "browse-research",
+      roles: ["researcher"],
+      featured: [
+      {
+        name: "Explore Research",
+        href: "/researcher/allSubmissions",
+        imageSrc: "/navbar/researcher/browseDatasets.png",
+      },
+      {
+        name: "Bookmarks",
+        href: "/researcher/bookmarks",
+        imageSrc: "/navbar/researcher/browseDatasets.png",
+      },
+      ],
+    },
+    {
+      label: "Browse Datsets",
       value: "browse-datasets",
       roles: ["researcher"],
       featured: [
       {
         name: "Explore Datasets",
         href: "/datasets/all",
+        imageSrc: "/navbar/researcher/browseDatasets.png",
+      },
+      {
+        name: "Bookmarks",
+        href: "/datasets/bookmarks",
         imageSrc: "/navbar/researcher/browseDatasets.png",
       },
       ],
@@ -118,8 +140,8 @@ export const NAV_ITEMS = [
       roles: ["researcher", "organization_admin", "contributor"],
       featured: [
         {
-          name: "Edit Profile",
-          href: "#",
+          name: "My Research",
+          href: "/researcher/Submissions",
           imageSrc: "/navbar/account/editProfile.png",
         },
         {

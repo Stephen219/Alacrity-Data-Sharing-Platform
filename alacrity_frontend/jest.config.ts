@@ -14,6 +14,7 @@ const config: Config = {
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    'lucide-react': require.resolve('lucide-react'),
   },
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
@@ -60,7 +61,7 @@ const config: Config = {
 
   coverageThreshold: {
     global: {
-      branches: 34,
+      branches: 35,
       functions: 25,
       lines: 30,
       statements: 30
