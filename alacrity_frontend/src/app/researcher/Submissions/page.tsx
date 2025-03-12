@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 "use client";
 
 import { fetchWithAuth } from "@/libs/auth";

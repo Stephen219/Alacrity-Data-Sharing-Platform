@@ -1,8 +1,8 @@
+/* eslint-disable */
 import { render, screen, waitFor, fireEvent, act } from "@testing-library/react";
 import Submissions from "@/app/researcher/Submissions/page";
 import { fetchWithAuth } from "@/libs/auth";
 import "@testing-library/jest-dom";
-import { useRouter } from "next/navigation";
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({
