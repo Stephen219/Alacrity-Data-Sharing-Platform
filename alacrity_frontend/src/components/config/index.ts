@@ -71,6 +71,13 @@ export const NAV_ITEMS = [
         href: "/datasets/bookmarks",
         imageSrc: "/navbar/researcher/browseDatasets.png",
       },
+      {
+        name: "My Datasets",
+        href: "/researcher/datasetWithAccess",
+        imageSrc: "/navbar/datasets/mydatasets.png",
+      
+        
+      }
       ],
     },
     {

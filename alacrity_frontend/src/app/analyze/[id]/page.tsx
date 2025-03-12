@@ -1,10 +1,5 @@
 
 
-
-
-
-
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -12,6 +7,7 @@ import { useEffect, useState, useMemo, useReducer, useCallback } from "react";
 import {  useParams } from "next/navigation";
 import { fetchWithAuth } from "@/libs/auth";
 import { BACKEND_URL } from "@/config";
+import { Lock } from "lucide-react";
 
 type Schema = Record<string, string>;
 type Dataset = { dataset_id: string; title: string; schema: Schema; category: string; created_at: string; is_loaded?: boolean };
@@ -126,6 +122,7 @@ const AnalyzePage = () => {
   const [loading, setLoading] = useState(true);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accessDenied, setAccessDenied] = useState(false);
 
   const debouncedFilterValue = useDebounce(state.filterValue, 300);
   const debouncedNotes = useDebounce(state.notes, 500);
@@ -135,6 +132,13 @@ const AnalyzePage = () => {
       setLoading(true);
       try {
         const response = await fetchWithAuth(`${BACKEND_URL}/datasets/details/${id}/`);
+        console.log(response.status);
+
+
+        if (response.status === 403) {
+          setAccessDenied(true);
+          return;
+        }
         if (!response.ok) throw new Error("Failed to fetch dataset details");
         const data: Dataset = await response.json();
         setDataset(data);
@@ -224,6 +228,29 @@ const AnalyzePage = () => {
     if (!dataset?.schema) return [];
     return Object.entries(dataset.schema).map(([name, type]) => ({ value: name, label: `${name} (${type})` }));
   }, [dataset?.schema]);
+
+
+  if (accessDenied) 
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-white">
+        <div className="text-center p-8 rounded-lg max-w-md">
+          <div className="relative mx-auto mb-6 w-20 h-20">
+            <Lock size={90} className="absolute inset-0" color="#FF6B2C" strokeWidth={1.5} />
+          </div>
+  
+          <h1 className="text-2xl font-bold mb-3" style={{ color: "#FF6B2C" }}>
+            Oops! Limited Access
+          </h1>
+  
+          <p className="text-gray-700 text-lg mb-4">Sorry, you dont have access to this resource right now.</p>
+  
+          <div className="w-16 h-1 mx-auto my-2" style={{ backgroundColor: "#FF6B2C", opacity: 0.5 }}></div>
+  
+          <p className="text-gray-500 mt-3 text-sm">If you think this is a mistake, please contact support.</p>
+        </div>
+      </div>
+    )
+
 
   if (loading || (dataset && !dataset.is_loaded)) {
     return (

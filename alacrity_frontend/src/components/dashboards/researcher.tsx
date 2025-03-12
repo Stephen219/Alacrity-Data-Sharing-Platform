@@ -438,12 +438,11 @@ interface DatasetCardProps {
   title: string
   description: string
   tags: string[]
-  organization: string // This will receive contributor_id__organization__name
-  createdAt: string // This will receive requests__updated_at
+  organization: string 
+  createdAt: string 
 }
 
 const DatasetCard: React.FC<DatasetCardProps> = ({ title, description, tags, organization, createdAt }) => {
-  // Validate and format the date with a fallback
   let formattedDate = "Unknown Date"
   if (createdAt) {
     const date = new Date(createdAt)
