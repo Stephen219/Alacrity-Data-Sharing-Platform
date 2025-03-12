@@ -21,7 +21,7 @@ const fetchSubmission = async (fetchUrl: string) => {
   return response.json();
 };
 
-const SubmissionDetails = ({ submissionId, fetchUrl, backUrl }: SubmissionDetailsProps) => {
+const SubmissionDetails = ({ submissionId, fetchUrl}: SubmissionDetailsProps) => {
   const router = useRouter();
 
   const { data: submission, isLoading, error } = useQuery({
