@@ -470,3 +470,50 @@ def filter_and_clean_dataset(request, dataset_id):
 
     return Response({"filtered_data": filtered_results, "session_id": session_id}, status=200)
 
+##bookmarks
+
+class ToggleBookmarkDatasetView(APIView):
+    """
+    API endpoint to enable bookmarking datasets.
+    """
+    permission_classes = [IsAuthenticated]
+
+    @role_required(['contributor', 'researcher'])
+    def post(self, request, dataset_id):
+
+        user = request.user
+        dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
+
+        if dataset.bookmarked_by.filter(id=user.id).exists():
+            # Remove the bookmark if it already exists
+            dataset.bookmarked_by.remove(user)
+            logger.info(f"Bookmark removed for dataset {dataset_id} by user {user.username}")
+            return JsonResponse({"message": "Bookmark removed", "bookmarked": False})
+        else:
+            # Add the bookmark if it doesn't exist
+            dataset.bookmarked_by.add(user)
+            logger.info(f"Bookmark added for dataset {dataset_id} by user {user.username}")
+            return JsonResponse({"message": "Bookmarked successfully", "bookmarked": True})
+
+
+
+class UserBookmarkedDatasetsView(APIView):
+    permission_classes = [IsAuthenticated]
+    @role_required(['contributor', 'researcher'])
+
+    def get(self, request):
+        """
+        Retrieve all datasets bookmarked by the logged-in user.
+        """
+        user = request.user
+        print(f"User requesting bookmarks: {user.username}") 
+
+        # Fetch only the datasets the user has bookmarked
+        bookmarked_datasets = user.bookmarked_datasets.all().values(
+            "dataset_id", "title", "description", "category", "created_at"
+        )
+
+        print("Bookmarked datasets:", list(bookmarked_datasets))
+
+        return Response(list(bookmarked_datasets))
+

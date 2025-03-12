@@ -1,10 +1,7 @@
 "use client";
 
 import React from "react";
-import { Building2, Database, HardDrive } from "lucide-react";
-import { BACKEND_URL } from "@/config";
-import { fetchWithAuth } from "@/libs/auth";
-import { Button } from "../ui/button";
+import { Bookmark, Building2, Database, HardDrive } from "lucide-react";
 
 interface DatasetCardProps {
   dataset_id: string;
@@ -19,7 +16,9 @@ interface DatasetCardProps {
   size: string;
   viewMode: "grid" | "list";
   darkMode: boolean;
-  price: number;
+  extraActions?: () => void;
+  isBookmarked: boolean;
+  onToggleBookmark: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 export const DatasetCard: React.FC<DatasetCardProps> = ({
@@ -34,8 +33,8 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
   size,
   viewMode,
   darkMode,
-  price,
-  dataset_id,
+  isBookmarked,
+  onToggleBookmark,
 }) => {
   const isListView = viewMode === "list";
   const truncatedDescription = description.length > 200 ? description.substring(0, 200) + "..." : description;
@@ -160,21 +159,27 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
               </span>
             ))}
         </div>
+{/* Bookmark Button */}
+<button
+  onClick={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onToggleBookmark(e);
+  }}
+  aria-label="Bookmark Dataset"
+>
+  <Bookmark
+    size={24}
+    className={`mt-4 transition-colors duration-300 ${
+      isBookmarked ? "fill-alacrityred text-alacrityred" : "text-gray-400"
+    }`}
+    fill={isBookmarked ? "#FF6B2C" : "none"} 
+  />
+</button>
 
-        {/* Displays Price */}
-          <div className="mt-2 font-bold text-orange-500 flex justify-end">
-          {price > 0 ? `£${price}` : "Free"}
-        </div>
 
-        {/* TODO: modify when access control implemented, 
-        Shows purchase button, should be shown after permission to purchase granted */}
-        {price > 0 && (
-          <Button className="mt-2 hover:bg-orange-400 transition"
-          onClick={handlePurchase}>
-            Purchase Dataset
-          </Button>
-        )}
-      </div>
+
+    </div>
     </div>
   );
 };

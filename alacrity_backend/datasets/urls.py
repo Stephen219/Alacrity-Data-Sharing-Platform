@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ( descriptive_statistics, 
+from .views import ( ToggleBookmarkDatasetView, UserBookmarkedDatasetsView, descriptive_statistics, 
 filter_and_clean_dataset, 
 get_datasets, get_filter_options, CreateDatasetView, 
 
@@ -24,6 +24,8 @@ urlpatterns = [
     path("analysis/descriptive/<str:dataset_id>/", descriptive_statistics, name="descriptive-statistics"),
     path('analysis/filter-options/<str:dataset_id>/', get_filter_options, name='get_filter_options'),
     path('analysis/filter/<str:dataset_id>/', filter_and_clean_dataset, name='filter_clean_aggregate_dataset'),
+    path("bookmarks/", UserBookmarkedDatasetsView.as_view(), name="user-bookmarked-datasets"), #this took forever for me to figure out. make sure your urls stay above str
     path('<str:dataset_id>/', dataset_view, name='dataset_detail'),
+    path("<str:dataset_id>/bookmark/", ToggleBookmarkDatasetView.as_view(), name="toggle-bookmark-dataset"),
 ]
 

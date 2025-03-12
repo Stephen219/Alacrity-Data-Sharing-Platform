@@ -4,6 +4,7 @@ from django.core.validators import MinLengthValidator, MaxLengthValidator, URLVa
 from nanoid import generate
 from organisation.models import Organization
 from users.models import User
+from django.conf import settings
 
 def generate_id():
     return generate(size=10)
@@ -24,6 +25,8 @@ class Dataset(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
+    bookmarked_by = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="bookmarked_datasets", blank=True)
 
     class Meta:
         unique_together = ['title', 'link']
