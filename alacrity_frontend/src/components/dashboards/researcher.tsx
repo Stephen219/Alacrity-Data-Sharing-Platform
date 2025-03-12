@@ -1,171 +1,411 @@
-/**
- * @fileoverview Researcher dashboard component
- * @package @alacrity/frontend
- * 
- * This component represents the dashboard for researchers, providing an overview of datasets, requests, and active research projects.
- * 
- * @component
- * @example
- * <ResearcherDashboard />
- * 
- * @remarks
- * This component fetches data from the backend and displays various metrics and lists related to the researcher's activities.
- * 
- * @requires React
- * @requires fetchWithAuth from "@/libs/auth"
- * @requires useEffect, useState from "react"
- * @requires BACKEND_URL from "@/config"
- * 
- * @interface DashboardData
- * @property {number} total_datasets - The total number of datasets available.
- * @property {number} total_users - The total number of users.
- * @property {number} pending_requests - The number of pending requests.
- * @property {number} approved_requests - The number of approved requests.
- * 
- * @interface MetricCardProps
- * @property {string} title - The title of the metric.
- * @property {string} value - The value of the metric.
- * @property {string} icon - The icon representing the metric.
- * 
- * @interface DatasetCardProps
- * @property {string} title - The title of the dataset.
- * @property {string} description - A brief description of the dataset.
- * @property {string[]} tags - An array of tags associated with the dataset.
- */
+"use client"
+
 /**
  * @fileoverview Researcher dashboard
- * @package @alacrity/frontend  
- * 
+ * @package @alacrity/frontend
+ *
  */
 import type React from "react"
 import { fetchWithAuth } from "@/libs/auth"
 import { useEffect, useState } from "react"
 import { BACKEND_URL } from "@/config"
 
+interface DatasetRequest {
+  request_id: string
+  dataset_id_id: string
+  dataset_id__title: string
+  researcher_id__profile_picture: string | null
+  request_status: string
+  created_at: string
+  updated_at: string
+}
+
+interface Dataset {
+  id: string
+  title: string
+  description: string
+  tags: string[]
+  organization: string
+  created_at: string
+}
+
 interface DashboardData {
-    total_datasets: number;
-    total_users: number;
-    prnding_requests: number;
-    approved_requests: number;
+  datasets_accessed: number
+  pending_reviews: number
+  research_submitted: number
+  requests_approved: number
+  all_datasets_requests: DatasetRequest[]
+  datasets_having_access: Dataset[]
 }
 
 const ResearcherDashboard: React.FC = () => {
-    const [data, setData] = useState<DashboardData | null>(null)
-    const [, setLoading] = useState(true)
-    const [, setError] = useState<unknown>(null)
+  const [data, setData] = useState<DashboardData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<unknown>(null)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [activeTab, setActiveTab] = useState("publications")
 
-    const getData = async () => {
-        try {
-            setLoading(true)
-            const response = await fetchWithAuth(`${BACKEND_URL}/users/dashboard`)
-            const data = await response.json()
-            setData(data)
-            console.log(data)
-        } catch (error) {
-            setError(error)
-        } finally {
-            setLoading(false)
-        }
+  const getData = async () => {
+    try {
+      setLoading(true)
+      const response = await fetchWithAuth(`${BACKEND_URL}/users/dashboard`)
+      const data = await response.json()
+      setData(data)
+      console.log(data)
+    } catch (error) {
+      setError(error)
+    } finally {
+      setLoading(false)
     }
+  }
 
-    useEffect(() => {
-        getData()
-    }, [])
-    
+  useEffect(() => {
+    getData()
+  }, [])
+
+  // Sample datasets for demonstration - replace with actual data when available
+  const sampleDatasets: Dataset[] = [
+    {
+      id: "1",
+      title: "Healthcare Demographics 2024",
+      description: "Comprehensive dataset of healthcare demographics across multiple regions",
+      tags: ["Health", "Demographics", "Survey"],
+      organization: "Health Research Institute",
+      created_at: "2025-02-15T10:30:00.000Z",
+    },
+    {
+      id: "2",
+      title: "Climate Change Patterns",
+      description: "Long-term climate data showing patterns and changes over the last century",
+      tags: ["Climate", "Environment", "Time Series"],
+      organization: "Environmental Science Foundation",
+      created_at: "2025-01-20T14:45:00.000Z",
+    },
+    {
+      id: "3",
+      title: "Economic Indicators 2020-2025",
+      description: "Key economic indicators and their trends over a five-year period",
+      tags: ["Economics", "Finance", "Statistics"],
+      organization: "Global Economics Institute",
+      created_at: "2025-03-05T09:15:00.000Z",
+    },
+    {
+      id: "4",
+      title: "Social Media Usage Patterns",
+      description: "Analysis of social media usage across different demographics and regions",
+      tags: ["Social Media", "Behavior", "Analytics"],
+      organization: "Digital Research Lab",
+      created_at: "2025-02-28T16:20:00.000Z",
+    },
+    {
+      id: "5",
+      title: "Education Outcomes Study",
+      description: "Comprehensive study of educational outcomes across different teaching methodologies",
+      tags: ["Education", "Research", "Outcomes"],
+      organization: "Education Innovation Center",
+      created_at: "2025-01-10T11:00:00.000Z",
+    },
+  ]
+
+  // Use data from API if available, otherwise use sample data
+  const datasetsToDisplay = data?.datasets_having_access?.length ? data.datasets_having_access : sampleDatasets
+
+  // Filter datasets based on search query
+  const filteredDatasets =
+    searchQuery.trim() === ""
+      ? datasetsToDisplay
+      : datasetsToDisplay.filter(
+          (dataset) =>
+            dataset.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            dataset.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            dataset.organization.toLowerCase().includes(searchQuery.toLowerCase()),
+        )
+
+  
+
+  if (loading) return <div className="p-6">Loading dashboard data...</div>
+  if (error) return <div className="p-6">Error loading dashboard data. Please try again.</div>
 
   return (
-    <div className="p-6 bg-gray-50 dark:bg-card transition-colors duration-300-">
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6 dark:text-gray-100">Researcher Dashboard</h1>
+    <div className="p-6 bg-gray-50">
+      <h1 className="text-2xl font-semibold text-gray-800 mb-6">Researcher Dashboard</h1>
 
-     
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <MetricCard title="Datasets Available" 
-        value={data?.total_datasets?.toString() || "0"}
-        icon="📂" />
-        <MetricCard title="Approved Requests" value="24"
-         icon="✅" />
-        <MetricCard title="Pending Requests" value="16" 
-        icon="⏳" />
-        <MetricCard title="Ongoing Projects" value="42" 
-        icon="📊" />
+        <MetricCard title="Datasets Accessed" value={(data?.datasets_accessed || 0).toString()} icon="📂" />
+        <MetricCard title="Requests Approved" value={(data?.requests_approved || 0).toString()} icon="✅" />
+        <MetricCard title="Pending Reviews" value={(data?.pending_reviews || 0).toString()} icon="⏳" />
+        <MetricCard title="Research Submitted" value={(data?.research_submitted || 0).toString()} icon="📊" />
       </div>
 
-      
       <div className="mb-8">
-        <h2 className="text-xl font-semibold text-gray-700 mb-4 dark:text-gray-100">Dataset Feed</h2>
-        <div className="bg-white shadow-sm rounded-lg overflow-hidden dark:bg-gray-700 transition-all">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-600">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">Dataset Feed</h2>
+        <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+          <div className="p-4 border-b border-gray-200">
             <input
               type="text"
               placeholder="Search datasets..."
-              className="w-full dark:bg-gray-900 dark:border-gray-600 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B1A] focus:border-transparent dark:text-gray-100"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B1A] focus:border-transparent"
             />
           </div>
           <div className="overflow-y-auto" style={{ maxHeight: "400px" }}>
-            {[1, 2, 3, 4, 5].map((item) => (
-              <DatasetCard
-                key={item}
-                title={`Dataset ${item}`}
-                description={`Description for Dataset ${item}. This dataset contains...`}
-                tags={["Health", "Demographics", "Survey"]}
-              />
-            ))}
+            {filteredDatasets.length > 0 ? (
+              filteredDatasets.map((dataset) => (
+                <DatasetCard
+                  key={dataset.id}
+                  title={dataset.title}
+                  description={dataset.description}
+                  tags={dataset.tags}
+                  organization={dataset.organization}
+                  createdAt={dataset.created_at}
+                />
+              ))
+            ) : (
+              <div className="p-8 text-center text-gray-500">No datasets match your search criteria</div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Active Research Table */}
-      <div>
-        <h2 className="text-xl font-semibold text-gray-800 mb-4 dark:text-gray-100">Active Research</h2>
-        <div className="bg-white shadow-sm rounded-lg overflow-hidden dark:bg-gray-700 transition-on-all">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50 dark:bg-gray-900">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">
-                  Project
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">
-                  Dataset
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">
-                  Last Updated
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200 ">
-              {[1, 2, 3, 4, 5].map((item) => (
-                <tr key={item} className="hover:bg-gray-50 dark:bg-gray-700">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Research Project {item}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500 dark:text-gray-100">Dataset {item}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        item % 3 === 0
-                          ? "bg-green-100 text-green-800"
-                          : item % 3 === 1
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-[#FF6B1A] bg-opacity-10 text-[#FF6B1A]"
-                      }`}
-                    >
-                      {item % 3 === 0 ? "Completed" : item % 3 === 1 ? "In Progress" : "Planning"}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-100">
-                    {new Date(Date.now() - item * 86400000).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="border-b border-gray-200">
+            <nav className="flex -mb-px overflow-x-auto">
+            <button
+                onClick={() => setActiveTab("publications")}
+                className={`py-4 px-6 text-sm font-medium whitespace-nowrap ${
+                  activeTab === "publications"
+                    ? "border-b-2 border-[#FF6B1A] text-[#FF6B1A]"
+                    : "text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Publication Tracker
+              </button>
+              <button
+                onClick={() => setActiveTab("recommendations")}
+                className={`py-4 px-6 text-sm font-medium whitespace-nowrap ${
+                  activeTab === "recommendations"
+                    ? "border-b-2 border-[#FF6B1A] text-[#FF6B1A]"
+                    : "text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Dataset Recommendations
+              </button>
+            
+              <button
+                onClick={() => setActiveTab("timeline")}
+                className={`py-4 px-6 text-sm font-medium whitespace-nowrap ${
+                  activeTab === "timeline"
+                    ? "border-b-2 border-[#FF6B1A] text-[#FF6B1A]"
+                    : "text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Research Timeline
+              </button>
+            
+            </nav>
+          </div>
+
+          {/* Dataset Recommendations Tab */}
+          {activeTab === "recommendations" && (
+            <div className="p-6">
+              <p className="text-sm text-gray-500 mb-4">
+                Based on your research interests and recent activity, we recommend these datasets:
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[
+                  {
+                    name: "Global Climate Data 2023",
+                    category: "Environmental Science",
+                    relevance: "98% match",
+                    users: 342,
+                  },
+                  {
+                    name: "Consumer Behavior Survey",
+                    category: "Market Research",
+                    relevance: "95% match",
+                    users: 189,
+                  },
+                  {
+                    name: "Healthcare Outcomes Database",
+                    category: "Medical Research",
+                    relevance: "92% match",
+                    users: 276,
+                  },
+                  {
+                    name: "Urban Development Metrics",
+                    category: "Social Sciences",
+                    relevance: "90% match",
+                    users: 124,
+                  },
+                  {
+                    name: "Technology Adoption Patterns",
+                    category: "Technology",
+                    relevance: "88% match",
+                    users: 231,
+                  },
+                  { name: "Financial Markets Analysis", category: "Economics", relevance: "85% match", users: 198 },
+                ].map((dataset, index) => (
+                  <div key={index} className="bg-gray-50 p-4 rounded-lg hover:shadow-md transition-shadow">
+                    <h3 className="font-medium text-gray-900">{dataset.name}</h3>
+                    <p className="text-sm text-gray-500 mb-2">{dataset.category}</p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-medium text-[#FF6B1A]">{dataset.relevance}</span>
+                      <span className="text-xs text-gray-500">{dataset.users} researchers</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {activeTab === "timeline" && (
+            <div className="p-6">
+              <p className="text-sm text-gray-500 mb-4">Upcoming research milestones and deadlines:</p>
+              <div className="space-y-4">
+                {[
+                  {
+                    event: "Research Proposal Deadline",
+                    project: "Urban Data Analysis",
+                    date: "May 15, 2023",
+                    daysLeft: 12,
+                  },
+                  {
+                    event: "Interim Results Presentation",
+                    project: "Consumer Behavior Study",
+                    date: "June 3, 2023",
+                    daysLeft: 31,
+                  },
+                  {
+                    event: "Data Collection Phase End",
+                    project: "Healthcare Metrics",
+                    date: "June 20, 2023",
+                    daysLeft: 48,
+                  },
+                  {
+                    event: "Final Report Submission",
+                    project: "Market Analysis",
+                    date: "July 10, 2023",
+                    daysLeft: 68,
+                  },
+                ].map((milestone, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center p-4 bg-gray-50 rounded-lg hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex-shrink-0 h-12 w-12 bg-[#FF6B1A] bg-opacity-10 rounded-full flex items-center justify-center text-[#FF6B1A] font-bold">
+                      {milestone.daysLeft}d
+                    </div>
+                    <div className="ml-4">
+                      <h3 className="font-medium text-gray-900">{milestone.event}</h3>
+                      <p className="text-sm text-gray-500">{milestone.project}</p>
+                      <p className="text-xs text-[#FF6B1A]">Due: {milestone.date}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Publication Tracker Tab */}
+          {activeTab === "publications" && (
+            <div>
+              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <p className="text-sm text-gray-500">Track and manage your research publications</p>
+                <button className="px-4 py-1 text-sm text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f]">
+                  New Publication
+                </button>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Title
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Journal/Conference
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Metrics
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {[
+                      {
+                        title: "Analysis of Consumer Behavior Patterns in E-commerce",
+                        venue: "Journal of Consumer Research",
+                        status: "Published",
+                        metrics: { citations: 12, downloads: 345 },
+                      },
+                      {
+                        title: "Predictive Modeling for Healthcare Outcomes",
+                        venue: "International Conference on Health Informatics",
+                        status: "Under Review",
+                        metrics: { citations: 0, downloads: 0 },
+                      },
+                      {
+                        title: "Impact of Social Media on Market Trends",
+                        venue: "Digital Marketing Quarterly",
+                        status: "Revision Needed",
+                        metrics: { citations: 0, downloads: 0 },
+                      },
+                      {
+                        title: "Machine Learning Approaches to Data Analysis",
+                        venue: "Data Science Journal",
+                        status: "Draft",
+                        metrics: { citations: 0, downloads: 0 },
+                      },
+                    ].map((publication, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {publication.title}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{publication.venue}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span
+                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              publication.status === "Published"
+                                ? "bg-green-100 text-green-800"
+                                : publication.status === "Under Review"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : publication.status === "Revision Needed"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {publication.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {publication.status === "Published" ? (
+                            <div>
+                              <span className="mr-3">📊 {publication.metrics.citations} citations</span>
+                              <span>📥 {publication.metrics.downloads} downloads</span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">No metrics available</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button className="text-[#FF6B1A] hover:text-[#e65c0f] mr-3">View</button>
+                          <button className="text-[#FF6B1A] hover:text-[#e65c0f]">Edit</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
     </div>
   )
 }
@@ -198,27 +438,53 @@ interface DatasetCardProps {
   title: string
   description: string
   tags: string[]
+  organization: string
+  createdAt: string
 }
 
-const DatasetCard: React.FC<DatasetCardProps> = ({ title, description, tags }) => (
-  <div className="p-4 border-b border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-500 dark:text-gray-100">
-    <h3 className="text-lg font-medium text-gray-900 mb-1 dark:text-gray-100">{title}</h3>
-    <p className="text-sm text-gray-500 mb-2 dark:text-gray-100">{description}</p>
-    <div className="flex flex-wrap gap-2">
-      {tags.map((tag, index) => (
-        <span
-          key={index}
-          className="px-2 py-1 text-xs font-medium bg-[#FF6B1A] bg-opacity-10 text-[#FF6B1A] rounded-full"
-        >
-          {tag}
-        </span>
-      ))}
+const DatasetCard: React.FC<DatasetCardProps> = ({ title, description, tags, organization, createdAt }) => {
+  
+  const formattedDate = new Date(createdAt).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
+
+  
+  const displayTags = tags.slice(0, 3)
+  const hasMoreTags = tags.length > 3
+
+  return (
+    <div className="p-4 border-b border-gray-200 hover:bg-gray-50">
+      <div className="flex justify-between items-start mb-2">
+        <h3 className="text-lg font-medium text-gray-900">{title}</h3>
+        <div className="text-right">
+          <div className="text-sm font-medium text-[#FF6B1A]">{organization}</div>
+          <div className="text-xs text-gray-500">{formattedDate}</div>
+        </div>
+      </div>
+      <p className="text-sm text-gray-500 mb-2">{description}</p>
+      <div className="flex flex-wrap gap-2">
+        {displayTags.map((tag, index) => (
+          <span
+            key={index}
+            className="px-2 py-1 text-xs font-medium bg-[#FF6B1A] bg-opacity-10 text-[#FF6B1A] rounded-full"
+          >
+            {tag}
+          </span>
+        ))}
+        {hasMoreTags && (
+          <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
+            +{tags.length - 3} more
+          </span>
+        )}
+      </div>
+      <button className="mt-2 px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md hover:bg-opacity-90 transition-colors">
+        Analyze
+      </button>
     </div>
-    <button className="mt-2 px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md hover:bg-opacity-90 transition-colors">
-      Request Access
-    </button>
-  </div>
-)
+  )
+}
 
 export default ResearcherDashboard
 
