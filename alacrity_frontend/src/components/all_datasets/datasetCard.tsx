@@ -2,6 +2,8 @@
 
 import React from "react";
 import { Bookmark, Building2, Database, HardDrive } from "lucide-react";
+import { fetchWithAuth } from "@/libs/auth"
+import { BACKEND_URL } from "@/config"
 
 interface DatasetCardProps {
   dataset_id: string;
@@ -18,10 +20,12 @@ interface DatasetCardProps {
   darkMode: boolean;
   extraActions?: () => void;
   isBookmarked: boolean;
+  price : number;
   onToggleBookmark: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 export const DatasetCard: React.FC<DatasetCardProps> = ({
+  dataset_id,
   title,
   description,
   organization,
@@ -31,15 +35,18 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
   category,
   entries,
   size,
+ 
   viewMode,
   darkMode,
   isBookmarked,
   onToggleBookmark,
+  
 }) => {
   const isListView = viewMode === "list";
   const truncatedDescription = description.length > 200 ? description.substring(0, 200) + "..." : description;
 
   //this may need to be modified but for now it returns paypal checkout 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handlePurchase = async () => {
     try {
       const response = await fetchWithAuth(`${BACKEND_URL}/payments/paypal/payment/${dataset_id}/`, { 
