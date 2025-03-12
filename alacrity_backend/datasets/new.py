@@ -41,11 +41,12 @@ def get_jwt_hash(request):
     return None
 
 def load_dataset_into_cache(request, dataset_id):
-    """Load dataset from MinIO into cache, decrypting with Fernet."""
+    has_access = has_access_to_dataset(request.user.id, dataset_id)
+    if not has_access:
+        return Response({"error": "You do not have access to this dataset"}, status=403)
     jwt_hash = get_jwt_hash(request)
     if not jwt_hash:
         raise ValueError("No valid JWT token found")
-
     cache_key = f"{dataset_id}:{jwt_hash}"
     with CACHE_LOCK:
         if cache_key in DATASET_CACHE:
@@ -76,7 +77,7 @@ def load_dataset_into_cache(request, dataset_id):
             con = duckdb.connect(":memory:")
             con.register("temp", df)
             if len(DATASET_CACHE) >= MAX_CACHE_SIZE:
-                DATASET_CACHE.popitem(last=False)  # Remove least recently used
+                DATASET_CACHE.popitem(last=False) 
             DATASET_CACHE[cache_key] = con
             logger.info(f"Dataset {cache_key} loaded into cache")
             return con
@@ -86,10 +87,35 @@ def load_dataset_into_cache(request, dataset_id):
             logger.error(f"Failed to load dataset {dataset_id}: {e}", exc_info=True)
             raise
 
+
+
+def has_access_to_dataset(user_id, dataset_id):
+    from dataset_requests.models import DatasetRequest
+    """Check if user has access to dataset."""
+    try:
+        requested_data = DatasetRequest.objects.filter(
+            dataset_id=dataset_id,
+            researcher_id=user_id,
+            request_status='approved'
+        ).exists()  # More efficient than converting to list
+        return requested_data
+    except Exception as e:
+        logger.error(f"Error checking dataset access: {e}")
+        return False
+
+
+
+
 @api_view(['GET'])
 def dataset_detail(request, dataset_id):
     """Retrieve dataset details and check if it's cached."""
+    has_access = has_access_to_dataset(request.user.id, dataset_id)
+    if not has_access:
+        return Response({"error": "You do not have access to this dataset"}, status=403)
+
     try:
+        
+
         dataset = Dataset.objects.get(dataset_id=dataset_id)
         jwt_hash = get_jwt_hash(request)
         if not jwt_hash:
@@ -107,6 +133,7 @@ def dataset_detail(request, dataset_id):
     except Exception as e:
         logger.error(f"Error in dataset_detail: {e}", exc_info=True)
         return Response({"error": "Failed to load dataset"}, status=500)
+    
 
 @api_view(['POST'])
 def clear_dataset_cache(request, dataset_id):
@@ -411,3 +438,23 @@ def dataset_view(request, dataset_id):
         return Response({"error": "Dataset not found"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({"error": "Failed to fetch dataset"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+
+
+def has_access(user_id, dataset_id):
+    from dataset_requests.models import DatasetRequest
+    """Check if user has access to dataset."""
+    """
+    we need to map to the requests  and check if the user has access that is iff the status is approved
+    so wee need to query all the requests  for that dataset and if the requester is the user and the status is approved
+    then the user has access
+    """
+    try:
+        # dataset = Dataset.objects.get(dataset_id=dataset_id)
+        requests = DatasetRequest.objects.filter(dataset_id=dataset_id , requester_id=user_id , status='approved')
+        return requests.exists
+        
+       
+    except Dataset.DoesNotExist:
+        return False
