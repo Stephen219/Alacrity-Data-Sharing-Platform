@@ -270,12 +270,12 @@ const handleRead = (id: string) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="bg-white dark:bg-gray-700 rounded-lg shadow-md overflow-hidden">
             <div className="p-6">
               <div className="flex flex-col items-center mb-6">
                 <div className="relative mb-4">
                   {userData.profile_picture ? (
-                    <div className="h-32 w-32 rounded-full overflow-hidden bg-gray-200 border-4 border-white shadow-md">
+                    <div className="h-32 w-32 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 border-4 border-white shadow-md">
                       <img
                         src={userData.profile_picture}
                         alt={`${userData.firstname} ${userData.lastname}`}
@@ -292,7 +292,7 @@ const handleRead = (id: string) => {
                 {isOwner && !isEditing ? (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="px-4 py-2 border border-gray-300 rounded-md flex items-center gap-2 hover:bg-gray-50 transition-colors"
+                    className="px-4 py-2 border border-gray-300 rounded-md flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-500 transition-colors"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -332,7 +332,7 @@ const handleRead = (id: string) => {
                     <h2 className="text-2xl font-bold">
                       {userData.firstname} {userData.lastname}
                     </h2>
-                    <p className="text-gray-500">@{userData.username}</p>
+                    <p className="text-gray-500 dark:text-gray-200">@{userData.username}</p>
                   </div>
 
                   <div className="flex justify-center flex-wrap gap-2">
@@ -588,17 +588,17 @@ const handleRead = (id: string) => {
                   research.status === "published" && !research.is_private
                 )
                 .map((research) => (
-                  <div key={research.id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                  <div key={research.id} className="bg-white dark:bg-gray-700 rounded-lg shadow-md overflow-hidden">
                     <div className="p-6">
                       <div className="flex items-start justify-between">
                         <div>
                           <h3 className="text-xl font-semibold mb-1">{parse(research.title)}</h3>
-                          <p className="text-sm text-gray-500 mb-4">
-                            Status: <span className="text-[#F47521]">{research.status}</span> | Submitted on {formatDate(research.submitted_at)}
+                          <p className="text-sm text-gray-500 mb-4 dark:text-gray-200">
+                            Status: <span className="text-[#F47521] dark:text-gray-100">{research.status}</span> | Submitted on {formatDate(research.submitted_at)}
                           </p>
                         </div>
                       </div>
-                      <div className="mb-4">{parse(research.description)}</div>
+                      <div className="mb-4 ">{parse(research.description)}</div>
                       <div className="flex justify-end">
                       <button
             onClick={() => handleRead(research.id)}  // ✅ Fix: `research` is now inside the `.map()`
@@ -619,7 +619,7 @@ const handleRead = (id: string) => {
           )}
 
           {activeTab === "bookmarks" && isOwner && (
-            <div className="space-y-6">
+            <div className="space-y-6 ">
               {userData.bookmarked_researches && userData.bookmarked_researches.length > 0 ? (
                 userData.bookmarked_researches.map((bookmark) => (
                   <div key={bookmark.id} className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -653,7 +653,7 @@ const handleRead = (id: string) => {
                       </div>
                       <p className="mb-4">{truncateDescription(bookmark.description)}</p>
                       <div className="flex justify-end">
-                        <button className="px-4 py-2 text-sm border border-[#F47521] text-[#F47521] rounded-md hover:bg-[#F4752110] transition-colors">
+                        <button className="px-4 py-2 text-sm border border-[#F47521] text-[#F47521] rounded-md hover:bg-[#F4752110] dark:hover:text-gray-100 transition-colors">
                           View Paper
                         </button>
                       </div>
