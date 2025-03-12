@@ -159,7 +159,8 @@ class RegisterView(APIView):
 class LoggedInUser(APIView):
     def get(self, request):
         user = request.user
-        researchers = list(AnalysisSubmission.objects.filter(researcher=user)
+        researchers = list(AnalysisSubmission.objects.filter(researcher=user, status="published",
+        is_private=False)
                            .values('id', 'title', 'description', 'status', 'submitted_at'))
         bookmarked_researches = []
     
@@ -195,7 +196,8 @@ class UserView(APIView):
         current_user = request.user  # Authenticated user
 
         # Fetch researches for this user
-        researchers = list(AnalysisSubmission.objects.filter(researcher=user)
+        researchers = list(AnalysisSubmission.objects.filter(researcher=user, status="published",
+        is_private=False)
                           .values('id', 'title', 'description', 'status', 'submitted_at'))
         bookmarked_researches = []  
 
