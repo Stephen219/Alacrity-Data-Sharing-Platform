@@ -31,7 +31,7 @@ const DatasetsPage = () => {
   useEffect(() => {
     const fetchDatasets = async () => {
       try {
-        const response = await fetchWithAuth(`${BACKEND_URL}/requests/analyze`);
+        const response = await fetchWithAuth(`${BACKEND_URL}/datasets/all`);
         if (!response.ok) throw new Error("Failed to fetch datasets");
         const data = await response.json();
         setDatasets(data.datasets); 

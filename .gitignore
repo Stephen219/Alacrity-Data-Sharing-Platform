@@ -32,3 +32,4 @@ alacrity_frontend/node_modules
 /alacrity_backend/users/serializer.py
 /alacrity_backend/media/submission_images
 /alacrity_backend/media
+/alacrity_frontend/src/app/geg

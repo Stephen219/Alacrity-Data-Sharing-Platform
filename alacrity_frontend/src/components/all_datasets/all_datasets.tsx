@@ -22,6 +22,7 @@ interface Dataset {
   size?: string;
   entries?: number;
   imageUrl?: string;
+  price: number;
 }
 
 const ITEMS_PER_PAGE = 6;
@@ -59,6 +60,7 @@ const DatasetsPage: React.FC = () => {
                 .map((tag: string) => tag.trim()) // Trim whitespace
                 .filter((tag: string) => tag.trim() !== "") // Remove empty or whitespace-only tags
             : item.tags || [],
+            price: item.price || 0,
         }));
   
         setDatasets(mappedDatasets);
@@ -382,12 +384,19 @@ useEffect(() => {
           className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"}`}
         >
           {paginatedDatasets.map((dataset) => (
+            // <Link
+            //   key={dataset.dataset_id}
+            //   href={`/researcher/publicationForm?id=${dataset.dataset_id}`} 
+            //   className="block" 
+            // >
             <Link
               key={dataset.dataset_id}
-              href={`/researcher/publicationForm?id=${dataset.dataset_id}`} 
+              href={`/datasets/description?id=${dataset.dataset_id}`} 
               className="block" 
             >
+
               <DatasetCard
+                dataset_id={dataset.dataset_id}
                 title={dataset.title}
                 description={dataset.description}
                 organization={dataset.organization_name}
@@ -402,6 +411,7 @@ useEffect(() => {
                 onToggleBookmark={() => toggleDatasetBookmark(dataset.dataset_id)}
                 viewMode={viewMode}
                 darkMode={isDarkMode}
+                price={dataset.price}
               />
             </Link>
           ))}

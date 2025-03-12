@@ -2,8 +2,11 @@
 
 import React from "react";
 import { Bookmark, Building2, Database, HardDrive } from "lucide-react";
+import { fetchWithAuth } from "@/libs/auth"
+import { BACKEND_URL } from "@/config"
 
 interface DatasetCardProps {
+  dataset_id: string;
   title: string;
   description: string;
   organization: string;
@@ -17,10 +20,12 @@ interface DatasetCardProps {
   darkMode: boolean;
   extraActions?: () => void;
   isBookmarked: boolean;
+  price : number;
   onToggleBookmark: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 export const DatasetCard: React.FC<DatasetCardProps> = ({
+  dataset_id,
   title,
   description,
   organization,
@@ -30,13 +35,43 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
   category,
   entries,
   size,
+ 
   viewMode,
   darkMode,
   isBookmarked,
   onToggleBookmark,
+  
 }) => {
   const isListView = viewMode === "list";
   const truncatedDescription = description.length > 200 ? description.substring(0, 200) + "..." : description;
+
+  //this may need to be modified but for now it returns paypal checkout 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handlePurchase = async () => {
+    try {
+      const response = await fetchWithAuth(`${BACKEND_URL}/payments/paypal/payment/${dataset_id}/`, { 
+        method: "POST",
+      });
+  
+      if (!response.ok) {
+        throw new Error("Failed to initiate PayPal payment");
+      }
+  
+      const data = await response.json();
+  
+      if (data.approval_url) {
+        console.log("Redirecting to PayPal:", data.approval_url);
+        window.location.href = data.approval_url;
+      } else {
+        console.error("ERROR: No approval URL received");
+        alert("Error: Unable to process payment.");
+      }
+    } catch (error) {
+      console.error("Payment error:", error);
+      alert("Failed to initiate payment. Please try again.");
+    }
+  };
+  
 
   return (
     <div

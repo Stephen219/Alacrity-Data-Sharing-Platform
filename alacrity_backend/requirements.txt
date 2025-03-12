@@ -10,12 +10,21 @@ statsmodels
 duckdb
 cryptography
 pyarrow
+seaborn
 
 
 
 
 # dotenv
 python-dotenv
+
+
+matplotlib
+
+# for payment
+paypalrestsdk
+
+
 
 
 # storage for files
