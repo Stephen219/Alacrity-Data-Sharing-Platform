@@ -146,7 +146,7 @@ export const NAV_ITEMS = [
         },
         {
           name: "Drafts",
-          href: "/researcher/Drafts",
+          href: "/researcher/drafts",
           imageSrc: "/navbar/account/purchases.png",
         },
         {

@@ -35,12 +35,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   }, []); 
   return (
     <aside
-      className={`fixed left-0 top-0 h-full w-40 bg-white shadow-md transition-transform duration-300 ${
+      className={`fixed left-0 top-0 h-full w-40 bg-card dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-md transition-transform duration-300 ${
         isOpen ? "translate-x-0" : "-translate-x-full"
       } lg:translate-x-0 lg:w-52 p-4 overflow-y-auto flex flex-col z-50`}
     >
       <div className="pb-4 mb-4">
-        <p className="text-lg font-bold text-black">ALACRITY</p>
+        <p className="text-lg font-bold text-foreground">ALACRITY</p>
         <button onClick={toggleSidebar}></button>
       </div>
       <nav className="flex flex-col space-y-4">

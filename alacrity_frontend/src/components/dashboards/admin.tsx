@@ -140,10 +140,10 @@ const AdminDashboard: React.FC = () => {
   // 
 
   return (
-    <div className="p-6 bg-gray-50">
+    <div className="p-6 bg-gray-card">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Organization Dashboard</h1>
-        <p className="text-gray-500">Overview of your organization datasets and activities</p>
+        <h1 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">Organization Dashboard</h1>
+        <p className="text-gray-500 dark:text-gray-200">Overview of your organization datasets and activities</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <MetricCard
@@ -173,7 +173,7 @@ const AdminDashboard: React.FC = () => {
               View All
             </Link>
           }
-          changeColor="text-[#FF6B1A]"
+          changeColor="text-[#FF6B1A] "
         />
       
       { user?.role === "organization_admin" && (
@@ -200,7 +200,7 @@ const AdminDashboard: React.FC = () => {
 
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800">Pending Access Requests</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Pending Access Requests</h2>
           <button className="px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f] transition-colors">
             View All
           </button>
@@ -208,26 +208,26 @@ const AdminDashboard: React.FC = () => {
         <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
           <div className="max-h-[400px] overflow-y-auto"> 
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50 sticky top-0">
+              <thead className="bg-gray-50 sticky top-0 dark:bg-gray-900">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-100 uppercase tracking-wider">
                     Requester
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-100 uppercase tracking-wider">
                     Dataset
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-100 uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-100 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-100 uppercase tracking-wider">
                     Action
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-700">
                 {limitedPendingDatasets.map((request) => (
                   <tr key={request.request_id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -243,17 +243,17 @@ const AdminDashboard: React.FC = () => {
                           />
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                             {request.researcher_id__first_name  + " " + request.researcher_id__sur_name
                             || "Unknown"}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-100">
                       {truncateTitle(request.dataset_id__title)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-100">
                       {formatDate(request.created_at)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -280,8 +280,8 @@ const AdminDashboard: React.FC = () => {
       </div>
       
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800">Dataset Analytics</h2>
+        <div className="flex items-center justify-between mb-4 ">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 ">Dataset Analytics</h2>
           <div className="relative">
             <select className="block appearance-none w-full bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-[#FF6B1A] transition-colors">
               <option>Last 30 Days</option>
@@ -296,11 +296,11 @@ const AdminDashboard: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg dark:bg-gray-700">
           <div className="p-6">
-            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+            <div className="h-64 flex items-center justify-center bg-gray-50 dark:bg-gray-600 rounded-lg border-2 border-dashed border-gray-200">
               <span className="text-4xl">📊</span>
-              <span className="ml-4 text-lg text-gray-500">Dataset Usage Analytics Chart</span>
+              <span className="ml-4 text-lg text-gray-500 dark:text-gray-100">Dataset Usage Analytics Chart</span>
             </div>
           </div>
         </div>
