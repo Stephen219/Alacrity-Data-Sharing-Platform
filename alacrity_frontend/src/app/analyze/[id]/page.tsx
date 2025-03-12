@@ -1,15 +1,27 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useEffect, useState, useMemo, useReducer, useCallback } from "react";
+import {  useParams } from "next/navigation";
 import { fetchWithAuth } from "@/libs/auth";
 import { BACKEND_URL } from "@/config";
+import { Lock } from "lucide-react";
 
 type Schema = Record<string, string>;
 type Dataset = { dataset_id: string; title: string; schema: Schema; category: string; created_at: string; is_loaded?: boolean };
-type Result = { [key: string]: any };
+type Result = 
+  | { operation: "mean" | "median" | "mode"; value: number | string; column: string }
+  | { operation: "t_test"; t_stat: number; p_value: number; image?: string; accuracy_note?: string; columns: [string, string] }
+  | { operation: "chi_square"; chi2: number; p_value: number; degrees_of_freedom: number; contingency_table: Record<string, any>; image?: string; accuracy_note?: string; columns: [string, string] }
+  | { operation: "anova"; f_stat: number; p_value: number; image?: string; accuracy_note?: string; columns: [string, string] }
+  | { operation: "pearson" | "spearman"; correlation: number; p_value: number; image: string; slope: number; intercept: number; columns: [string, string] }
+  | { operation: "t_test"; t_stat: number; p_value: number; image?: string; accuracy_note?: string; columns: [string, string] }
+  | { operation: "chi_square"; chi2: number; p_value: number; degrees_of_freedom: number; contingency_table: Record<string, any>; image?: string; accuracy_note?: string; columns: [string, string] }
+  | { operation: "anova"; f_stat: number; p_value: number; image?: string; accuracy_note?: string; columns: [string, string] }
+  | { operation: "pearson" | "spearman"; correlation: number; p_value: number; image: string; slope: number; intercept: number; columns: [string, string] };
+
 
 const calculationTypes = [
   { value: "descriptive", label: "Descriptive Statistics" },
@@ -34,35 +46,107 @@ const operations = {
   ],
 };
 
+const presentationOptions = {
+  mean: { numbers: true, table: false, graph: false },
+  median: { numbers: true, table: false, graph: false },
+  mode: { numbers: true, table: false, graph: false },
+  t_test: { numbers: true, table: false, graph: true },
+  chi_square: { numbers: true, table: true, graph: true },
+  anova: { numbers: true, table: false, graph: true }, 
+  pearson: { numbers: true, table: false, graph: true },
+  spearman: { numbers: true, table: false, graph: true },
+};
+
+const operators = [
+  { value: "=", label: "Equals (=)" },
+  { value: "!=", label: "Not Equals (!=)" },
+  { value: ">", label: "Greater Than (>)" },
+  { value: ">=", label: "Greater or Equal (>=)" },
+  { value: "<", label: "Less Than (<)" },
+  { value: "<=", label: "Less or Equal (<=)" },
+];
+
+// State Reducer
+const initialState = {
+  calcType: "",
+  operation: "",
+  column: "",
+  column1: "",
+  column2: "",
+  filterColumn: "",
+  filterOperator: "",
+  filterValue: "",
+  notes: "",
+};
+
+const reducer = (state: typeof initialState, action: { type: string; value: string }) => {
+  switch (action.type) {
+    case "SET_CALC_TYPE":
+      return { ...state, calcType: action.value, operation: "", column: "", column1: "", column2: "" };
+    case "SET_OPERATION":
+      return { ...state, operation: action.value, column: "", column1: "", column2: "" };
+    case "SET_COLUMN":
+      return { ...state, column: action.value };
+    case "SET_COLUMN1":
+      return { ...state, column1: action.value };
+    case "SET_COLUMN2":
+      return { ...state, column2: action.value };
+    case "SET_FILTER_COLUMN":
+      return { ...state, filterColumn: action.value };
+    case "SET_FILTER_OPERATOR":
+      return { ...state, filterOperator: action.value };
+    case "SET_FILTER_VALUE":
+      return { ...state, filterValue: action.value };
+    case "SET_NOTES":
+      return { ...state, notes: action.value };
+    default:
+      return state;
+  }
+};
+
+const useDebounce = (value: string, delay: number) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debouncedValue;
+};
+
 const AnalyzePage = () => {
-  const router = useRouter();
   const { id } = useParams();
   const [dataset, setDataset] = useState<Dataset | null>(null);
-  const [calcType, setCalcType] = useState<string>("");
-  const [operation, setOperation] = useState<string>("");
-  const [column, setColumn] = useState<string>("");
-  const [column1, setColumn1] = useState<string>("");
-  const [column2, setColumn2] = useState<string>("");
-  const [filter, setFilter] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<"analysis" | "results" | "notes">("analysis");
+  const [state, dispatch] = useReducer(reducer, initialState);
   const [result, setResult] = useState<Result | null>(null);
-  const [notes, setNotes] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accessDenied, setAccessDenied] = useState(false);
+
+  const debouncedFilterValue = useDebounce(state.filterValue, 300);
+  const debouncedNotes = useDebounce(state.notes, 500);
 
   useEffect(() => {
     const fetchDataset = async () => {
       setLoading(true);
       try {
         const response = await fetchWithAuth(`${BACKEND_URL}/datasets/details/${id}/`);
+        console.log(response.status);
+
+
+        if (response.status === 403) {
+          setAccessDenied(true);
+          return;
+        }
         if (!response.ok) throw new Error("Failed to fetch dataset details");
         const data: Dataset = await response.json();
         setDataset(data);
         const savedNotes = localStorage.getItem(`notes_${id}`);
-        if (savedNotes) setNotes(savedNotes);
+        if (savedNotes) dispatch({ type: "SET_NOTES", value: savedNotes });
       } catch (err) {
         setError("Could not load dataset details");
         console.error(err);
-        // router.push("/auth/sign-in");
       } finally {
         setLoading(false);
       }
@@ -70,47 +154,44 @@ const AnalyzePage = () => {
     fetchDataset();
 
     const handleBeforeUnload = async () => {
-      try {
-        await fetchWithAuth(`${BACKEND_URL}/datasets/clear_cache/${id}/`, {
-          method: "POST",
-        });
-      } catch (err) {
-        console.error("Failed to clear cache on exit:", err);
-      }
+      await fetchWithAuth(`${BACKEND_URL}/datasets/clear_cache/${id}/`, { method: "POST" });
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
-
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      handleBeforeUnload(); // Clear cache on navigation away
+      handleBeforeUnload();
     };
-  }, [id, router]);
+  }, [id]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setAnalysisLoading(true);
     setError(null);
     setResult(null);
 
     const params = new URLSearchParams();
-    params.append("operation", operation);
-    if (["mean", "median", "mode"].includes(operation)) {
-      if (!column) {
+    params.append("operation", state.operation);
+    if (["mean", "median", "mode"].includes(state.operation)) {
+      if (!state.column) {
         setError("Please select a column");
-        setLoading(false);
+        setAnalysisLoading(false);
         return;
       }
-      params.append("column", column);
+      params.append("column", state.column);
     } else {
-      if (!column1 || !column2) {
+      if (!state.column1 || !state.column2) {
         setError("Please select two columns");
-        setLoading(false);
+        setAnalysisLoading(false);
         return;
       }
-      params.append("column1", column1);
-      params.append("column2", column2);
+      params.append("column1", state.column1);
+      params.append("column2", state.column2);
     }
-    if (filter) params.append("filter", filter);
+    if (state.filterColumn && state.filterOperator && debouncedFilterValue) {
+      params.append("filter_column", state.filterColumn);
+      params.append("filter_operator", state.filterOperator);
+      params.append("filter_value", debouncedFilterValue);
+    }
 
     try {
       const response = await fetchWithAuth(`${BACKEND_URL}/datasets/perform/${id}/?${params.toString()}`);
@@ -120,43 +201,66 @@ const AnalyzePage = () => {
       }
       const data: Result = await response.json();
       setResult(data);
+      setActiveTab("results");
     } catch (err: any) {
       setError(err.message);
     } finally {
-      setLoading(false);
+      setAnalysisLoading(false);
     }
-  };
+  }, [state, debouncedFilterValue, id]);
 
-  const handleSaveNotes = () => {
-    localStorage.setItem(`notes_${id}`, notes);
+  const handleSaveNotes = useCallback(() => {
+    localStorage.setItem(`notes_${id}`, debouncedNotes);
     alert("Notes saved!");
-  };
+  }, [debouncedNotes, id]);
 
-  const getCompatibleColumns = (op: string) => {
+  const getCompatibleColumns = useMemo(() => {
     if (!dataset?.schema) return [];
     const typeOps = Object.values(operations).flat();
-    const opConfig = typeOps.find((o) => o.value === op);
+    const opConfig = typeOps.find((o) => o.value === state.operation);
     if (!opConfig) return [];
     return Object.entries(dataset.schema)
       .filter(([, type]) => opConfig.types.includes("any") || opConfig.types.includes(type))
       .map(([name, type]) => ({ value: name, label: `${name} (${type})` }));
-  };
+  }, [state.operation, dataset?.schema]);
+
+  const getAllColumns = useMemo(() => {
+    if (!dataset?.schema) return [];
+    return Object.entries(dataset.schema).map(([name, type]) => ({ value: name, label: `${name} (${type})` }));
+  }, [dataset?.schema]);
+
+
+  if (accessDenied) 
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-white">
+        <div className="text-center p-8 rounded-lg max-w-md">
+          <div className="relative mx-auto mb-6 w-20 h-20">
+            <Lock size={90} className="absolute inset-0" color="#FF6B2C" strokeWidth={1.5} />
+          </div>
+  
+          <h1 className="text-2xl font-bold mb-3" style={{ color: "#FF6B2C" }}>
+            Oops! Limited Access
+          </h1>
+  
+          <p className="text-gray-700 text-lg mb-4">Sorry, you dont have access to this resource right now.</p>
+  
+          <div className="w-16 h-1 mx-auto my-2" style={{ backgroundColor: "#FF6B2C", opacity: 0.5 }}></div>
+  
+          <p className="text-gray-500 mt-3 text-sm">If you think this is a mistake, please contact support.</p>
+        </div>
+      </div>
+    )
+
 
   if (loading || (dataset && !dataset.is_loaded)) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <svg
-            className="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z"></path>
+          <svg className="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z" />
           </svg>
           <h2 className="text-2xl font-semibold text-gray-800">Loading data into the workspace...</h2>
-          <p className="text-gray-600 mt-2">Please wait while we prepare your dataset.</p>
         </div>
       </div>
     );
@@ -171,183 +275,280 @@ const AnalyzePage = () => {
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 text-center">
           Workspace: {dataset.title}
         </h1>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Metadata Panel */}
-          <div className="bg-white shadow-md rounded-lg p-4 sm:p-6">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-700 mb-4">Metadata</h2>
-            <div className="space-y-2 text-gray-600 text-sm sm:text-base">
-              <p>
-                <span className="font-medium">Title:</span> {dataset.title}
-              </p>
-              <p>
-                <span className="font-medium">Category:</span> {dataset.category}
-              </p>
-              <p>
-                <span className="font-medium">Columns:</span>
-              </p>
-              <ul className="list-disc pl-5">
-                {Object.entries(dataset.schema).map(([col, type]) => (
-                  <li key={col}>{col} ({type})</li>
-                ))}
-              </ul>
-              <p>
-                <span className="font-medium">Created:</span>{" "}
-                {new Date(dataset.created_at).toLocaleDateString()}
-              </p>
-            </div>
-          </div>
 
-          {/* Analysis Panel */}
-          <div className="bg-white shadow-md rounded-lg p-4 sm:p-6">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-700 mb-4">Analysis</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Calculation Type</label>
-                <select
-                  value={calcType}
-                  onChange={(e) => {
-                    setCalcType(e.target.value);
-                    setOperation("");
-                    setColumn("");
-                    setColumn1("");
-                    setColumn2("");
-                  }}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                >
-                  <option value="">Select a type</option>
-                  {calculationTypes.map((type) => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+        <div className="flex border-b border-gray-200 mb-6">
+          {["analysis", "results", "notes"].map((tab) => (
+            <button
+              key={tab}
+              className={`flex-1 py-2 px-4 text-center ${activeTab === tab ? "border-b-2 border-blue-600 text-blue-600" : "text-gray-600"}`}
+              onClick={() => setActiveTab(tab as typeof activeTab)}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
+        </div>
 
-              {calcType && (
+        <div className="bg-white shadow-md rounded-lg p-4 sm:p-6">
+          {activeTab === "analysis" && (
+            <div>
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-700 mb-4">Analysis</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Operation</label>
-                  <select
-                    value={operation}
-                    onChange={(e) => {
-                      setOperation(e.target.value);
-                      setColumn("");
-                      setColumn1("");
-                      setColumn2("");
-                    }}
-                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                  >
-                    <option value="">Select an operation</option>
-                    {operations[calcType as keyof typeof operations].map((op) => (
-                      <option key={op.value} value={op.value}>
-                        {op.label}
-                      </option>
-                    ))}
-                  </select>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Metadata</h3>
+                  <div className="space-y-2 text-gray-600 text-sm">
+                    <p><span className="font-medium">Title:</span> {dataset.title}</p>
+                    <p><span className="font-medium">Category:</span> {dataset.category}</p>
+                    <p><span className="font-medium">Columns:</span></p>
+                    <ul className="list-disc pl-5">
+                      {Object.entries(dataset.schema).map(([col, type]) => (
+                        <li key={col}>{col} ({type})</li>
+                      ))}
+                    </ul>
+                    <p><span className="font-medium">Created:</span> {new Date(dataset.created_at).toLocaleDateString()}</p>
+                  </div>
                 </div>
-              )}
 
-              {operation && (
-                <>
-                  {operations[calcType as keyof typeof operations].find((o) => o.value === operation)?.columns === 1 ? (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Analysis Setup</h3>
+                  <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Column</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Calculation Type</label>
                       <select
-                        value={column}
-                        onChange={(e) => setColumn(e.target.value.split(" (")[0])}
-                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                        value={state.calcType}
+                        onChange={(e) => dispatch({ type: "SET_CALC_TYPE", value: e.target.value })}
+                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="">Select a column</option>
-                        {getCompatibleColumns(operation).map((col) => (
-                          <option key={col.value} value={col.value}>
-                            {col.label}
-                          </option>
+                        <option value="">Select a type</option>
+                        {calculationTypes.map((type) => (
+                          <option key={type.value} value={type.value}>{type.label}</option>
                         ))}
                       </select>
                     </div>
-                  ) : (
-                    <>
+
+                    {state.calcType && (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Column 1</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Operation</label>
                         <select
-                          value={column1}
-                          onChange={(e) => setColumn1(e.target.value.split(" (")[0])}
-                          className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                          value={state.operation}
+                          onChange={(e) => dispatch({ type: "SET_OPERATION", value: e.target.value })}
+                          className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                          <option value="">Select first column</option>
-                          {getCompatibleColumns(operation).map((col) => (
-                            <option key={col.value} value={col.value}>
-                              {col.label}
-                            </option>
+                          <option value="">Select an operation</option>
+                          {operations[state.calcType as keyof typeof operations].map((op) => (
+                            <option key={op.value} value={op.value}>{op.label}</option>
                           ))}
                         </select>
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Column 2</label>
-                        <select
-                          value={column2}
-                          onChange={(e) => setColumn2(e.target.value.split(" (")[0])}
-                          className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                    )}
+
+                    {state.operation && (
+                      <>
+                        {operations[state.calcType as keyof typeof operations].find((o) => o.value === state.operation)?.columns === 1 ? (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Column</label>
+                            <select
+                              value={state.column}
+                              onChange={(e) => dispatch({ type: "SET_COLUMN", value: e.target.value.split(" (")[0] })}
+                              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">Select a column</option>
+                              {getCompatibleColumns.map((col) => (
+                                <option key={col.value} value={col.value}>{col.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                        ) : (
+                          <>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Column 1</label>
+                              <select
+                                value={state.column1}
+                                onChange={(e) => dispatch({ type: "SET_COLUMN1", value: e.target.value.split(" (")[0] })}
+                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              >
+                                <option value="">Select first column</option>
+                                {getCompatibleColumns.map((col) => (
+                                  <option key={col.value} value={col.value}>{col.label}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Column 2</label>
+                              <select
+                                value={state.column2}
+                                onChange={(e) => dispatch({ type: "SET_COLUMN2", value: e.target.value.split(" (")[0] })}
+                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              >
+                                <option value="">Select second column</option>
+                                {getCompatibleColumns.map((col) => (
+                                  <option key={col.value} value={col.value}>{col.label}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </>
+                        )}
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Filter</label>
+                          <div className="flex space-x-2">
+                            <select
+                              value={state.filterColumn}
+                              onChange={(e) => dispatch({ type: "SET_FILTER_COLUMN", value: e.target.value.split(" (")[0] })}
+                              className="w-1/3 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">Select column</option>
+                              {getAllColumns.map((col) => (
+                                <option key={col.value} value={col.value}>{col.label}</option>
+                              ))}
+                            </select>
+                            <select
+                              value={state.filterOperator}
+                              onChange={(e) => dispatch({ type: "SET_FILTER_OPERATOR", value: e.target.value })}
+                              className="w-1/3 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              disabled={!state.filterColumn}
+                            >
+                              <option value="">Select operator</option>
+                              {operators.map((op) => (
+                                <option key={op.value} value={op.value}>{op.label}</option>
+                              ))}
+                            </select>
+                            <input
+                              type="text"
+                              value={state.filterValue}
+                              onChange={(e) => dispatch({ type: "SET_FILTER_VALUE", value: e.target.value })}
+                              placeholder="Enter value"
+                              className="w-1/3 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              disabled={!state.filterColumn || !state.filterOperator}
+                            />
+                          </div>
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={analysisLoading}
+                          className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
                         >
-                          <option value="">Select second column</option>
-                          {getCompatibleColumns(operation).map((col) => (
-                            <option key={col.value} value={col.value}>
-                              {col.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </>
+                          {analysisLoading ? "Analyzing..." : "Run Analysis"}
+                        </button>
+                      </>
+                    )}
+                    {error && <div className="mt-4 text-red-500 text-sm">{error}</div>}
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "results" && (
+            <div>
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-700 mb-4">Results</h2>
+              {analysisLoading ? (
+                <div className="text-center">
+                  <svg className="animate-spin h-8 w-8 text-blue-600 mx-auto mb-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z" />
+                  </svg>
+                  <p className="text-gray-600">Running analysis...</p>
+                </div>
+              ) : result ? (
+                <div className="space-y-4">
+                  {presentationOptions[result.operation]?.numbers && (
+                    <div className="p-4 bg-gray-50 rounded-md border border-gray-200">
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2">Numerical Results</h3>
+                      {["mean", "median", "mode"].includes(result.operation) && "column" in result && (
+                        <p className="text-sm text-gray-600">
+                          {result.operation.charAt(0).toUpperCase() + result.operation.slice(1)} of {result.column}: {"value" in result ? result.value : "N/A"}
+                        </p>
+                      )}
+                      {result.operation === "t_test" && (
+                        <p className="text-sm text-gray-600">
+                          T-Test between {result.columns[0]} and {result.columns[1]}: 
+                          t-stat = {result.t_stat.toFixed(3)}, p-value = {result.p_value.toExponential(3)}
+                        </p>
+                      )}
+                      {result.operation === "chi_square" && (
+                        <p className="text-sm text-gray-600">
+                          Chi-Square: χ² = {result.chi2.toFixed(3)}, p-value = {result.p_value.toExponential(3)}, df = {result.degrees_of_freedom}
+                        </p>
+                      )}
+                      {result.operation === "anova" && (
+                        <p className="text-sm text-gray-600">
+                          ANOVA: F-stat = {result.f_stat.toFixed(3)}, p-value = {result.p_value.toExponential(3)}
+                        </p>
+                      )}
+                      {["pearson", "spearman"].includes(result.operation) && "correlation" in result && (
+                        <p className="text-sm text-gray-600">
+                          {result.operation.charAt(0).toUpperCase() + result.operation.slice(1)} Correlation: 
+                          r = {result.correlation.toFixed(3)}, p-value = {result.p_value.toExponential(3)}
+                        </p>
+                      )}
+                      {"accuracy_note" in result && result.accuracy_note && (
+                        <p className="text-sm text-yellow-600 mt-2">{result.accuracy_note}</p>
+                      )}
+                    </div>
                   )}
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Filter</label>
-                    <input
-                      type="text"
-                      value={filter}
-                      onChange={(e) => setFilter(e.target.value)}
-                      placeholder="Enter filter condition"
-                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                    />
-                  </div>
+                  {presentationOptions[result.operation]?.graph && 'image' in result && result.image && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2">Visualization</h3>
+                      <img src={result.image} alt={`${result.operation} Plot`} className="max-w-full h-auto rounded-md border border-gray-200" />
+                      {["pearson", "spearman"].includes(result.operation) && 'slope' in result && 'intercept' in result && (
+                        <p className="mt-2 text-sm text-gray-600">
+                          Regression: Slope = {result.slope.toFixed(3)}, Intercept = {result.intercept.toFixed(3)}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 transition duration-200 text-sm sm:text-base"
-                  >
-                    {loading ? "Analyzing..." : "Run Analysis"}
-                  </button>
-                </>
+                  {presentationOptions[result.operation]?.table && 'contingency_table' in result && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2">Table</h3>
+                      <table className="w-full text-sm border-collapse border border-gray-300">
+                        <thead>
+                          <tr className="bg-gray-100">
+                            <th className="border border-gray-300 p-2">{result.columns[0]}</th>
+                            {Object.keys(Object.values(result.contingency_table)[0]).map((col) => (
+                              <th key={col} className="border border-gray-300 p-2">{col}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {result.contingency_table && Object.entries(result.contingency_table).map(([row, values], index) => (
+                            <tr key={row} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                              <td className="border border-gray-300 p-2">{row}</td>
+                              {Object.values(values).map((value, i) => (
+                                <td key={i} className="border border-gray-300 p-2">{String(value)}</td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-gray-600">No results yet. Run an analysis to see results here.</p>
               )}
-            </form>
+            </div>
+          )}
 
-            {error && <div className="mt-4 text-red-500 text-sm">{error}</div>}
-            {result && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">Result</h3>
-                <pre className="text-xs sm:text-sm text-gray-600 whitespace-pre-wrap">
-                  {JSON.stringify(result, null, 2)}
-                </pre>
-              </div>
-            )}
-          </div>
-
-          {/* Notepad Panel */}
-          <div className="bg-white shadow-md rounded-lg p-4 sm:p-6 flex flex-col">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-700 mb-4">Notepad</h2>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Jot down your observations here..."
-              className="w-full flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 resize-none text-sm sm:text-base min-h-[200px]"
-            />
-            <button
-              onClick={handleSaveNotes}
-              className="mt-4 bg-green-600 text-white p-2 rounded-md hover:bg-green-700 transition duration-200 text-sm sm:text-base"
-            >
-              Save Notes
-            </button>
-          </div>
+          {activeTab === "notes" && (
+            <div className="flex flex-col h-full">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-700 mb-4">Notes</h2>
+              <textarea
+                value={state.notes}
+                onChange={(e) => dispatch({ type: "SET_NOTES", value: e.target.value })}
+                placeholder="Jot down your observations here..."
+                className="w-full flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 resize-none min-h-[300px]"
+              />
+              <button
+                onClick={handleSaveNotes}
+                className="mt-4 bg-green-600 text-white p-2 rounded-md hover:bg-green-700"
+              >
+                Save Notes
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -355,3 +556,13 @@ const AnalyzePage = () => {
 };
 
 export default AnalyzePage;
+
+
+
+
+
+
+
+
+
+

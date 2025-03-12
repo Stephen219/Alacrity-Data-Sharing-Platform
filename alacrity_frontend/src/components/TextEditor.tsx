@@ -97,7 +97,7 @@ const TextEditor = ({ content, onChange, editorInstance, setEditorInstance,
   }
 
   return (
-    <div tabIndex={0} className={`w-full max-w-4xl prose relative border border-gray-300 rounded-lg bg-white shadow-sm ${className}`}
+    <div tabIndex={0} className={`w-full max-w-4xl prose relative border border-gray-300 rounded-lg bg-white dark:text-gray-100 dark:bg-gray-700 shadow-sm ${className}`}
     onClick={() => editor.commands.focus()}>
       <EditorContent editor={editor} className=" text-lg bg-transparent " />
     </div>

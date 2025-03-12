@@ -66,6 +66,18 @@ export const NAV_ITEMS = [
         href: "/datasets/all",
         imageSrc: "/navbar/researcher/browseDatasets.png",
       },
+      {
+        name: "Bookmarks",
+        href: "/datasets/bookmarks",
+        imageSrc: "/navbar/researcher/browseDatasets.png",
+      },
+      {
+        name: "My Datasets",
+        href: "/researcher/datasetWithAccess",
+        imageSrc: "/navbar/datasets/mydatasets.png",
+      
+        
+      }
       ],
     },
     {
@@ -113,39 +125,44 @@ export const NAV_ITEMS = [
       ],
     },
     {
-      label: "My Account",
-      value: "my-account",
-      roles: ["researcher", "organization_admin", "contributor"],
-      featured: [
-        {
-          name: "Edit Profile",
-          href: "#",
-          imageSrc: "/navbar/account/editProfile.png",
-        },
-        {
-          name: "Account Preferences",
-          href: "#",
-          imageSrc: "/navbar/account/preferences.png",
-        },      
-      ],
-    },    
-    {
-      label: "purchases",
-      value: "purchases",
+      label: "Browse Research",
+      value: "browse-research",
       roles: ["researcher"],
       featured: [
+      {
+        name: "Explore Research",
+        href: "/researcher/allSubmissions",
+        imageSrc: "/navbar/researcher/browseDatasets.png",
+      },
+      {
+        name: "Bookmarks",
+        href: "/researcher/bookmarks",
+        imageSrc: "/navbar/researcher/browseDatasets.png",
+      },
+      ],
+    },
+    {
+      label: "My Hub",
+      value: "my-account",
+      roles: ["researcher", "contributor"],
+      featured: [
         {
-          name: "Subscription & Billing",
-          href: "#",
-          imageSrc: "/navbar/account/billing.png",
+          name: "Research Library",
+          href: "/researcher/Submissions",
+          imageSrc: "/navbar/account/purchases.png",
+        },
+        {
+          name: "Drafts",
+          href: "/researcher/drafts",
+          imageSrc: "/navbar/account/purchases.png",
         },
         {
           name: "Purchase History",
           href: "#",
-          imageSrc: "/navbar/account/purchases.png",
-        }
-      ]
-    }    
+          imageSrc: "/navbar/account/billing.png",
+        },      
+      ],
+    },     
   ];
 
 

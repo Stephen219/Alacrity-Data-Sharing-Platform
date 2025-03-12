@@ -14,6 +14,7 @@ const config: Config = {
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    'lucide-react': require.resolve('lucide-react'),
   },
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {

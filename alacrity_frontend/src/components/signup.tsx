@@ -126,7 +126,7 @@ export default function SignUp() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-card py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8">
         <div className="text-center mb-8">
           <h1 className="text-5xl font-extrabold text-black mb-2">
@@ -151,7 +151,7 @@ export default function SignUp() {
                 type="text"
                 name="firstname"
                 value={formData.firstname}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                className="w-full px-4 py-2 border dark:bg-gray-200 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                 onChange={handleInputChange}
                 placeholder="John"
                 aria-invalid={serverError && !formData.firstname ? "true" : "false"}
@@ -169,7 +169,7 @@ export default function SignUp() {
                 type="text"
                 name="surname"
                 value={formData.surname}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                className="w-full dark:bg-gray-200 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                 onChange={handleInputChange}
                 placeholder="Doe"
                 aria-invalid={serverError && !formData.surname ? "true" : "false"}
@@ -189,7 +189,7 @@ export default function SignUp() {
                 type="tel"
                 name="phonenumber"
                 value={formData.phonenumber}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                className="w-full dark:bg-gray-200 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                 onChange={handleInputChange}
                 placeholder="12345678901"
                 aria-invalid={serverError && !formData.phonenumber ? "true" : "false"}
@@ -212,7 +212,7 @@ export default function SignUp() {
                 type="email"
                 name="email"
                 value={formData.email}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                className="w-full px-4 py-2 border dark:bg-gray-200 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                 onChange={handleInputChange}
                 placeholder="john.doe@example.com"
               />
@@ -241,7 +241,7 @@ export default function SignUp() {
                 type="password"
                 name="password"
                 value={formData.password}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                className="w-full dark:bg-gray-200 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                 onChange={handleInputChange}
                 placeholder="••••••••"
                 aria-invalid={serverError && !formData.password ? "true" : "false"}
@@ -259,7 +259,7 @@ export default function SignUp() {
                 type="password"
                 name="confirmPassword"
                 value={formData.confirmPassword}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                className="w-full dark:bg-gray-200 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                 onChange={handleInputChange}
                 placeholder="••••••••"
                 aria-invalid={serverError && !formData.confirmPassword ? "true" : "false"}
@@ -277,7 +277,7 @@ export default function SignUp() {
                 type="text"
                 name="field"
                 value={formData.field}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                className="w-full px-4 dark:bg-gray-200 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                 onChange={handleInputChange}
                 placeholder="Your field of expertise"
                 aria-invalid={serverError && !formData.field ? "true" : "false"}
@@ -290,7 +290,7 @@ export default function SignUp() {
           <div className="pt-4">
             <Button
               type="submit"
-              className="w-full"
+              className="w-full dark:bg-orange-500 dark:hover:bg-orange-300"
               disabled={loading}
               aria-busy={loading}
             >

@@ -155,7 +155,7 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
   return (
     <form className="space-y-6">
       <div>
-        <label className="block text-sm font-medium dark:text-gray-300">Title</label>
+        <label className="block text-sm font-medium dark:text-gray-100">Title</label>
         <TextEditor
           content={formData.title}
           onChange={(content) => setFormData((prev) => ({ ...prev, title: content }))}
@@ -167,7 +167,7 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
         />
       </div>
       <div>
-        <label className="block text-sm font-medium dark:text-gray-300">Description</label>
+        <label className="block text-sm font-medium dark:text-gray-100">Description</label>
         <TextEditor
           content={formData.description}
           onChange={(content) => setFormData((prev) => ({ ...prev, description: content }))}
@@ -177,7 +177,7 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
         />
       </div>
       <div>
-        <label className="block text-sm font-medium dark:text-gray-300">Raw Results</label>
+        <label className="block text-sm font-medium dark:text-gray-100">Raw Results</label>
         <TextEditor
           content={formData.raw_results}
           onChange={(content) => setFormData((prev) => ({ ...prev, raw_results: content }))}
@@ -187,7 +187,7 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
         />
       </div>
       <div>
-        <label className="block text-sm font-medium dark:text-gray-300">Summary</label>
+        <label className="block text-sm font-medium dark:text-gray-100">Summary</label>
         <TextEditor
           content={formData.summary}
           onChange={(content) => setFormData((prev) => ({ ...prev, summary: content }))}
@@ -197,7 +197,7 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
         />
       </div>
       <div>
-        <label className="block text-sm font-medium dark:text-gray-300">Upload Image</label>
+        <label className="block text-sm font-medium dark:text-gray-100">Upload Image</label>
         <input type="file" accept="image/*" onChange={handleImageChange} className="w-full p-2 border rounded" />
       </div>
       <div className="flex justify-center gap-4 mt-6">

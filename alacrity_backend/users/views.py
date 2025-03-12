@@ -159,7 +159,8 @@ class RegisterView(APIView):
 class LoggedInUser(APIView):
     def get(self, request):
         user = request.user
-        researchers = list(AnalysisSubmission.objects.filter(researcher=user)
+        researchers = list(AnalysisSubmission.objects.filter(researcher=user, status="published",
+        is_private=False)
                            .values('id', 'title', 'description', 'status', 'submitted_at'))
         bookmarked_researches = []
     
@@ -195,7 +196,8 @@ class UserView(APIView):
         current_user = request.user  # Authenticated user
 
         # Fetch researches for this user
-        researchers = list(AnalysisSubmission.objects.filter(researcher=user)
+        researchers = list(AnalysisSubmission.objects.filter(researcher=user, status="published",
+        is_private=False)
                           .values('id', 'title', 'description', 'status', 'submitted_at'))
         bookmarked_researches = []  
 
@@ -356,21 +358,10 @@ class UserDashboardView(APIView):
                 'request_status' ,
                 'created_at',
                 'updated_at'
-            ) 
-            datasets_having_access = Dataset.objects.filter(
-            requests__researcher_id=user,  
-            requests__request_status="approved"  
-        ).values(
-            'dataset_id',  
-            'title',
-            'description',
-            'contributor_id__organization__name',  
-            'requests__updated_at', 
-            'tags',
-            'category'
-        )
+            )
+            datasets_having_access = get_datasets_user_has_access(user.id)
             data = {
-                "datasets_accessed": 1,
+                "datasets_accessed": datasets_having_access.count(),
                 "pending_reviews": DatasetRequest.objects.filter(researcher_id=user, request_status="pending").count(),
                 "research_submitted": 1,
                 "requests_approved": DatasetRequest.objects.filter(researcher_id=user, request_status="approved").count(),
@@ -379,6 +370,11 @@ class UserDashboardView(APIView):
             
             data["all_datasets_requests"] = list(all_requests)
             data["datasets_having_access"] = list(datasets_having_access)
+
+
+
+
+            
             return JsonResponse(data)
         elif user.role == "contributor":
             pending_datasets = DatasetRequest.objects.filter(
@@ -495,5 +491,35 @@ class MemberProfileView(APIView):
             return JsonResponse({'message': 'Member removed'}, status=status.HTTP_204_NO_CONTENT)
         except User.DoesNotExist:
             return JsonResponse({'error': 'Member not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+def get_datasets_user_has_access(user_id):
+    """"
+    This function is used to get all the datasets the user has access to
+    """
+    from datasets.models import Dataset
+    from dataset_requests.models import DatasetRequest
+    datasets_having_access = Dataset.objects.filter(
+        requests__researcher_id=user_id,  
+        requests__request_status="approved"  
+   ).values(
+    'dataset_id',  
+    'title',
+    'description',
+    'contributor_id__organization__name' ,
+    'requests__updated_at',
+    'tags',
+    'category'
+)
+    return datasets_having_access
+
+
+
+class DatasetWithAccessView(APIView):
+    permission_classes = [IsAuthenticated]
+    @role_required(["researcher"])
+    def get(self, request):
+        user = request.user
+        datasets_having_access = get_datasets_user_has_access(user.id)
+        return JsonResponse(list(datasets_having_access), safe=False)
 
     

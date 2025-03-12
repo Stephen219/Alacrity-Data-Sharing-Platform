@@ -29,7 +29,7 @@ const AnalysisListView = ({
       <div className="flex justify-end mt-24">
         <select
           id="sortOrder"
-          className="border p-2 rounded hover:bg-gray-100 hover:border-black rounded-lg"
+          className="border p-2 rounded hover:bg-gray-100 hover:border-black rounded-lg dark:bg-gray-500"
           value={sortOrder}
           onChange={(e) => setSortOrder(e.target.value as "newest" | "oldest")}
         >
@@ -46,13 +46,13 @@ const AnalysisListView = ({
             {submissions.map((submission) => (
               <li
                 key={submission.id}
-                className="h-64 border rounded-lg p-6 gap-8 flex justify-between bg-white hover:shadow-xl transition-shadow duration-300 ease-in-out transform hover:scale-105 hover:bg-gray-50 hover:border-black"
+                className="h-64 border rounded-lg p-6 gap-8 flex justify-between bg-white dark:bg-gray-400 dark:hover:border-white hover:shadow-xl transition-shadow duration-300 ease-in-out transform hover:scale-105 hover:bg-gray-50 dark:hover:bg-gray-500 hover:border-black"
               >
                 <div className="overflow-auto scrollbar-custom">
-                  <div className="text-lg font-semibold text-gray-800 transition-colors duration-300 ease-in-out">
+                  <div className="text-lg dark:text-gray-100 font-semibold text-gray-800 transition-colors duration-300 ease-in-out">
                     {parse(submission.title)}
                   </div>
-                  <div className="text-gray-600">{parse(submission.summary)}</div>
+                  <div className="text-gray-600 dark:text-gray-100">{parse(submission.summary)}</div>
                 </div>
                 {renderButtons(submission.id, submission.status)}
               </li>

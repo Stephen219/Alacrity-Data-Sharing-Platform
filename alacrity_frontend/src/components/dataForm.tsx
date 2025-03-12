@@ -30,6 +30,7 @@ const DatasetForm = () => {
   const [visible, setVisible] = useState({ error: false, message: false })
   const [progress, setProgress] = useState({ error: 100, message: 100 })
   const [showOverlay, setShowOverlay] = useState(false)
+  const [price, setPrice] = useState("");
 
   useEffect(() => {
     if (serverError || serverMessage) {
@@ -95,6 +96,7 @@ const DatasetForm = () => {
     formData.append("description", description)
     formData.append("category", category)
     formData.append("tags", tags.join(","))
+    formData.append("price", price);
     formData.append("fileUrl","")
     if (file) formData.append("file", file)
     try {
@@ -127,6 +129,7 @@ const DatasetForm = () => {
       setCategory("")
       setTags([])
       setFile(null)
+      setPrice("");
       setAgreedToTerms(false)
       setErrors({})
     } catch (error) {
@@ -149,11 +152,11 @@ const DatasetForm = () => {
 
   return (
     <MaxWidthWrapper>
-    <div className="min-h-screen bg-white flex items-center justify-center p-4">
-      <div className="w-full max-w-3xl bg-white rounded-xl shadow-2xl xl:px-10 xl:py-8 xl:rounded-2xl xl:max-w-6xl xl:min-h-[90vh] md:mb-9">
+    <div className="min-h-screen bg-card flex items-center justify-center p-4">
+      <div className="w-full max-w-3xl dark:bg-gray-400 bg-gray-400 rounded-xl shadow-2xl xl:px-10 xl:py-8 xl:rounded-2xl xl:max-w-6xl xl:min-h-[90vh] md:mb-9">
      
         <div className="p-6 border-b border-gray-200">
-          <h2 className="text-3xl font-bold text-gray-900">Add a new dataset</h2>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Add a new dataset</h2>
         </div>
         <div className="fixed top-4 right-4 z-50 space-y-2">
           {serverError && visible.error && (
@@ -207,11 +210,11 @@ const DatasetForm = () => {
         </div>
         <form className="p-7 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-2 relative">
-            <label htmlFor="title" className="flex items-center text-sm font-medium text-gray-700">
+            <label htmlFor="title" className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-100">
               Title <span className="text-red-500 ml-1">*</span>
               <div className="group relative ml-1">
                 <svg
-                  className="w-4 h-4 text-gray-400 cursor-pointer"
+                  className="w-4 h-4 text-gray-400 cursor-pointer dark:text-gray-100"
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 20 20"
                   fill="currentColor"
@@ -222,7 +225,7 @@ const DatasetForm = () => {
                     clipRule="evenodd"
                   />
                 </svg>
-                <div className="absolute left-0 bottom-full mb-1 hidden w-40 bg-black text-white text-xs rounded-md p-2 group-hover:block">
+                <div className="dark:text-gray-100 absolute left-0 bottom-full mb-1 hidden w-40 bg-black text-white text-xs rounded-md p-2 group-hover:block ">
                   The title should be short and descriptive.
                 </div>
               </div>
@@ -232,7 +235,7 @@ const DatasetForm = () => {
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-[#FF6B00] focus:border-[#FF6B00]"
+              className="w-full dark:text-gray-800 dark:bg-gray-300 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-[#FF6B00] focus:border-[#FF6B00]"
               placeholder="Enter dataset title"
             />
 
@@ -246,11 +249,11 @@ const DatasetForm = () => {
           </div>
 
           <div className="space-y-2 relative">
-            <label htmlFor="description" className="flex items-center text-sm font-medium text-gray-700">
+            <label htmlFor="description" className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-100">
               Description <span className="text-red-500 ml-1">*</span>
               <div className="group relative ml-1">
                 <svg
-                  className="w-4 h-4 text-gray-400 cursor-pointer"
+                  className="w-4 h-4 text-gray-400 cursor-pointer dark:text-gray-100"
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 20 20"
                   fill="currentColor"
@@ -261,7 +264,7 @@ const DatasetForm = () => {
                     clipRule="evenodd"
                   />
                 </svg>
-                <div className="absolute left-0 bottom-full mb-1 hidden w-52 bg-black text-white text-xs rounded-md p-2 group-hover:block">
+                <div className="dark:text-gray-100 absolute left-0 bottom-full mb-1 hidden w-52 bg-black text-white text-xs rounded-md p-2 group-hover:block">
                   Provide a detailed description of the dataset.
                 </div>
               </div>
@@ -271,18 +274,18 @@ const DatasetForm = () => {
               rows={4}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-[#FF6B00] focus:border-[#FF6B00]"
+              className=" dark:text-gray-100 dark:bg-gray-300 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-[#FF6B00] focus:border-[#FF6B00]"
               placeholder="Enter dataset description"
             ></textarea>
             {errors.description && <p className="text-red-500 text-xs">{errors.description}</p>}
           </div>
 
           <div className="space-y-2 relative">
-            <label htmlFor="tags" className="flex items-center text-sm font-medium text-gray-700">
-              Tags <span className="text-red-500 ml-1">*</span>
+            <label htmlFor="tags" className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-100">
+              Tags <span className="text-red-500 ml-1 dark:text-gray-100">*</span>
               <div className="group relative ml-1">
                 <svg
-                  className="w-4 h-4 text-gray-400 cursor-pointer"
+                  className="w-4 h-4 text-gray-400 cursor-pointer dark:text-gray-100"
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 20 20"
                   fill="currentColor"
@@ -293,7 +296,7 @@ const DatasetForm = () => {
                     clipRule="evenodd"
                   />
                 </svg>
-                <div className="absolute left-0 bottom-full mb-1 hidden w-44 bg-black text-white text-xs rounded-md p-2 group-hover:block">
+                <div className="dark:text-gray-100 absolute left-0 bottom-full mb-1 hidden w-44 bg-black text-white text-xs rounded-md p-2 group-hover:block">
                   Enter tags separated by commas (e.g., AI, Research, Data).
                 </div>
               </div>
@@ -303,7 +306,7 @@ const DatasetForm = () => {
               id="tags"
               value={tags.join(",")}
               onChange={(e) => setTags(e.target.value.split(","))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#FF6B00] focus:border-[#FF6B00]"
+              className="dark:text-gray-100 dark:bg-gray-300 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#FF6B00] focus:border-[#FF6B00]"
               placeholder="Comma-separated tags"
             />
             {errors.tags && <p className="text-red-500 text-xs">{errors.tags}</p>}
@@ -311,11 +314,11 @@ const DatasetForm = () => {
 
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2 relative">
-              <label htmlFor="category" className="flex items-center text-sm font-medium text-gray-700">
+              <label htmlFor="category" className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-100">
                 Category <span className="text-red-500 ml-1">*</span>
                 <div className="group relative ml-1">
                   <svg
-                    className="w-4 h-4 text-gray-400 cursor-pointer"
+                    className="w-4 h-4 text-gray-400 cursor-pointer dark:text-gray-100"
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 20 20"
                     fill="currentColor"
@@ -326,7 +329,7 @@ const DatasetForm = () => {
                       clipRule="evenodd"
                     />
                   </svg>
-                  <div className="absolute left-0 bottom-full mb-1 hidden w-44 bg-black text-white text-xs rounded-md p-2 group-hover:block">
+                  <div className="dark:text-gray-100 absolute left-0 bottom-full mb-1 hidden w-44 bg-black text-white text-xs rounded-md p-2 group-hover:block">
                     Select the most relevant category for your dataset.
                   </div>
                 </div>
@@ -336,7 +339,7 @@ const DatasetForm = () => {
                   id="category"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm appearance-none focus:outline-none focus:ring-1 focus:ring-[#FF6B00] focus:border-[#FF6B00]"
+                  className="w-full dark:bg-gray-300 px-3 py-2 border border-gray-300 rounded-md shadow-sm appearance-none focus:outline-none focus:ring-1 focus:ring-[#FF6B00] focus:border-[#FF6B00] text-black"
                 >
                   <option value="">Select category</option>
                   <option value="category1">Category 1</option>
@@ -344,7 +347,7 @@ const DatasetForm = () => {
                   <option value="category3">Category 3</option>
                 </select>
                 <svg
-                  className="absolute right-3 top-2.5 h-5 w-5 text-gray-400 pointer-events-none"
+                  className="absolute right-3 top-2.5 h-5 w-5 text-gray-400 pointer-events-none dark:text-gray-100"
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 20 20"
                   fill="currentColor"
@@ -360,11 +363,11 @@ const DatasetForm = () => {
             </div>
 
             <div className="space-y-2 relative">
-              <label htmlFor="file" className="flex items-center text-sm font-medium text-gray-700">
+              <label htmlFor="file" className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-100">
                 Select file <span className="text-red-500 ml-1">*</span>
                 <div className="group relative ml-1">
                   <svg
-                    className="w-4 h-4 text-gray-400 cursor-pointer"
+                    className="w-4 h-4 text-gray-400 cursor-pointer dark:text-gray-100"
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 20 20"
                     fill="currentColor"
@@ -384,7 +387,7 @@ const DatasetForm = () => {
                 type="file"
                 id="file"
                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-[#FF6B00] focus:border-[#FF6B00]"
+                className="w-full px-3 py-2 border dark:bg-gray-300 border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-[#FF6B00] focus:border-[#FF6B00]"
               />
               {errors.file && <p className="text-red-500 text-xs">{errors.file}</p>}
             </div>
@@ -398,7 +401,7 @@ const DatasetForm = () => {
               onChange={(e) => setAgreedToTerms(e.target.checked)}
               className="h-4 w-4 text-[#FF6B00] border-gray-300 rounded focus:ring-[#FF6B00]"
             />
-            <label htmlFor="license" className="text-sm text-gray-700">
+            <label htmlFor="license" className="text-sm text-gray-700 dark:text-gray-300">
               I agree to the{" "}
               <a href="#" className="text-[#FF6B00] underline">
                 license terms
@@ -407,7 +410,7 @@ const DatasetForm = () => {
             </label>
             <div className="group relative ml-1">
               <svg
-                className="w-4 h-4 text-gray-400 cursor-pointer"
+                className="w-4 h-4 text-gray-400 cursor-pointer dark:text-gray-100"
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 20 20"
                 fill="currentColor"
@@ -424,6 +427,23 @@ const DatasetForm = () => {
             </div>
           </div>
           {errors.agreedToTerms && <p className="text-red-500 text-xs">{errors.agreedToTerms}</p>}
+
+              {/* Price Input */}
+    <div className="space-y-2 relative">
+        <label htmlFor="price" className="flex items-center text-sm font-medium text-gray-700">
+            Dataset Price (£) <span className="text-red-500 ml-1">*</span>
+        </label>
+        <input
+            type="number"
+            id="price"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            min="0"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-[#FF6B00] focus:border-[#FF6B00]"
+            placeholder="Enter price (£) or leave as 0 for free datasets"
+        />
+        {errors.price && <p className="text-red-500 text-xs">{errors.price}</p>}
+    </div>
 
           <button
             type="submit"

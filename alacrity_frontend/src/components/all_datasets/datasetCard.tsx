@@ -1,9 +1,12 @@
 "use client";
 
 import React from "react";
-import { Building2, Database, HardDrive } from "lucide-react";
+import { Bookmark, Building2, Database, HardDrive } from "lucide-react";
+import { fetchWithAuth } from "@/libs/auth"
+import { BACKEND_URL } from "@/config"
 
 interface DatasetCardProps {
+  dataset_id: string;
   title: string;
   description: string;
   organization: string;
@@ -14,10 +17,15 @@ interface DatasetCardProps {
   entries: number;
   size: string;
   viewMode: "grid" | "list";
-  darkMode: boolean;
+  //darkMode: boolean;
+  extraActions?: () => void;
+  isBookmarked: boolean;
+  price : number;
+  onToggleBookmark: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 export const DatasetCard: React.FC<DatasetCardProps> = ({
+  dataset_id,
   title,
   description,
   organization,
@@ -27,21 +35,54 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
   category,
   entries,
   size,
+ 
   viewMode,
-  darkMode,
+ // darkMode,
+  isBookmarked,
+  onToggleBookmark,
+  
 }) => {
   const isListView = viewMode === "list";
   const truncatedDescription = description.length > 200 ? description.substring(0, 200) + "..." : description;
 
+  //this may need to be modified but for now it returns paypal checkout 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handlePurchase = async () => {
+    try {
+      const response = await fetchWithAuth(`${BACKEND_URL}/payments/paypal/payment/${dataset_id}/`, { 
+        method: "POST",
+      });
+  
+      if (!response.ok) {
+        throw new Error("Failed to initiate PayPal payment");
+      }
+  
+      const data = await response.json();
+  
+      if (data.approval_url) {
+        console.log("Redirecting to PayPal:", data.approval_url);
+        window.location.href = data.approval_url;
+      } else {
+        console.error("ERROR: No approval URL received");
+        alert("Error: Unable to process payment.");
+      }
+    } catch (error) {
+      console.error("Payment error:", error);
+      alert("Failed to initiate payment. Please try again.");
+    }
+  };
+  
+
   return (
     <div
-      className={`
-        ${darkMode ? "bg-gray-800 text-white" : "bg-white text-gray-900"}
-        rounded-lg shadow-md overflow-hidden transition-all duration-300
-        hover:shadow-lg hover:-translate-y-1
-        ${isListView ? "flex" : "flex flex-col"}
-      `}
-    >
+  className={`
+    bg-white dark:bg-gray-200 text-gray-900
+    rounded-lg shadow-md overflow-hidden transition-all duration-300
+    hover:shadow-lg hover:-translate-y-1
+    ${isListView ? "flex" : "flex flex-col"}
+  `}
+>
+
       <div className={`relative ${isListView ? "w-1/3" : "w-full h-48"}`}>
         <img
           src={imageUrl || "/placeholder.svg"}
@@ -58,7 +99,7 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
       <div className={`p-6 flex flex-col justify-between ${isListView ? "w-2/3" : "w-full"}`}>
         <div>
           <h3 className="text-xl font-semibold mb-2 line-clamp-2">{title}</h3>
-          <p className={`${darkMode ? "text-gray-300" : "text-gray-600"} mb-4 line-clamp-3`}>
+          <p className="text-gray-600 mb-4 line-clamp-3">
             {truncatedDescription}
           </p>
         </div>
@@ -66,7 +107,7 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
         <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
           <div className="flex items-center gap-2">
             <Building2 size={16} className="text-[#ff6b2c]" />
-            <span className={darkMode ? "text-gray-300" : "text-gray-500"}>{organization}</span>
+            <span className="text-gray-500">{organization}</span>
           </div>
           <div className="flex items-center gap-2">
             <svg
@@ -81,15 +122,15 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
                 clipRule="evenodd"
               />
             </svg>
-            <span className={darkMode ? "text-gray-300" : "text-gray-500"}>{dateUploaded}</span>
+            <span className="text-gray-500">{dateUploaded}</span>
           </div>
           <div className="flex items-center gap-2">
             <Database size={16} className="text-[#ff6b2c]" />
-            <span className={darkMode ? "text-gray-300" : "text-gray-500"}>{entries.toLocaleString()} entries</span>
+            <span className="text-gray-500">{entries.toLocaleString()} entries</span> 
           </div>
           <div className="flex items-center gap-2">
             <HardDrive size={16} className="text-[#ff6b2c]" />
-            <span className={darkMode ? "text-gray-300" : "text-gray-500"}>{size}</span>
+            <span className="text-gray-500">{size}</span>
           </div>
 
           <span className="absolute top-2 left-2 bg-black text-white text-xs px-2 py-1 rounded-full flex items-center">
@@ -112,21 +153,40 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {tags
-            .filter((tag) => tag.trim() !== "")
-            .map((tag, index) => (
-              <span
-                key={`${tag}-${index}`}
-                className={`
-                  ${darkMode ? "bg-gray-700 text-orange-400" : "bg-orange-100 text-orange-800"}
-                  px-2 py-1 rounded-full text-sm font-medium
-                `}
-              >
-                {tag}
-              </span>
-            ))}
+        {tags
+  .filter((tag) => tag.trim() !== "")
+  .map((tag, index) => (
+    <span
+      key={`${tag}-${index}`}
+      className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm font-medium"
+    >
+      {tag}
+    </span>
+  ))}
+
+
         </div>
-      </div>
+{/* Bookmark Button */}
+<button
+  onClick={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onToggleBookmark(e);
+  }}
+  aria-label="Bookmark Dataset"
+>
+  <Bookmark
+    size={24}
+    className={`mt-4 transition-colors duration-300 ${
+      isBookmarked ? "fill-alacrityred text-alacrityred" : "text-gray-400"
+    }`}
+    fill={isBookmarked ? "#FF6B2C" : "none"} 
+  />
+</button>
+
+
+
+    </div>
     </div>
   );
 };

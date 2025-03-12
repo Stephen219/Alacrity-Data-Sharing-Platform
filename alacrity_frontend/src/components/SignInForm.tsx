@@ -49,7 +49,7 @@ const SignInForm: React.FC = () => {
 
 
   return (
-    <section className="min-h-screen bg-white flex items-center justify-center p-4">
+    <section className="min-h-screen bg-card flex items-center justify-center p-4">
       <div className="flex flex-col md:flex-row items-center bg-white rounded-lg shadow-2xl md:max-w-3xl w-full overflow-hidden">
         <div className="hidden md:flex w-[50%] lg:w-[50%] bg-white items-center justify-center p-4 rounded-l-lg">
           <Image 
@@ -120,7 +120,7 @@ const SignInForm: React.FC = () => {
                 </a>
               </div>
 
-              <Button className="w-full" type="submit">Sign in</Button>
+              <Button className="w-full dark:bg-orange-500" type="submit">Sign in</Button>
 
 
               <p className="text-sm text-gray-600">
