@@ -335,12 +335,6 @@ const AnalyzePage = () => {
 
       const response = await fetchWithAuth(url, {
         method: "GET",
-        onDownloadProgress: (progressEvent: any) => {
-          if (progressEvent.lengthComputable) {
-            const percent = (progressEvent.loaded / progressEvent.total) * 100
-            setDownloadProgress(percent)
-          }
-        },
       })
 
       if (!response.ok) {
@@ -404,7 +398,7 @@ const AnalyzePage = () => {
         }
         const data: Result = await response.json()
         setResult(data)
-        setActiveTab("results") // Automatically switch to results tab
+        setActiveTab("results")
       } catch (err: any) {
         setError(err.message)
       } finally {
@@ -1107,6 +1101,9 @@ const AnalyzePage = () => {
           <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
             <h3 className="text-xl font-bold mb-4" style={{ color: "#f97316" }}>
               Terms and Conditions
+            </h3>
+            <h3 className="text-xl font-bold mb-4 text-alacrityred " >
+             THIS WILL TAKE A LONG TIME TO LOAD DEPENDING ON THE SIZE OF THE DATASET
             </h3>
             <div className="max-h-60 overflow-y-auto mb-4 text-gray-700 text-sm border border-gray-200 p-3 rounded-md">
               <p className="mb-3">By downloading this encrypted data, you agree to the following terms:</p>
