@@ -4,7 +4,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useReducer, useCallback } from "react";
-import {  useParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import { fetchWithAuth } from "@/libs/auth";
 import { BACKEND_URL } from "@/config";
 import { Lock } from "lucide-react";
@@ -16,12 +16,7 @@ type Result =
   | { operation: "t_test"; t_stat: number; p_value: number; image?: string; accuracy_note?: string; columns: [string, string] }
   | { operation: "chi_square"; chi2: number; p_value: number; degrees_of_freedom: number; contingency_table: Record<string, any>; image?: string; accuracy_note?: string; columns: [string, string] }
   | { operation: "anova"; f_stat: number; p_value: number; image?: string; accuracy_note?: string; columns: [string, string] }
-  | { operation: "pearson" | "spearman"; correlation: number; p_value: number; image: string; slope: number; intercept: number; columns: [string, string] }
-  | { operation: "t_test"; t_stat: number; p_value: number; image?: string; accuracy_note?: string; columns: [string, string] }
-  | { operation: "chi_square"; chi2: number; p_value: number; degrees_of_freedom: number; contingency_table: Record<string, any>; image?: string; accuracy_note?: string; columns: [string, string] }
-  | { operation: "anova"; f_stat: number; p_value: number; image?: string; accuracy_note?: string; columns: [string, string] }
   | { operation: "pearson" | "spearman"; correlation: number; p_value: number; image: string; slope: number; intercept: number; columns: [string, string] };
-
 
 const calculationTypes = [
   { value: "descriptive", label: "Descriptive Statistics" },
@@ -66,7 +61,6 @@ const operators = [
   { value: "<=", label: "Less or Equal (<=)" },
 ];
 
-// State Reducer
 const initialState = {
   calcType: "",
   operation: "",
@@ -81,26 +75,16 @@ const initialState = {
 
 const reducer = (state: typeof initialState, action: { type: string; value: string }) => {
   switch (action.type) {
-    case "SET_CALC_TYPE":
-      return { ...state, calcType: action.value, operation: "", column: "", column1: "", column2: "" };
-    case "SET_OPERATION":
-      return { ...state, operation: action.value, column: "", column1: "", column2: "" };
-    case "SET_COLUMN":
-      return { ...state, column: action.value };
-    case "SET_COLUMN1":
-      return { ...state, column1: action.value };
-    case "SET_COLUMN2":
-      return { ...state, column2: action.value };
-    case "SET_FILTER_COLUMN":
-      return { ...state, filterColumn: action.value };
-    case "SET_FILTER_OPERATOR":
-      return { ...state, filterOperator: action.value };
-    case "SET_FILTER_VALUE":
-      return { ...state, filterValue: action.value };
-    case "SET_NOTES":
-      return { ...state, notes: action.value };
-    default:
-      return state;
+    case "SET_CALC_TYPE": return { ...state, calcType: action.value, operation: "", column: "", column1: "", column2: "" };
+    case "SET_OPERATION": return { ...state, operation: action.value, column: "", column1: "", column2: "" };
+    case "SET_COLUMN": return { ...state, column: action.value };
+    case "SET_COLUMN1": return { ...state, column1: action.value };
+    case "SET_COLUMN2": return { ...state, column2: action.value };
+    case "SET_FILTER_COLUMN": return { ...state, filterColumn: action.value };
+    case "SET_FILTER_OPERATOR": return { ...state, filterOperator: action.value };
+    case "SET_FILTER_VALUE": return { ...state, filterValue: action.value };
+    case "SET_NOTES": return { ...state, notes: action.value };
+    default: return state;
   }
 };
 
@@ -121,8 +105,11 @@ const AnalyzePage = () => {
   const [result, setResult] = useState<Result | null>(null);
   const [loading, setLoading] = useState(true);
   const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [downloadLoading, setDownloadLoading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [accessDenied, setAccessDenied] = useState(false);
+  const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
 
   const debouncedFilterValue = useDebounce(state.filterValue, 300);
   const debouncedNotes = useDebounce(state.notes, 500);
@@ -132,9 +119,6 @@ const AnalyzePage = () => {
       setLoading(true);
       try {
         const response = await fetchWithAuth(`${BACKEND_URL}/datasets/details/${id}/`);
-        console.log(response.status);
-
-
         if (response.status === 403) {
           setAccessDenied(true);
           return;
@@ -162,6 +146,48 @@ const AnalyzePage = () => {
       handleBeforeUnload();
     };
   }, [id]);
+
+  const handleDownload = useCallback(async () => {
+    if (!dataset) return;
+    setDownloadLoading(true);
+    setDownloadProgress(0);
+    setError(null);
+    try {
+      const params = new URLSearchParams();
+      if (selectedColumns.length) params.append("columns", selectedColumns.join(","));
+      const url = `${BACKEND_URL}/datasets/download/${id}/?${params.toString()}`;
+
+      const response = await fetchWithAuth(url, {
+        method: "GET",
+        onDownloadProgress: (progressEvent: any) => {
+          if (progressEvent.lengthComputable) {
+            const percent = (progressEvent.loaded / progressEvent.total) * 100;
+            setDownloadProgress(percent);
+          }
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Download failed");
+      }
+
+      const blob = await response.blob();
+      const urlBlob = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = urlBlob;
+      a.download = `${dataset.title}_encrypted.json.gz`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(urlBlob);
+    } catch (err: any) {
+      setError(`Download error: ${err.message}`);
+    } finally {
+      setDownloadLoading(false);
+      setDownloadProgress(0);
+    }
+  }, [id, dataset, selectedColumns]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -229,28 +255,21 @@ const AnalyzePage = () => {
     return Object.entries(dataset.schema).map(([name, type]) => ({ value: name, label: `${name} (${type})` }));
   }, [dataset?.schema]);
 
-
-  if (accessDenied) 
+  if (accessDenied) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-white">
         <div className="text-center p-8 rounded-lg max-w-md">
           <div className="relative mx-auto mb-6 w-20 h-20">
             <Lock size={90} className="absolute inset-0" color="#FF6B2C" strokeWidth={1.5} />
           </div>
-  
-          <h1 className="text-2xl font-bold mb-3" style={{ color: "#FF6B2C" }}>
-            Oops! Limited Access
-          </h1>
-  
-          <p className="text-gray-700 text-lg mb-4">Sorry, you dont have access to this resource right now.</p>
-  
+          <h1 className="text-2xl font-bold mb-3" style={{ color: "#FF6B2C" }}>Oops! Limited Access</h1>
+          <p className="text-gray-700 text-lg mb-4">Sorry, you don’t have access to this resource right now.</p>
           <div className="w-16 h-1 mx-auto my-2" style={{ backgroundColor: "#FF6B2C", opacity: 0.5 }}></div>
-  
           <p className="text-gray-500 mt-3 text-sm">If you think this is a mistake, please contact support.</p>
         </div>
       </div>
-    )
-
+    );
+  }
 
   if (loading || (dataset && !dataset.is_loaded)) {
     return (
@@ -280,7 +299,7 @@ const AnalyzePage = () => {
           {["analysis", "results", "notes"].map((tab) => (
             <button
               key={tab}
-              className={`flex-1 py-2 px-4 text-center ${activeTab === tab ? "border-b-2 border-blue-600 text-blue-600" : "text-gray-600"}`}
+              className={`flex-1 py-2 px-4 text-center ${activeTab === tab ? "border-b-2 border-blue-600 text-blue-600" : "text-gray-600 hover:text-blue-500"}`}
               onClick={() => setActiveTab(tab as typeof activeTab)}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -305,6 +324,44 @@ const AnalyzePage = () => {
                       ))}
                     </ul>
                     <p><span className="font-medium">Created:</span> {new Date(dataset.created_at).toLocaleDateString()}</p>
+                  </div>
+
+                  <div className="mt-4 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Columns to Encrypt</label>
+                      <select
+                        multiple
+                        value={selectedColumns}
+                        onChange={(e) => setSelectedColumns(Array.from(e.target.selectedOptions, option => option.value))}
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                      >
+                        {Object.keys(dataset.schema).map(col => (
+                          <option key={col} value={col}>{col}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <p className="text-sm text-gray-600">All data will be homomorphically encrypted (entire dataset).</p>
+                    <button
+                      onClick={handleDownload}
+                      disabled={downloadLoading}
+                      className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 disabled:bg-gray-400 transition"
+                    >
+                      {downloadLoading ? "Encrypting & Downloading..." : "Download Encrypted Data"}
+                    </button>
+                    {downloadLoading && (
+                      <div className="mt-2">
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                          <div
+                            className="bg-blue-600 h-2.5 rounded-full"
+                            style={{ width: `${downloadProgress}%` }}
+                          ></div>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {downloadProgress > 0 ? `${downloadProgress.toFixed(1)}%` : "Preparing..."}
+                        </p>
+                      </div>
+                    )}
+                    {error && <div className="mt-2 text-red-500 text-sm">{error}</div>}
                   </div>
                 </div>
 
@@ -556,13 +613,3 @@ const AnalyzePage = () => {
 };
 
 export default AnalyzePage;
-
-
-
-
-
-
-
-
-
-

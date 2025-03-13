@@ -5,13 +5,22 @@ get_datasets, get_filter_options, CreateDatasetView,
 
  pre_analysis)
 
-from .new import analyze_dataset , dataset_detail, all_datasets_view, clear_dataset_cache, dataset_view
+from .new import analyze_dataset , dataset_detail, all_datasets_view, clear_dataset_cache, dataset_view, download_dataset
 
 urlpatterns = [
 
     path('create_dataset/', CreateDatasetView.as_view(), name='create_dataset'),
     path('clear_cache/<str:dataset_id>/', clear_dataset_cache, name='clear_dataset_cache'),
     path('testget/',get_datasets, name='testget'),
+    #####
+    path('download/<str:dataset_id>/', download_dataset, name='download_dataset'),
+   
+
+
+
+
+
+
     # path('correlation/<str:dataset_id>/',correlation_analysis, name='correlation_analysis'),
     path('details/<str:dataset_id>/', dataset_detail, name='dataset_detail'),
     path('datasets/<str:dataset_id>/', dataset_detail, name='dataset_detail'),
@@ -26,6 +35,7 @@ urlpatterns = [
     path('analysis/filter/<str:dataset_id>/', filter_and_clean_dataset, name='filter_clean_aggregate_dataset'),
     path("bookmarks/", UserBookmarkedDatasetsView.as_view(), name="user-bookmarked-datasets"), #this took forever for me to figure out. make sure your urls stay above str
     path('<str:dataset_id>/', dataset_view, name='dataset_detail'),
+
     path("<str:dataset_id>/bookmark/", ToggleBookmarkDatasetView.as_view(), name="toggle-bookmark-dataset"),
 ]
 
