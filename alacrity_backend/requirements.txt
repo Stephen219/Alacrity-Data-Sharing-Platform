@@ -12,6 +12,8 @@ cryptography
 pyarrow
 seaborn
 scikit-learn
+tenseal
+
 
 
 
