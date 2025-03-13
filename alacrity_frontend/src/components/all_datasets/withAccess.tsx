@@ -283,34 +283,30 @@ export default function DatasetAccessed() {
           </div>
         ) : (
           <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
-            {filteredDatasets.map((dataset) => (
-                <Link
-                key={dataset.dataset_id}
-                href={`/analyze/${dataset.dataset_id}`} 
-                
-              >
-
-            
-             <DatasetCard
-                key={dataset.dataset_id}
-                dataset_id={dataset.dataset_id}
-                title={dataset.title}
-                description={dataset.description}
-                organization={dataset.contributor_id__organization__name}
-                dateUploaded={formatDate(dataset.requests__updated_at)}
-                imageUrl={`https://picsum.photos/seed/${dataset.dataset_id}/800/450`}
-                tags={dataset.tags.split(",").map((tag) => tag.trim())}
-                category={dataset.category}
-                entries={dataset.entries || 0}
-                size={dataset.size || "0 KB"}
-                viewMode={viewMode}
-                darkMode={darkMode}
-                isBookmarked={dataset.isBookmarked || false}
-                price={dataset.price || 0}
-                onToggleBookmark={(e) => handleToggleBookmark(dataset.dataset_id, e)}
-              />
-                </Link>
-            ))}
+          {filteredDatasets.map((dataset, index) => (
+  <Link
+    key={`${dataset.dataset_id}-${index}`} // Ensure key is unique by combining dataset_id with the index
+    href={`/analyze/${dataset.dataset_id}`}
+  >
+    <DatasetCard
+      dataset_id={dataset.dataset_id}
+      title={dataset.title}
+      description={dataset.description}
+      organization={dataset.contributor_id__organization__name}
+      dateUploaded={formatDate(dataset.requests__updated_at)}
+      imageUrl={`https://picsum.photos/seed/${dataset.dataset_id}/800/450`}
+      tags={Array.isArray(dataset.tags) ? dataset.tags : dataset.tags.split(",").map((tag) => tag.trim())}
+      category={dataset.category}
+      entries={dataset.entries || 0}
+      size={dataset.size || "0 KB"}
+      viewMode={viewMode}
+      darkMode={darkMode}
+      isBookmarked={dataset.isBookmarked || false}
+      price={dataset.price || 0}
+      onToggleBookmark={(e) => handleToggleBookmark(dataset.dataset_id, e)}
+    />
+  </Link>
+))}
           
           </div>
         )}
