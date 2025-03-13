@@ -11,6 +11,9 @@ from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404
 from .serializer import DatasetRequestSerializer
 from .models import DatasetRequest
+from alacrity_backend.settings import DEFAULT_FROM_EMAIL
+from django.core.mail import send_mail
+from django.conf import settings
 
 # this is a view that will be used when the user makes a request to the server
 
@@ -81,7 +84,47 @@ class ViewAllDatasetRequests(APIView):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+
+# a function that will be used to send emails to the user
+def send_email(dataset_request):
+    try:
+        subject = 'Update On Your Dataset Request'
+        # Initialize message as an empty string
+        message = ''
         
+        # Add content to the message based on request status
+        if dataset_request.request_status == 'approved':
+            message += (f'Your request for dataset "{dataset_request.dataset_id.title}" has been approved. You can now access the dataset at {dataset_request.dataset_id.analysis_link}.')
+        elif dataset_request.request_status == 'denied':
+            message += (f'Unfortunately, your request for dataset "{dataset_request.dataset_id.title}" has been denied.')
+        
+        # Get researcher email
+        recipient_email = [dataset_request.researcher_id.email]
+        
+        # Check if recipient email exists
+        if not recipient_email or recipient_email == [""]:
+            print("Email not found")
+            return False  # Return False if no email found
+        
+        # Sending the email
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=DEFAULT_FROM_EMAIL,
+            recipient_list=recipient_email,
+            fail_silently=False,
+        )
+        
+        # Print the recipient email for debugging
+        print(f"Email sent to: {recipient_email}")
+        return True  # Return True when the email is sent successfully
+    
+    except Exception as e:
+        print(f"Error sending email: {str(e)}")
+        return False  # Return False if there's an error
+
+
+
 # this view is used to accept / reject a request when the admin is viewing all the requests
 class AcceptRejectRequest(APIView):
     @role_required(['organization_admin', 'contributor'])
@@ -120,8 +163,19 @@ class AcceptRejectRequest(APIView):
 
         if action == 'accept':
             dataset_request.request_status = 'approved'
+            send_email(dataset_request)
+            if send_email(dataset_request) == True:
+                print("Email sent")
+            else:
+                print("Email not sent")
+
         elif action == 'reject':
             dataset_request.request_status = 'denied'
+            send_email(dataset_request)
+            if send_email(dataset_request) == True:
+                print("Email sent")
+            else:
+                print("Email not sent")
         else:
             return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
 
