@@ -17,7 +17,7 @@ interface DatasetCardProps {
   entries: number;
   size: string;
   viewMode: "grid" | "list";
-  //darkMode: boolean;
+  darkMode: boolean;
   extraActions?: () => void;
   isBookmarked: boolean;
   price : number;
@@ -37,7 +37,7 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
   size,
  
   viewMode,
- // darkMode,
+//  darkMode,
   isBookmarked,
   onToggleBookmark,
   

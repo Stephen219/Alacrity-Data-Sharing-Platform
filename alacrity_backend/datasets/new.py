@@ -1,4 +1,5 @@
 
+import uuid
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -21,6 +22,15 @@ import base64
 from scipy.stats import linregress
 from collections import OrderedDict
 from threading import Lock
+from sklearn.preprocessing import LabelEncoder
+import json
+import tenseal as ts
+import gzip
+import time
+from typing import List, Dict
+# httpresponse
+from django.http import HttpResponse
+
 
 logger = logging.getLogger(__name__)
 
@@ -442,19 +452,216 @@ def dataset_view(request, dataset_id):
 
 
 
-def has_access(user_id, dataset_id):
-    from dataset_requests.models import DatasetRequest
-    """Check if user has access to dataset."""
+
+
+
+
+
+
+
+
+# # &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&    download &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+
+import numpy as np
+import concurrent.futures
+
+
+def encode_column(values: List, col_type: str) -> List[float]:
+    """Encode values based on type for HE compatibility with improved efficiency."""
+    if col_type.startswith("object") or any(isinstance(v, str) for v in values[:100] if not pd.isna(v)):
+        unique_vals = pd.Series(values).dropna().unique()
+        mapping = {val: float(i) for i, val in enumerate(sorted(unique_vals))}
+       
+        result = np.array([mapping.get(v, 0.0) if not pd.isna(v) else 0.0 for v in values], dtype=np.float32)
+        return result.tolist()
+    else:
+       
+        return np.nan_to_num(np.array(values, dtype=np.float32)).tolist()
+
+@api_view(['GET'])
+def download_dataset(request, dataset_id):
+    """Download entire dataset with HE encryption, 
+
+    Args:
+        request: Django request object
+        dataset_id: Dataset ID to download
+
+    Returns:
+        HttpResponse: Encrypted dataset in
+            application/gzip format with JSON data
+                
+
+
     """
-    we need to map to the requests  and check if the user has access that is iff the status is approved
-    so wee need to query all the requests  for that dataset and if the requester is the user and the status is approved
-    then the user has access
-    """
+    start_time = time.time()
+    has_access = has_access_to_dataset(request.user.id, dataset_id)
+    if not has_access:
+        return HttpResponse(
+            json.dumps({"error": "You do not have access to this dataset"}),
+            status=403,
+            content_type="application/json"
+        )
+
     try:
-        # dataset = Dataset.objects.get(dataset_id=dataset_id)
-        requests = DatasetRequest.objects.filter(dataset_id=dataset_id , requester_id=user_id , status='approved')
-        return requests.exists
+        dataset = Dataset.objects.get(dataset_id=dataset_id)
+        jwt_hash = get_jwt_hash(request)
+        if not jwt_hash:
+            return HttpResponse(
+                json.dumps({"error": "Authentication required"}),
+                status=401,
+                content_type="application/json"
+            )
+
+        columns = request.GET.get("columns", None)
+        
+        compression_level = 9
+        max_rows = request.GET.get("max_rows")  # tried to add max_rows to limit the number of rows but i can do this later
+        max_rows = int(max_rows) if max_rows and max_rows.isdigit() else None
+
+        cipher = Fernet(dataset.encryption_key.encode())
+        expected_prefix = f"http://{MINIO_URL}/{BUCKET}/"
+        link = dataset.link
+        if not link.startswith(expected_prefix):
+            raise ValueError(f"Dataset link does not start with {expected_prefix}")
+        file_key = link.split(expected_prefix)[1]
+        response = minio_client.get_object(bucket_name=BUCKET, object_name=file_key)
+        encrypted_data = response.read()
+        decrypted_data = cipher.decrypt(encrypted_data)
+        parquet_buffer = io.BytesIO(decrypted_data)
+        df = pd.read_parquet(parquet_buffer, engine="pyarrow")
+        logger.info(f"Dataset {dataset_id} loaded, rows: {len(df)}, cols: {len(df.columns)}")
+        
+        if max_rows and max_rows < len(df):
+            df = df.head(max_rows)
+            
+        logger.info(f"Dataset {dataset_id} loaded, rows: {len(df)}, cols: {len(df.columns)}")
+
+        # Filter columns
+        if columns:
+            selected_cols = [col.strip() for col in columns.split(",") if col.strip() in df.columns]
+            if selected_cols:
+                df = df[selected_cols]
+            else:
+                logger.warning(f"No valid columns in {columns}, using all")
+
+      
+        optimized_schema = {}
+        for col in df.columns:
+            if col in dataset.schema:
+                optimized_schema[col] = dataset.schema[col]
+
+       
+        
+        context = ts.context(
+            ts.SCHEME_TYPE.CKKS,
+            poly_modulus_degree=8192,  
+            coeff_mod_bit_sizes=[40, 20, 20, 40]  
+        )
+        context.global_scale = 2**30  
+        context.generate_galois_keys()
+        def get_optimal_batch_size(col_type, values_len):
+            if col_type.startswith("object"):
+                return min(8192, values_len)
+            else:
+                return min(4096, values_len)
+
+        encrypted_data = {}
+        encoding_info = {}
+        column_sizes = {}
         
        
+        def process_column(column):
+            values = df[column].tolist()
+            col_type = str(df[column].dtype)
+            encoded_values = encode_column(values, col_type)
+            
+           
+            batch_size = get_optimal_batch_size(col_type, len(encoded_values))
+            batches = [encoded_values[i:i + batch_size] for i in range(0, len(encoded_values), batch_size)]
+            
+            if len(batches) > 0 and len(batches[-1]) < batch_size:
+                batches[-1] += [0.0] * (batch_size - len(batches[-1]))
+            encrypted_batches = []
+            total_size = 0
+            
+            for batch in batches:
+                vector = ts.ckks_vector(context, batch)
+                serialized = vector.serialize()
+                total_size += len(serialized)
+                encrypted_batches.append(base64.b64encode(serialized).decode('utf-8'))
+            
+            return {
+                "column": column,
+                "encrypted": encrypted_batches,
+                "encoding_info": {
+                    "type": "categorical" if col_type.startswith("object") else "numeric",
+                    "batch_size": batch_size,
+                    "original_length": len(values),
+                    "batches": len(batches)
+                },
+                "size": total_size
+            }
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(8, len(df.columns))) as executor:
+            results = list(executor.map(process_column, df.columns))
+        for result in results:
+            column = result["column"]
+            encrypted_data[column] = result["encrypted"]
+            encoding_info[column] = result["encoding_info"]
+            column_sizes[column] = result["size"]
+        serialized_context = base64.b64encode(context.serialize(save_public_key=True)).decode('utf-8')
+        output = {
+            "encrypted_columns": encrypted_data,
+            "context": serialized_context,
+            "schema": optimized_schema,
+            "encoding_info": encoding_info,
+            "row_count": len(df),
+            "column_sizes": column_sizes 
+        }
+        json_str = json.dumps(output)
+        json_buffer = io.BytesIO()
+        with gzip.GzipFile(fileobj=json_buffer, mode="wb", compresslevel=compression_level) as gz:
+            gz.write(json_str.encode('utf-8'))
+        
+        json_buffer.seek(0)
+        compressed_data = json_buffer.getvalue()
+
+        elapsed_time = time.time() - start_time
+        size_mb = len(compressed_data) / (1024**2)
+        logger.info(f"Dataset {dataset_id} encrypted, size: {size_mb:.2f} MB, time: {elapsed_time:.2f}s")
+        size_ratio = size_mb / (len(decrypted_data) / (1024**2))
+        logger.info(f"Size ratio: {size_ratio:.2f}x, Speed: {(size_mb/elapsed_time):.2f} MB/s")
+
+        response = HttpResponse(
+            compressed_data,
+            content_type="application/gzip",
+            status=200
+        )
+        response['Content-Disposition'] = f"attachment; filename={dataset.title}_encrypted.json.gz"
+        response['Content-Length'] = len(compressed_data)
+        response['X-Processing-Time'] = f"{elapsed_time:.2f}s"
+        response['X-Compression-Ratio'] = f"{size_ratio:.2f}x"
+        
+        return response
+
     except Dataset.DoesNotExist:
-        return False
+        logger.error(f"Dataset not found: {dataset_id}")
+        return HttpResponse(
+            json.dumps({"error": "Dataset not found"}),
+            status=404,
+            content_type="application/json"
+        )
+    except ValueError as e:
+        logger.error(f"Validation error: {e}")
+        return HttpResponse(
+            json.dumps({"error": str(e)}),
+            status=400,
+            content_type="application/json"
+        )
+    except Exception as e:
+        logger.error(f"Error: {e}", exc_info=True)
+        return HttpResponse(
+            json.dumps({"error": "Failed to prepare encrypted download"}),
+            status=500,
+            content_type="application/json"
+        )
