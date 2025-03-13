@@ -458,17 +458,3 @@ def has_access(user_id, dataset_id):
        
     except Dataset.DoesNotExist:
         return False
-
-
-# method that checks the count of how much the dataset has been viewed
-@api_view(['POST'])
-def increment_view_count(request, dataset_id):
-    """Increment the view count for a dataset."""
-    try:
-        dataset = Dataset.objects.get(pk=dataset_id)
-        dataset.view_count += 1
-        dataset.save()
-        return Response({"status": "success", "new_count": dataset.view_count}, status=status.HTTP_200_OK)
-    except Dataset.DoesNotExist:
-        return Response({"status": "error", "message": "Dataset not found"}, 
-                      status=status.HTTP_404_NOT_FOUND)

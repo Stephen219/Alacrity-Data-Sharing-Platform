@@ -5,7 +5,7 @@ get_datasets, get_filter_options, CreateDatasetView,
 
  pre_analysis)
 
-from .new import analyze_dataset , dataset_detail, all_datasets_view, clear_dataset_cache, dataset_view, increment_view_count
+from .new import analyze_dataset , dataset_detail, all_datasets_view, clear_dataset_cache, dataset_view
 
 urlpatterns = [
 
@@ -27,6 +27,5 @@ urlpatterns = [
     path("bookmarks/", UserBookmarkedDatasetsView.as_view(), name="user-bookmarked-datasets"), #this took forever for me to figure out. make sure your urls stay above str
     path('<str:dataset_id>/', dataset_view, name='dataset_detail'),
     path("<str:dataset_id>/bookmark/", ToggleBookmarkDatasetView.as_view(), name="toggle-bookmark-dataset"),
-    path('datasets/<str:dataset_id>/increment-view/', increment_view_count, name='increment-dataset-view'),
 ]
 

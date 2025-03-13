@@ -14,6 +14,7 @@ from .models import DatasetRequest
 from alacrity_backend.settings import DEFAULT_FROM_EMAIL
 from django.core.mail import send_mail
 from django.conf import settings
+from alacrity_backend.config import FRONTEND_URL
 
 def send_email_to_contributor(dataset_request):
     try:
@@ -116,7 +117,7 @@ def send_email(dataset_request):
         # Add content to the message based on request status
         if dataset_request.request_status == 'approved':
             #Todo make sure the links works
-            message += (f'Your request for dataset "{dataset_request.dataset_id.title}" has been approved. You can now access the dataset at {dataset_request.dataset_id.analysis_link}.')
+            message += (f'Your request for dataset "{dataset_request.dataset_id.title}" has been approved. You can now access the dataset at this link: {FRONTEND_URL}/analyze/{dataset_request.dataset_id.dataset_id}')
         elif dataset_request.request_status == 'denied':
             message += (f'Unfortunately, your request for dataset "{dataset_request.dataset_id.title}" has been denied.')
         
@@ -169,9 +170,7 @@ class AcceptRejectRequest(APIView):
             return Response({'error': 'Request does not exist'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    # The POST part remains unchanged
-    def post(self, request,id):
+    def post(self, request, id):
         request_id = id
         action = request.data.get('action')
         print(request_id, action)
@@ -185,7 +184,28 @@ class AcceptRejectRequest(APIView):
 
         if action == 'accept':
             dataset_request.request_status = 'approved'
-            send_email(dataset_request)
+            
+            # Print the dataset ID for debugging
+            print(f"Dataset ID: {dataset_request.dataset_id.dataset_id}")
+
+            try:
+                # Try to get the dataset
+                dataset = Dataset.objects.get(dataset_id=dataset_request.dataset_id.dataset_id)
+
+                # Count how many requests for this dataset have been approved
+                approved_count = DatasetRequest.objects.filter(
+                    dataset_id=dataset_request.dataset_id.dataset_id,
+                    request_status='approved'
+                ).count()
+                print(f"Approved count: {approved_count}")
+
+                # Update the dataset's view_count with the approved count
+                dataset.view_count = approved_count
+                dataset.save()
+            except Dataset.DoesNotExist:
+                return Response({'error': 'Dataset does not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+            # Send email notification
             if send_email(dataset_request) == True:
                 print("Email sent")
             else:
@@ -193,11 +213,13 @@ class AcceptRejectRequest(APIView):
 
         elif action == 'reject':
             dataset_request.request_status = 'denied'
-            send_email(dataset_request)
+            
+            # Send email notification
             if send_email(dataset_request) == True:
                 print("Email sent")
             else:
                 print("Email not sent")
+        
         else:
             return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
 

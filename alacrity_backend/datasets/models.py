@@ -50,4 +50,3 @@ class Dataset(models.Model):
         if self.contributor_id and self.contributor_id.organization:
             return self.contributor_id.organization.name
         return "No Organization"
-    

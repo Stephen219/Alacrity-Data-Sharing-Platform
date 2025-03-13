@@ -123,45 +123,6 @@ const DatasetsPage: React.FC = () => {
     loadAll();
   }, []);
 
-  // Function to handle the view of a dataset
-  const handleDatasetView = (datasetId: string, event: React.MouseEvent) => {
-    event.preventDefault();
-    
-    // Check if this dataset was viewed recently (within the last 30 minutes)
-    const viewedDatasets = JSON.parse(localStorage.getItem('viewedDatasets') || '{}');
-    const now = Date.now();
-    const thirtyMinutesMs = 1 * 60 * 1000;
-    
-    // If the dataset wasn't viewed in the last 30 minutes, increment the count
-    if (!viewedDatasets[datasetId] || (now - viewedDatasets[datasetId]) > thirtyMinutesMs) {
-      // Update the local storage with the current timestamp
-      viewedDatasets[datasetId] = now;
-      localStorage.setItem('viewedDatasets', JSON.stringify(viewedDatasets));
-      
-      // Make the API call to increment the view
-      fetchWithAuth(`${BACKEND_URL}/datasets/${datasetId}/increment-view/`, {
-        method: "POST",
-      })
-      .then(response => response.json())
-      .then(data => {
-        // Optionally update the local state if you want to show the updated count immediately
-        if (data.new_count) {
-          setDatasets(prev => 
-            prev.map(ds => 
-              ds.dataset_id === datasetId ? {...ds, view_count: data.new_count} : ds
-            )
-          );
-        }
-      })
-      .catch(err => {
-        console.error("Error incrementing view count:", err);
-      });
-    }
-    
-    // Navigate to the description page
-    window.location.href = `/datasets/description?id=${datasetId}`;
-  };
-
   // Toggles the bookmark status of a dataset for researcher/contributor
   const toggleDatasetBookmark = async (datasetId: string) => {
     try {
@@ -395,7 +356,6 @@ const DatasetsPage: React.FC = () => {
               key={dataset.dataset_id}
               href={`/datasets/description?id=${dataset.dataset_id}`} 
               className="block" 
-              onClick={(e) => handleDatasetView(dataset.dataset_id, e)}
             >
               <DatasetCard
                 dataset_id={dataset.dataset_id}
