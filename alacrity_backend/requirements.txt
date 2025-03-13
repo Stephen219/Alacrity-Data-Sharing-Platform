@@ -11,6 +11,8 @@ duckdb
 cryptography
 pyarrow
 seaborn
+sklearn
+
 
 
 
