@@ -407,8 +407,7 @@ useEffect(() => {
                 onToggleBookmark={() => toggleDatasetBookmark(dataset.dataset_id)}
                 viewMode={viewMode}
                 //darkMode={isDarkMode}
-                price={dataset.price}
-              />
+                price={dataset.price} darkMode={false}              />
             </Link>
           ))}
         </div>
