@@ -28,6 +28,9 @@ class Dataset(models.Model):
 
     bookmarked_by = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="bookmarked_datasets", blank=True)
 
+
+    view_count = models.PositiveIntegerField(default=0)
+
     class Meta:
         unique_together = ['title', 'link']
 

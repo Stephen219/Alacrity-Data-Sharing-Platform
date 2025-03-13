@@ -15,6 +15,7 @@ interface DatasetCardProps {
   tags: string[];
   category: string;
   entries: number;
+  view_count: number;
   size: string;
   viewMode: "grid" | "list";
   //darkMode: boolean;
@@ -35,7 +36,7 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
   category,
   entries,
   size,
- 
+  view_count,
   viewMode,
  // darkMode,
   isBookmarked,
@@ -148,7 +149,8 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
               <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
               <circle cx="12" cy="12" r="3"></circle>
             </svg>
-            <span className="ml-1">20 views</span>
+            {/* TODO: Add view count make sure it reflects the actual view count */}
+            <span className="ml-1">{view_count} views</span>
           </span>
         </div>
 

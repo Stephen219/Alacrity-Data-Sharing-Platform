@@ -15,6 +15,27 @@ from alacrity_backend.settings import DEFAULT_FROM_EMAIL
 from django.core.mail import send_mail
 from django.conf import settings
 
+def send_email_to_contributor(dataset_request):
+    try:
+        subject = 'New Dataset Request'
+        message = (
+            f'Hello {dataset_request.dataset_id.contributor_id.first_name},\n\n'
+            f'You have a new request for your dataset "{dataset_request.dataset_id.title}".\n'
+            f'Please login to your account to view the request.\n\n'
+            f'Best regards,\nThe Alacrity Team'
+        )
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=DEFAULT_FROM_EMAIL,
+            recipient_list=[dataset_request.dataset_id.contributor_id.email],
+            fail_silently=False,
+        )
+        print(f"Email sent to {dataset_request.dataset_id.contributor_id.email}")
+        return True
+    except Exception as e:
+        print(f"Error sending email: {str(e)}")
+        return False
 # this is a view that will be used when the user makes a request to the server
 
 class Make_request(APIView):
@@ -56,7 +77,7 @@ class Make_request(APIView):
             researcher_id=researcher,
             message=message  # include the message here
         )
-
+        send_email_to_contributor(dataset_request)
         return Response({'message': 'Request created successfully'}, status=201)
 
 
@@ -94,6 +115,7 @@ def send_email(dataset_request):
         
         # Add content to the message based on request status
         if dataset_request.request_status == 'approved':
+            #Todo make sure the links works
             message += (f'Your request for dataset "{dataset_request.dataset_id.title}" has been approved. You can now access the dataset at {dataset_request.dataset_id.analysis_link}.')
         elif dataset_request.request_status == 'denied':
             message += (f'Unfortunately, your request for dataset "{dataset_request.dataset_id.title}" has been denied.')
