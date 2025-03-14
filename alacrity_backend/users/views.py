@@ -24,6 +24,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .decorators import role_required
 from datasets.models import Dataset
+from payments.models import DatasetPurchase
 
 from .models import User
 class LoginView(APIView):
@@ -361,7 +362,7 @@ class UserDashboardView(APIView):
             )
             datasets_having_access = get_datasets_user_has_access(user.id)
             data = {
-                "datasets_accessed": datasets_having_access.count(),
+                "datasets_accessed": len(datasets_having_access),
                 "pending_reviews": DatasetRequest.objects.filter(researcher_id=user, request_status="pending").count(),
                 "research_submitted": 1,
                 "requests_approved": DatasetRequest.objects.filter(researcher_id=user, request_status="approved").count(),
@@ -493,24 +494,44 @@ class MemberProfileView(APIView):
             return JsonResponse({'error': 'Member not found'}, status=status.HTTP_404_NOT_FOUND)
         
 def get_datasets_user_has_access(user_id):
-    """"
-    This function is used to get all the datasets the user has access to
+    """
+    Return all datasets that the user has an *approved* request for,
+    plus a 'hasPaid' flag so the frontend can show "Pay" or "Analyze."
     """
     from datasets.models import Dataset
     from dataset_requests.models import DatasetRequest
-    datasets_having_access = Dataset.objects.filter(
-        requests__researcher_id=user_id,  
-        requests__request_status="approved"  
-   ).values(
-    'dataset_id',  
-    'title',
-    'description',
-    'contributor_id__organization__name' ,
-    'requests__updated_at',
-    'tags',
-    'category'
-)
-    return datasets_having_access
+
+    approved_requests = DatasetRequest.objects.filter(
+        researcher_id=user_id,
+        request_status='approved'
+    ).select_related('dataset_id')
+
+    # Build a list of dictionaries
+    results = []
+    for req in approved_requests:
+        ds = req.dataset_id
+
+        # Has the user paid for this dataset?
+        purchased = DatasetPurchase.objects.filter(dataset=ds, buyer_id=user_id).exists()
+
+        results.append({
+            "dataset_id": ds.dataset_id,
+            "title": ds.title,
+            "description": ds.description,
+            "category": ds.category,
+            "tags": ds.tags,
+            # The organization name for your front end
+            "contributor_id__organization__name":
+                ds.contributor_id.organization.name if ds.contributor_id and ds.contributor_id.organization else None,
+            # The date/time of the last request update
+            "requests__updated_at":
+                ds.requests.order_by('-updated_at').first().updated_at.isoformat()
+                if ds.requests.exists() else None,
+            "price": float(ds.price),
+            # hasPaid = True if the dataset is free OR the user purchased it
+            "hasPaid": (ds.price == 0.0) or purchased,
+        })
+    return results
 
 
 

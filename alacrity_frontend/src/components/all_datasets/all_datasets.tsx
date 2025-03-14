@@ -23,6 +23,7 @@ interface Dataset {
   entries?: number;
   imageUrl?: string;
   price: number;
+  hasPaid?: boolean;
 }
 
 const ITEMS_PER_PAGE = 6;
@@ -60,7 +61,8 @@ const DatasetsPage: React.FC = () => {
                 .map((tag: string) => tag.trim()) // Trim whitespace
                 .filter((tag: string) => tag.trim() !== "") // Remove empty or whitespace-only tags
             : item.tags || [],
-            price: item.price || 0,
+            price: parseFloat(item.price) || 0,
+            hasPaid: item.hasPaid || false,
         }));
   
         setDatasets(mappedDatasets);

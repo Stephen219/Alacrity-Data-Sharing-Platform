@@ -2,8 +2,6 @@
 
 import React from "react";
 import { Bookmark, Building2, Database, HardDrive } from "lucide-react";
-import { fetchWithAuth } from "@/libs/auth"
-import { BACKEND_URL } from "@/config"
 
 interface DatasetCardProps {
   dataset_id: string;
@@ -21,11 +19,11 @@ interface DatasetCardProps {
   extraActions?: () => void;
   isBookmarked: boolean;
   price : number;
+  hasPaid?: boolean;
   onToggleBookmark: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 export const DatasetCard: React.FC<DatasetCardProps> = ({
-  dataset_id,
   title,
   description,
   organization,
@@ -35,6 +33,7 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
   category,
   entries,
   size,
+  price,
  
   viewMode,
 //  darkMode,
@@ -45,33 +44,6 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
   const isListView = viewMode === "list";
   const truncatedDescription = description.length > 200 ? description.substring(0, 200) + "..." : description;
 
-  //this may need to be modified but for now it returns paypal checkout 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handlePurchase = async () => {
-    try {
-      const response = await fetchWithAuth(`${BACKEND_URL}/payments/paypal/payment/${dataset_id}/`, { 
-        method: "POST",
-      });
-  
-      if (!response.ok) {
-        throw new Error("Failed to initiate PayPal payment");
-      }
-  
-      const data = await response.json();
-  
-      if (data.approval_url) {
-        console.log("Redirecting to PayPal:", data.approval_url);
-        window.location.href = data.approval_url;
-      } else {
-        console.error("ERROR: No approval URL received");
-        alert("Error: Unable to process payment.");
-      }
-    } catch (error) {
-      console.error("Payment error:", error);
-      alert("Failed to initiate payment. Please try again.");
-    }
-  };
-  
 
   return (
     <div
@@ -184,7 +156,14 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
   />
 </button>
 
-
+{/* Price line (add it right below the grid above, for instance) */}
+<div className="mb-2 text-sm">
+        {price === 0 ? (
+          <span className="text-green-600 font-medium">Free</span>
+        ) : (
+          <span className="text-gray-700">Price: £{price.toFixed(2)}</span>
+        )}
+      </div>
 
     </div>
     </div>
