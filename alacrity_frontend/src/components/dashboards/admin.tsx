@@ -50,6 +50,7 @@ import { BACKEND_URL } from "@/config";
 import { fetchUserData } from "@/libs/auth";
 import { User } from "@/types/types";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface DashboardData {
   total_datasets: number;
@@ -76,6 +77,7 @@ const AdminDashboard: React.FC = () => {
   const [error, setError] = useState<Error | null>(null);
   // const [userData, setUserData] = useState(null);
   const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
  
 
 
@@ -85,9 +87,9 @@ const AdminDashboard: React.FC = () => {
   console.log(userData);
   }
 
-
-    
-
+  const handleViewAllClick = () => {
+    router.push("/requests/pending");
+  };
   const getData = async () => {
     try {
       setLoading(true);
@@ -201,7 +203,8 @@ const AdminDashboard: React.FC = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Pending Access Requests</h2>
-          <button className="px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f] transition-colors">
+          <button className="px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f] transition-colors"
+            onClick={handleViewAllClick}>
             View All
           </button>
         </div>
@@ -222,14 +225,16 @@ const AdminDashboard: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-100 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-100 uppercase tracking-wider">
-                    Action
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-700">
-                {limitedPendingDatasets.map((request) => (
-                  <tr key={request.request_id} className="hover:bg-gray-50">
+                {limitedPendingDatasets
+                .filter((request) => request.request_status === "pending") /// Filter pending requests
+                .map((request) => (
+                  <tr key={request.request_id} 
+                  className="hover:bg-gray-50"
+                  onClick={() => router.push(`/requests/approval/${request.request_id}`)} // Navigate to the approval page
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
@@ -266,10 +271,6 @@ const AdminDashboard: React.FC = () => {
                       >
                         {request.request_status || "Pending"}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button className="text-[#FF6B1A] hover:text-[#e65c0f] mr-4 transition-colors">Approve</button>
-                      <button className="text-red-600 hover:text-red-900 transition-colors">Deny</button>
                     </td>
                   </tr>
                 ))}

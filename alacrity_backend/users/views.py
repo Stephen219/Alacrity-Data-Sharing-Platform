@@ -544,3 +544,4 @@ class DatasetWithAccessView(APIView):
         return JsonResponse(list(datasets_having_access), safe=False)
 
     
+## solve an error in editing the user profile

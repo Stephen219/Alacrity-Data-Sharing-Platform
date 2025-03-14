@@ -21,6 +21,7 @@ class DatasetSerializer(serializers.ModelSerializer):
             'analysis_link',
             'description',
             'tags',
+            'view_count',
             'created_at',
             'updated_at',
             'price',

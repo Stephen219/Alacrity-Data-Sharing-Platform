@@ -17,20 +17,24 @@ interface Bookmark {
   imageUrl?: string;
   size?: string;
   entries?: number;
+  view_count?: number;
+  price: number; 
 }
 
 interface ServerBookmarkData {
-    dataset_id: string;
-    title: string;
-    description: string;
-    organization_name?: string | null;
-    category: string;
-    created_at: string;
-    tags?: string[] | null;
-    imageUrl?: string | null;
-    size?: string | null;
-    entries?: number | null;
-  }
+  dataset_id: string;
+  title: string;
+  description: string;
+  organization_name?: string | null;
+  category: string;
+  created_at: string;
+  tags?: string[] | null;
+  imageUrl?: string | null;
+  size?: string | null;
+  entries?: number | null;
+  price: number;
+}
+
 
 const ITEMS_PER_PAGE = 6;
 
@@ -41,6 +45,7 @@ export default function BookmarksPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
+  //const [isDarkMode, setIsDarkMode] = useState(false);
 
   // Fetch the researchers/contributors bookmarks once on page load
 
@@ -52,7 +57,7 @@ export default function BookmarksPage() {
           throw new Error(`Failed to fetch bookmarks: ${response.status}`);
         }
         const data = (await response.json()) as ServerBookmarkData[];
-
+  
         const mapped: Bookmark[] = data.map((item) => ({
           dataset_id: item.dataset_id,
           title: item.title,
@@ -61,12 +66,12 @@ export default function BookmarksPage() {
           category: item.category,
           created_at: item.created_at,
           tags: item.tags ?? [],
-          imageUrl:
-            item.imageUrl ?? `https://picsum.photos/300/200?random=${item.dataset_id}`,
+          imageUrl: item.imageUrl ?? `https://picsum.photos/300/200?random=${item.dataset_id}`,
           size: item.size ?? "N/A",
           entries: item.entries ?? 0,
+          price: item.price,  // Map price here
         }));
-
+  
         setBookmarks(mapped);
       } catch (err) {
         console.error("Error loading bookmarks:", err);
@@ -75,9 +80,10 @@ export default function BookmarksPage() {
         setIsLoading(false);
       }
     };
-
+  
     fetchBookmarks();
   }, []);
+  
 
 
   // Unbookmark function
@@ -218,25 +224,28 @@ export default function BookmarksPage() {
               href={`/datasets/details?id=${bookmark.dataset_id}`}
               className="block"
             >
-              <DatasetCard
-                title={bookmark.title}
-                description={bookmark.description}
-                organization={bookmark.organization_name}
-                dateUploaded={new Date(bookmark.created_at).toLocaleDateString()}
-                imageUrl={bookmark.imageUrl ?? ""}
-                tags={bookmark.tags ?? []}
-                category={bookmark.category}
-                entries={bookmark.entries ?? 0}
-                size={bookmark.size ?? "N/A"}
-                viewMode={viewMode}
-                //darkMode={isDarkMode}
-                isBookmarked={true}
-                // unboomark logic
-                onToggleBookmark={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleUnbookmark(bookmark.dataset_id);
-                } } dataset_id={""} price={0} darkMode={false}              />
+            <DatasetCard
+              dataset_id={bookmark.dataset_id}
+              title={bookmark.title}
+              description={bookmark.description}
+              organization={bookmark.organization_name}
+              dateUploaded={new Date(bookmark.created_at).toLocaleDateString()}
+              imageUrl={bookmark.imageUrl ?? ""}
+              tags={bookmark.tags ?? []}
+              category={bookmark.category}
+              entries={bookmark.entries ?? 0}
+              size={bookmark.size ?? "N/A"}
+              viewMode={viewMode}
+              view_count={bookmark.view_count ?? 0}
+              darkMode={false}
+              isBookmarked={true}
+              price={bookmark.price} 
+              onToggleBookmark={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleUnbookmark(bookmark.dataset_id);
+              }}
+                />
             </Link>
           ))}
         </div>

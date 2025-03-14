@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 from alacrity_backend.config import FRONTEND_URL, BACKEND_URL
 import os
+import sys
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -114,9 +115,18 @@ DATABASES = {
     }
 }
 
+
+if 'test' in sys.argv:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',  # Use in-memory database for faster tests
+        }
+    }
+
 ENCRYPTION_KEY = "EHqnpsZeTQrwcmGfADez0GCRcJ_vQNCg5ch_pQg83Z0="
 
-
+# change this when deploying to production
 CORS_ALLOWED_ORIGINS = [
     FRONTEND_URL, 
     "http://127.0.0.1:3000",
