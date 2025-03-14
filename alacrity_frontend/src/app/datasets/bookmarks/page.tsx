@@ -240,7 +240,7 @@ export default function BookmarksPage() {
                   e.preventDefault();
                   e.stopPropagation();
                   handleUnbookmark(bookmark.dataset_id);
-                } } dataset_id={""} price={0}              />
+                } } dataset_id={""} price={0} darkMode={false}              />
             </Link>
           ))}
         </div>
