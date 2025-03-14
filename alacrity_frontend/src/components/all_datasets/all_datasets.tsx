@@ -24,6 +24,7 @@ interface Dataset {
   imageUrl?: string;
   price: number;
   view_count: number;
+  darkMode: boolean;
 }
 
 const ITEMS_PER_PAGE = 6;
@@ -41,6 +42,7 @@ const DatasetsPage: React.FC = () => {
     { id: string; label: string; options: string[] }[]
   >([]);
   const [bookmarkedDatasets, setBookmarkedDatasets] = useState<string[]>([]);
+  const [darkMode, setDarkMode] = useState(false)
 
   useEffect(() => {
     const fetchDatasets = async () => {
@@ -373,6 +375,7 @@ const DatasetsPage: React.FC = () => {
                 isBookmarked={bookmarkedDatasets.includes(dataset.dataset_id)}
                 onToggleBookmark={() => toggleDatasetBookmark(dataset.dataset_id)}
                 viewMode={viewMode}
+                darkMode={darkMode}
                 price={dataset.price}
               />
             </Link>

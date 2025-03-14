@@ -21,6 +21,7 @@ interface Dataset {
   size?: string
   isBookmarked?: boolean
   price?: number
+  view_count: number
 }
 
 export default function DatasetAccessed() {
@@ -301,6 +302,7 @@ export default function DatasetAccessed() {
       size={dataset.size || "0 KB"}
       viewMode={viewMode}
       darkMode={darkMode}
+      view_count={dataset.view_count}
       isBookmarked={dataset.isBookmarked || false}
       price={dataset.price || 0}
       onToggleBookmark={(e) => handleToggleBookmark(dataset.dataset_id, e)}

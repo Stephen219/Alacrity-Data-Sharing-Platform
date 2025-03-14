@@ -17,6 +17,7 @@ interface Bookmark {
   imageUrl?: string;
   size?: string;
   entries?: number;
+  view_count?: number;
 }
 
 interface ServerBookmarkData {
@@ -30,6 +31,7 @@ interface ServerBookmarkData {
     imageUrl?: string | null;
     size?: string | null;
     entries?: number | null;
+    
   }
 
 const ITEMS_PER_PAGE = 6;
@@ -41,6 +43,7 @@ export default function BookmarksPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   // Fetch the researchers/contributors bookmarks once on page load
 
@@ -229,7 +232,8 @@ export default function BookmarksPage() {
                 entries={bookmark.entries ?? 0}
                 size={bookmark.size ?? "N/A"}
                 viewMode={viewMode}
-                //darkMode={isDarkMode}
+                view_count={bookmark.view_count ?? 0}
+                darkMode={isDarkMode}
                 isBookmarked={true}
                 // unboomark logic
                 onToggleBookmark={(e) => {
