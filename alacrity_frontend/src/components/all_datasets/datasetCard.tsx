@@ -36,7 +36,7 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
   size,
   view_count,
   viewMode,
- darkMode,
+ //darkMode,
   isBookmarked,
   price,
   onToggleBookmark,

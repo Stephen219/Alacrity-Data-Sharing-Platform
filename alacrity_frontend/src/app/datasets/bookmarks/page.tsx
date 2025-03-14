@@ -45,7 +45,7 @@ export default function BookmarksPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [currentPage, setCurrentPage] = useState(1);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  //const [isDarkMode, setIsDarkMode] = useState(false);
 
   // Fetch the researchers/contributors bookmarks once on page load
 
@@ -237,7 +237,7 @@ export default function BookmarksPage() {
               size={bookmark.size ?? "N/A"}
               viewMode={viewMode}
               view_count={bookmark.view_count ?? 0}
-              darkMode={isDarkMode}
+              darkMode={false}
               isBookmarked={true}
               price={bookmark.price} 
               onToggleBookmark={(e) => {

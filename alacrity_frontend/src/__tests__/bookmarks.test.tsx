@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import BookmarksPage from "@/app/datasets/bookmarks/page"
 import * as auth from '@/libs/auth'
 
