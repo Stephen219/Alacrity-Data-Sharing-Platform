@@ -1,24 +1,8 @@
 
+import io
 import json
 import logging
 import os
-import io
-import uuid
-
-from charset_normalizer import detect
-from django.shortcuts import get_object_or_404, render
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_protect, csrf_exempt
-from minio import Minio
-import pandas as pd
-from rest_framework.decorators import api_view
-from django.views.decorators.http import require_http_methods
-from .models import Dataset
-from urllib.parse import urlparse
-import uuid
-from storages.backends.s3boto3 import S3Boto3Storage
-from django.core.files.storage import default_storage 
-
 import re
 import tempfile
 import threading
@@ -27,7 +11,13 @@ from datetime import datetime
 from urllib.parse import urlparse
 import boto3
 import pandas as pd
+import requests
+from charset_normalizer import detect
 from cryptography.fernet import Fernet
+from minio import Minio
+from nanoid import generate
+from scipy.stats import mode
+from storages.backends.s3boto3 import S3Boto3Storage
 from django.core.cache import cache
 from django.core.files.storage import default_storage
 from django.http import JsonResponse
@@ -36,8 +26,6 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.views.decorators.http import require_http_methods
-from minio import Minio
-from nanoid import generate
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.negotiation import DefaultContentNegotiation
@@ -46,14 +34,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from scipy.stats import mode
-from storages.backends.s3boto3 import S3Boto3Storage
-import requests
 
-from alacrity_backend.settings import (MINIO_ACCESS_KEY, MINIO_BUCKET_NAME,
-                                     MINIO_SECRET_KEY, MINIO_URL)
+
+from alacrity_backend.settings import MINIO_ACCESS_KEY, MINIO_BUCKET_NAME, MINIO_SECRET_KEY, MINIO_URL
 from users.decorators import role_required
-
 from .models import Dataset
 from .serializer import DatasetSerializer
 # from .tasks import compute_correlation, fetch_json_from_minio
