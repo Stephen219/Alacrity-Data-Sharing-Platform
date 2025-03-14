@@ -80,10 +80,9 @@ def paypal_success(request):
     - Validates payment ID and payer ID from PayPal.
     - Executes the PayPal transaction.
     - Confirms that the dataset request was approved.
-    - Ensures that the payment corresponds to a valid dataset purchase.
+    - Creates a purchase record if one does not already exist.
     - Grants access to the dataset upon successful verification.
     """
-
     payment_id = request.GET.get("paymentId")
     payer_id = request.GET.get("PayerID")
 
@@ -97,24 +96,26 @@ def paypal_success(request):
 
         # Execute the payment using the payer ID
         if payment.execute({"payer_id": payer_id}):
+            # Assume the description contains "Payment for dataset: <dataset title>"
             dataset_title = payment.transactions[0].description.split(": ")[1]
             dataset = Dataset.objects.get(title=dataset_title)
 
             # Validate that the dataset request was approved before granting access
-            dataset_request = DatasetRequest.objects.filter(dataset_id=dataset, request_status="approved").first()
-
+            dataset_request = DatasetRequest.objects.filter(
+                dataset_id=dataset, request_status="approved"
+            ).first()
             if not dataset_request:
-                return Response({"error": "You must have an approved request to access this dataset."}, status=403)
+                return Response(
+                    {"error": "You must have an approved request to access this dataset."},
+                    status=403
+                )
 
             user = dataset_request.researcher_id  # Correct researcher from dataset request
 
-            # Verify that a purchase record exists for this dataset and user
-            purchase = DatasetPurchase.objects.filter(dataset=dataset, buyer=user).exists()
+            # Create the purchase record if it doesn't exist already
+            purchase, created = DatasetPurchase.objects.get_or_create(dataset=dataset, buyer=user)
 
-            if not purchase:
-                return Response({"error": "Payment required before access"}, status=403)
-
-            return Response({"message": "Payment successful. Dataset access granted."}, status=200)
+            return redirect(f"{settings.FRONTEND_URL}/dashboard?payment=success")
         else:
             return Response({"error": "Payment execution failed"}, status=500)
 
@@ -124,6 +125,7 @@ def paypal_success(request):
         return Response({"error": "Dataset not found"}, status=404)
     except Exception as e:
         return Response({"error": str(e)}, status=500)
+
 
     
 @api_view(['GET'])

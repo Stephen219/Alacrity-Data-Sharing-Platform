@@ -10,6 +10,7 @@ import type React from "react"
 import { fetchWithAuth } from "@/libs/auth"
 import { useEffect, useState } from "react"
 import { BACKEND_URL } from "@/config"
+import router, { useRouter } from "next/router";
 
 interface DatasetRequest {
   request_id: string
@@ -29,6 +30,8 @@ interface Dataset {
   contributor_id__organization__name: string 
   requests__updated_at: string 
   category: string
+  price: number;
+  hasPaid?: boolean; 
 }
 
 interface DashboardData {
@@ -64,6 +67,8 @@ const ResearcherDashboard: React.FC = () => {
           contributor_id__organization__name: dataset.contributor_id__organization__name,
           requests__updated_at: dataset.requests__updated_at,
           category: dataset.category,
+          price: parseFloat(dataset.price) || 0,
+          hasPaid: dataset.hasPaid || false,
         })),
       }
       setData(mappedData)
@@ -79,6 +84,16 @@ const ResearcherDashboard: React.FC = () => {
   useEffect(() => {
     getData()
   }, [])
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get("payment") === "success") {
+        console.log("Detected PayPal success, re-fetching data...");
+        getData();
+      }
+    }
+  }, []);
 
   
   const sampleDatasets: Dataset[] = [
@@ -135,11 +150,14 @@ const ResearcherDashboard: React.FC = () => {
               filteredDatasets.map((dataset, index) => (
                 <DatasetCard
                   key={dataset.dataset_id || `fallback-${index}`}
+                  dataset_id={dataset.dataset_id}
                   title={dataset.title}
                   description={dataset.description}
                   tags={dataset.tags}
                   organization={dataset.contributor_id__organization__name}
                   createdAt={dataset.requests__updated_at}
+                  price={dataset.price}
+                  hasPaid={dataset.hasPaid}
                 />
               ))
             ) : (
@@ -435,14 +453,17 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon }) => (
 )
 
 interface DatasetCardProps {
+  dataset_id: string
   title: string
   description: string
   tags: string[]
   organization: string 
   createdAt: string 
+  price: number
+  hasPaid?: boolean
 }
 
-const DatasetCard: React.FC<DatasetCardProps> = ({ title, description, tags, organization, createdAt }) => {
+const DatasetCard: React.FC<DatasetCardProps> = ({ dataset_id, title, description, tags, organization, createdAt, price, hasPaid = false, }) => {
   let formattedDate = "Unknown Date"
   if (createdAt) {
     const date = new Date(createdAt)
@@ -459,6 +480,60 @@ const DatasetCard: React.FC<DatasetCardProps> = ({ title, description, tags, org
   const safeTags = Array.isArray(tags) ? tags : []
   const displayTags = safeTags.slice(0, 3)
   const hasMoreTags = safeTags.length > 3
+
+  const handlePayment = async () => {
+    try {
+      const response = await fetchWithAuth(
+        `${BACKEND_URL}/payments/paypal/payment/${dataset_id}/`,
+        { method: "POST" }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Payment request failed. Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("PayPal Payment creation response:", data);
+
+      if (data.approval_url) {
+        // Redirect the user to PayPal for payment approval
+        window.location.href = data.approval_url;
+      } else if (data.message) {
+        // e.g., "Dataset is free, no payment needed."
+        alert(data.message);
+      } else {
+        alert("No PayPal approval URL returned from server.");
+      }
+    } catch (error) {
+      console.error("Error creating PayPal payment:", error);
+      alert("Error creating PayPal payment. Check console for details.");
+    }
+  };
+
+
+  const renderActionButton = () => {
+    if (price > 0 && !hasPaid) {
+      // show pay if not purchased
+      return (
+        <button
+          className="mt-2 px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md"
+          onClick={handlePayment}
+        >
+          Pay £{price.toFixed(2)}
+        </button>
+      );
+    } else {
+      // if free or paid show analyse 
+      return (
+        <button
+          className="mt-2 px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md"
+          onClick={() => console.log("Analyze dataset", dataset_id)}
+        >
+          Analyze
+        </button>
+      );
+    }
+  };
 
   return (
     <div className="p-4 border-b border-gray-200 hover:bg-gray-50">
@@ -485,9 +560,7 @@ const DatasetCard: React.FC<DatasetCardProps> = ({ title, description, tags, org
           </span>
         )}
       </div>
-      <button className="mt-2 px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md hover:bg-opacity-90 transition-colors">
-        Analyze
-      </button>
+      {renderActionButton()}
     </div>
   )
 }
