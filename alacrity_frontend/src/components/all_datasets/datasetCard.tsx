@@ -2,8 +2,6 @@
 
 import React from "react";
 import { Bookmark, Building2, Database, HardDrive } from "lucide-react";
-import { fetchWithAuth } from "@/libs/auth"
-import { BACKEND_URL } from "@/config"
 
 interface DatasetCardProps {
   dataset_id: string;
@@ -26,7 +24,6 @@ interface DatasetCardProps {
 }
 
 export const DatasetCard: React.FC<DatasetCardProps> = ({
-  dataset_id,
   title,
   description,
   organization,
@@ -37,7 +34,6 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
   entries,
   size,
   price,
-  hasPaid = false,
  
   viewMode,
 //  darkMode,

@@ -10,7 +10,6 @@ import type React from "react"
 import { fetchWithAuth } from "@/libs/auth"
 import { useEffect, useState } from "react"
 import { BACKEND_URL } from "@/config"
-import router, { useRouter } from "next/router";
 
 interface DatasetRequest {
   request_id: string
