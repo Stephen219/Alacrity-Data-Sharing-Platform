@@ -1,36 +1,45 @@
+
+
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+"use client";
+import { useState, useEffect, useRef } from "react";
+import type React from "react";
 
-
-"use client"
-import { useState, useEffect, useRef } from "react"
-import type React from "react"
-
-import LoadingSpinner from "./ui/Loader"
-import UploadIcon from "./ui/Upload"
-import { BACKEND_URL } from "@/config"
-import { fetchWithAuth } from "@/libs/auth"
-import MaxWidthWrapper from "./MaxWidthWrapper"
-import { AlertCircle, Cloud, DropletIcon as Dropbox, FileUp, HardDrive, Info, Upload } from "lucide-react"
+import LoadingSpinner from "./ui/Loader";
+import UploadIcon from "./ui/Upload";
+import { BACKEND_URL } from "@/config";
+import { fetchWithAuth } from "@/libs/auth";
+import MaxWidthWrapper from "./MaxWidthWrapper";
+import {
+  AlertCircle,
+  Cloud,
+  DropletIcon as Dropbox,
+  FileUp,
+  HardDrive,
+  Info,
+  Upload,
+} from "lucide-react";
 
 // Type definitions for global window object
 declare global {
   interface Window {
-    gapi: any
+    gapi: any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    google: any
+    google: any;
     Dropbox: {
-      choose: (options: any) => void
-    }
+      choose: (options: any) => void;
+    };
     OneDrive: {
-      open: (options: any) => void
-    }
+      open: (options: any) => void;
+    };
   }
 }
 
 // Tooltip component
 const Tooltip = ({ text, children }: { text: string; children: React.ReactNode }) => {
-  const [isVisible, setIsVisible] = useState(false)
+  const [isVisible, setIsVisible] = useState(false);
 
   return (
     <div className="relative inline-block">
@@ -49,82 +58,77 @@ const Tooltip = ({ text, children }: { text: string; children: React.ReactNode }
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
 /**
  * This component is a form for adding a new dataset. It has fields for title, description, category, tags, and file upload.
  * It also has a checkbox for agreeing to the license terms.
  * @returns {JSX.Element}
- *
- * */
-
+ */
 const DatasetForm = () => {
   // Form state
-  const [title, setTitle] = useState("")
-  const [description, setDescription] = useState("")
-  const [category, setCategory] = useState("")
-  const [tags, setTags] = useState<string[]>([])
-  const [file, setFile] = useState<File | null>(null)
-  const [cloudFileUrl, setCloudFileUrl] = useState("")
-  const [cloudFileName, setCloudFileName] = useState("")
-  const [agreedToTerms, setAgreedToTerms] = useState(false)
-  const [price, setPrice] = useState("")
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [file, setFile] = useState<File | null>(null);
+  const [cloudFileUrl, setCloudFileUrl] = useState("");
+  const [cloudFileName, setCloudFileName] = useState("");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [price, setPrice] = useState("");
+  const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null); 
 
   // UI state
-  const [errors, setErrors] = useState<{ [key: string]: string }>({})
-  const [loading, setLoading] = useState(false)
-  const [serverError, setServerError] = useState("")
-  const [serverMessage, setServerMessage] = useState("")
-  const [visible, setVisible] = useState({ error: false, message: false })
-  const [progress, setProgress] = useState({ error: 100, message: 100 })
-  const [showOverlay, setShowOverlay] = useState(false)
-  const [showSourceModal, setShowSourceModal] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [gapiInited, setGapiInited] = useState(false)
-  const [gisInited, setGisInited] = useState(false)
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [loading, setLoading] = useState(false);
+  const [serverError, setServerError] = useState("");
+  const [serverMessage, setServerMessage] = useState("");
+  const [visible, setVisible] = useState({ error: false, message: false });
+  const [progress, setProgress] = useState({ error: 100, message: 100 });
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [showSourceModal, setShowSourceModal] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [gapiInited, setGapiInited] = useState(false);
+  const [gisInited, setGisInited] = useState(false);
 
-
-  const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY  // DO NOT COMMIT THIS KEY   IT CAN USE MONEY
-  const GOOGLE_CLIENT_ID =process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID 
-  const DROPBOX_APP_KEY = process.env.NEXT_PUBLIC_DROPBOX_APP_KEY 
-  const ONEDRIVE_CLIENT_ID = process.env.NEXT_PUBLIC_ONEDRIVE_CLIENT_ID 
-
-
-  
+  const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY; // DO NOT COMMIT THIS KEY   IT CAN USE MONEY
+  const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const DROPBOX_APP_KEY = process.env.NEXT_PUBLIC_DROPBOX_APP_KEY;
+  const ONEDRIVE_CLIENT_ID = process.env.NEXT_PUBLIC_ONEDRIVE_CLIENT_ID;
 
   useEffect(() => {
     if (serverError || serverMessage) {
-      setVisible({ error: !!serverError, message: !!serverMessage })
-      setProgress({ error: 100, message: 100 })
+      setVisible({ error: !!serverError, message: !!serverMessage });
+      setProgress({ error: 100, message: 100 });
       const timer = setInterval(() => {
         setProgress((prev) => ({
           error: serverError ? Math.max(prev.error - 100 / 150, 0) : 0,
           message: serverMessage ? Math.max(prev.message - 100 / 150, 0) : 0,
-        }))
-      }, 100)
+        }));
+      }, 100);
       const hideTimer = setTimeout(() => {
-        setVisible({ error: false, message: false })
-      }, 15000)
+        setVisible({ error: false, message: false });
+      }, 15000);
       return () => {
-        clearInterval(timer)
-        clearTimeout(hideTimer)
-      }
+        clearInterval(timer);
+        clearTimeout(hideTimer);
+      };
     }
-  }, [serverError, serverMessage])
+  }, [serverError, serverMessage]);
 
-  // Load cloud service SDKs
+  
   useEffect(() => {
     const loadScript = (src: string, attrs?: { [key: string]: string }): Promise<void> =>
       new Promise((resolve, reject) => {
-        const script = document.createElement("script")
-        script.src = src
-        script.async = true
-        if (attrs) Object.entries(attrs).forEach(([key, value]) => script.setAttribute(key, value))
-        script.onload = () => resolve()
-        script.onerror = () => reject(new Error(`Failed to load script: ${src}`))
-        document.body.appendChild(script)
-      })
+        const script = document.createElement("script");
+        script.src = src;
+        script.async = true;
+        if (attrs) Object.entries(attrs).forEach(([key, value]) => script.setAttribute(key, value));
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+        document.body.appendChild(script);
+      });
 
     const initializeCloudSDKs = async () => {
       try {
@@ -136,167 +140,155 @@ const DatasetForm = () => {
           loadScript("https://js.live.net/v5.0/OneDrive.js"),
           loadScript("https://apis.google.com/js/api.js"),
           loadScript("https://accounts.google.com/gsi/client"),
-        ])
+        ]);
 
         window.gapi.load("client:picker", async () => {
           try {
             await window.gapi.client.init({
               apiKey: GOOGLE_API_KEY,
               discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
-            })
-            setGapiInited(true)
-            console.log("Google API client initialized successfully")
+            });
+            setGapiInited(true);
+            console.log("Google API client initialized successfully");
           } catch (error) {
-            console.error("Error initializing GAPI client:", error)
-            setServerError("Failed to initialize Google Drive API.")
+            console.error("Error initializing GAPI client:", error);
+            setServerError("Failed to initialize Google Drive API.");
           }
 
           if (window.google && window.google.accounts && window.google.accounts.oauth2) {
-            setGisInited(true)
-            console.log("Google Identity Services initialized successfully")
+            setGisInited(true);
+            console.log("Google Identity Services initialized successfully");
           } else {
-            setServerError("Google Drive integration failed to load properly.")
+            setServerError("Google Drive integration failed to load properly.");
           }
-        })
+        });
       } catch (error) {
-        console.error("Error loading cloud SDKs:", error)
-        setServerError("Failed to initialize file storage providers. Please refresh the page.")
+        console.error("Error loading cloud SDKs:", error);
+        setServerError("Failed to initialize file storage providers. Please refresh the page.");
       }
-    }
+    };
 
-    initializeCloudSDKs()
+    initializeCloudSDKs();
 
     return () => {
       const scripts = document.querySelectorAll(
         'script[src*="dropbox"], script[src*="onedrive"], script[src*="google"]',
-      )
-      scripts.forEach((script) => script.remove())
-    }
-  }, [DROPBOX_APP_KEY, GOOGLE_API_KEY, GOOGLE_CLIENT_ID])
-
-  /**
-   * this function validates the form fields and sets the errors state
-   * and show the error message if the form fields are not valid
-   *
-   * @returns {boolean}
-   */
+      );
+      scripts.forEach((script) => script.remove());
+    };
+  }, [DROPBOX_APP_KEY, GOOGLE_API_KEY, GOOGLE_CLIENT_ID]);
 
   const validateForm = () => {
-    const newErrors: { [key: string]: string } = {}
-    if (!title.trim()) newErrors.title = "Title is required"
+    const newErrors: { [key: string]: string } = {};
+    if (!title.trim()) newErrors.title = "Title is required";
     if (!description.trim() || description.length < 100)
-      newErrors.description = "Description is required and must be at least 100 characters"
-    if (!category) newErrors.category = "Please select a category"
-    if (tags.length === 0) newErrors.tags = "At least one tag is required"
-    if (!file && !cloudFileUrl) newErrors.file = "Please select a file to upload"
+      newErrors.description = "Description is required and must be at least 100 characters";
+    if (!category) newErrors.category = "Please select a category";
+    if (tags.length === 0) newErrors.tags = "At least one tag is required";
+    if (!file && !cloudFileUrl) newErrors.file = "Please select a file to upload";
     if (file && !["csv", "xlsx", "pdf"].includes(file.name.split(".").pop() ?? ""))
-      newErrors.file = "Invalid file type. Only CSV and Excel files are allowed"
-    if (!agreedToTerms) newErrors.agreedToTerms = "You must agree to the license terms"
-    if (!price.trim()) newErrors.price = "Price is required"
+      newErrors.file = "Invalid file type. Only CSV and Excel files are allowed";
+    if (!agreedToTerms) newErrors.agreedToTerms = "You must agree to the license terms";
+    if (!price.trim()) newErrors.price = "Price is required";
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  /**
-   * this function handles the form submission and sends the data to the backend
-   * with the right url it does send to the backend but its not sending the file
-   * @returns {Promise<void>}
-   *
-   */
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!validateForm()) return
-    setServerError("")
-    setServerMessage("")
-    setLoading(true)
-    setShowOverlay(true)
-    const formData = new FormData()
-    formData.append("title", title)
-    formData.append("description", description)
-    formData.append("category", category)
-    formData.append("tags", tags.join(","))
-    formData.append("price", price)
+    e.preventDefault();
+    if (!validateForm()) return;
+    setServerError("");
+    setServerMessage("");
+    setLoading(true);
+    setShowOverlay(true);
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("category", category);
+    formData.append("tags", tags.join(","));
+    formData.append("price", price);
     if (cloudFileUrl) {
-      formData.append("fileUrl", cloudFileUrl)
-      formData.append("fileName", cloudFileName || "cloud_file")
+      formData.append("fileUrl", cloudFileUrl);
+      formData.append("fileName", cloudFileName || "cloud_file");
+      if (cloudFileUrl.includes("drive.google.com") && googleAccessToken) {
+        formData.append("accessToken", googleAccessToken); // Append access token for Google Drive
+      }
     } else {
-      formData.append("fileUrl", "")
+      formData.append("fileUrl", "");
     }
-    if (file) formData.append("file", file)
+    if (file) formData.append("file", file);
+
     try {
       const response = await fetchWithAuth(`${BACKEND_URL}datasets/create_dataset/`, {
         method: "POST",
         body: formData,
-      })
-      const data = await response.json()
+      });
+      const data = await response.json();
 
       if (!response.ok) {
         if (data.error) {
-          setServerError(data.error)
+          setServerError(data.error);
         } else {
-          console.log(data)
-          setServerError("An error occurred while uploading. Please try again.")
+          console.log(data);
+          setServerError("An error occurred while uploading. Please try again.");
         }
-
-        return
+        return;
       }
-      setServerError("")
+      setServerError("");
 
       if (data.message) {
-        setServerMessage(data.message)
+        setServerMessage(data.message);
       } else {
-        setServerError("")
-        setServerMessage("Dataset uploaded successfully!")
+        setServerMessage("Dataset uploaded successfully!");
       }
-      setTitle("")
-      setDescription("")
-      setCategory("")
-      setTags([])
-      setFile(null)
-      setCloudFileUrl("")
-      setCloudFileName("")
-      setPrice("")
-      setAgreedToTerms(false)
-      setErrors({})
+      setTitle("");
+      setDescription("");
+      setCategory("");
+      setTags([]);
+      setFile(null);
+      setCloudFileUrl("");
+      setCloudFileName("");
+      setPrice("");
+      setAgreedToTerms(false);
+      setErrors({});
+      setGoogleAccessToken(null); 
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : "An unknown error occurred.")
+      setServerError(error instanceof Error ? error.message : "An unknown error occurred.");
     } finally {
-      setLoading(false)
-      setShowOverlay(false)
+      setLoading(false);
+      setShowOverlay(false);
     }
-  }
+  };
 
-  // File source handlers
   const handleLocalFile = () => {
-    setShowSourceModal(false)
-    fileInputRef.current?.click()
-  }
+    setShowSourceModal(false);
+    fileInputRef.current?.click();
+  };
 
   const handleDropbox = () => {
-    setShowSourceModal(false)
+    setShowSourceModal(false);
     if (window.Dropbox) {
       window.Dropbox.choose({
         success: (files: any) => {
-          const selectedFile = files[0]
-          setCloudFileUrl(selectedFile.link)
-          setCloudFileName(selectedFile.name)
-          setFile(null)
-          console.log("Selected Dropbox file:", selectedFile)
+          const selectedFile = files[0];
+          setCloudFileUrl(selectedFile.link);
+          setCloudFileName(selectedFile.name);
+          setFile(null);
+          console.log("Selected Dropbox file:", selectedFile);
         },
         cancel: () => console.log("Dropbox picker canceled"),
         linkType: "direct",
         multiselect: false,
         extensions: [".csv", ".xlsx", ".pdf"],
-      })
+      });
     } else {
-      setServerError("Dropbox integration not available. Please try again later.")
+      setServerError("Dropbox integration not available. Please try again later.");
     }
-  }
+  };
 
   const handleOneDrive = () => {
-    setShowSourceModal(false)
+    setShowSourceModal(false);
     if (window.OneDrive) {
       window.OneDrive.open({
         clientId: ONEDRIVE_CLIENT_ID,
@@ -304,31 +296,31 @@ const DatasetForm = () => {
         multiSelect: false,
         advanced: { filter: ".csv,.xlsx,.pdf" },
         success: (files: any) => {
-          const selectedFile = files.value[0]
-          setCloudFileUrl(selectedFile.webUrl)
-          setCloudFileName(selectedFile.name)
-          setFile(null)
-          console.log("Selected OneDrive file:", selectedFile)
+          const selectedFile = files.value[0];
+          setCloudFileUrl(selectedFile.webUrl);
+          setCloudFileName(selectedFile.name);
+          setFile(null);
+          console.log("Selected OneDrive file:", selectedFile);
         },
         cancel: () => console.log("OneDrive picker canceled"),
         error: (e: any) => {
-          console.error("OneDrive error:", e)
-          setServerError("Failed to access OneDrive. Please try again.")
+          console.error("OneDrive error:", e);
+          setServerError("Failed to access OneDrive. Please try again.");
         },
-      })
+      });
     } else {
-      setServerError("OneDrive integration not available. Please try again later.")
+      setServerError("OneDrive integration not available. Please try again later.");
     }
-  }
+  };
 
   const handleGoogleDrive = () => {
-    setShowSourceModal(false)
+    setShowSourceModal(false);
     if (!gapiInited || !gisInited) {
-      setServerError("Google Drive is not ready. Please wait a moment and try again.")
-      return
+      setServerError("Google Drive is not ready. Please wait a moment and try again.");
+      return;
     }
 
-    console.log("Initiating Google Drive with API Key:", GOOGLE_API_KEY)
+    console.log("Initiating Google Drive with API Key:", GOOGLE_API_KEY);
     const tokenClient = window.google.accounts.oauth2.initTokenClient({
       client_id: GOOGLE_CLIENT_ID,
       scope: "https://www.googleapis.com/auth/drive.readonly",
@@ -337,35 +329,36 @@ const DatasetForm = () => {
       access_type: "online",
       enable_serial_consent: true,
       callback: (tokenResponse: any) => {
-        console.log("OAuth callback triggered:", tokenResponse)
+        console.log("OAuth callback triggered:", tokenResponse);
         if (tokenResponse && tokenResponse.access_token) {
-          console.log("Access token received:", tokenResponse.access_token)
-          createGooglePicker(tokenResponse.access_token)
+          console.log("Access token received:", tokenResponse.access_token);
+          setGoogleAccessToken(tokenResponse.access_token); // Store the token
+          createGooglePicker(tokenResponse.access_token);
         } else {
-          setServerError("Google Drive authentication failed.")
-          console.error("Token response error:", tokenResponse)
+          setServerError("Google Drive authentication failed.");
+          console.error("Token response error:", tokenResponse);
         }
       },
       error_callback: (error: any) => {
-        console.error("Google OAuth error:", error)
-        setServerError("Failed to authenticate with Google Drive: " + (error?.message || "Unknown error"))
+        console.error("Google OAuth error:", error);
+        setServerError("Failed to authenticate with Google Drive: " + (error?.message || "Unknown error"));
       },
-    })
+    });
 
-    console.log("Requesting access token...")
-    tokenClient.requestAccessToken()
-  }
+    console.log("Requesting access token...");
+    tokenClient.requestAccessToken();
+  };
 
   const createGooglePicker = (accessToken: string) => {
-    console.log("Loading Picker API with access token:", accessToken)
+    console.log("Loading Picker API with access token:", accessToken);
     window.gapi.load("picker", () => {
       try {
-        console.log("Creating Picker with API Key:", GOOGLE_API_KEY)
+        console.log("Creating Picker with API Key:", GOOGLE_API_KEY);
         if (!GOOGLE_API_KEY) {
-          throw new Error("API key is empty or undefined")
+          throw new Error("API key is empty or undefined");
         }
         if (!accessToken) {
-          throw new Error("Access token is missing")
+          throw new Error("Access token is missing");
         }
         const picker = new window.google.picker.PickerBuilder()
           .addView(window.google.picker.ViewId.DOCS)
@@ -375,44 +368,43 @@ const DatasetForm = () => {
           .setOAuthToken(accessToken)
           .setDeveloperKey(GOOGLE_API_KEY)
           .setCallback((data: any) => {
-            console.log("Picker callback triggered:", data)
+            console.log("Picker callback triggered:", data);
             if (data.action === window.google.picker.Action.PICKED) {
-              const doc = data.docs[0]
+              const doc = data.docs[0];
               window.gapi.client.drive.files
                 .get({ fileId: doc.id, fields: "webContentLink,name" })
                 .then((response: any) => {
-                  const fileData = response.result
-                  setCloudFileUrl(fileData.webContentLink)
-                  setCloudFileName(fileData.name)
-                  setFile(null)
-                  console.log("Selected file:", fileData)
+                  const fileData = response.result;
+                  setCloudFileUrl(fileData.webContentLink);
+                  setCloudFileName(fileData.name);
+                  setFile(null);
+                  console.log("Selected file:", fileData);
                 })
                 .catch((error: any) => {
-                  console.error("Error fetching file:", error)
-                  setServerError("Failed to retrieve Google Drive file.")
-                })
+                  console.error("Error fetching file:", error);
+                  setServerError("Failed to retrieve Google Drive file.");
+                });
             }
           })
-          .build()
-        console.log("Picker built successfully")
-        picker.setVisible(true)
+          .build();
+        console.log("Picker built successfully");
+        picker.setVisible(true);
       } catch (error) {
-        console.error("Error creating Picker:", error)
-        setServerError("Failed to initialize Google Picker: " + (error as Error).message)
+        console.error("Error creating Picker:", error);
+        setServerError("Failed to initialize Google Picker: " + (error as Error).message);
       }
-    })
-  }
+    });
+  };
 
   return (
     <MaxWidthWrapper>
       <div className="min-h-screen bg-gradient-to-b from-white to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
         <div className="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden">
           <div className="p-6 border-b border-[#f97316] bg-gradient-to-r from-[#f97316]/5 to-[#f97316]/10 dark:from-[#f97316]/10 dark:to-[#f97316]/20">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center  text-center ">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center text-center">
               <FileUp className="mr-2 h-7 w-7 text-[#f97316]" />
               Add New Dataset
             </h2>
-
           </div>
           <div className="fixed top-4 right-4 z-50 space-y-2">
             {serverError && visible.error && (
@@ -481,20 +473,17 @@ const DatasetForm = () => {
                 className="w-full px-3 py-2 border border-[#f97316] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-[#f97316] transition-colors dark:bg-gray-700 dark:text-white"
                 placeholder="Enter dataset title"
               />
-
-              <div>
-                {errors.title && (
-                  <p
-                    className="text-red-500 text-xs flex items-center"
-                    role="alert"
-                    data-testid="title-error"
-                    id="title-error"
-                  >
-                    <AlertCircle className="h-3 w-3 mr-1" />
-                    {errors.title}
-                  </p>
-                )}
-              </div>
+              {errors.title && (
+                <p
+                  className="text-red-500 text-xs flex items-center"
+                  role="alert"
+                  data-testid="title-error"
+                  id="title-error"
+                >
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  {errors.title}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2 relative">
@@ -533,13 +522,13 @@ const DatasetForm = () => {
                 </Tooltip>
               </label>
               <input
-              type="text"
-              id="tags"
-              value={tags.join(",")}
-              onChange={(e) => setTags(e.target.value.split(","))}
-             className="w-full px-3 py-2 border border-[#f97316] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-[#f97316] transition-colors dark:bg-gray-700 dark:text-white"
-              placeholder="Comma-separated tags"
-            />
+                type="text"
+                id="tags"
+                value={tags.join(",")}
+                onChange={(e) => setTags(e.target.value.split(",").map((tag) => tag.trim()))}
+                className="w-full px-3 py-2 border border-[#f97316] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-[#f97316] transition-colors dark:bg-gray-700 dark:text-white"
+                placeholder="Comma-separated tags"
+              />
               {errors.tags && (
                 <p className="text-red-500 text-xs flex items-center">
                   <AlertCircle className="h-3 w-3 mr-1" />
@@ -612,10 +601,11 @@ const DatasetForm = () => {
                   type="file"
                   ref={fileInputRef}
                   onChange={(e) => {
-                    const selectedFile = e.target.files?.[0] || null
-                    setFile(selectedFile)
-                    setCloudFileUrl("")
-                    setCloudFileName("")
+                    const selectedFile = e.target.files?.[0] || null;
+                    setFile(selectedFile);
+                    setCloudFileUrl("");
+                    setCloudFileName("");
+                    setGoogleAccessToken(null); // Reset token when switching to local file
                   }}
                   className="hidden"
                   accept=".csv,.xlsx,.pdf"
@@ -644,7 +634,6 @@ const DatasetForm = () => {
               </div>
             </div>
 
-            {/* Source Selection Modal */}
             {showSourceModal && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md">
@@ -790,10 +779,8 @@ const DatasetForm = () => {
           </div>
         )}
       </div>
-     
     </MaxWidthWrapper>
-  )
-}
+  );
+};
 
-export default DatasetForm
-
+export default DatasetForm;
