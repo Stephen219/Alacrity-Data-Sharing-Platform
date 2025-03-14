@@ -229,7 +229,7 @@ const AdminDashboard: React.FC = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-700">
                 {limitedPendingDatasets
-                .filter((request) => request.request_status === "pending") // Filter pending requests
+                .filter((request) => request.request_status === "pending") /// Filter pending requests
                 .map((request) => (
                   <tr key={request.request_id} 
                   className="hover:bg-gray-50"
