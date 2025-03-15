@@ -65,6 +65,7 @@ describe('AdminDashboard', () => {
     });
     (fetchUserData as jest.Mock).mockResolvedValue(mockUserData);
   });
+  
 
   test('renders loading state initially', () => {
     render(<AdminDashboard />);
@@ -74,11 +75,13 @@ describe('AdminDashboard', () => {
   test('renders dashboard structure after fetch', async () => {
     render(<AdminDashboard />);
     
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    
     await waitFor(() => {
       expect(screen.getByText('Organization Dashboard')).toBeInTheDocument();
-      expect(screen.getByText('Overview of your organization datasets and activities')).toBeInTheDocument();
-    }, { timeout: 2000 });
+    });
   });
+  
 
   test('displays error state when fetch fails', async () => {
     (fetchWithAuth as jest.Mock).mockRejectedValue(new Error('Fetch failed'));
@@ -117,7 +120,7 @@ describe('AdminDashboard', () => {
       expect(screen.getByText('Requester')).toBeInTheDocument();
       expect(screen.getByText('Dataset')).toBeInTheDocument();
       expect(screen.getByText('Date')).toBeInTheDocument();
-      expect(screen.getByText('Status')).toBeInTheDocument();
+      expect(screen.getAllByText('Status')[0]).toBeInTheDocument();
     }, { timeout: 2000 });
   });
 

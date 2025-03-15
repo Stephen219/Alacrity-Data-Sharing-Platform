@@ -25,6 +25,7 @@ from rest_framework.permissions import IsAuthenticated
 from .decorators import role_required
 from datasets.models import Dataset
 from payments.models import DatasetPurchase
+from django.db.models import Q
 
 from .models import User
 class LoginView(APIView):
@@ -288,8 +289,6 @@ class LogoutView(APIView):
         
 
 
-
-
 # TODO: REFACTOR THIS VIEW BUT FOR NOW I HAVE TO MAKE IT WORK
 
 class UserDashboardView(APIView):
@@ -417,6 +416,7 @@ class UserDashboardView(APIView):
             return JsonResponse(data)
         else:
             return Response({"error": "Invalid role"}, status=403)
+
         
 
 
@@ -506,12 +506,11 @@ def get_datasets_user_has_access(user_id):
         request_status='approved'
     ).select_related('dataset_id')
 
-    # Build a list of dictionaries
+    # Builds a list of dictionaries
     results = []
     for req in approved_requests:
         ds = req.dataset_id
 
-        # Has the user paid for this dataset?
         purchased = DatasetPurchase.objects.filter(dataset=ds, buyer_id=user_id).exists()
 
         results.append({
@@ -520,10 +519,8 @@ def get_datasets_user_has_access(user_id):
             "description": ds.description,
             "category": ds.category,
             "tags": ds.tags,
-            # The organization name for your front end
             "contributor_id__organization__name":
                 ds.contributor_id.organization.name if ds.contributor_id and ds.contributor_id.organization else None,
-            # The date/time of the last request update
             "requests__updated_at":
                 ds.requests.order_by('-updated_at').first().updated_at.isoformat()
                 if ds.requests.exists() else None,
@@ -534,14 +531,69 @@ def get_datasets_user_has_access(user_id):
     return results
 
 
+class UserAccessibleDatasetsView(APIView):
+    """
+    Returns datasets that the user has access to:
+    - Approved and Free datasets
+    - Approved and Paid-for datasets
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user_id = request.user.id
+
+        # Gets dataset IDs where user has an approved request
+        approved_datasets = list(DatasetRequest.objects.filter(
+            researcher_id=user_id, request_status="approved"
+        ).values_list("dataset_id", flat=True))
+
+        # Gets dataset IDs the user has paid for
+        purchased_datasets = list(DatasetPurchase.objects.filter(
+            buyer_id=user_id
+        ).values_list("dataset_id", flat=True))
+
+        # Fetch datasets that are:
+        # 1. Approved AND Free
+        # 2. Approved AND Paid
+        accessible_datasets = Dataset.objects.filter(
+            Q(dataset_id__in=approved_datasets, price=0.0) |
+            (Q(dataset_id__in=approved_datasets) & Q(dataset_id__in=purchased_datasets))
+        ).distinct()
+
+
+        dataset_list = []
+        for dataset in accessible_datasets:
+            has_paid = dataset.price == 0.0 or dataset.dataset_id in purchased_datasets
+
+            dataset_list.append({
+                "dataset_id": dataset.dataset_id,
+                "title": dataset.title,
+                "description": dataset.description,
+                "category": dataset.category,
+                "tags": dataset.tags,
+                "organization": dataset.contributor_id.organization.name
+                if dataset.contributor_id and dataset.contributor_id.organization
+                else None,
+                "price": float(dataset.price),
+                "hasPaid": has_paid,
+                "updated_at": dataset.updated_at.isoformat(),
+            })
+
+        return Response(dataset_list, status=200)
+
+
 
 class DatasetWithAccessView(APIView):
     permission_classes = [IsAuthenticated]
     @role_required(["researcher"])
     def get(self, request):
         user = request.user
-        datasets_having_access = get_datasets_user_has_access(user.id)
-        return JsonResponse(list(datasets_having_access), safe=False)
+
+        accessible_datasets_view = UserAccessibleDatasetsView()
+        response = accessible_datasets_view.get(request)
+
+        return JsonResponse(response.data, safe=False)
 
     
 ## solve an error in editing the user profile

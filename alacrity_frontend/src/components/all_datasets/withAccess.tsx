@@ -45,6 +45,8 @@ export default function DatasetAccessed() {
         const response = await fetchWithAuth(`${BACKEND_URL}/users/datasetsWithAccess/`)
         if (!response.ok) throw new Error('Failed to fetch datasets')
         const data = await response.json()
+        console.log("Fetched datasets:", data);
+        
         setDatasets(data)
       } catch (error) {
         console.error('Error fetching datasets:', error)

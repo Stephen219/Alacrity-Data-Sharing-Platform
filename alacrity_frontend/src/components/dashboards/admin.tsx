@@ -51,6 +51,16 @@ import { fetchUserData } from "@/libs/auth";
 import { User } from "@/types/types";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import parse from "html-react-parser"
+
+interface PendingSubmission {
+  id: number;
+  title: string;
+  description: string;
+  researcher_email: string;
+  submitted_at: string;
+  status: string;
+}
 
 interface DashboardData {
   total_datasets: number;
@@ -72,11 +82,13 @@ interface DashboardData {
 }
 
 const AdminDashboard: React.FC = () => {
+  const [pendingSubmissions, setPendingSubmissions] = useState<PendingSubmission[]>([]);
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   // const [userData, setUserData] = useState(null);
   const [user, setUser] = useState<User | null>(null);
+  const stripHtml = (htmlString: string) => parse(htmlString.replace(/<\/?[^>]+(>|$)/g, ""));
   const router = useRouter();
  
 
@@ -87,16 +99,12 @@ const AdminDashboard: React.FC = () => {
   console.log(userData);
   }
 
-  const handleViewAllClick = () => {
-    router.push("/requests/pending");
-  };
-  const getData = async () => {
+  const getDashboardData = async () => {
     try {
       setLoading(true);
       const response = await fetchWithAuth(`${BACKEND_URL}/users/dashboard`);
       const result = await response.json();
       setData(result);
-      console.log(result);
     } catch (error) {
       setError(error as Error);
     } finally {
@@ -104,23 +112,43 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const getPendingSubmissions = async () => {
+    try {
+      const response = await fetchWithAuth(`${BACKEND_URL}/research/submissions/pending/`);
+      if (!response.ok) throw new Error("Failed to fetch pending submissions");
+      const result: PendingSubmission[] = await response.json();
+      setPendingSubmissions(result);
+    } catch (error) {
+      console.error("Error fetching pending submissions:", error);
+    }
+  };
+
+  const handleViewAllClick = () => {
+    router.push("/requests/pending");
+  };
+  // const getData = async () => {
+  //   try {
+  //     setLoading(true);
+  //     const response = await fetchWithAuth(`${BACKEND_URL}/users/dashboard`);
+  //     const result = await response.json();
+  //     setData(result);
+  //     console.log(result);
+  //   } catch (error) {
+  //     setError(error as Error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   useEffect(() => {
     getUserdata();
-    getData();
-
+    getDashboardData();
+    getPendingSubmissions();
   }, []);
 
-  if (loading) {
-    return <div className="p-6 bg-gray-50">Loading...</div>;
-  }
-
-  if (error) {
-    return <div className="p-6 bg-gray-50 text-red-500">Error: {error.message}</div>;
-  }
-
-  if (!data) {
-    return <div className="p-6 bg-gray-50">No data available</div>;
-  }
+  if (loading) return <div className="p-6 bg-gray-50">Loading...</div>;
+  if (error) return <div className="p-6 bg-gray-50 text-red-500">Error: {error.message}</div>;
+  if (!data) return <div className="p-6 bg-gray-50">No data available</div>;
 
   
   const truncateTitle = (title: string, maxLength: number = 30) => {
@@ -279,6 +307,60 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+    {/* Pending Research Submissions */}
+    <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Pending Research Submissions</h2>
+          <button
+            className="px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f] transition-colors"
+            onClick={() => router.push("/submissions/pending")}
+          >
+            View All
+          </button>
+        </div>
+
+        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Researcher</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted At</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3"></th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {pendingSubmissions.length > 0 ? (
+                pendingSubmissions.slice(0, 5).map((submission) => (
+                  <tr key={submission.id} className="hover:bg-gray-100 cursor-pointer transition"
+                  onClick={() => router.push(`/requests/submissions/${submission.id}`)}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{submission.researcher_email}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {stripHtml(submission.title.split(" ").slice(0, 5).join(" "))}
+                        {submission.title.split(" ").length > 5 ? "..." : ""}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDate(submission.submitted_at)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#FF6B1A]">{submission.status}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                    No pending submissions found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    
+
+
       
       <div>
         <div className="flex items-center justify-between mb-4 ">
