@@ -1,10 +1,13 @@
 from rest_framework import serializers
-from .models import ResearchSubmission, PublishedResearch
+from .models import AnalysisSubmission, PublishedResearch
 
-class ResearchSubmissionSerializer(serializers.ModelSerializer):
+class AnalysisSubmissionSerializer(serializers.ModelSerializer):
+    researcher_email = serializers.EmailField(source="researcher.email", read_only=True)
+    submitted_at = serializers.DateTimeField(read_only=True)
+
     class Meta:
-        model = ResearchSubmission
-        fields = ['submission_id', 'research_name', 'description', 'raw_results', 'summary', 'status', 'is_bookmarked', 'is_private']
+        model = AnalysisSubmission  
+        fields = ['id', 'title', 'description', 'raw_results', 'summary', 'status', 'researcher_email', 'submitted_at']
 
 class PublishedResearchSerializer(serializers.ModelSerializer):
     class Meta:

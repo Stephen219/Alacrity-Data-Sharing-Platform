@@ -7,10 +7,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import permission_classes
-
+from django.core.mail import send_mail
+from research.serializers import AnalysisSubmissionSerializer
 from users.decorators import role_required
 from .models import AnalysisSubmission
-
+from rest_framework.generics import ListAPIView
 from datasets.models import Dataset
 
 
@@ -27,8 +28,18 @@ class SaveSubmissionView(APIView):
             submission_id = data.get("id")
             dataset_id = data.get("dataset_id")
 
+            # Ensure new submissions always have a dataset
+            if not dataset_id:
+                return Response({"error": "Dataset ID is required to submit research."}, status=400)
+
+            dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
+
             if submission_id:
                 submission = get_object_or_404(AnalysisSubmission, id=submission_id, researcher=researcher)
+
+                # Prevents editing after approval
+                if submission.status in ['approved', 'published']:
+                    return Response({"error": "Approved research cannot be modified."}, status=400)
             else:
                 submission = AnalysisSubmission(researcher=researcher)
 
@@ -54,6 +65,9 @@ class SaveSubmissionView(APIView):
             if submission.status == "published":
                 if not all([submission.title, submission.description, submission.raw_results, submission.summary]):
                     raise ValidationError("All fields must be filled before publishing.")
+                
+            if submission.status == "published":
+                submission.status = "pending"
 
             submission.save()
             return Response({
@@ -68,6 +82,72 @@ class SaveSubmissionView(APIView):
             return Response({"error": str(e)}, status=400)
         except Exception as e:
             return Response({"error": str(e)}, status=400)
+        
+class PendingSubmissionsView(ListAPIView):
+    """
+    Retrieves all pending research submissions that require approval.
+    Only accessible to organization admins.
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = AnalysisSubmissionSerializer
+
+    @role_required(['organization_admin'])
+    def get(self, request, *args, **kwargs):
+        pending_submissions = AnalysisSubmission.objects.filter(status="pending")
+        
+        # serializer returns JSON data
+        serializer = self.serializer_class(pending_submissions, many=True)
+        return Response(serializer.data)
+
+        
+class ApproveRejectSubmissionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @role_required(['organization_admin'])
+    def get(self, request, submission_id):
+        """
+        Retrieve a single submission details for review.
+        """
+        submission = get_object_or_404(AnalysisSubmission, id=submission_id, status="pending")
+        serializer = AnalysisSubmissionSerializer(submission)
+        return Response(serializer.data, status=200)
+
+    @role_required(['organization_admin'])
+    def post(self, request, submission_id):
+        """
+        Allows an organization admin to approve or reject a research submission.
+        """
+        action = request.data.get('action')
+        admin = request.user
+
+        submission = get_object_or_404(AnalysisSubmission, id=submission_id)
+
+        if submission.status not in ['pending']:
+            return Response({"error": "This research has already been reviewed."}, status=400)
+
+        if action == "approve":
+            submission.status = "published"
+            message = f"Your research submission '{submission.title}' has been approved and is now published."
+        elif action == "reject":
+            submission.status = "rejected"
+            rejection_reason = request.data.get("reason", "No reason provided")
+            message = f"Your research submission '{submission.title}' has been rejected.\nReason: {rejection_reason}"
+        else:
+            return Response({"error": "Invalid action."}, status=400)
+
+        submission.save()
+
+        # Send notification email
+        send_mail(
+            subject="Research Submission Update",
+            message=message,
+            from_email="admin@example.com",
+            recipient_list=[submission.researcher.email],
+            fail_silently=False,
+        )
+
+        return Response({"message": f"Research {action}ed successfully."}, status=200)
+
 
 
 

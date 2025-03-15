@@ -1,7 +1,9 @@
 from django.urls import path
 from .views import (
+    ApproveRejectSubmissionView,
     DeleteDraftView,
     GetDraftView,
+    PendingSubmissionsView,
     SaveSubmissionView,
     AnalysisSubmissionsView,
     DraftSubmissionsView,
@@ -20,6 +22,7 @@ from .views import (
 
 urlpatterns = [
     path("submissions/save/", SaveSubmissionView.as_view(), name="save_submission"),
+    path("submissions/review/<int:submission_id>/", ApproveRejectSubmissionView.as_view(), name="review_submission"),
     path("submissions/", AnalysisSubmissionsView.as_view(), name="get_analysis_submissions"),  
     path("drafts/", DraftSubmissionsView.as_view(), name="get_draft_submissions"),  
     path("submissions/edit/<int:submission_id>/", EditSubmissionView.as_view(), name="edit_analysis_submission"),
@@ -35,6 +38,7 @@ urlpatterns = [
     path("submissions/<int:submission_id>/", ViewSingleSubmissionView.as_view(), name="view_submission"),
     path("bookmarks/<int:submission_id>/", ViewSingleBookmarkedSubmissionView.as_view(), name="view_bookmarked_submission"),
     path("submissions/toggle-privacy/<int:submission_id>/", TogglePrivacyView.as_view(), name="toggle_privacy"),
+    path("submissions/pending/", PendingSubmissionsView.as_view(), name="pending-submissions"),
     
 
 ]

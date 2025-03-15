@@ -15,6 +15,10 @@ import { useParams } from "next/navigation"
 import { fetchWithAuth } from "@/libs/auth"
 import { BACKEND_URL } from "@/config"
 import { Lock, Download, FileText, BarChart3, Save, Filter, ChevronRight, X, ArrowRight, ArrowLeft } from "lucide-react"
+import { Editor } from "@tiptap/react"
+import TextEditorToolbar from "@/components/TextEditorToolbar"
+import AnalysisFormComponent from "@/components/ResearchForm"
+
 
 type Schema = Record<string, string>
 type Dataset = {
@@ -62,6 +66,7 @@ type Result =
       intercept: number
       columns: [string, string]
     }
+    
 
 const calculationTypes = [
   { value: "descriptive", label: "Descriptive Statistics" },
@@ -202,7 +207,8 @@ const tourSteps = [
 const AnalyzePage = () => {
   const { id } = useParams()
   const [dataset, setDataset] = useState<Dataset | null>(null)
-  const [activeTab, setActiveTab] = useState<"analysis" | "results" | "notes">("analysis")
+  const [activeTab, setActiveTab] = useState<"analysis" | "results" | "notes" | "submit">("analysis");
+  const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
   const [state, dispatch] = useReducer(reducer, initialState)
   const [result, setResult] = useState<Result | null>(null)
   const [loading, setLoading] = useState(true)
@@ -229,6 +235,12 @@ const AnalyzePage = () => {
 
   const debouncedFilterValue = useDebounce(state.filterValue, 300)
   const debouncedNotes = useDebounce(state.notes, 500)
+
+  const [formData, setFormData] = useState<Record<string, any>>({});
+// update form fields
+const updateFormData = (field: string, value: any) => {
+  setFormData((prev) => ({ ...prev, [field]: value }));
+};
 
   // Check if user has seen the tour before
   useEffect(() => {
@@ -619,6 +631,16 @@ const AnalyzePage = () => {
               <FileText className="mr-2 h-4 w-4" />
               Notes
             </button>
+                {/* ✅ Added Submit Tab */}
+    <button
+      onClick={() => setActiveTab("submit")}
+      className={`py-3 px-4 text-center font-medium flex items-center justify-center ${
+        activeTab === "submit" ? "bg-orange-500 text-white" : "text-gray-700 hover:bg-orange-100"
+      }`}
+    >
+      <Save className="mr-2 h-4 w-4" />
+      Submit
+    </button>
           </div>
         </div>
 
@@ -1094,6 +1116,31 @@ const AnalyzePage = () => {
           </div>
         )}
       </div>
+
+      {activeTab === "submit" && (
+  <div className="bg-white p-6 rounded-lg shadow-md">
+    <h2 className="text-lg font-semibold mb-4" style={{ color: "#f97316" }}>
+      Submit Research for Approval
+    </h2>
+    <p className="text-gray-600 mb-3">
+      Submit your research based on the dataset "<strong>{dataset.title}</strong>". Your submission will be reviewed
+      by the dataset's organization.
+    </p>
+
+    {/* toolbar */}
+    {editorInstance && (
+      <div className="sticky top-16 z-30 bg-white p-2 rounded-lg mb-4">
+        <TextEditorToolbar editor={editorInstance} />
+      </div>
+    )}
+
+    <AnalysisFormComponent 
+      editorInstance={editorInstance} 
+      setEditorInstance={setEditorInstance}
+    />
+  </div>
+)}
+
 
    
       {showTermsModal && (

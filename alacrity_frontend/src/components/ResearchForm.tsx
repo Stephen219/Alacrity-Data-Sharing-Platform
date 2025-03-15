@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import TextEditor from "@/components/TextEditor";
 import { Editor } from "@tiptap/react";
 import { fetchWithAuth } from "@/libs/auth";
-import { useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
+import { BACKEND_URL } from "@/config";
 
 interface Analysis {
-  datasetId?: unknown; 
+  datasetId?: string | null; 
   id: number | null;
   title: string;
   description: string;
@@ -24,8 +25,46 @@ interface AnalysisFormProps {
 }
 
 const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData }: AnalysisFormProps) => {
-  const searchParams = useSearchParams();
+  const params = useParams();
+  const datasetIdParam = params?.id;
+  const datasetId = Array.isArray(datasetIdParam) ? datasetIdParam[0] : datasetIdParam || null;
+
+  const [formData, setFormData] = useState<Analysis>(() => {
+    // ✅ Load saved form data from localStorage when the component mounts
+    if (typeof window !== "undefined") {
+      const savedData = localStorage.getItem("analysis_form");
+      return savedData ? JSON.parse(savedData) : {
+        datasetId,
+        id: null,
+        title: "",
+        description: "",
+        raw_results: "",
+        summary: "",
+        status: "draft",
+        image: null,
+      };
+    }
+    return {
+      datasetId,
+      id: null,
+      title: "",
+      description: "",
+      raw_results: "",
+      summary: "",
+      status: "draft",
+      image: null,
+    };
+  });
+
+  // Saves form data when it changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("analysis_form", JSON.stringify(formData));
+    }
+  }, [formData]);
+
   const initialFormState: Analysis = {
+    datasetId,
     id: null,
     title: "",
     description: "",
@@ -33,33 +72,33 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
     summary: "",
     status: "draft",
     image: null,
-    datasetId: initialData?.datasetId || null,
   };
 
-  const [formData, setFormData] = useState<Analysis>(() => ({
-    id: initialData?.id || null,
-    title: initialData?.title || "",
-    description: initialData?.description || "",
-    raw_results: initialData?.raw_results || "",
-    summary: initialData?.summary || "",
-    status: initialData?.status || "draft",
-    image: null,
-    datasetId: initialData?.datasetId || null,
-  }));
+  // const [formData, setFormData] = useState<Analysis>(() => ({
+  //   id: initialData?.id || null,
+  //   title: initialData?.title || "",
+  //   description: initialData?.description || "",
+  //   raw_results: initialData?.raw_results || "",
+  //   summary: initialData?.summary || "",
+  //   status: initialData?.status || "draft",
+  //   image: null,
+  //   datasetId: initialData?.datasetId || datasetId || null,
+  // }));
 
   const [lastSavedData, setLastSavedData] = useState<Analysis | null>(null);
   const [lastPublishedData, setLastPublishedData] = useState<Analysis | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  
 
-  // Handle datasetId from URL query parameter
+  // setting datasetid
   useEffect(() => {
-    const datasetId = searchParams.get("id");
-    
-    if (datasetId && !formData.datasetId) {
+    if (!formData.datasetId && datasetId) {
+      console.log("Setting datasetId from URL:", datasetId);
       setFormData((prev) => ({ ...prev, datasetId }));
     }
-  }, [searchParams]);
+  }, [datasetId]); 
+  
 
   // Handle initialData updates
   useEffect(() => {
@@ -83,59 +122,50 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
     }
   };
 
-  const isContentSame = (newData: Analysis, oldData: Analysis | null) => {
-    if (!oldData) return false;
-    return (
-      newData.title === oldData.title &&
-      newData.description === oldData.description &&
-      newData.raw_results === oldData.raw_results &&
-      newData.summary === oldData.summary
-    );
-  };
+  // const isContentSame = (newData: Analysis, oldData: Analysis | null) => {
+  //   if (!oldData) return false;
+  //   return (
+  //     newData.title === oldData.title &&
+  //     newData.description === oldData.description &&
+  //     newData.raw_results === oldData.raw_results &&
+  //     newData.summary === oldData.summary
+  //   );
+  // };
 
   const handleSave = async (publish = false) => {
-    if (!publish && isContentSame(formData, lastSavedData)) {
-      setMessage("This draft has already been saved.");
+    if (!formData.datasetId) {
+      console.error("Missing dataset_id! Cannot submit.");
+      setMessage("Error: Missing dataset ID.");
+      setLoading(false);
       return;
     }
-
-    if (publish && isContentSame(formData, lastPublishedData)) {
-      setMessage("This research has already been published.");
-      return;
-    }
-
-    setLoading(true);
-    setMessage("");
-
+  
     const requestData = new FormData();
     requestData.append("title", formData.title);
     requestData.append("description", formData.description);
     requestData.append("rawResults", formData.raw_results);
     requestData.append("summary", formData.summary);
     requestData.append("status", publish ? "published" : "draft");
-    if (formData.datasetId) {
-      requestData.append("dataset_id", String(formData.datasetId));
-    }
+    requestData.append("dataset_id", String(formData.datasetId)); 
+  
     if (formData.image) {
       requestData.append("image", formData.image);
     }
-
+  
     try {
-      const response = await fetchWithAuth(
-        `http://127.0.0.1:8000/research/submissions/save/`,
-        {
-          method: "POST",
-          body: requestData,
-        }
-      );
-
+      const response = await fetchWithAuth(`${BACKEND_URL}/research/submissions/save/`, {
+        method: "POST",
+        body: requestData,
+      });
+  
       const data = await response.json();
-
+      console.log("API Response:", response.status, data);
+  
       if (response.ok) {
         setMessage(publish ? "Research Published Successfully!" : "Draft Saved Successfully!");
         setFormData({
           ...initialFormState,
-          datasetId: formData.datasetId, // Preserve datasetId
+          datasetId: formData.datasetId,
         });
         if (publish) {
           setLastPublishedData({ ...formData, id: data.id });
@@ -145,12 +175,15 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
       } else {
         setMessage(`Error: ${data.error || "Failed to save."}`);
       }
-    } catch {
+    } catch (error: any) {
+      console.error("Submission Error:", error);
       setMessage("Failed to save.");
     }
-
+  
     setLoading(false);
   };
+  
+  
 
   return (
     <form className="space-y-6">
