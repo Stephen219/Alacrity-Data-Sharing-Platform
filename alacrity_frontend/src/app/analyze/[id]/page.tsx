@@ -236,11 +236,6 @@ const AnalyzePage = () => {
   const debouncedFilterValue = useDebounce(state.filterValue, 300)
   const debouncedNotes = useDebounce(state.notes, 500)
 
-  const [formData, setFormData] = useState<Record<string, any>>({});
-// update form fields
-const updateFormData = (field: string, value: any) => {
-  setFormData((prev) => ({ ...prev, [field]: value }));
-};
 
   // Check if user has seen the tour before
   useEffect(() => {
@@ -555,7 +550,7 @@ const updateFormData = (field: string, value: any) => {
           <h2 className="text-2xl font-bold mb-3" style={{ color: "#f97316" }}>
             Oops! Limited Access
           </h2>
-          <p className="text-gray-700 text-lg mb-4">Sorry, you dont have access to this resource right now.</p>
+          <p className="text-gray-700 text-lg mb-4">Sorry, you don&apos;t have access to this resource right now.</p>
           <div className="w-16 h-1 mx-auto my-2" style={{ backgroundColor: "#f97316", opacity: 0.5 }}></div>
           <p className="text-gray-500 mt-3 text-sm">If you think this is a mistake, please contact support.</p>
         </div>
@@ -631,7 +626,7 @@ const updateFormData = (field: string, value: any) => {
               <FileText className="mr-2 h-4 w-4" />
               Notes
             </button>
-                {/* ✅ Added Submit Tab */}
+                {/* Add Submit Tab */}
     <button
       onClick={() => setActiveTab("submit")}
       className={`py-3 px-4 text-center font-medium flex items-center justify-center ${
@@ -1123,8 +1118,8 @@ const updateFormData = (field: string, value: any) => {
       Submit Research for Approval
     </h2>
     <p className="text-gray-600 mb-3">
-      Submit your research based on the dataset "<strong>{dataset.title}</strong>". Your submission will be reviewed
-      by the dataset's organization.
+      Submit your research based on the dataset &quot;<strong>{dataset.title}</strong>&quot;. Your submission will be reviewed
+      by the dataset&apos;s organization.
     </p>
 
     {/* toolbar */}

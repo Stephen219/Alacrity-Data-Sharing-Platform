@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import TextEditor from "@/components/TextEditor";
 import { Editor } from "@tiptap/react";
 import { fetchWithAuth } from "@/libs/auth";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import { BACKEND_URL } from "@/config";
 
 interface Analysis {
@@ -85,8 +85,8 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
   //   datasetId: initialData?.datasetId || datasetId || null,
   // }));
 
-  const [lastSavedData, setLastSavedData] = useState<Analysis | null>(null);
-  const [lastPublishedData, setLastPublishedData] = useState<Analysis | null>(null);
+  const [, setLastSavedData] = useState<Analysis | null>(null);
+  const [, setLastPublishedData] = useState<Analysis | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   
@@ -175,10 +175,16 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
       } else {
         setMessage(`Error: ${data.error || "Failed to save."}`);
       }
-    } catch (error: any) {
-      console.error("Submission Error:", error);
-      setMessage("Failed to save.");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Submission Error:", error.message);
+        setMessage(`Failed to save: ${error.message}`);
+      } else {
+        console.error("Submission Error:", error);
+        setMessage("Failed to save.");
+      }
     }
+    
   
     setLoading(false);
   };
