@@ -76,7 +76,7 @@ const DatasetForm = () => {
   const [cloudFileUrl, setCloudFileUrl] = useState("");
   const [cloudFileName, setCloudFileName] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [price, setPrice] = useState("");
+  const [price, setPrice] = useState<string>("");
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null); 
 
   // UI state
@@ -347,6 +347,26 @@ const DatasetForm = () => {
 
     console.log("Requesting access token...");
     tokenClient.requestAccessToken();
+  };
+
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+  
+    // Prevents negative values
+    if (value.startsWith("-")) return;
+  
+    // Allos only numbers and a single decimal point
+    if (!/^\d*\.?\d{0,2}$/.test(value)) return;
+  
+    setPrice(value); // Allows natural typing without immediate formatting
+  };
+
+  const handlePriceBlur = () => {
+    if (price === "" || isNaN(parseFloat(price))) {
+      setPrice(""); // Resets empty or invalid input
+    } else {
+      setPrice(parseFloat(price).toFixed(2)); // Formats correctly when leaving the input
+    }
   };
 
   const createGooglePicker = (accessToken: string) => {
@@ -701,9 +721,8 @@ const DatasetForm = () => {
                   type="number"
                   id="price"
                   value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  min="0"
-                  step="0.01"
+                  onChange={handlePriceChange}
+                  onBlur={handlePriceBlur}
                   className="w-full pl-8 pr-3 py-2 border border-[#f97316] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-[#f97316] transition-colors dark:bg-gray-700 dark:text-white"
                   placeholder="0.00"
                 />
