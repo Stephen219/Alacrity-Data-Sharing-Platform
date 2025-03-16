@@ -600,12 +600,13 @@ const DatasetForm = () => {
                 <input
                   type="file"
                   ref={fileInputRef}
+                  data-testid="file-input"
                   onChange={(e) => {
                     const selectedFile = e.target.files?.[0] || null;
                     setFile(selectedFile);
                     setCloudFileUrl("");
                     setCloudFileName("");
-                    setGoogleAccessToken(null); // Reset token when switching to local file
+                    setGoogleAccessToken(null); 
                   }}
                   className="hidden"
                   accept=".csv,.xlsx,.pdf"
