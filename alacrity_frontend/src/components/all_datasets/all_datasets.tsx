@@ -62,7 +62,7 @@ const DatasetsPage: React.FC = () => {
                 .map((tag: string) => tag.trim())
                 .filter((tag: string) => tag.trim() !== "")
             : item.tags || [],
-            price: parseFloat(item.price) || 0,
+            price: item.price ? Number(parseFloat(item.price).toFixed(2)) : 0,
             hasPaid: item.hasPaid || false,
         }));
   

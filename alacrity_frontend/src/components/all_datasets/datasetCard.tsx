@@ -160,12 +160,12 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
 
 {/* Price line (add it right below the grid above, for instance) */}
 <div className="mb-2 text-sm">
-        {price === 0 ? (
-          <span className="text-green-600 font-medium">Free</span>
-        ) : (
-          <span className="text-gray-700">Price: £{price.toFixed(2)}</span>
-        )}
-      </div>
+  {isNaN(Number(price)) || price === null || price === undefined || Number(price) === 0 ? (
+    <span className="text-green-600 font-medium">Free</span>
+  ) : (
+    <span className="text-gray-700">Price: £{Number(price).toFixed(2)}</span>
+  )}
+</div>
 
     </div>
     </div>
