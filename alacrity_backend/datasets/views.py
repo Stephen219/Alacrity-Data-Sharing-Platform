@@ -1,23 +1,8 @@
 
+import io
 import json
 import logging
 import os
-import io
-import uuid
-
-from django.shortcuts import get_object_or_404, render
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_protect, csrf_exempt
-from minio import Minio
-import pandas as pd
-from rest_framework.decorators import api_view
-from django.views.decorators.http import require_http_methods
-from .models import Dataset
-from urllib.parse import urlparse
-import uuid
-from storages.backends.s3boto3 import S3Boto3Storage
-from django.core.files.storage import default_storage 
-
 import re
 import tempfile
 import threading
@@ -26,7 +11,13 @@ from datetime import datetime
 from urllib.parse import urlparse
 import boto3
 import pandas as pd
+import requests
+from charset_normalizer import detect
 from cryptography.fernet import Fernet
+from minio import Minio
+from nanoid import generate
+from scipy.stats import mode
+from storages.backends.s3boto3 import S3Boto3Storage
 from django.core.cache import cache
 from django.core.files.storage import default_storage
 from django.http import JsonResponse
@@ -35,8 +26,6 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.views.decorators.http import require_http_methods
-from minio import Minio
-from nanoid import generate
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.negotiation import DefaultContentNegotiation
@@ -45,13 +34,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from scipy.stats import mode
-from storages.backends.s3boto3 import S3Boto3Storage
 
-from alacrity_backend.settings import (MINIO_ACCESS_KEY, MINIO_BUCKET_NAME,
-                                     MINIO_SECRET_KEY, MINIO_URL)
+
+from alacrity_backend.settings import MINIO_ACCESS_KEY, MINIO_BUCKET_NAME, MINIO_SECRET_KEY, MINIO_URL
 from users.decorators import role_required
-
 from .models import Dataset
 from .serializer import DatasetSerializer
 # from .tasks import compute_correlation, fetch_json_from_minio
@@ -75,122 +61,204 @@ minio_client = Minio(
 )
 BUCKET = MINIO_BUCKET_NAME
 
+
+
 def generate_id():
+    """Generate a unique ID for the dataset."""
     return str(uuid.uuid4())
 
-
-
-# this will be the view where they will be able to upload the dataset
 @method_decorator(csrf_exempt, name='dispatch')
-# @method_decorator(role_required(['organization_admin', 'contributor']), name='dispatch')
 class CreateDatasetView(APIView):
-    content_negotiation_class = DefaultContentNegotiation
     renderer_classes = [JSONRenderer]
     parser_classes = [MultiPartParser, FormParser]
 
     @role_required(['organization_admin', 'contributor'])
-
     def post(self, request, *args, **kwargs):
-        print("Inside POST method")
-        print(request.FILES)
-        start = datetime.now()
-        print("Start time:", start)
+        start_time = datetime.now()
+        logger.info(f"Processing upload request at {start_time}")
+        local_file = request.FILES.get('file')
+        file_url = request.POST.get('fileUrl')
+        file_name = request.POST.get('fileName', 'uploaded_file')
+        access_token = request.POST.get('accessToken')
+
+        print("Request POST:", request.POST)
+        print("Request FILES:", request.FILES)
+        print("File URL:", file_url)
+        print("Access Token:", access_token if access_token else "No access token provided")
 
         try:
-            file = request.FILES.get('file')
-            if not file:
-                logger.error("No file uploaded")
-                return Response({"error": "No file uploaded"}, status=400)
+            if local_file:
+                logger.info(f"Processing local file: {local_file.name}")
+                file_buffer = io.BytesIO(local_file.read())
+                base_name = local_file.name.split('.')[0]
+            elif file_url:
+                logger.info(f"Processing cloud URL: {file_url}")
+                if "drive.google.com" in file_url:
+                    logger.info("Downloading from Google Drive")
+                    if not access_token:
+                        logger.error("Google Drive access token is missing")
+                        return Response({"error": "Google Drive access token required"}, status=400)
+                    file_buffer = self._download_from_google_drive(file_url, access_token)
+                elif "dropbox.com" in file_url or "dl.dropboxusercontent.com" in file_url:
+                    logger.info("Downloading from Dropbox")
+                    file_buffer = self._download_from_dropbox(file_url)
+                else:
+                    logger.error("Unsupported cloud provider")
+                    return Response({"error": "Unsupported cloud provider"}, status=400)
+                base_name = file_name.split('.')[0] if '.' in file_name else file_name
+            else:
+                logger.error("No file or URL provided")
+                return Response({"error": "No file or URL provided"}, status=400)
+            file_buffer.seek(0)
+            raw_data = file_buffer.read()
+            if not raw_data:
+                logger.error("Uploaded file is empty")
+                return Response({"error": "Uploaded file is empty"}, status=400)
+            detection = detect(raw_data)
+            detected_encoding = detection.get('encoding', 'utf-8')
+            confidence = detection.get('confidence', 0)
+            logger.info(f"Detected encoding: {detected_encoding} with confidence: {confidence}")
 
-            file_extension = file.name.split(".")[-1]
-            file_basename = file.name.split(".")[0]
-            unique_filename = f"{uuid.uuid4()}_{file_basename}.parquet.enc"
+            if detected_encoding is None or confidence < 0.8:
+                logger.warning("Low confidence in encoding detection, attempting common encodings")
+                encodings_to_try = ['utf-8', 'latin1', 'windows-1252']
+            else:
+                encodings_to_try = [detected_encoding, 'latin1', 'windows-1252']
+            df = None
+            file_buffer.seek(0)
+            for encoding in encodings_to_try:
+                try:
+                    logger.info(f"Attempting to read CSV with encoding: {encoding}")
+                    file_buffer.seek(0)
+                    df = pd.read_csv(file_buffer, encoding=encoding)
+                    logger.info(f"Successfully read CSV with encoding: {encoding}")
+                    break
+                except UnicodeDecodeError as e:
+                    logger.warning(f"Failed to read CSV with encoding {encoding}: {str(e)}")
+                    continue
+                except pd.errors.ParserError as e:
+                    logger.error(f"Invalid CSV format: {str(e)}")
+                    return Response({"error": "Invalid CSV file format"}, status=400)
 
-            # Load and compress to Parquet
-            logger.info(f"Reading CSV: {file.name}")
-            df = pd.read_csv(file)
-            buffer = io.BytesIO()
-            logger.info("Converting to Parquet with zstd")
-            df.to_parquet(buffer, compression="zstd", compression_level=19, engine="pyarrow")
-            buffer.seek(0)
-
-          
-            key = Fernet.generate_key()
-            print("Key:", key)
-            cipher = Fernet(key)
-            logger.info("Encrypting data")
-            encrypted_data = cipher.encrypt(buffer.getvalue())
-
-            # 
-            file_key = f"encrypted/{unique_filename}"
-            logger.info(f"Uploading to MinIO: {file_key}")
+            if df is None:
+                logger.error("Unable to read CSV with any supported encoding")
+                return Response({"error": "Unable to read the file: unsupported or invalid encoding"}, status=400)
+            parquet_buffer = io.BytesIO()
+            df.to_parquet(parquet_buffer, compression="zstd", compression_level=19, engine="pyarrow")
+            parquet_buffer.seek(0)
+            encryption_key = Fernet.generate_key()
+            cipher = Fernet(encryption_key)
+            encrypted_data = cipher.encrypt(parquet_buffer.getvalue())
+            unique_filename = f"{uuid.uuid4()}_{base_name}.parquet.enc"
+            minio_key = f"encrypted/{unique_filename}"
+            logger.info(f"Uploading to MinIO: {minio_key}")
             minio_client.put_object(
                 bucket_name=BUCKET,
-                object_name=file_key,
+                object_name=minio_key,
                 data=io.BytesIO(encrypted_data),
                 length=len(encrypted_data)
             )
-            file_url = f"{MINIO_URL}/{BUCKET}/{file_key}"
-            # file_url = f"s3://{BUCKET}/{file_key}"
-
-            # Extract and validate form data
+            stored_url = f"{MINIO_URL}/{BUCKET}/{minio_key}"
             title = request.POST.get('title')
             category = request.POST.get('category')
-            tags = request.POST.get('tags')
-            print("Tags:", tags)
+            tags = request.POST.get('tags', '')
             description = request.POST.get('description')
-            price = request.POST.get('price')
+            price = request.POST.get('price', '0.00')
 
             if not title or len(title) > 100:
                 logger.error("Invalid title")
-                return Response({"error": "Invalid title"}, status=400)
-            if not description or len(description) < 10 or len(description) > 100000:
+                return Response({"error": "Title is required and must be under 100 characters"}, status=400)
+            if not description or not (10 <= len(description) <= 100000):
                 logger.error("Invalid description")
-                return Response({"error": "Invalid description"}, status=400)
-            
-            # Default price to 0.00 if not provided
-            if price is None or price == "":
-                price = 0.00
-            else:
-                try:
-                    price = float(price)  # Ensure price is a valid number
-                    if price < 0:
-                        return Response({"error": "Price cannot be negative"}, status=400)
-                except ValueError:
-                    return Response({"error": "Invalid price format"}, status=400)
+                return Response({"error": "Description must be 10-100,000 characters"}, status=400)
 
+            try:
+                price = float(price)
+                if price < 0:
+                    logger.error("Price cannot be negative")
+                    return Response({"error": "Price cannot be negative"}, status=400)
+            except ValueError:
+                logger.error("Invalid price format")
+                return Response({"error": "Price must be a valid number"}, status=400)
             dataset_id = generate_id()
-            print("Dataset ID:", dataset_id)
-            print("Dataset ID:", dataset_id)
-            print("Dataset ID:", dataset_id)
-            schema = {col: str(t) for col, t in df.dtypes.items()}
-
-            # Save to database
-            logger.info(f"Saving dataset metadata: {dataset_id}")
+            schema = {col: str(dtype) for col, dtype in df.dtypes.items()}
             dataset = Dataset.objects.create(
                 dataset_id=dataset_id,
                 contributor_id=request.user,
                 title=title,
                 tags=tags,
                 category=category,
-                link=file_url,
+                link=stored_url,
                 description=description,
-                encryption_key=key.decode(),
+                encryption_key=encryption_key.decode(),
                 schema=schema,
-                price=price,
+                price=price
             )
             dataset.save()
 
-            stop = datetime.now()
-            print("End time:", stop)
-            print("Time taken:", stop - start)
-            logger.info(f"Upload completed in {stop - start}")
+            end_time = datetime.now()
+            logger.info(f"Upload completed in {end_time - start_time}")
+            return Response({
+                "message": "Dataset created successfully",
+                "dataset_id": dataset_id,
+                "file_url": stored_url
+            }, status=201)
 
-            return Response({"message": "Dataset created successfully", "dataset_id": dataset_id, "file_url": file_url}, status=201)
-
+        except pd.errors.ParserError as e:
+            logger.error(f"Invalid CSV format: {str(e)}")
+            return Response({"error": "Invalid CSV file format"}, status=400)
         except Exception as e:
-            logger.error(f"Error: {e}", exc_info=True)
-            return Response({"error": "Something went wrong"}, status=500)
+            logger.error(f"Upload failed: {str(e)}", exc_info=True)
+            return Response({"error": f"Upload failed: {str(e)}"}, status=500)
+
+    def _download_from_google_drive(self, file_url, access_token):
+        """Download file from Google Drive using the provided access token."""
+        try:
+            file_id = file_url.split("/d/")[1].split("/")[0] if "/d/" in file_url else file_url.split("id=")[1].split("&")[0]
+            download_url = f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media"
+            headers = {"Authorization": f"Bearer {access_token}"}
+            logger.info(f"Attempting to download Google Drive file with ID: {file_id}")
+            response = requests.get(download_url, headers=headers, stream=True)
+            response.raise_for_status()
+            buffer = io.BytesIO()
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    buffer.write(chunk)
+            buffer.seek(0)
+            logger.info("Google Drive file downloaded successfully")
+            return buffer
+        except requests.RequestException as e:
+            logger.error(f"Google Drive download failed: {str(e)}")
+            raise Exception(f"Failed to download from Google Drive: {str(e)}")
+
+    def _download_from_dropbox(self, file_url):
+        """Download file from Dropbox."""
+        try:
+            if "?dl=0" in file_url:
+                file_url = file_url.replace("?dl=0", "?dl=1")
+            elif "dropbox.com" in file_url and "?dl=1" not in file_url:
+                file_url += "?dl=1"
+
+            logger.info(f"Attempting to download Dropbox file from URL: {file_url}")
+            response = requests.get(file_url, stream=True)
+            response.raise_for_status()
+            buffer = io.BytesIO()
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    buffer.write(chunk)
+            buffer.seek(0)
+            logger.info("Dropbox file downloaded successfully")
+            return buffer
+        except requests.RequestException as e:
+            logger.error(f"Dropbox download failed: {str(e)}")
+            raise Exception(f"Failed to download from Dropbox: {str(e)}")
+
+
+
+
+
+
+
 
 
 
