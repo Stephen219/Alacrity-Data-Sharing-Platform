@@ -350,7 +350,7 @@ const DatasetForm = () => {
   };
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
+    const value = e.target.value;
   
     // Prevents negative values
     if (value.startsWith("-")) return;
