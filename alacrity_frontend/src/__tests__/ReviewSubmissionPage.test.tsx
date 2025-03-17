@@ -13,9 +13,6 @@ jest.mock("next/navigation", () => ({
 const mockRouter = { push: jest.fn() };
 (useRouter as jest.Mock).mockReturnValue(mockRouter);
 
-// Mock window.alert to prevent errors
-global.alert = jest.fn();
-
 describe("ReviewSubmissionPage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -59,14 +56,13 @@ describe("ReviewSubmissionPage", () => {
     });
   });
 
-  test("calls approve API and redirects on success", async () => {
+  test("calls approve API and shows success alert", async () => {
     (fetchWithAuth as jest.Mock).mockResolvedValueOnce(Promise.resolve({
       ok: true,
       json: async () => mockSubmission,
     }));
 
     render(<ReviewSubmissionPage />);
-
     await waitFor(() => expect(screen.getByText("Approve")).toBeInTheDocument());
 
     (fetchWithAuth as jest.Mock).mockResolvedValueOnce(Promise.resolve({
@@ -77,19 +73,25 @@ describe("ReviewSubmissionPage", () => {
     fireEvent.click(screen.getByText("Approve"));
 
     await waitFor(() => {
-      expect(global.alert).toHaveBeenCalledWith("Submission approved successfully!");
+      expect(screen.getByText("Success!")).toBeInTheDocument();
+      expect(screen.getByText("Submission approved successfully. Email sent.")).toBeInTheDocument();
+    });
+
+    // Close alert and ensure redirect is triggered
+    fireEvent.click(screen.getByText("Close"));
+
+    await waitFor(() => {
       expect(mockRouter.push).toHaveBeenCalledWith("/dashboard");
     });
   });
 
-  test("calls reject API and redirects on success", async () => {
+  test("calls reject API and shows success alert", async () => {
     (fetchWithAuth as jest.Mock).mockResolvedValueOnce(Promise.resolve({
       ok: true,
       json: async () => mockSubmission,
     }));
 
     render(<ReviewSubmissionPage />);
-
     await waitFor(() => expect(screen.getByText("Reject")).toBeInTheDocument());
 
     (fetchWithAuth as jest.Mock).mockResolvedValueOnce(Promise.resolve({
@@ -100,7 +102,14 @@ describe("ReviewSubmissionPage", () => {
     fireEvent.click(screen.getByText("Reject"));
 
     await waitFor(() => {
-      expect(global.alert).toHaveBeenCalledWith("Submission rejected successfully!");
+      expect(screen.getByText("Success!")).toBeInTheDocument();
+      expect(screen.getByText("Submission rejected successfully. Email sent.")).toBeInTheDocument();
+    });
+
+    // Close alert and ensure redirect is triggered
+    fireEvent.click(screen.getByText("Close"));
+
+    await waitFor(() => {
       expect(mockRouter.push).toHaveBeenCalledWith("/dashboard");
     });
   });
@@ -118,7 +127,8 @@ describe("ReviewSubmissionPage", () => {
     fireEvent.click(screen.getByText("Approve"));
 
     await waitFor(() => {
-      expect(global.alert).toHaveBeenCalledWith("Error: Approval failed");
+      expect(screen.getByText("Error!")).toBeInTheDocument();
+      expect(screen.getByText("Error: Approval failed")).toBeInTheDocument();
     });
   });
 
@@ -135,7 +145,8 @@ describe("ReviewSubmissionPage", () => {
     fireEvent.click(screen.getByText("Reject"));
 
     await waitFor(() => {
-      expect(global.alert).toHaveBeenCalledWith("Error: Rejection failed");
+      expect(screen.getByText("Error!")).toBeInTheDocument();
+      expect(screen.getByText("Error: Rejection failed")).toBeInTheDocument();
     });
   });
 
