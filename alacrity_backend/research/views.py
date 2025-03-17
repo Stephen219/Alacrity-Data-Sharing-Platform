@@ -2,7 +2,7 @@ from django.utils.timezone import now
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
 from django.db.models import Count
-
+from django.core.cache import cache
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -226,7 +226,6 @@ class DraftSubmissionsView(APIView):
 
         return Response(drafts.values())
 
-from django.core.cache import cache
 
 class ViewSubmissionsView(APIView):
     permission_classes = [AllowAny]
@@ -239,7 +238,7 @@ class ViewSubmissionsView(APIView):
         """
         cache_key = "all_submissions"
         
-        # ❌ Remove cached data before fetching fresh data
+        # Removes cached data before fetching fresh data
         cache.delete(cache_key)  
 
         # Fetch only necessary fields
@@ -267,7 +266,7 @@ class ViewSubmissionsView(APIView):
             "popular_submissions": popular_submissions
         }
 
-        # ✅ Cache new data for faster future requests
+        # Caches new data for faster future requests
         cache.set(cache_key, response_data, timeout=60) 
 
         return Response(response_data)
@@ -288,14 +287,14 @@ class EditSubmissionView(APIView):
             data = request.data
             submission = get_object_or_404(AnalysisSubmission, id=submission_id, researcher=researcher, deleted_at__isnull=True)
 
-            # Update fields
+            # Updates fields
             submission.title = data.get("title", submission.title)
             submission.description = data.get("description", submission.description)
             submission.raw_results = data.get("raw_results", submission.raw_results)
             submission.summary = data.get("summary", submission.summary)
             submission.status = data.get("status", submission.status)
 
-            # Validate before publishing
+            # Validates before publishing
             if submission.status == "published":
                 if not all([submission.title, submission.description, submission.raw_results, submission.summary]):
                     raise ValidationError("All fields must be filled before publishing.")
@@ -475,10 +474,9 @@ class GetDraftView(APIView):
             "summary": draft.summary,
             "status": draft.status,
             "submitted_at": draft.submitted_at,
-            "image": request.build_absolute_uri(draft.image.url) if draft.image else None
+            "image": request.build_absolute_uri(draft.image.url) if draft.image else None,
+            "dataset_id": draft.dataset.dataset_id if draft.dataset else None,
         }, status=200)
-
-from django.core.cache import cache
 
 class ViewSingleSubmissionView(APIView):
     permission_classes = [AllowAny]
@@ -512,8 +510,6 @@ class ViewSingleSubmissionView(APIView):
         cache.set(cache_key, response_data, timeout=60)
         return Response(response_data)
 
-    
-from django.core.cache import cache
 
 class ViewSingleBookmarkedSubmissionView(APIView):
     permission_classes = [IsAuthenticated]

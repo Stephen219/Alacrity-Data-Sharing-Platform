@@ -1,11 +1,12 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import TextEditor from "@/components/TextEditor";
 import { Editor } from "@tiptap/react";
 import { fetchWithAuth } from "@/libs/auth";
 import { useParams } from "next/navigation";
 import { BACKEND_URL } from "@/config";
+import { useResearchSubmissions } from "@/hooks/ResearchSubmissions";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 
 interface Analysis {
   datasetId?: string | null; 
@@ -29,41 +30,11 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
   const datasetIdParam = params?.id;
   const datasetId = Array.isArray(datasetIdParam) ? datasetIdParam[0] : datasetIdParam || null;
 
-  const [formData, setFormData] = useState<Analysis>(() => {
-    // ✅ Load saved form data from localStorage when the component mounts
-    if (typeof window !== "undefined") {
-      const savedData = localStorage.getItem("analysis_form");
-      return savedData ? JSON.parse(savedData) : {
-        datasetId,
-        id: null,
-        title: "",
-        description: "",
-        raw_results: "",
-        summary: "",
-        status: "draft",
-        image: null,
-      };
-    }
-    return {
-      datasetId,
-      id: null,
-      title: "",
-      description: "",
-      raw_results: "",
-      summary: "",
-      status: "draft",
-      image: null,
-    };
-  });
+  // dynamic storage key based on the datasetId.
+  const formStorageKey = datasetId ? `analysis_form_${datasetId}` : "analysis_form";
 
-  // Saves form data when it changes
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("analysis_form", JSON.stringify(formData));
-    }
-  }, [formData]);
-
-  const initialFormState: Analysis = {
+  // Memoise initial state so its reference is stable.
+  const initialFormState: Analysis = useMemo(() => ({
     datasetId,
     id: null,
     title: "",
@@ -72,35 +43,12 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
     summary: "",
     status: "draft",
     image: null,
-  };
+  }), [datasetId]);
 
-  // const [formData, setFormData] = useState<Analysis>(() => ({
-  //   id: initialData?.id || null,
-  //   title: initialData?.title || "",
-  //   description: initialData?.description || "",
-  //   raw_results: initialData?.raw_results || "",
-  //   summary: initialData?.summary || "",
-  //   status: initialData?.status || "draft",
-  //   image: null,
-  //   datasetId: initialData?.datasetId || datasetId || null,
-  // }));
+  // Use the custom hook for form state.
+  const [formData, setFormData] = useLocalStorage<Analysis>(formStorageKey, initialFormState);
 
-  const [, setLastSavedData] = useState<Analysis | null>(null);
-  const [, setLastPublishedData] = useState<Analysis | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  
-
-  // setting datasetid
-  useEffect(() => {
-    if (!formData.datasetId && datasetId) {
-      console.log("Setting datasetId from URL:", datasetId);
-      setFormData((prev) => ({ ...prev, datasetId }));
-    }
-  }, [datasetId]); 
-  
-
-  // Handle initialData updates
+  // Update formData if initialData is provided.
   useEffect(() => {
     if (initialData) {
       setFormData((prev) => ({
@@ -108,12 +56,25 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
         ...initialData,
         image: null,
       }));
-      setLastSavedData(initialData);
-      if (initialData.status === "published") {
-        setLastPublishedData(initialData);
-      }
     }
-  }, [initialData]);
+  }, [initialData, setFormData]);
+
+  // Ensure datasetId is set on formData if missing.
+  useEffect(() => {
+    if (!formData.datasetId && datasetId) {
+      console.log("Setting datasetId from URL:", datasetId);
+      setFormData((prev) => ({ ...prev, datasetId }));
+    }
+  }, [datasetId, formData.datasetId, setFormData]);
+
+  const [, setLastSavedData] = useState<Analysis | null>(null);
+  const [, setLastPublishedData] = useState<Analysis | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+
+  // Use the SWR hook to fetch research submissions and get the mutate function.
+  const { mutate: mutateSubmissions } = useResearchSubmissions();
+
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -121,16 +82,6 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
       setFormData((prev) => ({ ...prev, image: file }));
     }
   };
-
-  // const isContentSame = (newData: Analysis, oldData: Analysis | null) => {
-  //   if (!oldData) return false;
-  //   return (
-  //     newData.title === oldData.title &&
-  //     newData.description === oldData.description &&
-  //     newData.raw_results === oldData.raw_results &&
-  //     newData.summary === oldData.summary
-  //   );
-  // };
 
   const handleSave = async (publish = false) => {
     if (!formData.datasetId) {
@@ -146,7 +97,7 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
     requestData.append("rawResults", formData.raw_results);
     requestData.append("summary", formData.summary);
     requestData.append("status", publish ? "published" : "draft");
-    requestData.append("dataset_id", String(formData.datasetId)); 
+    requestData.append("dataset_id", String(formData.datasetId));
   
     if (formData.image) {
       requestData.append("image", formData.image);
@@ -172,6 +123,8 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
         } else {
           setLastSavedData({ ...formData, id: data.id });
         }
+        // Revalidate submissions after a successful save.
+        mutateSubmissions();
       } else {
         setMessage(`Error: ${data.error || "Failed to save."}`);
       }
@@ -185,11 +138,8 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
       }
     }
     
-  
     setLoading(false);
   };
-  
-  
 
   return (
     <form className="space-y-6">
