@@ -3,7 +3,19 @@
 import { fetchWithAuth } from "@/libs/auth";
 import { useEffect, useState } from "react";
 import Published from "@/components/Published";
-import SubmissionButtons from "@/components/SubmissionsButtons";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button";
+
 
 interface Analysis {
   id: number;
@@ -51,9 +63,6 @@ const RecentlyDeleted = () => {
   };
 
   const handleHardDelete = async (id: number) => {
-    const confirmDelete = window.confirm("Are you sure you want to permanently delete this submission?");
-    if (!confirmDelete) return;
-
     try {
       const response = await fetchWithAuth(
         `http://127.0.0.1:8000/research/submissions/permanent-delete/${id}/`,
@@ -77,11 +86,49 @@ const RecentlyDeleted = () => {
       sortOrder={sortOrder}
       setSortOrder={setSortOrder}
       renderButtons={(id) => (
-        <SubmissionButtons
-          onDelete={() => handleHardDelete(id)}
-          onSecondaryAction={() => handleRestore(id)}
-          secondaryActionLabel="Restore"
-        />
+        <div className="flex flex-col gap-2">
+          {/* Delete AlertDialog */}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button className="bg-alacrityred">Delete</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete this submission.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => handleHardDelete(id)}>
+                  Continue
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Restore AlertDialog */}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button>Restore</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure you want to restore?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Restoring this submission will bring it back to the active list.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => handleRestore(id)}>
+                  Continue
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       )}
     />
   );

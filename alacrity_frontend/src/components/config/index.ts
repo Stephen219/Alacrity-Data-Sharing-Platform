@@ -149,7 +149,7 @@ export const NAV_ITEMS = [
         {
           name: "Research Library",
           href: "/researcher/Submissions",
-          imageSrc: "/navbar/account/purchases.png",
+          imageSrc: "/navbar/account/library.png",
         },
         {
           name: "Drafts",
@@ -160,7 +160,12 @@ export const NAV_ITEMS = [
           name: "Purchase History",
           href: "#",
           imageSrc: "/navbar/account/billing.png",
-        },      
+        },
+        {
+          name: "Recently Deleted",
+          href: "/researcher/delete",
+          imageSrc: "/navbar/account/delete.png",
+        },       
       ],
     },     
   ];
