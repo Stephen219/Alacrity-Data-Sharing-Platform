@@ -7,6 +7,7 @@ import MaxWidthWrapper from "@/components/MaxWidthWrapper";
 import TextEditorToolbar from "@/components/TextEditorToolbar";
 import { Editor } from "@tiptap/react";
 import ResearchForm from "@/components/ResearchForm";
+import { BACKEND_URL } from "@/config";
 
 interface Analysis {
   id: number | null;
@@ -27,21 +28,29 @@ const EditDraft = () => {
 
   useEffect(() => {
     if (!id) return;
-
+  
     const fetchDraft = async () => {
       try {
-        const response = await fetchWithAuth(`http://127.0.0.1:8000/research/drafts/${id}/`);
+        const response = await fetchWithAuth(`${BACKEND_URL}research/drafts/${id}/`);
         if (!response.ok) throw new Error("Failed to fetch draft.");
         const data = await response.json();
-        setDraft(data);
+  
+        // Store correct dataset_id from API response
+        setDraft({
+          ...data,
+          datasetId: data.dataset_id || null,
+        });
+  
       } catch (err) {
         setError((err as Error).message);
       }
       setLoading(false);
     };
-
+  
     fetchDraft();
   }, [id]);
+  
+  
 
   if (loading) return <p>Loading draft...</p>;
   if (error) return <p>Error: {error}</p>;
