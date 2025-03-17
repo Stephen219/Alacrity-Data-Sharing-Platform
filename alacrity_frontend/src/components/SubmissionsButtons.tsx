@@ -2,6 +2,17 @@
 
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
 interface SubmissionButtonsProps {
   onDelete: () => void;
@@ -30,13 +41,27 @@ const SubmissionButtons = ({
         </div>
       )}
 
-      {/* Action Buttons */}
-      <Button
-        onClick={onDelete}
-        className="bg-alacrityred transition-transform transform hover:scale-110 hover:bg-red-400 duration-300 ease-in-out"
-      >
-        Delete
-      </Button>
+      {/* Delete Button wrapped in AlertDialog */}
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button className="bg-alacrityred transition-transform transform hover:scale-110 hover:bg-red-400 duration-300 ease-in-out">
+            Delete
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This submission will be moved to Recently Deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={onDelete}>Continue</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Button onClick={onSecondaryAction} variant="outline">
         {secondaryActionLabel}
       </Button>
