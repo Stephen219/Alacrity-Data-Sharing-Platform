@@ -28,67 +28,59 @@ paypalrestsdk.configure({
 def create_paypal_payment(request, dataset_id):
     """
     Initiates a PayPal payment process for a dataset purchase.
-    
-    - Verifies that the dataset exists.
-    - Ensures the authenticated user has an approved dataset request.
-    - If the dataset is free, returns a success message immediately.
-    - Otherwise, creates a PayPal payment and returns an approval URL.
     """
     dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
-    researcher = request.user  # The authenticated user making the request
+    researcher = request.user  # Authenticated SaaS user
 
-
-    # Ensure that the user has an approved dataset request before proceeding
+    # Ensure the user has an approved dataset request before proceeding
     dataset_request = DatasetRequest.objects.filter(
         dataset_id=dataset, researcher_id=researcher, request_status='approved'
-        ).first()
+    ).first()
 
     if not dataset_request:
         return Response({'error': 'Request must be approved before payment'}, status=status.HTTP_403_FORBIDDEN)
-    
+
     # If the dataset is free, no payment is required
     if dataset.price == 0:
         return Response({'message': 'Dataset is free, no payment needed.'}, status=status.HTTP_200_OK)
-    
+
+    # Include `user_id` in PayPal return URL
+    return_url = f"{settings.PAYPAL_RETURN_URL}?user_id={researcher.id}&dataset_id={dataset.dataset_id}"
+
     # Create a PayPal payment request
     payment = paypalrestsdk.Payment({
         "intent": "sale",
         "payer": {"payment_method": "paypal"},
         "redirect_urls": {
-            "return_url": settings.PAYPAL_RETURN_URL, # URL to redirect after successful payment
-            "cancel_url": settings.PAYPAL_CANCEL_URL # URL to redirect if the user cancels
+            "return_url": return_url,  # Modified return URL to include `user_id`
+            "cancel_url": settings.PAYPAL_CANCEL_URL
         },
         "transactions": [{
             "amount": {"total": str(dataset.price), "currency": "GBP"},
             "description": f"Payment for dataset: {dataset.title}"
         }]
     })
-    
-    # Check if the payment was successfully created
+
     if payment.create():
         approval_url = next(link["href"] for link in payment.links if link["rel"] == "approval_url")
         return Response({"approval_url": approval_url}, status=status.HTTP_200_OK)
     else:
         return Response({"error": "Failed to create PayPal payment", "details": payment.error}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def paypal_success(request):
     """
     Handles successful PayPal payments and grants access to the purchased dataset.
-    
-    - Validates payment ID and payer ID from PayPal.
-    - Executes the PayPal transaction.
-    - Confirms that the dataset request was approved.
-    - Creates a purchase record if one does not already exist.
-    - Grants access to the dataset upon successful verification.
     """
     payment_id = request.GET.get("paymentId")
     payer_id = request.GET.get("PayerID")
+    user_id = request.GET.get("user_id")  # Retrieves user_id from the URL
+    dataset_id = request.GET.get("dataset_id")  # Retrieves dataset_id from the URL
 
-    # Validate PayPal response parameters
-    if not payment_id or not payer_id:
-        return Response({"error": "Missing paymentId or PayerID"}, status=400)
+    if not payment_id or not payer_id or not user_id or not dataset_id:
+        return Response({"error": "Cannot determine user account or dataset"}, status=400)
 
     try:
         # Retrieve payment details from PayPal
@@ -96,13 +88,12 @@ def paypal_success(request):
 
         # Execute the payment using the payer ID
         if payment.execute({"payer_id": payer_id}):
-            # Assume the description contains "Payment for dataset: <dataset title>"
-            dataset_title = payment.transactions[0].description.split(": ")[1]
-            dataset = Dataset.objects.get(title=dataset_title)
+            dataset = Dataset.objects.get(dataset_id=dataset_id)
+            user = User.objects.get(id=user_id)
 
-            # Validate that the dataset request was approved before granting access
+            # Validate that the dataset request was approved
             dataset_request = DatasetRequest.objects.filter(
-                dataset_id=dataset, request_status="approved"
+                dataset_id=dataset, researcher_id=user, request_status="approved"
             ).first()
             if not dataset_request:
                 return Response(
@@ -110,12 +101,11 @@ def paypal_success(request):
                     status=403
                 )
 
-            user = dataset_request.researcher_id  # Correct researcher from dataset request
-
-            # Create the purchase record if it doesn't exist already
+            # Ppurchase is linked to the correct SaaS user
             purchase, created = DatasetPurchase.objects.get_or_create(dataset=dataset, buyer=user)
 
             return redirect(f"{settings.FRONTEND_URL}/dashboard?payment=success")
+
         else:
             return Response({"error": "Payment execution failed"}, status=500)
 
@@ -123,6 +113,8 @@ def paypal_success(request):
         return Response({"error": "Payment not found"}, status=404)
     except Dataset.DoesNotExist:
         return Response({"error": "Dataset not found"}, status=404)
+    except User.DoesNotExist:
+        return Response({"error": "User not found"}, status=404)
     except Exception as e:
         return Response({"error": str(e)}, status=500)
 

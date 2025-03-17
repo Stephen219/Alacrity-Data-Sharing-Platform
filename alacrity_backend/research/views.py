@@ -13,7 +13,24 @@ from users.decorators import role_required
 from .models import AnalysisSubmission
 from rest_framework.generics import ListAPIView
 from datasets.models import Dataset
+from django.conf import settings
+from html.parser import HTMLParser
 
+class HTMLStripper(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.text = []
+
+    def handle_data(self, data):
+        self.text.append(data)
+
+    def get_text(self):
+        return ''.join(self.text)
+
+def strip_html(html):
+    stripper = HTMLStripper()
+    stripper.feed(html)
+    return stripper.get_text()
 
 class SaveSubmissionView(APIView):
     permission_classes = [IsAuthenticated]
@@ -116,37 +133,50 @@ class ApproveRejectSubmissionView(APIView):
     def post(self, request, submission_id):
         """
         Allows an organization admin to approve or reject a research submission.
+        Sends an email notification to the researcher.
         """
         action = request.data.get('action')
         admin = request.user
+        message = request.data.get('message', '')
 
         submission = get_object_or_404(AnalysisSubmission, id=submission_id)
 
         if submission.status not in ['pending']:
             return Response({"error": "This research has already been reviewed."}, status=400)
+        
+        clean_title = strip_html(submission.title)
+        clean_message = strip_html(message)
 
         if action == "approve":
             submission.status = "published"
-            message = f"Your research submission '{submission.title}' has been approved and is now published."
+            email_subject = "Your Research Submission Has Been Approved!"
+            email_body = f"Dear Researcher,\n\nYour research submission '{clean_title} ' has been approved and is now published.\n\nMessage from the organisation:\n{message}\n\nBest Regards,\nAdmin Team"
         elif action == "reject":
             submission.status = "rejected"
-            rejection_reason = request.data.get("reason", "No reason provided")
-            message = f"Your research submission '{submission.title}' has been rejected.\nReason: {rejection_reason}"
+            email_subject = "Your Research Submission Has Been Rejected"
+            email_body = f"Dear Researcher,\n\nYour research submission '{clean_title} ' has been rejected.\n\nMessage from the organization:\n{message}\n\nBest Regards,\nAdmin Team"
         else:
             return Response({"error": "Invalid action."}, status=400)
 
         submission.save()
 
         # Send notification email
-        send_mail(
-            subject="Research Submission Update",
-            message=message,
-            from_email="admin@example.com",
-            recipient_list=[submission.researcher.email],
-            fail_silently=False,
-        )
+        try:
+            send_mail(
+                subject=email_subject,
+                message=email_body,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[submission.researcher.email],
+                fail_silently=False,
+            )
+            email_status = "Email successfully sent."
+        except Exception as e:
+            email_status = f"Email failed to send: {str(e)}"
 
-        return Response({"message": f"Research {action}ed successfully."}, status=200)
+        return Response({
+            "message": f"Research {action}ed successfully.",
+            "email_status": email_status  # Send status to UI
+        }, status=200)
 
 
 
