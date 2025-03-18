@@ -1,5 +1,5 @@
 'use client'
-import LandingPage from "@/components/LandingPage";
+import LandingPage from "@/components/Landing/LandingPage";
 import { Button, buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
 import { withAccessControl } from "@/components/auth_guard/AccessControl";

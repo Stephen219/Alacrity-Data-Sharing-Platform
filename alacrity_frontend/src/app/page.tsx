@@ -1,19 +1,15 @@
-import Charts from '@/components/Charts';
-import LandingPage from '@/components/LandingPage';
-import { Button, buttonVariants } from '@/components/ui/button';
-import Link from 'next/link';
-
+import LandingPage from '@/components/Landing/LandingPage';
+import LandingRow2 from '@/components/Landing/LandingRow2';
+import LandingRow3 from '@/components/Landing/LandingRow3';
+import TrendingResearchCarousel from '@/components/Landing/popularResearch'; 
 
 export default function Home() {
   return (
     <>
-    {/* Landing page content */}
-    <LandingPage/>
-    <div className="justify-center flex flex-col sm:flex-row gap-4 mb-12">
-          <Link href="#" className={buttonVariants()}>About Us</Link>
-          <Button variant="ghost">Social Media &rarr;</Button>
-        </div>
-    <Charts/>
+      <LandingPage />
+      <TrendingResearchCarousel />  
+      <LandingRow2 />
+      <LandingRow3 />
     </>
-  )
+  );
 }

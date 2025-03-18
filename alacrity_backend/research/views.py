@@ -1,3 +1,5 @@
+from django.db import models
+from django.db.models import Count, Value, F, functions
 from django.utils.timezone import now
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
@@ -267,37 +269,50 @@ class ViewSubmissionsView(APIView):
         Uses caching for faster response times.
         """
         cache_key = "all_submissions"
-        
-        # Removes cached data before fetching fresh data
-        cache.delete(cache_key)  
+        cache.delete(cache_key)  # Clears old cache before updating
 
-        # Fetch only necessary fields
-        recent_submissions = list(
+        # Fetches all published research 
+        all_published_submissions = list(
             AnalysisSubmission.objects.filter(
                 status="published", deleted_at__isnull=True, is_private=False
             )
-            .only("id", "title", "summary", "submitted_at", "image", "is_private")
-            .order_by('-submitted_at')[:10]
-            .values()
+            .select_related("researcher")  
+            .annotate(
+                full_name=functions.Concat(
+                    F("researcher__first_name"),
+                    Value(" "),
+                    F("researcher__sur_name"),
+                    output_field=models.CharField(),
+                ),
+                bookmark_count=Count("bookmarked_by")
+            )
+            .values(
+                "id",
+                "title",
+                "summary",
+                "description",
+                "submitted_at",
+                "image",
+                "full_name",
+                "bookmark_count",
+                "is_private"
+            )
         )
 
-        popular_submissions = list(
-            AnalysisSubmission.objects.filter(
-                status="published", deleted_at__isnull=True, is_private=False
-            )
-            .annotate(bookmark_count=Count("bookmarked_by"))
-            .only("id", "title", "summary", "submitted_at", "image", "is_private")
-            .order_by('-bookmark_count', '-submitted_at')[:10]
-            .values()
-        )
+        # Get recent submissions (latest 10)
+        recent_submissions = sorted(all_published_submissions, key=lambda x: x["submitted_at"], reverse=True)[:10]
+
+        # Get popular submissions (most bookmarked, latest first)
+        popular_submissions = sorted(all_published_submissions, key=lambda x: (x["bookmark_count"], x["submitted_at"]), reverse=True)[:10]
 
         response_data = {
+            "all_published_submissions": all_published_submissions,
             "recent_submissions": recent_submissions,
-            "popular_submissions": popular_submissions
+            "popular_submissions": popular_submissions,
         }
 
-        # Caches new data for faster future requests
-        cache.set(cache_key, response_data, timeout=60) 
+        # Cache for 60 seconds
+        cache.set(cache_key, response_data, timeout=60)
 
         return Response(response_data)
 
