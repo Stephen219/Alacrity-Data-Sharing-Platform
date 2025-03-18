@@ -94,10 +94,10 @@ const totalResearcherUsers = data.researchers.reduce((sum: number, num: number) 
     >
       <div className="flex justify-between">
         <div>
-          <h5 className="leading-none text-xl font-bold text-gray-900 dark:text-white pb-2">
-            {realDataLoaded ? totalUsers.toLocaleString() : "Hover over me..."}
+          <h5 className="leading-none text-xl font-bold text-gray-900 dark:text-white">
+            {realDataLoaded ? totalUsers.toLocaleString() + " Monthly Users": "Monthly Users"}
           </h5>
-          <p className="text-sm font-normal text-gray-500 dark:text-gray-400">Monthly users</p>
+          <p className="text-sm font-normal text-gray-500 dark:text-gray-400">Hover over me...</p>
         </div>
       </div>
       <div id="column-chart" ref={chartRef}></div>

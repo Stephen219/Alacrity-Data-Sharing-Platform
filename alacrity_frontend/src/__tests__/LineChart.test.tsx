@@ -1,4 +1,3 @@
-// __tests__/LineChart.test.tsx
 import React from 'react';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom';
@@ -30,8 +29,8 @@ describe('LineChart Component', () => {
 
   it('renders default title and subtitle', () => {
     render(<LineChart />);
+    expect(screen.getByText('Monthly Users')).toBeInTheDocument();
     expect(screen.getByText('Hover over me...')).toBeInTheDocument();
-    expect(screen.getByText('Monthly users')).toBeInTheDocument();
   });
 
   it('renders correct container element', () => {
@@ -74,15 +73,14 @@ describe('LineChart Component', () => {
     expect(container.firstChild).toHaveClass('max-w-sm','w-full','bg-secondary','rounded-lg','shadow-sm');
   });
 
-  it('fetches real data on hover and displays total sum', async () => {
+  it('fetches real data on hover and displays computed total sum', async () => {
     render(<LineChart />);
-    const wrapper = screen.getByText('Hover over me...').closest('div')!;
+    const wrapper = screen.getByText(/Monthly users/i).closest('div')!;
     fireEvent.mouseEnter(wrapper);
 
     await waitFor(() => {
-      expect(screen.getByText('240')).toBeInTheDocument();
+      expect(screen.getByText(/240/i)).toBeInTheDocument();
     });
-
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
   

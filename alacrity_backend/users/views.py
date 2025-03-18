@@ -32,8 +32,53 @@ from .models import User
 import traceback
 from datetime import timedelta
 from django.utils.timezone import now
+import datetime
 
+class WeeklyActivityView(APIView):
+    """
+    Aggregates weekly activity data:
+    - Datasets: number of dataset uploads per day
+    - Reports: number of submission approvals per day
+    - returns weekly data based off these things
+    """
+    permission_classes = [AllowAny]
 
+    def get(self, request):
+        now_time = timezone.now()
+        # Week starts on Monday. Normalise start_week to midnight.
+        start_week = now_time - datetime.timedelta(days=now_time.weekday())
+        start_week = start_week.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        days = []
+        dataset_counts = []
+        approval_counts = []
+        # Loops through each day of the week
+        for i in range(7):
+            day_start = start_week + datetime.timedelta(days=i)
+            day_end = day_start + datetime.timedelta(days=1)
+            day_label = day_start.strftime("%a") 
+            days.append(day_label)
+
+            # Counts dataset uploads made on this day
+            dataset_count = Dataset.objects.filter(
+                created_at__gte=day_start, created_at__lt=day_end
+            ).count()
+            dataset_counts.append(dataset_count)
+
+            # Counts submission approvals on this day.
+            approval_count = AnalysisSubmission.objects.filter(
+                status="published", submitted_at__gte=day_start, submitted_at__lt=day_end
+            ).count()
+            approval_counts.append(approval_count)
+
+        data = {
+            "days": days,            
+            "datasets": dataset_counts,  
+            "reports": approval_counts, 
+        }
+        return Response(data, status=200)
+
+    
 class MonthlyUsersView(APIView):
     permission_classes = [AllowAny]
 
