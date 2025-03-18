@@ -126,12 +126,12 @@ class MonthlyUsersView(APIView):
 
             print("API Response:", data)  
 
-            return JsonResponse(data)
+            return Response(data, status=200)
 
         except Exception as e:
             print("Error in MonthlyUsersView:", e)
             traceback.print_exc() 
-            return JsonResponse({"error": "Internal Server Error"}, status=500)
+            return Response(data, status=200)
     
 
 class LoginView(APIView):
