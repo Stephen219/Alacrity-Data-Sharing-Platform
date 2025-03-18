@@ -67,8 +67,11 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
           <ModeToggle/>
         </div>
         <div className="flex items-center space-x-3">
-          <Link href="/" className={buttonVariants({ variant: "ghost" })}>
-            Home
+        <Link 
+            href={user ? "/dashboard" : "/"} 
+            className={buttonVariants({ variant: "ghost" })}
+          >
+            {user ? "Home" : "Home"}
           </Link>
           <Link href="#" className={buttonVariants({ variant: "ghost" })}>
             About
