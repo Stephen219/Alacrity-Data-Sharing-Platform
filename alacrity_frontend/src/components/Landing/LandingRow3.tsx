@@ -15,7 +15,7 @@ export default function LandingPage3() {
   const [, setCategories] = useState<string[]>(["Jan", "Feb", "Mar", "Apr", "May", "Jun"]);
 
   useEffect(() => {
-    fetch("/users/monthly-users")
+    fetch("http://localhost:8000/users/monthly-users")
       .then((res) => res.json())
       .then((data) => {
         setCategories(data.months);
