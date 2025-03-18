@@ -15,6 +15,7 @@ interface Analysis {
   summary: string
   submitted_at?: string
   image?: string
+  bookmark_count?: number;
 }
 
 const PublicSubmissions = () => {
@@ -33,47 +34,45 @@ const PublicSubmissions = () => {
   useEffect(() => {
     const fetchSubmissions = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:8000/research/submissions/view/")
-        if (!response.ok) throw new Error(`Failed to fetch submissions. Status: ${response.status}`)
-
-        const data = await response.json()
-
-        // Combine recent and popular submissions
-        const allSubmissions = [
-          ...(Array.isArray(data.recent_submissions) ? data.recent_submissions : []),
-          ...(Array.isArray(data.popular_submissions) ? data.popular_submissions : []),
-        ]
-
-        // Remove duplicates based on id
-        const uniqueSubmissions = Array.from(new Map(allSubmissions.map((item) => [item.id, item])).values())
-
-        setSubmissions(uniqueSubmissions)
-        setFilteredSubmissions(uniqueSubmissions)
+        const response = await fetch(`${BACKEND_URL}research/submissions/view/`);
+        if (!response.ok) throw new Error(`Failed to fetch submissions. Status: ${response.status}`);
+  
+        const data = await response.json();
+  
+        // Fetches all published submissions
+        const allSubmissions = Array.isArray(data.all_published_submissions) ? data.all_published_submissions : [];
+  
+        setSubmissions(allSubmissions);
+        setFilteredSubmissions(allSubmissions);
       } catch (err) {
-        setError((err as Error).message)
+        setError((err as Error).message);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-
-    fetchSubmissions()
-  }, [])
+    };
+  
+    fetchSubmissions();
+  }, []);  
 
   useEffect(() => {
     const fetchBookmarks = async () => {
+      const token = localStorage.getItem("access_token"); // Check if user is logged in
+      if (!token) return; // Stop execution if general user
+  
       try {
         const response = await fetchWithAuth(`${BACKEND_URL}research/bookmarks/`);
         if (!response.ok) throw new Error("Failed to fetch bookmarks.");
-
+  
         const data = await response.json();
         setBookmarkedSubmissions(data.map((bookmark: { id: number }) => bookmark.id));
       } catch (err) {
         console.error("Error fetching bookmarks:", err);
       }
     };
-
+  
     fetchBookmarks();
   }, []);
+  
 
   // Handle search and filtering
   useEffect(() => {
@@ -88,19 +87,19 @@ const PublicSubmissions = () => {
       )
     }
 
-    // Apply sorting
-    if (sortBy === "recent") {
-      result.sort((a, b) => {
-        const dateA = a.submitted_at ? new Date(a.submitted_at).getTime() : 0
-        const dateB = b.submitted_at ? new Date(b.submitted_at).getTime() : 0
-        return dateB - dateA
-      })
-    } else if (sortBy === "popular") {
-      // For demo purposes, we'll sort by ID as a proxy for popularity
-      result.sort((a, b) => b.id - a.id)
-    } else if (sortBy === "title") {
-      result.sort((a, b) => a.title.localeCompare(b.title))
-    }
+// Apply sorting
+if (sortBy === "recent") {
+  result.sort((a, b) => {
+    const dateA = a.submitted_at ? new Date(a.submitted_at).getTime() : 0;
+    const dateB = b.submitted_at ? new Date(b.submitted_at).getTime() : 0;
+    return dateB - dateA;
+  });
+} else if (sortBy === "popular") {
+  result.sort((a, b) => (b.bookmark_count || 0) - (a.bookmark_count || 0));
+} else if (sortBy === "title") {
+  result.sort((a, b) => a.title.localeCompare(b.title));
+}
+
 
     setFilteredSubmissions(result)
     setCurrentPage(1) // Reset to first page when filters change

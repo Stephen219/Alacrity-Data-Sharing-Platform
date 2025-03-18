@@ -2,7 +2,6 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { fetchWithAuth } from "@/libs/auth";
 import MaxWidthWrapper from "@/components/MaxWidthWrapper";
 import parse from "html-react-parser";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,7 @@ interface SubmissionDetailsProps {
 }
 
 const fetchSubmission = async (fetchUrl: string) => {
-  const response = await fetchWithAuth(fetchUrl);
+  const response = await fetch(fetchUrl);
   if (!response.ok) throw new Error("Failed to fetch submission.");
   return response.json();
 };
