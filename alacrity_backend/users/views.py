@@ -165,7 +165,7 @@ class LoginView(APIView):
             
             if user is not None:
                 user.last_login = timezone.now()
-                # user.save()
+                user.save()
                 refresh = RefreshToken.for_user(user)
 
                 print(refresh)
