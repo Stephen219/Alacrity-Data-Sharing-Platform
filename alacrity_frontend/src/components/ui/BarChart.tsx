@@ -1,10 +1,45 @@
 "use client";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import ApexCharts from "apexcharts";
 
 const BarChart: React.FC = () => {
   const chartRef = useRef<HTMLDivElement>(null);
 
+  // Dummy data
+  const [realDataLoaded, setRealDataLoaded] = useState(false);
+  const [chartData, setChartData] = useState<{
+    days: string[];
+    reports: number[];
+    datasets: number[];
+  }>({
+    days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    reports: [231, 122, 63, 421, 122, 323, 111],
+    datasets: [232, 113, 341, 224, 522, 411, 243],
+  });
+
+  // Fetches dynamic data on hover
+  const loadRealData = () => {
+    if (!realDataLoaded) {
+      fetch("http://localhost:8000/users/weekly-activity/")
+        .then((res) => {
+          if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+          return res.json();
+        })
+        .then((data) => {
+          setChartData({
+            days: data.days,
+            reports: data.reports,
+            datasets: data.datasets,
+          });
+          setRealDataLoaded(true);
+        })
+        .catch((err) => {
+          console.error("Error fetching weekly activity:", err);
+        });
+    }
+  };
+
+  // Initialise chart
   useEffect(() => {
     if (chartRef.current && typeof ApexCharts !== "undefined") {
       const options = {
@@ -13,37 +48,25 @@ const BarChart: React.FC = () => {
           {
             name: "Reports",
             color: "#d76047",
-            data: [
-              { x: "Mon", y: 231 },
-              { x: "Tue", y: 122 },
-              { x: "Wed", y: 63 },
-              { x: "Thu", y: 421 },
-              { x: "Fri", y: 122 },
-              { x: "Sat", y: 323 },
-              { x: "Sun", y: 111 },
-            ],
+            data: chartData.days.map((day, index) => ({
+              x: day,
+              y: chartData.reports[index] || 0,
+            })),
           },
           {
             name: "Datasets",
             color: "black",
-            data: [
-              { x: "Mon", y: 232 },
-              { x: "Tue", y: 113 },
-              { x: "Wed", y: 341 },
-              { x: "Thu", y: 224 },
-              { x: "Fri", y: 522 },
-              { x: "Sat", y: 411 },
-              { x: "Sun", y: 243 },
-            ],
+            data: chartData.days.map((day, index) => ({
+              x: day,
+              y: chartData.datasets[index] || 0,
+            })),
           },
         ],
         chart: {
           type: "bar",
           height: "320px",
           fontFamily: "Inter, sans-serif",
-          toolbar: {
-            show: false,
-          },
+          toolbar: { show: false },
         },
         plotOptions: {
           bar: {
@@ -56,38 +79,17 @@ const BarChart: React.FC = () => {
         tooltip: {
           shared: true,
           intersect: false,
-          style: {
-            fontFamily: "Inter, sans-serif",
-          },
+          style: { fontFamily: "Inter, sans-serif" },
         },
-        states: {
-          hover: {
-            filter: {
-              type: "darken",
-              value: 1,
-            },
-          },
-        },
-        stroke: {
-          show: true,
-          width: 0,
-          colors: ["transparent"],
-        },
+        states: { hover: { filter: { type: "darken", value: 1 } } },
+        stroke: { show: true, width: 0, colors: ["transparent"] },
         grid: {
           show: false,
           strokeDashArray: 4,
-          padding: {
-            left: 2,
-            right: 2,
-            top: -14,
-          },
+          padding: { left: 2, right: 2, top: -14 },
         },
-        dataLabels: {
-          enabled: false,
-        },
-        legend: {
-          show: false,
-        },
+        dataLabels: { enabled: false },
+        legend: { show: false },
         xaxis: {
           floating: false,
           labels: {
@@ -97,19 +99,11 @@ const BarChart: React.FC = () => {
               cssClass: "text-xs font-normal fill-gray-500 dark:fill-gray-400",
             },
           },
-          axisBorder: {
-            show: false,
-          },
-          axisTicks: {
-            show: false,
-          },
+          axisBorder: { show: false },
+          axisTicks: { show: false },
         },
-        yaxis: {
-          show: false,
-        },
-        fill: {
-          opacity: 1,
-        },
+        yaxis: { show: false },
+        fill: { opacity: 1 },
       };
 
       const chart = new ApexCharts(chartRef.current, options);
@@ -119,15 +113,22 @@ const BarChart: React.FC = () => {
         chart.destroy();
       };
     }
-  }, []);
+  }, [chartData]);
 
   return (
-    <div className="max-w-sm w-full bg-secondary rounded-lg shadow-sm dark:bg-gray-800 p-4">
+    <div
+      className="max-w-sm w-full bg-secondary rounded-lg shadow-sm dark:bg-gray-800 p-4"
+      onMouseEnter={loadRealData}
+    >
       <div className="flex justify-between">
         <div className="flex items-center">
           <div>
-            <h5 className="leading-none text-xl font-bold text-gray-900 dark:text-white pb-1 mt-2">378</h5>
-            <p className="text-sm font-normal text-gray-500 dark:text-gray-400">Reports and datasets generated per week</p>
+            <h5 className="leading-none text-xl font-bold text-gray-900 dark:text-white pb-1 mt-2">
+              Reports & Datasets Generated Per Week
+            </h5>
+            <p className="text-sm font-normal text-gray-500 dark:text-gray-400">
+              Hover over me...
+            </p>
           </div>
         </div>
       </div>
