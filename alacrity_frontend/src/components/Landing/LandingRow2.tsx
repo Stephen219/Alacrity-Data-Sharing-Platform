@@ -3,7 +3,7 @@ import BarChart from "../ui/BarChart";
 
 export default function LandingPage2() {
   return (
-    <div className="relative w-full bg-gray-50">
+    <div className="relative w-full">
 
       {/* Main Content */}
       <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between pt-32 pb-12 px-12 gap-8">
