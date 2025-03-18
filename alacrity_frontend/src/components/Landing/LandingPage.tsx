@@ -16,7 +16,7 @@ export default function LandingPage() {
         <div className="w-full sm:w-1/2">
           <h1 className="text-2xl font-bold sm:text-5xl">
             Your favourite platform for secure{' '}
-            <span className="text-primary">data collaboration</span>.
+            <span className="text-orange-600">data collaboration</span>.
           </h1>
           <p className="mt-4 text-md">
             Welcome to Alacrity. The fastest way for organisations to upload, 
