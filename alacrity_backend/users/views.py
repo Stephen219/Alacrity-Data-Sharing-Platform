@@ -26,8 +26,69 @@ from .decorators import role_required
 from datasets.models import Dataset
 from payments.models import DatasetPurchase
 from django.db.models import Q
-
+from django.db.models.functions import TruncMonth
+from django.db.models import Count
 from .models import User
+import traceback
+from datetime import timedelta
+from django.utils.timezone import now
+
+
+class MonthlyUsersView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        try:
+            User = get_user_model()
+
+            # Fetch users by last_login month
+            org_users = list(
+                User.objects.filter(role="organization_admin", last_login__isnull=False)
+                .annotate(month=TruncMonth("last_login"))
+                .values("month")
+                .annotate(count=Count("id", distinct=True))
+                .order_by("month")
+            )
+
+            researcher_users = list(
+                User.objects.filter(role__in=["researcher", "contributor"], last_login__isnull=False)
+                .annotate(month=TruncMonth("last_login"))
+                .values("month")
+                .annotate(count=Count("id", distinct=True))
+                .order_by("month")
+            )
+
+            # retrieves the last 6 months 
+            months_list = [(now() - timedelta(days=30 * i)).strftime("%b") for i in range(6)]
+            months_list.reverse()  
+
+            # Converts query results into dictionaries
+            def get_data(users):
+                return {entry["month"].strftime("%b"): entry["count"] for entry in users}
+
+            org_data = get_data(org_users)
+            researcher_data = get_data(researcher_users)
+
+            # Ensure all months in `months_list` appear in the data
+            final_org_data = [org_data.get(month, 0) for month in months_list]
+            final_researcher_data = [researcher_data.get(month, 0) for month in months_list]
+
+            data = {
+                "months": months_list,
+                "organizations": final_org_data,
+                "researchers": final_researcher_data,
+            }
+
+            print("API Response:", data)  
+
+            return JsonResponse(data)
+
+        except Exception as e:
+            print("Error in MonthlyUsersView:", e)
+            traceback.print_exc() 
+            return JsonResponse({"error": "Internal Server Error"}, status=500)
+    
+
 class LoginView(APIView):
     permission_classes = [AllowAny]
     def post(self, request):
