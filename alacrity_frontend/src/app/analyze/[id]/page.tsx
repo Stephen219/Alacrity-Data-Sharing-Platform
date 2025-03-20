@@ -157,7 +157,7 @@ const useDebounce = (value: string, delay: number) => {
   return debouncedValue
 }
 
-// Tour steps configuration
+
 const tourSteps = [
   {
     target: "header",

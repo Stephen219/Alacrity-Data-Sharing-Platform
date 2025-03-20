@@ -29,7 +29,7 @@ def pre_analysis(df):
             "columns": list(df.columns),
             "duplicate_rows": duplicate_rows,
             "missing_values": missing_values,
-            # "numeric_stats": numeric_stats,
+        
             "categorical_stats": categorical_summary
         }
  

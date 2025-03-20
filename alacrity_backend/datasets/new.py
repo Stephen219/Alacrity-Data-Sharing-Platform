@@ -665,3 +665,14 @@ def download_dataset(request, dataset_id):
             status=500,
             content_type="application/json"
         )
+    
+
+from .pre import pre_analysis
+@api_view(['GET'])
+def dataset_overview(df):
+    analysis = pre_analysis(df)
+    return Response(analysis, status=200)
+
+
+
+    
