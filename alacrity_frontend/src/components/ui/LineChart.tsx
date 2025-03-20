@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import ApexCharts from "apexcharts";
+const BACKEND_URL = "http://127.0.0.1:8000/";
 
 const LineChart: React.FC = () => {
   const chartRef = useRef<HTMLDivElement>(null);
@@ -62,7 +63,7 @@ const LineChart: React.FC = () => {
   // Function to fetch real data on hover
   const loadRealData = () => {
     if (!realDataLoaded) {
-      fetch("http://localhost:8000/users/monthly-users/")
+      fetch(`${BACKEND_URL}users/monthly-users/`)
         .then(async (res) => {
           if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
           return res.json();

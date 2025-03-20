@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import ApexCharts from "apexcharts";
+import { BACKEND_URL } from "@/config";
 
 const BarChart: React.FC = () => {
   const chartRef = useRef<HTMLDivElement>(null);
@@ -20,7 +21,7 @@ const BarChart: React.FC = () => {
   // Fetches dynamic data on hover
   const loadRealData = () => {
     if (!realDataLoaded) {
-      fetch("http://localhost:8000/users/weekly-activity/")
+      fetch(`${BACKEND_URL}users/weekly-activity/`)
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
           return res.json();
