@@ -15,6 +15,7 @@ from alacrity_backend.settings import DEFAULT_FROM_EMAIL
 from django.core.mail import send_mail
 from django.conf import settings
 from alacrity_backend.config import FRONTEND_URL
+from notifications.models import Notification
 
 def send_email_to_contributor(dataset_request):
     try:
@@ -79,7 +80,43 @@ class Make_request(APIView):
             message=message  # include the message here
         )
         send_email_to_contributor(dataset_request)
+        
+                # notify + email all organisation admins
+        org_id = dataset.contributor_id.organization_id
+        if org_id:
+            org_admins = User.objects.filter(organization_id=org_id, role="organization_admin")
+
+            # Creates in-app notifications
+            for admin_user in org_admins:
+                Notification.objects.create(
+                    user=admin_user,
+                    message=f"New dataset request for '{dataset.title}' from {request.user.email}.",
+                    link=f"{FRONTEND_URL}/requests/approval/{dataset_request.request_id}"
+                )
+
+            # can email admins
+            email_subject = "New Dataset Request"
+            email_body = (
+                f"Hello,\n\n"
+                f"Researcher {request.user.email} has requested access to dataset '{dataset.title}'.\n"
+                f"Please log in to review this request.\n\n"
+                f"Best regards,\nAlacrity Team"
+            )
+            for admin_user in org_admins:
+                try:
+                    send_mail(
+                        subject=email_subject,
+                        message=email_body,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[admin_user.email],
+                        fail_silently=False,
+                    )
+                except Exception as e:
+                    print(f"Failed to email {admin_user.email} about dataset request: {e}")
+
         return Response({'message': 'Request created successfully'}, status=201)
+    
+
 
 
  # this is a view that will be used when the user wants to view all the requests that have been made
@@ -211,6 +248,11 @@ class AcceptRejectRequest(APIView):
             else:
                 print("Email not sent")
 
+            Notification.objects.create(
+                user=dataset_request.researcher_id,
+                message=f"Your dataset request for '{dataset_request.dataset_id.title}' has been approved."
+    )
+
         elif action == 'reject':
             dataset_request.request_status = 'denied'
             
@@ -219,6 +261,11 @@ class AcceptRejectRequest(APIView):
                 print("Email sent")
             else:
                 print("Email not sent")
+
+            Notification.objects.create(
+                user=dataset_request.researcher_id,
+                message=f"Your dataset request for '{dataset_request.dataset_id.title}' has been denied."
+    )
         
         else:
             return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)

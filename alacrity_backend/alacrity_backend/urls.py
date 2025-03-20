@@ -26,11 +26,10 @@ urlpatterns = [
     path('organisation/', include('organisation.urls')),
     path("users/", include("users.urls")),
     path("", include("contact.urls")),
-
     path("research/", include("research.urls")),
     path("requests/", include("dataset_requests.urls")),
-
     path('payments/', include('payments.urls')),
+    path("notifications/", include("notifications.urls")),
 ]
 
 if settings.DEBUG:
