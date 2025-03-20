@@ -1,7 +1,8 @@
-# Attempt to run this if have docker installed and navigate in the setiings.py and change the database settings to the following:
-# host: db (this is the name of the service in the docker-compose.yml file)
-# instead of localhost
 
+
+
+
+#####################################################################
 version: '3.8'
 
 services:
@@ -13,6 +14,8 @@ services:
       - "3000:3000"
     depends_on:
       - backend
+    networks:
+      - app-network
 
   backend:
     build:
@@ -21,23 +24,45 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - MYSQL_HOST=db
-      - MYSQL_PORT=3306
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=comsc
-      - MYSQL_DATABASE=project_db
+      - DJANGO_DATABASE_HOST=mysql
+      - DJANGO_DATABASE_PORT=3306
+      - DJANGO_DATABASE_USER=alacrity  # New user
+      - DJANGO_DATABASE_PASSWORD=alacrity_password  # New password
+      - DJANGO_DATABASE_NAME=alacrity_db
+      - MINIO_URL=http://10.72.98.137:9000
+      - MINIO_ACCESS_KEY=admin
+      - MINIO_SECRET_KEY=Notgood1
+      - MINIO_BUCKET_NAME=alacrity
     depends_on:
-      - db
+      mysql:
+        condition: service_healthy
+    networks:
+      - app-network
 
-  db:
-    image: mysql:5.7
-    environment:
-      MYSQL_ROOT_PASSWORD: Foundation,219
-      MYSQL_DATABASE: project_db
+  mysql:
+    build:
+      context: . 
+      dockerfile: Dockerfile.database
     ports:
       - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: comsc
+      MYSQL_DATABASE: alacrity_db
+    expose:
+      - "3306"
     volumes:
       - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pcomsc"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
 
 volumes:
   db_data:
+
+networks:
+  app-network:
+    driver: bridge

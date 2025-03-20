@@ -1,0 +1,4 @@
+CREATE DATABASE IF NOT EXISTS alacrity_db;
+CREATE USER IF NOT EXISTS 'alacrity'@'%' IDENTIFIED BY 'alacrity_password';
+GRANT ALL PRIVILEGES ON alacrity_db.* TO 'alacrity'@'%' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
