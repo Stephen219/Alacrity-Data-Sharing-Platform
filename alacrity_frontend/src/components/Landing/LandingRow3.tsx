@@ -4,6 +4,7 @@ import Link from "next/link";
 import { buttonVariants } from "../ui/button";
 import LineChart from "../ui/LineChart";
 import React, { useEffect, useState } from "react";
+import { BACKEND_URL } from "@/config";
 
 export default function LandingPage3() {
 
@@ -15,7 +16,7 @@ export default function LandingPage3() {
   const [, setCategories] = useState<string[]>(["Jan", "Feb", "Mar", "Apr", "May", "Jun"]);
 
   useEffect(() => {
-    fetch("http://localhost:8000/users/monthly-users")
+    fetch(`${BACKEND_URL}users/monthly-users/`)
       .then((res) => res.json())
       .then((data) => {
         setCategories(data.months);
