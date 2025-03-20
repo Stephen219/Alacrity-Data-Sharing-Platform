@@ -5,6 +5,7 @@ import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import { fetchUserData } from "@/libs/auth";
 import { User } from "@/types/types";
+import Footer from "./Footer";
 
 type LayoutProps = {
   children: React.ReactNode;
@@ -74,6 +75,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }
 
   return (
+    <>
     <div className="min-h-screen">
       {shouldShowSidebar && <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />}
       <Navbar toggleSidebar={toggleSidebar} />
@@ -81,6 +83,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="max-w-5xl mx-auto px-4">{children}</div>
       </main>
     </div>
+    <div>
+    <hr className="h-px bg-gray-200 border-0 dark:bg-gray-700"></hr>
+    <div className="mx-48 min-w-screen">
+    <Footer/>
+    </div>
+    </div>
+    </>
   );
 };
 

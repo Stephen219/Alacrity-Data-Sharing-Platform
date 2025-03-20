@@ -1,50 +1,30 @@
 import { render, screen } from "@testing-library/react";
 import Home from "@/app/page";
 
-jest.mock("@/components/Charts", () => {
-  const MockCharts = () => <div data-testid="charts" />;
-  MockCharts.displayName = "Charts";
-  return MockCharts;
-});
-
-jest.mock("@/components/ui/BarChart", () => {
-  const MockBarChart = () => <div data-testid="bar-chart" />;
-  MockBarChart.displayName = "BarChart";
-  return MockBarChart;
-});
-
-jest.mock("@/components/ui/PieChart", () => {
-  const MockPieChart = () => <div data-testid="pie-chart" />;
-  MockPieChart.displayName = "PieChart";
-  return MockPieChart;
-});
-
-jest.mock("@/components/ui/button", () => {
-  const MockButton = ({ children }: { children: React.ReactNode }) => <button>{children}</button>;
-  MockButton.displayName = "Button";
-  return {
-    Button: MockButton,
-    buttonVariants: () => "mock-button-class",
-  };
-});
-
-jest.mock("@/components/MaxWidthWrapper", () => {
-  const MockMaxWidthWrapper = ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="max-width-wrapper">{children}</div>
-  );
-  MockMaxWidthWrapper.displayName = "MaxWidthWrapper";
-  return MockMaxWidthWrapper;
-});
-
-jest.mock("@/components/LandingPage", () => {
-  const MockLandingPage = () => (
-    <div data-testid="landing-page">
-      <h1>Your favourite platform for secure data collaboration</h1>
-      <p>The fastest way for organisations to upload, manage, and share datasets</p>
-    </div>
-  );
+jest.mock("@/components/Landing/LandingPage", () => {
+  const MockLandingPage = () => <div data-testid="landing-page">Landing Page Content</div>;
   MockLandingPage.displayName = "LandingPage";
   return MockLandingPage;
+});
+
+jest.mock("@/components/Landing/LandingRow2", () => {
+  const MockLandingRow2 = () => <div data-testid="landing-row2">Landing Row 2 Content</div>;
+  MockLandingRow2.displayName = "LandingRow2";
+  return MockLandingRow2;
+});
+
+jest.mock("@/components/Landing/LandingRow3", () => {
+  const MockLandingRow3 = () => <div data-testid="landing-row3">Landing Row 3 Content</div>;
+  MockLandingRow3.displayName = "LandingRow3";
+  return MockLandingRow3;
+});
+
+jest.mock("@/components/Landing/popularResearch", () => {
+  const MockTrendingResearchCarousel = () => (
+    <div data-testid="trending-research-carousel">Trending Research Carousel Content</div>
+  );
+  MockTrendingResearchCarousel.displayName = "TrendingResearchCarousel";
+  return MockTrendingResearchCarousel;
 });
 
 describe("Home Page", () => {
@@ -52,25 +32,19 @@ describe("Home Page", () => {
     render(<Home />);
   });
 
-  test("renders the main heading", () => {
-    expect(
-      screen.getByRole("heading", { name: /your favourite platform for secure data collaboration/i })
-    ).toBeInTheDocument();
+  test("renders the LandingPage component", () => {
+    expect(screen.getByTestId("landing-page")).toBeInTheDocument();
   });
 
-  test("renders the welcome message", () => {
-    expect(
-      screen.getByText(/the fastest way for organisations to upload, manage, and share datasets/i)
-    ).toBeInTheDocument();
+  test("renders the TrendingResearchCarousel component", () => {
+    expect(screen.getByTestId("trending-research-carousel")).toBeInTheDocument();
   });
 
-  test("renders the 'Social Media' button", () => {
-    const socialButton = screen.getByRole("button", { name: /social media/i });
-    expect(socialButton).toBeInTheDocument();
+  test("renders the LandingRow2 component", () => {
+    expect(screen.getByTestId("landing-row2")).toBeInTheDocument();
   });
 
-  test("renders the 'About Us' button", async () => {
-    const uploadLink = screen.getByRole("link", { name: /about us/i });
-    expect(uploadLink).toBeInTheDocument();
+  test("renders the LandingRow3 component", () => {
+    expect(screen.getByTestId("landing-row3")).toBeInTheDocument();
   });
 });

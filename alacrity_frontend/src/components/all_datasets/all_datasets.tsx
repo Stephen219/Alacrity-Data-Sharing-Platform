@@ -3,7 +3,7 @@
 
 import type React from "react";
 import { useState, useEffect, useMemo } from "react";
-import Link from "next/link"; // Added missing import
+import Link from "next/link";
 import { DatasetCard } from "./datasetCard";
 import { BACKEND_URL } from "@/config";
 import { fetchWithAuth } from "@/libs/auth";
@@ -23,6 +23,8 @@ interface Dataset {
   entries?: number;
   imageUrl?: string;
   price: number;
+  view_count: number;
+  darkMode: boolean;
 }
 
 const ITEMS_PER_PAGE = 6;
@@ -30,9 +32,8 @@ const ITEMS_PER_PAGE = 6;
 const DatasetsPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
-  const [filters, setFilters] = useState<Record<string, string[]>>({}); 
+  const [filters, setFilters] = useState<Record<string, string[]>>({});
   const [currentPage, setCurrentPage] = useState(1);
-  //const [isDarkMode, setIsDarkMode] = useState(false);
   const [activeFilterCategory, setActiveFilterCategory] = useState<string | null>(null);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,6 +42,7 @@ const DatasetsPage: React.FC = () => {
     { id: string; label: string; options: string[] }[]
   >([]);
   const [bookmarkedDatasets, setBookmarkedDatasets] = useState<string[]>([]);
+  //const [darkMode, setDarkMode] = useState(false)
 
   useEffect(() => {
     const fetchDatasets = async () => {
@@ -57,10 +59,11 @@ const DatasetsPage: React.FC = () => {
           tags: typeof item.tags === "string"
             ? item.tags
                 .split(",")
-                .map((tag: string) => tag.trim()) // Trim whitespace
-                .filter((tag: string) => tag.trim() !== "") // Remove empty or whitespace-only tags
+                .map((tag: string) => tag.trim())
+                .filter((tag: string) => tag.trim() !== "")
             : item.tags || [],
-            price: item.price || 0,
+            price: item.price ? Number(parseFloat(item.price).toFixed(2)) : 0,
+            hasPaid: item.hasPaid || false,
         }));
   
         setDatasets(mappedDatasets);
@@ -78,7 +81,7 @@ const DatasetsPage: React.FC = () => {
         ]);
       } catch (err) {
         console.error("Fetch error:", err);
-        setError(`Error fetching datasets: ${err}`);
+        setError(`Error fetching datasets: ${err instanceof Error ? err.message : String(err)}`);
       } finally {
         setIsLoading(false);
       }
@@ -86,19 +89,17 @@ const DatasetsPage: React.FC = () => {
   
     fetchDatasets();
   }, []);
-
-
-/**
- * Fetches the datasets bookmarked by the researcher/contributor.
- * previously bookmarked datasets are displayed properly.
- */
-const fetchBookmarkedDatasets = async () => {
-  try {
+  
+  /**
+   * Fetches the datasets bookmarked by the researcher/contributor.
+   */
+  const fetchBookmarkedDatasets = async () => {
+    try {
       console.log("Fetching bookmarked datasets...");
       const response = await fetchWithAuth(`${BACKEND_URL}/datasets/bookmarks/`);
 
       if (!response.ok) {
-          throw new Error(`Failed to fetch bookmarked datasets: ${response.status}`);
+        throw new Error(`Failed to fetch bookmarked datasets: ${response.status}`);
       }
 
       const data = await response.json();
@@ -111,28 +112,23 @@ const fetchBookmarkedDatasets = async () => {
        */
       setBookmarkedDatasets(data.map((ds: { dataset_id: string }) => ds.dataset_id));
 
-  } catch (err) {
+    } catch (err) {
       console.error("Error fetching bookmarks:", err);
       setError("Error fetching bookmarks.");
-  }
-};
-
-
-//Ensures that the user's bookmarks are loaded when they visit the page.
-
-useEffect(() => {
-  const loadAll = async () => {
-      await fetchBookmarkedDatasets(); 
+    }
   };
-  loadAll();
-}, []);
 
+  // Ensures that the user's bookmarks are loaded when they visit the page.
+  useEffect(() => {
+    const loadAll = async () => {
+      await fetchBookmarkedDatasets();
+    };
+    loadAll();
+  }, []);
 
-//Toggles the bookmark status of a dataset for rseaercher/contributor.
-
+  // Toggles the bookmark status of a dataset for researcher/contributor
   const toggleDatasetBookmark = async (datasetId: string) => {
     try {
-      
       setBookmarkedDatasets((prev) =>
         prev.includes(datasetId)
           ? prev.filter((id) => id !== datasetId)
@@ -150,18 +146,6 @@ useEffect(() => {
       console.error("Dataset bookmark error:", error);
     }
   };
-  
-
-  // useEffect(() => {
-  //   const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  //   setIsDarkMode(prefersDark);
-  //   document.documentElement.classList.toggle("dark", prefersDark);
-  // }, []);
-
-  // const toggleDarkMode = () => {
-  //   setIsDarkMode((prev) => !prev);
-  //   document.documentElement.classList.toggle("dark");
-  // };
 
   const filteredDatasets = useMemo(() => {
     return datasets.filter((dataset) => {
@@ -246,17 +230,10 @@ useEffect(() => {
             <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-orange-500 to-orange-300 text-transparent bg-clip-text">
               Explore Datasets
             </h1>
-            <p className={"text-lg text-gray-300 "}>
+            <p className="text-lg text-gray-600 dark:text-gray-300">
               Discover and analyze high-quality datasets from trusted organizations
             </p>
           </div>
-          {/* <button
-            onClick={toggleDarkMode}
-            className="p-2 rounded-full bg-orange-500 text-white hover:bg-orange-600 transition-colors"
-            aria-label="Toggle dark mode"
-          >
-            {isDarkMode ? "🌞" : "🌙"}
-          </button> */}
         </header>
 
         <div className="mb-6">
@@ -277,7 +254,7 @@ useEffect(() => {
                 values.map((value) => (
                   <div
                     key={`${categoryId}-${value}`}
-                    className="flex items-center px-3 py-1 rounded-full text-sm bg-gray-200 text-gray-700 dark:text-gray-100">
+                    className="flex items-center px-3 py-1 rounded-full text-sm bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-100">
                   
                     <span>
                       {filterCategories.find((c) => c.id === categoryId)?.label}: {value}
@@ -300,17 +277,16 @@ useEffect(() => {
           <div className="flex flex-wrap gap-2 mb-4">
             {filterCategories.map((category) => (
               <button
-              key={category.id}
-              onClick={() => toggleFilterCategory(category.id)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                activeFilterCategory === category.id
-                  ? "bg-orange-500 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              {category.label}
-            </button>
-            
+                key={category.id}
+                onClick={() => toggleFilterCategory(category.id)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  activeFilterCategory === category.id
+                    ? "bg-orange-500 text-white"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                }`}
+              >
+                {category.label}
+              </button>
             ))}
           </div>
           {activeFilterCategory && (
@@ -323,17 +299,16 @@ useEffect(() => {
                   .find((c) => c.id === activeFilterCategory)
                   ?.options.map((option) => (
                     <button
-  key={option}
-  onClick={() => handleFilterChange(activeFilterCategory, option)}
-  className={`px-3 py-1 rounded-full text-sm transition-colors ${
-    (filters[activeFilterCategory] || []).includes(option)
-      ? "bg-orange-500 text-white"
-      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-  }`}
->
-  {option}
-</button>
-
+                      key={option}
+                      onClick={() => handleFilterChange(activeFilterCategory, option)}
+                      className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                        (filters[activeFilterCategory] || []).includes(option)
+                          ? "bg-orange-500 text-white"
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      }`}
+                    >
+                      {option}
+                    </button>
                   ))}
               </div>
             </div>
@@ -380,17 +355,11 @@ useEffect(() => {
           className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"}`}
         >
           {paginatedDatasets.map((dataset) => (
-            // <Link
-            //   key={dataset.dataset_id}
-            //   href={`/researcher/publicationForm?id=${dataset.dataset_id}`} 
-            //   className="block" 
-            // >
             <Link
               key={dataset.dataset_id}
               href={`/datasets/description?id=${dataset.dataset_id}`} 
               className="block" 
             >
-
               <DatasetCard
                 dataset_id={dataset.dataset_id}
                 title={dataset.title}
@@ -402,11 +371,12 @@ useEffect(() => {
                 category={dataset.category}
                 entries={dataset.entries || 0}
                 size={dataset.size || "N/A"}
+                view_count={dataset.view_count}
                 extraActions={() => toggleDatasetBookmark(dataset.dataset_id)}
                 isBookmarked={bookmarkedDatasets.includes(dataset.dataset_id)}
                 onToggleBookmark={() => toggleDatasetBookmark(dataset.dataset_id)}
                 viewMode={viewMode}
-                //darkMode={isDarkMode}
+                darkMode={false}
                 price={dataset.price}
               />
             </Link>

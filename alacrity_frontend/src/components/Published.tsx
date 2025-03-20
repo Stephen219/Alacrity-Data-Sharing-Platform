@@ -24,6 +24,11 @@ const AnalysisListView = ({
   renderButtons,
   header,
 }: AnalysisListViewProps) => {
+
+
+const safeParse = (htmlContent: string | null | undefined) => {
+  return typeof htmlContent === 'string' ? parse(htmlContent) : "";
+};
   return (
     <>
       <div className="flex justify-end mt-24">
@@ -50,9 +55,9 @@ const AnalysisListView = ({
               >
                 <div className="overflow-auto scrollbar-custom">
                   <div className="text-lg dark:text-gray-100 font-semibold text-gray-800 transition-colors duration-300 ease-in-out">
-                    {parse(submission.title)}
+                    {safeParse(submission.title)}
                   </div>
-                  <div className="text-gray-600 dark:text-gray-100">{parse(submission.summary)}</div>
+                  <div className="text-gray-600 dark:text-gray-100">{safeParse(submission.summary)}</div>
                 </div>
                 {renderButtons(submission.id, submission.status)}
               </li>

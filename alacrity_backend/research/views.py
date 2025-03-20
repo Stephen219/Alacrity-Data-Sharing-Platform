@@ -1,25 +1,50 @@
+from django.db import models
+from django.db.models import Count, Value, F, functions
 from django.utils.timezone import now
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
 from django.db.models import Count
-
+from django.core.cache import cache
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import permission_classes
-
+from django.core.mail import send_mail
+from alacrity_backend.config import FRONTEND_URL
+from research.serializers import AnalysisSubmissionSerializer
 from users.decorators import role_required
 from .models import AnalysisSubmission
-
+from rest_framework.generics import ListAPIView
 from datasets.models import Dataset
+from django.conf import settings
+from html.parser import HTMLParser
+from notifications.models import Notification
+from users.models import User
 
+
+class HTMLStripper(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.text = []
+
+    def handle_data(self, data):
+        self.text.append(data)
+
+    def get_text(self):
+        return ''.join(self.text)
+
+def strip_html(html):
+    stripper = HTMLStripper()
+    stripper.feed(html)
+    return stripper.get_text()
 
 class SaveSubmissionView(APIView):
     permission_classes = [IsAuthenticated]
     @role_required(['contributor', 'organization_admin', 'researcher'])
     def post(self, request):
         """
-        Allows researchers to save drafts or submit final research.
+        Allows researchers to save drafts or submit for review.
+        Notifies organisations when submission submitted for review 
         """
         try:
             data = request.data
@@ -27,8 +52,18 @@ class SaveSubmissionView(APIView):
             submission_id = data.get("id")
             dataset_id = data.get("dataset_id")
 
+            # Ensure new submissions always have a dataset
+            if not dataset_id:
+                return Response({"error": "Dataset ID is required to submit research."}, status=400)
+
+            dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
+
             if submission_id:
                 submission = get_object_or_404(AnalysisSubmission, id=submission_id, researcher=researcher)
+
+                # Prevents editing after approval
+                if submission.status in ['approved', 'published']:
+                    return Response({"error": "Approved research cannot be modified."}, status=400)
             else:
                 submission = AnalysisSubmission(researcher=researcher)
 
@@ -54,8 +89,54 @@ class SaveSubmissionView(APIView):
             if submission.status == "published":
                 if not all([submission.title, submission.description, submission.raw_results, submission.summary]):
                     raise ValidationError("All fields must be filled before publishing.")
+                
+            if submission.status == "published":
+                submission.status = "pending"
 
             submission.save()
+
+            if submission.status == "pending":
+                # finds the organisation that owns this dataset
+                # The dataset has dataset.contributor_id, which is a user with .organisation
+                org_id = submission.dataset.contributor_id.organization_id  # might be None if no org
+                if org_id:
+                    clean_title = strip_html(submission.title)
+
+                    # 2) finds all org admins in that org
+                    org_admins = User.objects.filter(
+                        organization_id=org_id,
+                        role='organization_admin'
+                    )
+                    # 3) creates a notification for each admin
+                    for admin_user in org_admins:
+                        Notification.objects.create(
+                            user=admin_user,
+                            message=f"A new research submission '{clean_title}' by {researcher.email} is pending your approval.",
+                            link=f"{FRONTEND_URL}/requests/submissions/{submission.id}"
+                        )
+                    
+                    # 4) also sends them an email
+                    email_subject = "New Research Submission Pending Approval"
+                    email_body = (
+                        f"Hello,\n\n"
+                        f"A new research submission '{submission.title}' by {researcher.email} requires your approval.\n"
+                        f"Please log in to review it.\n\n"
+                        f"Best regards,\nAlacrity Team"
+                    )
+                    for admin_user in org_admins:
+                        try:
+                            send_mail(
+                                subject=email_subject,
+                                message=email_body,
+                                from_email=settings.DEFAULT_FROM_EMAIL,
+                                recipient_list=[admin_user.email],
+                                fail_silently=False,
+                            )
+                        except Exception as e:
+                            print(f"Failed to email {admin_user.email} about new submission: {e}")
+                else:
+                    print("No organisation found for this dataset's contributor.")
+
             return Response({
                 "message": "Submission saved successfully!",
                 "id": submission.id,
@@ -68,6 +149,94 @@ class SaveSubmissionView(APIView):
             return Response({"error": str(e)}, status=400)
         except Exception as e:
             return Response({"error": str(e)}, status=400)
+        
+class PendingSubmissionsView(ListAPIView):
+    """
+    Retrieves all pending research submissions that require approval.
+    Only accessible to organization admins.
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = AnalysisSubmissionSerializer
+
+    @role_required(['organization_admin'])
+    def get(self, request, *args, **kwargs):
+        pending_submissions = AnalysisSubmission.objects.filter(status="pending")
+        
+        # serializer returns JSON data
+        serializer = self.serializer_class(pending_submissions, many=True)
+        return Response(serializer.data)
+
+        
+class ApproveRejectSubmissionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @role_required(['organization_admin'])
+    def get(self, request, submission_id):
+        """
+        Retrieve a single submission details for review.
+        """
+        submission = get_object_or_404(AnalysisSubmission, id=submission_id, status="pending")
+        serializer = AnalysisSubmissionSerializer(submission)
+        return Response(serializer.data, status=200)
+
+    @role_required(['organization_admin'])
+    def post(self, request, submission_id):
+        """
+        Allows an organization admin to approve or reject a research submission.
+        Sends an email notification to the researcher.
+        """
+        action = request.data.get('action')
+        admin = request.user
+        message = request.data.get('message', '')
+
+        submission = get_object_or_404(AnalysisSubmission, id=submission_id)
+
+        if submission.status not in ['pending']:
+            return Response({"error": "This research has already been reviewed."}, status=400)
+        
+        clean_title = strip_html(submission.title)
+        clean_message = strip_html(message)
+
+        if action == "approve":
+            submission.status = "published"
+            email_subject = "Your Research Submission Has Been Approved!"
+            email_body = f"Dear Researcher,\n\nYour research submission '{clean_title} ' has been approved and is now published.\n\nMessage from the organisation:\n{message}\n\nBest Regards,\nAdmin Team"
+            Notification.objects.create(
+                user=submission.researcher,
+                message=f"Your research submission '{clean_title}' has been approved and published.",
+                link=f"{FRONTEND_URL}/researcher/allSubmissions/view/{submission.id}"
+    )
+        elif action == "reject":
+            submission.status = "rejected"
+            email_subject = "Your Research Submission Has Been Rejected"
+            email_body = f"Dear Researcher,\n\nYour research submission '{clean_title} ' has been rejected.\n\nMessage from the organization:\n{message}\n\nBest Regards,\nAdmin Team"
+            Notification.objects.create(
+                user=submission.researcher,
+                message=f"Your research submission '{clean_title}' has been rejected. Check your emails for more information."
+    )
+        else:
+            return Response({"error": "Invalid action."}, status=400)
+
+        submission.save()
+
+        # Send notification email
+        try:
+            send_mail(
+                subject=email_subject,
+                message=email_body,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[submission.researcher.email],
+                fail_silently=False,
+            )
+            email_status = "Email successfully sent."
+        except Exception as e:
+            email_status = f"Email failed to send: {str(e)}"
+
+        return Response({
+            "message": f"Research {action}ed successfully.",
+            "email_status": email_status  # Send status to UI
+        }, status=200)
+
 
 
 
@@ -147,7 +316,6 @@ class DraftSubmissionsView(APIView):
         return Response(drafts.values())
 
 
-
 class ViewSubmissionsView(APIView):
     permission_classes = [AllowAny]
 
@@ -158,37 +326,50 @@ class ViewSubmissionsView(APIView):
         Uses caching for faster response times.
         """
         cache_key = "all_submissions"
-        
-        # ❌ Remove cached data before fetching fresh data
-        cache.delete(cache_key)  
+        cache.delete(cache_key)  # Clears old cache before updating
 
-        # Fetch only necessary fields
-        recent_submissions = list(
+        # Fetches all published research 
+        all_published_submissions = list(
             AnalysisSubmission.objects.filter(
                 status="published", deleted_at__isnull=True, is_private=False
             )
-            .only("id", "title", "summary", "submitted_at", "image", "is_private")
-            .order_by('-submitted_at')[:10]
-            .values()
+            .select_related("researcher")  
+            .annotate(
+                full_name=functions.Concat(
+                    F("researcher__first_name"),
+                    Value(" "),
+                    F("researcher__sur_name"),
+                    output_field=models.CharField(),
+                ),
+                bookmark_count=Count("bookmarked_by")
+            )
+            .values(
+                "id",
+                "title",
+                "summary",
+                "description",
+                "submitted_at",
+                "image",
+                "full_name",
+                "bookmark_count",
+                "is_private"
+            )
         )
 
-        popular_submissions = list(
-            AnalysisSubmission.objects.filter(
-                status="published", deleted_at__isnull=True, is_private=False
-            )
-            .annotate(bookmark_count=Count("bookmarked_by"))
-            .only("id", "title", "summary", "submitted_at", "image", "is_private")
-            .order_by('-bookmark_count', '-submitted_at')[:10]
-            .values()
-        )
+        # Get recent submissions (latest 10)
+        recent_submissions = sorted(all_published_submissions, key=lambda x: x["submitted_at"], reverse=True)[:10]
+
+        # Get popular submissions (most bookmarked, latest first)
+        popular_submissions = sorted(all_published_submissions, key=lambda x: (x["bookmark_count"], x["submitted_at"]), reverse=True)[:10]
 
         response_data = {
+            "all_published_submissions": all_published_submissions,
             "recent_submissions": recent_submissions,
-            "popular_submissions": popular_submissions
+            "popular_submissions": popular_submissions,
         }
 
-        # ✅ Cache new data for faster future requests
-        cache.set(cache_key, response_data, timeout=60) 
+        # Cache for 60 seconds
+        cache.set(cache_key, response_data, timeout=60)
 
         return Response(response_data)
 
@@ -208,14 +389,14 @@ class EditSubmissionView(APIView):
             data = request.data
             submission = get_object_or_404(AnalysisSubmission, id=submission_id, researcher=researcher, deleted_at__isnull=True)
 
-            # Update fields
+            # Updates fields
             submission.title = data.get("title", submission.title)
             submission.description = data.get("description", submission.description)
             submission.raw_results = data.get("raw_results", submission.raw_results)
             submission.summary = data.get("summary", submission.summary)
             submission.status = data.get("status", submission.status)
 
-            # Validate before publishing
+            # Validates before publishing
             if submission.status == "published":
                 if not all([submission.title, submission.description, submission.raw_results, submission.summary]):
                     raise ValidationError("All fields must be filled before publishing.")
@@ -395,10 +576,9 @@ class GetDraftView(APIView):
             "summary": draft.summary,
             "status": draft.status,
             "submitted_at": draft.submitted_at,
-            "image": request.build_absolute_uri(draft.image.url) if draft.image else None
+            "image": request.build_absolute_uri(draft.image.url) if draft.image else None,
+            "dataset_id": draft.dataset.dataset_id if draft.dataset else None,
         }, status=200)
-
-from django.core.cache import cache
 
 class ViewSingleSubmissionView(APIView):
     permission_classes = [AllowAny]
@@ -432,8 +612,6 @@ class ViewSingleSubmissionView(APIView):
         cache.set(cache_key, response_data, timeout=60)
         return Response(response_data)
 
-    
-from django.core.cache import cache
 
 class ViewSingleBookmarkedSubmissionView(APIView):
     permission_classes = [IsAuthenticated]

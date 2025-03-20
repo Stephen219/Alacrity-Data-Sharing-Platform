@@ -2,8 +2,6 @@
 
 import React from "react";
 import { Bookmark, Building2, Database, HardDrive } from "lucide-react";
-import { fetchWithAuth } from "@/libs/auth"
-import { BACKEND_URL } from "@/config"
 
 interface DatasetCardProps {
   dataset_id: string;
@@ -15,17 +13,18 @@ interface DatasetCardProps {
   tags: string[];
   category: string;
   entries: number;
+  view_count: number;
   size: string;
   viewMode: "grid" | "list";
-  //darkMode: boolean;
+  darkMode: boolean;
   extraActions?: () => void;
   isBookmarked: boolean;
   price : number;
+  hasPaid?: boolean;
   onToggleBookmark: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 export const DatasetCard: React.FC<DatasetCardProps> = ({
-  dataset_id,
   title,
   description,
   organization,
@@ -35,43 +34,17 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
   category,
   entries,
   size,
- 
+  view_count,
   viewMode,
- // darkMode,
+ //darkMode,
   isBookmarked,
+  price,
   onToggleBookmark,
   
 }) => {
   const isListView = viewMode === "list";
   const truncatedDescription = description.length > 200 ? description.substring(0, 200) + "..." : description;
 
-  //this may need to be modified but for now it returns paypal checkout 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handlePurchase = async () => {
-    try {
-      const response = await fetchWithAuth(`${BACKEND_URL}/payments/paypal/payment/${dataset_id}/`, { 
-        method: "POST",
-      });
-  
-      if (!response.ok) {
-        throw new Error("Failed to initiate PayPal payment");
-      }
-  
-      const data = await response.json();
-  
-      if (data.approval_url) {
-        console.log("Redirecting to PayPal:", data.approval_url);
-        window.location.href = data.approval_url;
-      } else {
-        console.error("ERROR: No approval URL received");
-        alert("Error: Unable to process payment.");
-      }
-    } catch (error) {
-      console.error("Payment error:", error);
-      alert("Failed to initiate payment. Please try again.");
-    }
-  };
-  
 
   return (
     <div
@@ -148,7 +121,8 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
               <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
               <circle cx="12" cy="12" r="3"></circle>
             </svg>
-            <span className="ml-1">20 views</span>
+            {/* TODO: Add view count make sure it reflects the actual view count */}
+            <span className="ml-1">{view_count} views</span>
           </span>
         </div>
 
@@ -184,7 +158,14 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
   />
 </button>
 
-
+{/* Price line (add it right below the grid above, for instance) */}
+<div className="mb-2 text-sm">
+  {isNaN(Number(price)) || price === null || price === undefined || Number(price) === 0 ? (
+    <span className="text-green-600 font-medium">Free</span>
+  ) : (
+    <span className="text-gray-700">Price: £{Number(price).toFixed(2)}</span>
+  )}
+</div>
 
     </div>
     </div>

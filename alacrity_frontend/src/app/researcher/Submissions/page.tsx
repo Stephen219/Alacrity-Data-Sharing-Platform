@@ -65,8 +65,6 @@ const AnalysisList: React.FC = () => {
 
 
   const handleSoftDelete = async (id: number) => {
-    const confirmDelete = window.confirm("Move this submission to Recently Deleted?");
-    if (!confirmDelete) return;
 
     try {
       const response = await fetchWithAuth(

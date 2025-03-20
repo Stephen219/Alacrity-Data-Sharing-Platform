@@ -24,8 +24,116 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .decorators import role_required
 from datasets.models import Dataset
-
+from payments.models import DatasetPurchase
+from django.db.models import Q
+from django.db.models.functions import TruncMonth
+from django.db.models import Count
 from .models import User
+import traceback
+from datetime import timedelta
+from django.utils.timezone import now
+import datetime
+
+class WeeklyActivityView(APIView):
+    """
+    Aggregates weekly activity data:
+    - Datasets: number of dataset uploads per day
+    - Reports: number of submission approvals per day
+    - returns weekly data based off these things
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        now_time = timezone.now()
+        # Week starts on Monday. Normalise start_week to midnight.
+        start_week = now_time - datetime.timedelta(days=now_time.weekday())
+        start_week = start_week.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        days = []
+        dataset_counts = []
+        approval_counts = []
+        # Loops through each day of the week
+        for i in range(7):
+            day_start = start_week + datetime.timedelta(days=i)
+            day_end = day_start + datetime.timedelta(days=1)
+            day_label = day_start.strftime("%a") 
+            days.append(day_label)
+
+            # Counts dataset uploads made on this day
+            dataset_count = Dataset.objects.filter(
+                created_at__gte=day_start, created_at__lt=day_end
+            ).count()
+            dataset_counts.append(dataset_count)
+
+            # Counts submission approvals on this day.
+            approval_count = AnalysisSubmission.objects.filter(
+                status="published", submitted_at__gte=day_start, submitted_at__lt=day_end
+            ).count()
+            approval_counts.append(approval_count)
+
+        data = {
+            "days": days,            
+            "datasets": dataset_counts,  
+            "reports": approval_counts, 
+        }
+        return Response(data, status=200)
+
+    
+class MonthlyUsersView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        try:
+            User = get_user_model()
+
+            # Fetch users by last_login month
+            org_users = list(
+                User.objects.filter(role="organization_admin", last_login__isnull=False)
+                .annotate(month=TruncMonth("last_login"))
+                .values("month")
+                .annotate(count=Count("id", distinct=True))
+                .order_by("month")
+            )
+
+            researcher_users = list(
+                User.objects.filter(role__in=["researcher", "contributor"], last_login__isnull=False)
+                .annotate(month=TruncMonth("last_login"))
+                .values("month")
+                .annotate(count=Count("id", distinct=True))
+                .order_by("month")
+            )
+
+            # retrieves the last 6 months 
+            months_list = [(now() - timedelta(days=30 * i)).strftime("%b") for i in range(6)]
+            months_list.reverse()  
+
+            # Converts query results into dictionaries
+            def get_data(users):
+                return {entry["month"].strftime("%b"): entry["count"] for entry in users}
+
+            org_data = get_data(org_users)
+            researcher_data = get_data(researcher_users)
+
+            # Ensure all months in `months_list` appear in the data
+            final_org_data = [org_data.get(month, 0) for month in months_list]
+            final_researcher_data = [researcher_data.get(month, 0) for month in months_list]
+
+            data = {
+                "months": months_list,
+                "organizations": final_org_data,
+                "researchers": final_researcher_data,
+            }
+
+            print("API Response:", data)  
+
+            return Response(data, status=200)
+
+        except Exception as e:
+            print("Error in MonthlyUsersView:", e)
+            traceback.print_exc() 
+            return Response(data, status=200)
+    
+
 class LoginView(APIView):
     permission_classes = [AllowAny]
     def post(self, request):
@@ -57,7 +165,7 @@ class LoginView(APIView):
             
             if user is not None:
                 user.last_login = timezone.now()
-                # user.save()
+                user.save()
                 refresh = RefreshToken.for_user(user)
 
                 print(refresh)
@@ -287,8 +395,6 @@ class LogoutView(APIView):
         
 
 
-
-
 # TODO: REFACTOR THIS VIEW BUT FOR NOW I HAVE TO MAKE IT WORK
 
 class UserDashboardView(APIView):
@@ -361,7 +467,7 @@ class UserDashboardView(APIView):
             )
             datasets_having_access = get_datasets_user_has_access(user.id)
             data = {
-                "datasets_accessed": datasets_having_access.count(),
+                "datasets_accessed": len(datasets_having_access),
                 "pending_reviews": DatasetRequest.objects.filter(researcher_id=user, request_status="pending").count(),
                 "research_submitted": 1,
                 "requests_approved": DatasetRequest.objects.filter(researcher_id=user, request_status="approved").count(),
@@ -416,6 +522,7 @@ class UserDashboardView(APIView):
             return JsonResponse(data)
         else:
             return Response({"error": "Invalid role"}, status=403)
+
         
 
 
@@ -493,24 +600,93 @@ class MemberProfileView(APIView):
             return JsonResponse({'error': 'Member not found'}, status=status.HTTP_404_NOT_FOUND)
         
 def get_datasets_user_has_access(user_id):
-    """"
-    This function is used to get all the datasets the user has access to
+    """
+    Return all datasets that the user has an *approved* request for,
+    plus a 'hasPaid' flag so the frontend can show "Pay" or "Analyze."
     """
     from datasets.models import Dataset
     from dataset_requests.models import DatasetRequest
-    datasets_having_access = Dataset.objects.filter(
-        requests__researcher_id=user_id,  
-        requests__request_status="approved"  
-   ).values(
-    'dataset_id',  
-    'title',
-    'description',
-    'contributor_id__organization__name' ,
-    'requests__updated_at',
-    'tags',
-    'category'
-)
-    return datasets_having_access
+
+    approved_requests = DatasetRequest.objects.filter(
+        researcher_id=user_id,
+        request_status='approved'
+    ).select_related('dataset_id')
+
+    # Builds a list of dictionaries
+    results = []
+    for req in approved_requests:
+        ds = req.dataset_id
+
+        purchased = DatasetPurchase.objects.filter(dataset=ds, buyer_id=user_id).exists()
+
+        results.append({
+            "dataset_id": ds.dataset_id,
+            "title": ds.title,
+            "description": ds.description,
+            "category": ds.category,
+            "tags": ds.tags,
+            "contributor_id__organization__name":
+                ds.contributor_id.organization.name if ds.contributor_id and ds.contributor_id.organization else None,
+            "requests__updated_at":
+                ds.requests.order_by('-updated_at').first().updated_at.isoformat()
+                if ds.requests.exists() else None,
+            "price": float(ds.price),
+            # hasPaid = True if the dataset is free OR the user purchased it
+            "hasPaid": (ds.price == 0.0) or purchased,
+        })
+    return results
+
+
+class UserAccessibleDatasetsView(APIView):
+    """
+    Returns datasets that the user has access to:
+    - Approved and Free datasets
+    - Approved and Paid-for datasets
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user_id = request.user.id
+
+        # Gets dataset IDs where user has an approved request
+        approved_datasets = list(DatasetRequest.objects.filter(
+            researcher_id=user_id, request_status="approved"
+        ).values_list("dataset_id", flat=True))
+
+        # Gets dataset IDs the user has paid for
+        purchased_datasets = list(DatasetPurchase.objects.filter(
+            buyer_id=user_id
+        ).values_list("dataset_id", flat=True))
+
+        # Fetch datasets that are:
+        # 1. Approved AND Free
+        # 2. Approved AND Paid
+        accessible_datasets = Dataset.objects.filter(
+            Q(dataset_id__in=approved_datasets, price=0.0) |
+            (Q(dataset_id__in=approved_datasets) & Q(dataset_id__in=purchased_datasets))
+        ).distinct()
+
+
+        dataset_list = []
+        for dataset in accessible_datasets:
+            has_paid = dataset.price == 0.0 or dataset.dataset_id in purchased_datasets
+
+            dataset_list.append({
+                "dataset_id": dataset.dataset_id,
+                "title": dataset.title,
+                "description": dataset.description,
+                "category": dataset.category,
+                "tags": dataset.tags,
+                "organization": dataset.contributor_id.organization.name
+                if dataset.contributor_id and dataset.contributor_id.organization
+                else None,
+                "price": float(dataset.price),
+                "hasPaid": has_paid,
+                "updated_at": dataset.updated_at.isoformat(),
+            })
+
+        return Response(dataset_list, status=200)
 
 
 
@@ -519,7 +695,11 @@ class DatasetWithAccessView(APIView):
     @role_required(["researcher"])
     def get(self, request):
         user = request.user
-        datasets_having_access = get_datasets_user_has_access(user.id)
-        return JsonResponse(list(datasets_having_access), safe=False)
+
+        accessible_datasets_view = UserAccessibleDatasetsView()
+        response = accessible_datasets_view.get(request)
+
+        return JsonResponse(response.data, safe=False)
 
     
+## solve an error in editing the user profile
