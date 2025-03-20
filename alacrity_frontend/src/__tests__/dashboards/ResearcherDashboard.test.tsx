@@ -6,6 +6,12 @@ import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import ResearcherDashboard from '@/components/dashboards/researcher';
 import { fetchWithAuth } from '@/libs/auth';
 
+jest.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: jest.fn(), 
+  }),
+}))
+
 jest.mock('@/libs/auth', () => ({
   fetchWithAuth: jest.fn(),
 }));

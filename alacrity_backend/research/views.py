@@ -20,6 +20,7 @@ from django.conf import settings
 from html.parser import HTMLParser
 from notifications.models import Notification
 from users.models import User
+from django.utils.html import strip_tags
 
 
 class HTMLStripper(HTMLParser):
@@ -564,7 +565,7 @@ class GetDraftView(APIView):
             AnalysisSubmission, 
             id=submission_id, 
             researcher=researcher, 
-            status="draft", 
+            status__in=["draft", "rejected"],
             deleted_at__isnull=True
         )
 
@@ -650,5 +651,28 @@ class ViewSingleBookmarkedSubmissionView(APIView):
         cache.set(cache_key, response_data, timeout=60)
         return Response(response_data)
 
+class SubmittedSubmissionsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @role_required(['contributor', 'researcher'])
+    def get(self, request):
+        """
+        Retrieve status on submissions that were submitted for approval.
+        """
+        researcher = request.user
+        submissions = AnalysisSubmission.objects.filter(
+            researcher=researcher,
+            status__in=["pending", "published", "rejected"],
+            deleted_at__isnull=True
+        ).order_by('-submitted_at')
+        
+        # Convert queryset to a list of dictionaries.
+        data = list(submissions.values('id', 'title', 'status', 'submitted_at'))
+        
+        # Clean HTML tags from the title of each submission.
+        for submission in data:
+            submission['title'] = strip_tags(submission['title'])
+        
+        return Response(data)
 
 

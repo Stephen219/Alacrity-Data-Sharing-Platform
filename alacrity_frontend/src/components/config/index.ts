@@ -106,7 +106,7 @@ export const NAV_ITEMS = [
       },
       {
         name: "Research Requests",
-        href: "#",
+        href: "/requests/researchRequests",
         imageSrc: "/navbar/researcher/reviewRequests.png",
       },
       ],
