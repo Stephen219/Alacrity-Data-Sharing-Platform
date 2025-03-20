@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import ApexCharts from "apexcharts";
-const BACKEND_URL = "http://127.0.0.1:8000/";
+import { BACKEND_URL } from "@/config";
 
 const LineChart: React.FC = () => {
   const chartRef = useRef<HTMLDivElement>(null);
