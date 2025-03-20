@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import permission_classes
 from django.core.mail import send_mail
+from alacrity_backend.config import FRONTEND_URL
 from research.serializers import AnalysisSubmissionSerializer
 from users.decorators import role_required
 from .models import AnalysisSubmission
@@ -17,6 +18,9 @@ from rest_framework.generics import ListAPIView
 from datasets.models import Dataset
 from django.conf import settings
 from html.parser import HTMLParser
+from notifications.models import Notification
+from users.models import User
+
 
 class HTMLStripper(HTMLParser):
     def __init__(self):
@@ -39,7 +43,8 @@ class SaveSubmissionView(APIView):
     @role_required(['contributor', 'organization_admin', 'researcher'])
     def post(self, request):
         """
-        Allows researchers to save drafts or submit final research.
+        Allows researchers to save drafts or submit for review.
+        Notifies organisations when submission submitted for review 
         """
         try:
             data = request.data
@@ -89,6 +94,49 @@ class SaveSubmissionView(APIView):
                 submission.status = "pending"
 
             submission.save()
+
+            if submission.status == "pending":
+                # finds the organisation that owns this dataset
+                # The dataset has dataset.contributor_id, which is a user with .organisation
+                org_id = submission.dataset.contributor_id.organization_id  # might be None if no org
+                if org_id:
+                    clean_title = strip_html(submission.title)
+
+                    # 2) finds all org admins in that org
+                    org_admins = User.objects.filter(
+                        organization_id=org_id,
+                        role='organization_admin'
+                    )
+                    # 3) creates a notification for each admin
+                    for admin_user in org_admins:
+                        Notification.objects.create(
+                            user=admin_user,
+                            message=f"A new research submission '{clean_title}' by {researcher.email} is pending your approval.",
+                            link=f"{FRONTEND_URL}/requests/submissions/{submission.id}"
+                        )
+                    
+                    # 4) also sends them an email
+                    email_subject = "New Research Submission Pending Approval"
+                    email_body = (
+                        f"Hello,\n\n"
+                        f"A new research submission '{submission.title}' by {researcher.email} requires your approval.\n"
+                        f"Please log in to review it.\n\n"
+                        f"Best regards,\nAlacrity Team"
+                    )
+                    for admin_user in org_admins:
+                        try:
+                            send_mail(
+                                subject=email_subject,
+                                message=email_body,
+                                from_email=settings.DEFAULT_FROM_EMAIL,
+                                recipient_list=[admin_user.email],
+                                fail_silently=False,
+                            )
+                        except Exception as e:
+                            print(f"Failed to email {admin_user.email} about new submission: {e}")
+                else:
+                    print("No organisation found for this dataset's contributor.")
+
             return Response({
                 "message": "Submission saved successfully!",
                 "id": submission.id,
@@ -153,10 +201,19 @@ class ApproveRejectSubmissionView(APIView):
             submission.status = "published"
             email_subject = "Your Research Submission Has Been Approved!"
             email_body = f"Dear Researcher,\n\nYour research submission '{clean_title} ' has been approved and is now published.\n\nMessage from the organisation:\n{message}\n\nBest Regards,\nAdmin Team"
+            Notification.objects.create(
+                user=submission.researcher,
+                message=f"Your research submission '{clean_title}' has been approved and published.",
+                link=f"{FRONTEND_URL}/researcher/allSubmissions/view/{submission.id}"
+    )
         elif action == "reject":
             submission.status = "rejected"
             email_subject = "Your Research Submission Has Been Rejected"
             email_body = f"Dear Researcher,\n\nYour research submission '{clean_title} ' has been rejected.\n\nMessage from the organization:\n{message}\n\nBest Regards,\nAdmin Team"
+            Notification.objects.create(
+                user=submission.researcher,
+                message=f"Your research submission '{clean_title}' has been rejected. Check your emails for more information."
+    )
         else:
             return Response({"error": "Invalid action."}, status=400)
 

@@ -51,11 +51,9 @@ INSTALLED_APPS = [
     'users',
     'research',
     'payments',
-
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
-
-
+    'notifications',
     'contact',
     'organisation',
     'dataset_requests',
