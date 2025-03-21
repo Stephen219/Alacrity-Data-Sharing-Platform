@@ -171,7 +171,7 @@ export default function ApproveRequest({ requestId }: ApproveRequestProps) {
                 </button>
               ) : null}
 
-              {/* ✅ Correct Back button logic */}
+              {/*  Correct Back button logic */}
               {request.request_status !== "denied" && (
                 <button
                   onClick={() =>
