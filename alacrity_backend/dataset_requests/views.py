@@ -16,6 +16,10 @@ from django.core.mail import send_mail
 from django.conf import settings
 from alacrity_backend.config import FRONTEND_URL
 from notifications.models import Notification
+from django.http import JsonResponse
+from rest_framework.permissions import IsAuthenticated
+from users.decorators import role_required
+from users.models import User
 
 def send_email_to_contributor(dataset_request):
     try:
@@ -272,3 +276,33 @@ class AcceptRejectRequest(APIView):
 
         dataset_request.save()
         return Response({'message': f'Request {action}ed successfully'}, status=status.HTTP_200_OK)
+    
+
+
+class UserDatasetRequestsView(APIView):
+    """
+    View to get all requests made by a researcher
+    
+    """
+    permission_classes = [IsAuthenticated]
+    @role_required(["researcher"])
+    def get(self, request):
+        user = request.user
+        all_requests = DatasetRequest.objects.filter(researcher_id=user).values(
+            'request_id',  
+            'dataset_id_id',  
+            'dataset_id__title', 
+            'researcher_id__profile_picture', 
+            'request_status',
+            'created_at',
+            'updated_at'
+        )
+        return JsonResponse(list(all_requests), safe=False)
+    
+
+
+
+
+
+    
+
