@@ -700,6 +700,11 @@ class DatasetWithAccessView(APIView):
         response = accessible_datasets_view.get(request)
 
         return JsonResponse(response.data, safe=False)
+    
+
+
+
+
+
 
     
-## solve an error in editing the user profile
