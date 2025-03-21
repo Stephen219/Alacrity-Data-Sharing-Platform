@@ -7,7 +7,7 @@ import "swiper/css/pagination";
 import { Pagination, Autoplay } from "swiper/modules";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+// import Image from "next/image";
 import parse from "html-react-parser"
 import { BACKEND_URL } from "@/config";
 
@@ -75,7 +75,7 @@ export default function TrendingResearchCarousel() {
                 className="relative cursor-pointer hover:shadow-lg transition-all"
                 onClick={() => router.push(`/researcher/allSubmissions/view/${submission.id}`)}
               >
-                {submission.image && (
+                {/* {submission.image && (
                   <Image
                     src={submission.image}
                     alt={submission.title}
@@ -83,7 +83,7 @@ export default function TrendingResearchCarousel() {
                     height={300}
                     className="w-full h-40 object-cover rounded-t-lg"
                   />
-                )}
+                )} */}
                 <CardContent className="p-4">
   <div className="text-lg font-semibold truncate">{parse(submission.title)}</div>
   <div className="text-sm text-gray-600 truncate">{parse(submission.summary)}</div>

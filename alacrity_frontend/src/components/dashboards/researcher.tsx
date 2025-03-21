@@ -12,6 +12,7 @@ import { useEffect, useState } from "react"
 import { BACKEND_URL } from "@/config"
 import { useRouter } from "next/navigation"
 import PublicationTable, { Publication } from "@/components/PublicationTable"
+import Link from "next/link"
 
 
 interface DatasetRequest {
@@ -487,12 +488,13 @@ const DatasetCard: React.FC<DatasetCardProps> = ({ dataset_id, title, descriptio
     } else {
       // if free or paid show analyse 
       return (
-        <button
-          className="mt-2 px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md"
-          onClick={() => console.log("Analyze dataset", dataset_id)}
-        >
-          Analyze
-        </button>
+        <Link
+  href={`/analyze/${dataset_id}`}
+  className="mt-2 px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md"
+  
+>
+  Analyze
+</Link>
       );
     }
   };
