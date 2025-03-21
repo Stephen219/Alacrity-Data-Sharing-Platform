@@ -44,10 +44,7 @@ const DraftList = () => {
   }, [sortOrder]);
   
 
-  const handleSoftDeleteDraft = async (id: number) => {
-    const confirmDelete = window.confirm("Move this draft to Recently Deleted?");
-    if (!confirmDelete) return;
-  
+  const handleSoftDeleteDraft = async (id: number) => {  
     try {
       const response = await fetchWithAuth(`http://127.0.0.1:8000/research/drafts/delete/${id}/`, {
         method: "DELETE",

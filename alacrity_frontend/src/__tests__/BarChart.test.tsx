@@ -23,8 +23,8 @@ describe('BarChart', () => {
 
   it('renders the chart title and subtitle', () => {
     render(<BarChart />);
-    expect(screen.getByText('378')).toBeInTheDocument();
-    expect(screen.getByText('Reports and datasets generated per week')).toBeInTheDocument();
+    expect(screen.getByText('Reports & Datasets Generated Per Week')).toBeInTheDocument();
+    expect(screen.getByText('Hover over me...')).toBeInTheDocument();
   });
 
   it('initializes ApexCharts with correct container', () => {

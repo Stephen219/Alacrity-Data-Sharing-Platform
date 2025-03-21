@@ -15,6 +15,10 @@ import { useParams } from "next/navigation"
 import { fetchWithAuth } from "@/libs/auth"
 import { BACKEND_URL } from "@/config"
 import { Lock, Download, FileText, BarChart3, Save, Filter, ChevronRight, X, ArrowRight, ArrowLeft } from "lucide-react"
+import { Editor } from "@tiptap/react"
+import TextEditorToolbar from "@/components/TextEditorToolbar"
+import AnalysisFormComponent from "@/components/ResearchForm"
+
 
 type Schema = Record<string, string>
 type Dataset = {
@@ -62,6 +66,7 @@ type Result =
       intercept: number
       columns: [string, string]
     }
+    
 
 const calculationTypes = [
   { value: "descriptive", label: "Descriptive Statistics" },
@@ -202,7 +207,8 @@ const tourSteps = [
 const AnalyzePage = () => {
   const { id } = useParams()
   const [dataset, setDataset] = useState<Dataset | null>(null)
-  const [activeTab, setActiveTab] = useState<"analysis" | "results" | "notes">("analysis")
+  const [activeTab, setActiveTab] = useState<"analysis" | "results" | "notes" | "submit">("analysis");
+  const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
   const [state, dispatch] = useReducer(reducer, initialState)
   const [result, setResult] = useState<Result | null>(null)
   const [loading, setLoading] = useState(true)
@@ -229,6 +235,7 @@ const AnalyzePage = () => {
 
   const debouncedFilterValue = useDebounce(state.filterValue, 300)
   const debouncedNotes = useDebounce(state.notes, 500)
+
 
   // Check if user has seen the tour before
   useEffect(() => {
@@ -543,7 +550,7 @@ const AnalyzePage = () => {
           <h2 className="text-2xl font-bold mb-3" style={{ color: "#f97316" }}>
             Oops! Limited Access
           </h2>
-          <p className="text-gray-700 text-lg mb-4">Sorry, you dont have access to this resource right now.</p>
+          <p className="text-gray-700 text-lg mb-4">Sorry, you don&apos;t have access to this resource right now.</p>
           <div className="w-16 h-1 mx-auto my-2" style={{ backgroundColor: "#f97316", opacity: 0.5 }}></div>
           <p className="text-gray-500 mt-3 text-sm">If you think this is a mistake, please contact support.</p>
         </div>
@@ -619,6 +626,16 @@ const AnalyzePage = () => {
               <FileText className="mr-2 h-4 w-4" />
               Notes
             </button>
+                {/* Add Submit Tab */}
+    <button
+      onClick={() => setActiveTab("submit")}
+      className={`py-3 px-4 text-center font-medium flex items-center justify-center ${
+        activeTab === "submit" ? "bg-orange-500 text-white" : "text-gray-700 hover:bg-orange-100"
+      }`}
+    >
+      <Save className="mr-2 h-4 w-4" />
+      Submit
+    </button>
           </div>
         </div>
 
@@ -1094,6 +1111,31 @@ const AnalyzePage = () => {
           </div>
         )}
       </div>
+
+      {activeTab === "submit" && (
+  <div className="bg-white p-6 rounded-lg shadow-md">
+    <h2 className="text-lg font-semibold mb-4" style={{ color: "#f97316" }}>
+      Submit Research for Approval
+    </h2>
+    <p className="text-gray-600 mb-3">
+      Submit your research based on the dataset &quot;<strong>{dataset.title}</strong>&quot;. Your submission will be reviewed
+      by the dataset&apos;s organization.
+    </p>
+
+    {/* toolbar */}
+    {editorInstance && (
+      <div className="sticky top-16 z-30 bg-white p-2 rounded-lg mb-4">
+        <TextEditorToolbar editor={editorInstance} />
+      </div>
+    )}
+
+    <AnalysisFormComponent 
+      editorInstance={editorInstance} 
+      setEditorInstance={setEditorInstance}
+    />
+  </div>
+)}
+
 
    
       {showTermsModal && (

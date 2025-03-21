@@ -4,6 +4,7 @@ import { useState } from "react";
 import MaxWidthWrapper from "./MaxWidthWrapper";
 import { Button } from "./ui/button";
 import { validateString, getErrorMessage } from "@/lib/utils"; 
+import { BACKEND_URL } from "@/config";
 
 export default function Contact() {
     const [loading, setLoading] = useState(false);
@@ -14,9 +15,8 @@ export default function Contact() {
     });
     const [errors, setErrors] = useState<{ email?: string; subject?: string; message?: string }>({});
 
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
 
-    // ✅ Improved Email Validation
+    // Improved Email Validation
     const isValidEmail = (email: string) => {
         return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
     };
@@ -50,7 +50,7 @@ export default function Contact() {
         }
 
         try {
-            const response = await fetch(`${backendUrl}/api/contact/`, {
+            const response = await fetch(`${BACKEND_URL}api/contact/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData),

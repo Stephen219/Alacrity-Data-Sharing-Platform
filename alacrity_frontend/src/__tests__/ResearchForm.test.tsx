@@ -1,35 +1,25 @@
-
-
-
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import ResearchForm from "@/components/ResearchForm";
 import { Editor } from "@tiptap/react";
 import { fetchWithAuth } from "@/libs/auth";
 import "@testing-library/jest-dom";
-import { useSearchParams } from "next/navigation"; 
+import { ReactNode } from "react";
 
 jest.mock("@/libs/auth", () => ({
-  fetchWithAuth: jest.fn(),
+  fetchWithAuth: jest.fn(async (url) => {
+    if (url.includes("/research/submissions/save/")) {
+      return { ok: true, json: async () => ({ id: 1 }) }; 
+    }
+    return { ok: false, json: async () => ({ error: "Unknown API Call" }) };
+  }),
 }));
 
 jest.mock("next/navigation", () => ({
-  useSearchParams: jest.fn(() => ({
-    get: jest.fn(() => null), // Mock default behavior: no "id" param
-  })),
+  useParams: jest.fn(() => ({ id: "123" })),
 }));
 
-import { ReactNode } from "react";
-
 jest.mock("@/components/ui/button", () => ({
-  Button: ({
-    onClick,
-    children,
-    disabled,
-  }: {
-    onClick?: () => void;
-    children: ReactNode;
-    disabled?: boolean;
-  }) => (
+  Button: ({ onClick, children, disabled }: { onClick?: () => void; children: ReactNode; disabled?: boolean }) => (
     <button data-testid={children?.toString()} onClick={onClick} disabled={disabled}>
       {children}
     </button>
@@ -38,15 +28,7 @@ jest.mock("@/components/ui/button", () => ({
 
 jest.mock("@/components/TextEditor", () => ({
   __esModule: true,
-  default: ({
-    content,
-    onChange,
-    placeholder,
-  }: {
-    content: string;
-    onChange: (value: string) => void;
-    placeholder: string;
-  }) => (
+  default: ({ content, onChange, placeholder }: { content: string; onChange: (value: string) => void; placeholder: string }) => (
     <textarea
       data-testid={`editor-${placeholder}`}
       value={content}
@@ -55,26 +37,21 @@ jest.mock("@/components/TextEditor", () => ({
   ),
 }));
 
-const createMockEditor = () =>
-  ({
-    isActive: jest.fn(() => false),
-    chain: jest.fn().mockReturnValue({
-      focus: jest.fn().mockReturnValue({
-        toggleBold: jest.fn().mockReturnValue({ run: jest.fn() }),
-        toggleItalic: jest.fn().mockReturnValue({ run: jest.fn() }),
-        setParagraph: jest.fn().mockReturnValue({ run: jest.fn() }),
-        undo: jest.fn().mockReturnValue({ run: jest.fn() }),
-        redo: jest.fn().mockReturnValue({ run: jest.fn() }),
-      }),
-    }),
-    commands: {
-      insertContentAt: jest.fn(),
-      focus: jest.fn(),
-    },
-    state: {
-      doc: { content: { size: 10 } },
-    },
-  } as unknown as Editor);
+const createMockEditor = () => ({
+  isActive: jest.fn(() => false),
+  chain: jest.fn(() => ({
+    focus: jest.fn(() => ({
+      toggleBold: jest.fn(() => ({ run: jest.fn() })),
+      toggleItalic: jest.fn(() => ({ run: jest.fn() })),
+      setParagraph: jest.fn(() => ({ run: jest.fn() })),
+      undo: jest.fn(() => ({ run: jest.fn() })),
+      redo: jest.fn(() => ({ run: jest.fn() })),
+    })),
+  })),
+  commands: { insertContentAt: jest.fn(), focus: jest.fn() },
+  state: { doc: { content: { size: 10 } } },
+  getJSON: jest.fn(() => ({ type: "doc", content: [] })),
+} as unknown as Editor);
 
 describe("ResearchForm", () => {
   let mockEditor: Editor;
@@ -82,14 +59,11 @@ describe("ResearchForm", () => {
   beforeEach(() => {
     mockEditor = createMockEditor();
     jest.clearAllMocks();
-    
-    (useSearchParams as jest.Mock).mockReturnValue({
-      get: jest.fn(() => null), 
-    });
   });
 
   test("renders form fields correctly", () => {
     render(<ResearchForm editorInstance={mockEditor} setEditorInstance={() => {}} />);
+
     expect(screen.getByTestId("editor-Enter title...")).toBeInTheDocument();
     expect(screen.getByTestId("editor-Describe your analysis process...")).toBeInTheDocument();
     expect(screen.getByTestId("editor-Enter raw results...")).toBeInTheDocument();
@@ -99,6 +73,7 @@ describe("ResearchForm", () => {
   test("updates form data when text editors change", async () => {
     render(<ResearchForm editorInstance={mockEditor} setEditorInstance={() => {}} />);
     const titleInput = screen.getByTestId("editor-Enter title...");
+
     fireEvent.change(titleInput, { target: { value: "New Title" } });
 
     await waitFor(() => {
@@ -107,11 +82,6 @@ describe("ResearchForm", () => {
   });
 
   test("saves as draft successfully", async () => {
-    (fetchWithAuth as jest.Mock).mockResolvedValue({
-      ok: true,
-      json: async () => ({ id: 1 }),
-    });
-
     render(<ResearchForm editorInstance={mockEditor} setEditorInstance={() => {}} />);
     const saveButton = screen.getByTestId("Save as Draft");
 
@@ -120,7 +90,8 @@ describe("ResearchForm", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Draft Saved Successfully!")).toBeInTheDocument();
+      expect(screen.getByText("Draft Saved Successfully!"))
+        .toBeInTheDocument();
     });
   });
 
@@ -138,7 +109,8 @@ describe("ResearchForm", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Error: Something went wrong")).toBeInTheDocument();
+      expect(screen.getByText("Error: Something went wrong"))
+        .toBeInTheDocument();
     });
   });
 
@@ -156,7 +128,8 @@ describe("ResearchForm", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Research Published Successfully!")).toBeInTheDocument();
+      expect(screen.getByText("Research Published Successfully!"))
+        .toBeInTheDocument();
     });
   });
 
@@ -174,7 +147,8 @@ describe("ResearchForm", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Error: Failed to publish")).toBeInTheDocument();
+      expect(screen.getByText("Error: Failed to publish"))
+        .toBeInTheDocument();
     });
   });
 });
