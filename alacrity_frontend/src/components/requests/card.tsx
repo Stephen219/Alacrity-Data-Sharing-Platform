@@ -81,7 +81,11 @@ export default function ApproveRequest({ requestId }: ApproveRequestProps) {
         throw new Error(`Action failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
-      router.push("/requests/pending");
+      if (status === "revoke") {
+        router.push("/requests/all"); // Redirect to /requests/all after revoke
+      } else {
+        router.push("/requests/pending"); // For other actions, redirect to /requests/pending
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);

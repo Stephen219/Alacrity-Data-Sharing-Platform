@@ -106,7 +106,7 @@ describe('ApproveRequest Component', () => {
     
     await waitFor(() => {
       expect(fetchWithAuth).toHaveBeenCalledWith(
-        `${BACKEND_URL}/requests/acceptreject/REQ-123/`,
+        `${BACKEND_URL}/requests/requestaction/REQ-123/`,
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ request_id: 'REQ-123', action: 'accept' })
@@ -137,7 +137,7 @@ describe('ApproveRequest Component', () => {
     
     await waitFor(() => {
       expect(fetchWithAuth).toHaveBeenCalledWith(
-        `${BACKEND_URL}/requests/acceptreject/REQ-123/`,
+        `${BACKEND_URL}/requests/requestaction/REQ-123/`,
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ request_id: 'REQ-123', action: 'reject' })
