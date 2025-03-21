@@ -171,12 +171,13 @@ export default function ApproveRequest({ requestId }: ApproveRequestProps) {
                 </button>
               ) : null}
 
+              {/* ✅ Correct Back button logic */}
               {request.request_status !== "denied" && (
                 <button
                   onClick={() =>
-                    request.request_status === "approved"
-                      ? router.push("/requests/all")
-                      : router.push("/requests/pending")
+                    request.request_status === "pending"
+                      ? router.push("/requests/pending")
+                      : router.push("/requests/all")
                   }
                   className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-md"
                 >

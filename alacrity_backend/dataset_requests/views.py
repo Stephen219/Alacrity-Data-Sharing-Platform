@@ -286,9 +286,11 @@ class request_actions(APIView):
                 user=dataset_request.researcher_id,
                 message=f"Your access to the dataset '{dataset_request.dataset_id.title}' has been revoked."
             )
+
         
         else:
             return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
 
         dataset_request.save()
+        
         return Response({'message': f'Request {action}ed successfully'}, status=status.HTTP_200_OK)
