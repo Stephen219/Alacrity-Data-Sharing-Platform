@@ -68,7 +68,7 @@ export default function DatasetDetailPage({ params }: { params: { dataset_id: st
 
       {/* Comment Section */}
       <div className="mb-8">
-        <h2 className="text-2xl font-semibold mb-2">Comments</h2>
+        <h2 className="text-2xl font-semibold mb-2">leave a review</h2>
         <textarea
           value={comment}
           onChange={(e) => setComment(e.target.value)}
@@ -118,10 +118,11 @@ export default function DatasetDetailPage({ params }: { params: { dataset_id: st
 
       {/* Raise an Issue Button - Bottom Right */}
       <button
-        className="absolute bottom-8 right-8 px-6 py-3 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-      >
-        Raise an Issue
-      </button>
+  className="absolute bottom-8 right-8 px-6 py-3 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+  onClick={() => router.push(`/chat/${dataset.dataset_id}`)}
+>
+  Raise an Issue
+</button>
     </div>
   )
 }
