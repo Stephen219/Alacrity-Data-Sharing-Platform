@@ -118,14 +118,33 @@ class Make_request(APIView):
     
 
 
-
- # this is a view that will be used when the user wants to view all the requests that have been made
-class ViewAllDatasetRequests(APIView):
+class view_requests(APIView):
+    @role_required(['organization_admin', 'contributor'])
+    def get(self, request):
+        try:
+            # get all the requests from the DatasetRequest table according to the contributor with the same organization as the databeing requested
+            requests = DatasetRequest.objects.filter(dataset_id__contributor_id__organization=request.user.organization_id).select_related('dataset_id', 'researcher_id')
+            # serialize the requests
+            serializer = DatasetRequestSerializer(requests, many=True)
+            #print(serializer.data) 
+            return Response(serializer.data, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            import traceback
+            print(traceback.format_exc())  # Print full traceback for debugging
+        return Response(
+            {
+            'error': str(e)  # Return the actual error message for debugging
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        ) 
+ # this is a view that will be used when the user wants to view all the pending requests that have been made
+class View_pending(APIView):
     @role_required(['organization_admin', 'contributor'])
     def get(self, request):
         try:
             request_status = request.query_params.get('request_status', 'pending')
-           # get all the requests from the DatasetRequest table according to the contributor with the same organization as the requester
+           # get all the requests from the DatasetRequest table according to the contributor with the same organization as the databeing requested
             requests = DatasetRequest.objects.filter(dataset_id__contributor_id__organization=request.user.organization_id,request_status=request_status).select_related('dataset_id', 'researcher_id')
             # serialize the requests
             
@@ -186,7 +205,7 @@ def send_email(dataset_request):
 
 
 # this view is used to accept / reject a request when the admin is viewing all the requests
-class AcceptRejectRequest(APIView):
+class request_actions(APIView):
     @role_required(['organization_admin', 'contributor'])
     def get(self, request, id):
         try:
@@ -197,9 +216,6 @@ class AcceptRejectRequest(APIView):
                 request_id=id,  # Changed from `id` to `request_id`
                 dataset_id__contributor_id__organization=request.user.organization
             )
-            #print(dataset_request)
-            # print("I am here")
-            # print("# debugging")
             serializer = DatasetRequestSerializer(dataset_request)
             print(serializer.data)
             return Response(serializer.data, status=status.HTTP_200_OK)
