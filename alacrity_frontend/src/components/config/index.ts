@@ -45,6 +45,11 @@ export const NAV_ITEMS = [
       roles: ["organization_admin", "contributor"],
       featured: [
         {
+          name: "All Requests",
+          href: "/requests/all",
+          imageSrc: "/navbar/review/accessRequests.jpg",
+        },
+        {
           name: "Pending Requests",
           href: "/requests/pending",
           imageSrc: "/navbar/review/accessRequests.png",
