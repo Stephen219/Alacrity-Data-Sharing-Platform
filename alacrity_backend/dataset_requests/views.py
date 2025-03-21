@@ -102,7 +102,7 @@ class View_pending(APIView):
 
         
 # this view is used to accept / reject a request when the admin is viewing all the requests
-class AcceptRejectRequest(APIView):
+class request_actions(APIView):
     @role_required(['organization_admin', 'contributor'])
     def get(self, request, id):
         try:
@@ -113,9 +113,6 @@ class AcceptRejectRequest(APIView):
                 request_id=id,  # Changed from `id` to `request_id`
                 dataset_id__contributor_id__organization=request.user.organization
             )
-            #print(dataset_request)
-            # print("I am here")
-            # print("# debugging")
             serializer = DatasetRequestSerializer(dataset_request)
             print(serializer.data)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -124,7 +121,6 @@ class AcceptRejectRequest(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    # The POST part remains unchanged
     def post(self, request,id):
         request_id = id
         action = request.data.get('action')

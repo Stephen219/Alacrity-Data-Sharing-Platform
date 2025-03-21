@@ -66,6 +66,7 @@ export default function AllRequests() {
                   <tr key={request.id} className="border border-gray-300">
                     <td
                       className="border border-gray-300 px-4 py-2 text-blue-600 cursor-pointer hover:underline"
+                      onClick={() => router.push(`/requests/approval/${request.id}`)}
                     >
                       {request.researcher_name}
                     </td>
