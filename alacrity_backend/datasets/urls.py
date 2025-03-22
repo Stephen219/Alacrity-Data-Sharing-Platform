@@ -14,6 +14,8 @@ urlpatterns = [
     path('testget/',get_datasets, name='testget'),
     #####
     path('download/<str:dataset_id>/', download_dataset, name='download_dataset'),
+    # path('overview/<uuid:dataset_id>/', dataset_overview, name='dataset_overview'),
+    
    
 
 
