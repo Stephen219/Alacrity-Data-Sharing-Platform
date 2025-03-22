@@ -7,7 +7,7 @@ import "swiper/css/pagination";
 import { Pagination, Autoplay } from "swiper/modules";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
-// import Image from "next/image";
+import Image from "next/image";
 import parse from "html-react-parser"
 import { BACKEND_URL } from "@/config";
 
