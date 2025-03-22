@@ -19,16 +19,24 @@ from .serializer import OrganizationRegisterSerializer
 from django.db import transaction
 
 
+
+
 def generate_username(first_name: str, last_name: str) -> str:
     """
     Generates a unique username based on the first name and last name.
     It appends a random string to ensure uniqueness.
+    The total length is capped at 10 characters.
     """
     first_name = first_name.strip().lower()
     last_name = last_name.strip().lower()
-    random_string = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
-    username = f"{last_name}_{first_name}_{random_string}"
+    random_string = ''.join(random.choices(string.ascii_lowercase + string.digits, k=3)) 
+    max_name_length = 10 - len(random_string) - 1 
+    half_length = max_name_length // 2
+    first_name = first_name[:half_length]
+    last_name = last_name[:max_name_length - len(first_name)]
+    username = f"{last_name}_{random_string}"
     return username
+
 
 def generate_password():
     chars = string.ascii_letters + string.digits + "!@#$%^&*"
@@ -57,10 +65,10 @@ def send_activation_email(recipient_email, recipient_name, link):
         print(f"Activation email sent to {recipient_email}")
         return True
     except Exception as e:
-        # print the stack trace
-        import traceback
-        traceback.print_exc()
-        print(f"Failed to send email: {str(e)}")
+        
+        # import traceback
+        # traceback.print_exc()
+        # print(f"Failed to send email: {str(e)}")
         return False
     
 
@@ -98,12 +106,15 @@ class AddContributors(APIView):
         try:
             serializer = RegisterSerializer(data=data)
         except ValidationError as e:
+            import traceback
+            traceback.print_exc()
             print (e)
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         print (serializer
         )
       
         print (serializer.is_valid())
+        print (serializer.errors)
         serializer = RegisterSerializer(data=data)
         if serializer.is_valid():
             try:
@@ -129,6 +140,7 @@ class AddContributors(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
         else:
+            print(f"Serializer errors: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
