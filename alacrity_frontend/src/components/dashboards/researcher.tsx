@@ -10,6 +10,10 @@ import type React from "react"
 import { fetchWithAuth } from "@/libs/auth"
 import { useEffect, useState } from "react"
 import { BACKEND_URL } from "@/config"
+import { useRouter } from "next/navigation"
+import PublicationTable, { Publication } from "@/components/PublicationTable"
+import Link from "next/link"
+
 
 interface DatasetRequest {
   request_id: string
@@ -48,6 +52,49 @@ const ResearcherDashboard: React.FC = () => {
   const [error, setError] = useState<unknown>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState("publications")
+  const [publications, setPublications] = useState<Publication[]>([])
+  const router = useRouter()
+
+  // fetch the datas if published tab is active
+  useEffect(() => {
+    if (activeTab === "publications") {
+      getPublications()
+    }
+  }, [activeTab])
+
+  const handleNewPublicationClick = () => {
+    router.push("/researcher/datasetWithAccess")
+  }
+
+    // Fetch publications that are submitted (pending, published, rejected)
+    const getPublications = async () => {
+      try {
+        const response = await fetchWithAuth(`${BACKEND_URL}research/submissions/submitted`)
+        const data = await response.json()
+        setPublications(data)
+      } catch (error) {
+        console.error("Error fetching publications:", error)
+      }
+    }
+
+    // Conditionally route based on submission status
+    const handleRowClick = (pub: Publication) => {
+      const status = pub.status.toLowerCase()
+      if (status === "pending") return
+      if (status === "rejected") {
+        router.push(`/researcher/drafts/edit/${pub.id}/`)
+      } else {
+        router.push(`/researcher/Submissions/view/${pub.id}/`)
+      }
+    }
+
+    const getRowClass = (pub: Publication) => {
+      const status = pub.status.toLowerCase()
+      if (status === "pending") {
+        return "cursor-default opacity-50"
+      }
+      return "cursor-pointer hover:bg-gray-50"
+    }
 
   const getData = async () => {
     try {
@@ -325,101 +372,18 @@ const ResearcherDashboard: React.FC = () => {
           <div>
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
               <p className="text-sm text-gray-500">Track and manage your research publications</p>
-              <button className="px-4 py-1 text-sm text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f]">
+              <button className="px-4 py-1 text-sm text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f]"
+              onClick={handleNewPublicationClick}>
                 New Publication
               </button>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Title
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Journal/Conference
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Metrics
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {[
-                    {
-                      id: "pub1",
-                      title: "Analysis of Consumer Behavior Patterns in E-commerce",
-                      venue: "Journal of Consumer Research",
-                      status: "Published",
-                      metrics: { citations: 12, downloads: 345 },
-                    },
-                    {
-                      id: "pub2",
-                      title: "Predictive Modeling for Healthcare Outcomes",
-                      venue: "International Conference on Health Informatics",
-                      status: "Under Review",
-                      metrics: { citations: 0, downloads: 0 },
-                    },
-                    {
-                      id: "pub3",
-                      title: "Impact of Social Media on Market Trends",
-                      venue: "Digital Marketing Quarterly",
-                      status: "Revision Needed",
-                      metrics: { citations: 0, downloads: 0 },
-                    },
-                    {
-                      id: "pub4",
-                      title: "Machine Learning Approaches to Data Analysis",
-                      venue: "Data Science Journal",
-                      status: "Draft",
-                      metrics: { citations: 0, downloads: 0 },
-                    },
-                  ].map((publication) => (
-                    <tr key={publication.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {publication.title}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{publication.venue}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            publication.status === "Published"
-                              ? "bg-green-100 text-green-800"
-                              : publication.status === "Under Review"
-                              ? "bg-blue-100 text-blue-800"
-                              : publication.status === "Revision Needed"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {publication.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {publication.status === "Published" ? (
-                          <div>
-                            <span className="mr-3">📊 {publication.metrics.citations} citations</span>
-                            <span>📥 {publication.metrics.downloads} downloads</span>
-                          </div>
-                        ) : (
-                          <span className="text-gray-400">No metrics available</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button className="text-[#FF6B1A] hover:text-[#e65c0f] mr-3">View</button>
-                        <button className="text-[#FF6B1A] hover:text-[#e65c0f]">Edit</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <PublicationTable
+              paginated={false}
+              publications={publications}
+              onRowClick={handleRowClick}
+              scrollable={true}
+              getRowClass={getRowClass}
+            />
           </div>
         )}
       </div>
@@ -524,12 +488,13 @@ const DatasetCard: React.FC<DatasetCardProps> = ({ dataset_id, title, descriptio
     } else {
       // if free or paid show analyse 
       return (
-        <button
-          className="mt-2 px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md"
-          onClick={() => console.log("Analyze dataset", dataset_id)}
-        >
-          Analyze
-        </button>
+        <Link
+  href={`/analyze/${dataset_id}`}
+  className="mt-2 px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md"
+  
+>
+  Analyze
+</Link>
       );
     }
   };

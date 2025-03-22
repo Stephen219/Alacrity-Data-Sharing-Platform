@@ -18,6 +18,7 @@ from .views import (
     ViewSubmissionsView,
     ToggleBookmarkView,
     UserBookmarksView,
+    SubmittedSubmissionsView,
 )
 
 urlpatterns = [
@@ -39,6 +40,7 @@ urlpatterns = [
     path("bookmarks/<int:submission_id>/", ViewSingleBookmarkedSubmissionView.as_view(), name="view_bookmarked_submission"),
     path("submissions/toggle-privacy/<int:submission_id>/", TogglePrivacyView.as_view(), name="toggle_privacy"),
     path("submissions/pending/", PendingSubmissionsView.as_view(), name="pending-submissions"),
+    path("submissions/submitted/", SubmittedSubmissionsView.as_view(), name="submitted_submissions"),
     
 
 ]

@@ -7,7 +7,7 @@ import "swiper/css/pagination";
 import { Pagination, Autoplay } from "swiper/modules";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+// import Image from "next/image";
 import parse from "html-react-parser"
 import { BACKEND_URL } from "@/config";
 
@@ -89,7 +89,7 @@ export default function TrendingResearchCarousel() {
   <div className="text-lg font-semibold truncate">{parse(submission.title)}</div>
   <div className="text-sm text-gray-600 truncate">{parse(submission.summary)}</div>
   <div className="text-xs text-gray-500 mt-2">
-  Author: {submission.full_name || "Unknown Author"} <br/> {submission.bookmark_count} bookmarks | {new Date(submission.submitted_at).toLocaleDateString()}
+  Author: {submission.full_name || "Unknown Author"} <br/> {submission.bookmark_count} likes | {new Date(submission.submitted_at).toLocaleDateString()}
   </div>
 </CardContent>
 

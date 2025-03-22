@@ -33,6 +33,118 @@ import traceback
 from datetime import timedelta
 from django.utils.timezone import now
 import datetime
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.encoding import force_bytes, force_str
+from django.core.mail import send_mail
+from django.conf import settings
+from django.contrib.auth import get_user_model
+User = get_user_model()
+
+
+class ForgotPasswordView(APIView):
+    """
+    If user exists, generate a token and email them the reset password link.
+    """
+    permission_classes = [AllowAny] 
+
+    def post(self, request):
+        try:
+            email = request.data.get('email', '')
+            if not email:
+                return Response({'error': 'Email field is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Check if this email belongs to a registered user
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                # Security best-practice: do NOT reveal that user does not exist
+                return Response({"message": "If that email is recognised, a reset link will be sent."},
+                                status=status.HTTP_200_OK)
+
+            # Generate token
+            token_generator = PasswordResetTokenGenerator()
+            token = token_generator.make_token(user)
+
+            # Encode user’s primary key in base64
+            uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+
+            # Builds a link 
+            frontend_reset_url = f"{settings.FRONTEND_URL}/reset-password?uidb64={uidb64}&token={token}"
+
+            # Sends email
+            subject = "Password Reset Requested"
+            message = (
+                f"Hi {user.first_name},\n\n"
+                f"You (or someone else) requested a password reset for your account.\n\n"
+                f"Please click the link below to reset your password:\n"
+                f"{frontend_reset_url}\n\n"
+                f"If you did not request a password reset, kindly ignore this email."
+            )
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL, 
+                [user.email],
+                fail_silently=False,
+            )
+
+            return Response(
+                {"message": "If that email is recognised, a reset link will be sent."},
+                status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+            traceback.print_exc()
+            return Response(
+                {"error": "Something went wrong while requesting password reset."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class ResetPasswordView(APIView):
+    """
+    Validate the token; if valid, set the new password.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        try:
+            uidb64 = request.data.get('uidb64', '')
+            token = request.data.get('token', '')
+            new_password = request.data.get('password', '')
+
+            if not (uidb64 and token and new_password):
+                return Response({"error": "uidb64, token, and password are all required."},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            # Decodes user PK from uidb64
+            try:
+                uid = force_str(urlsafe_base64_decode(uidb64))
+                user = User.objects.get(pk=uid)
+            except (ValueError, User.DoesNotExist):
+                return Response({"error": "Invalid user identifier."},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            # Checks token
+            token_generator = PasswordResetTokenGenerator()
+            if not token_generator.check_token(user, token):
+                return Response({"error": "Invalid or expired token."},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            # If token is valid, set the new password
+            user.set_password(new_password)
+            user.save()
+
+            return Response({"message": "Password reset successful."},
+                            status=status.HTTP_200_OK)
+
+        except Exception as e:
+            traceback.print_exc()
+            return Response(
+                {"error": "Something went wrong while resetting the password."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class WeeklyActivityView(APIView):
     """
@@ -700,6 +812,11 @@ class DatasetWithAccessView(APIView):
         response = accessible_datasets_view.get(request)
 
         return JsonResponse(response.data, safe=False)
+    
+
+
+
+
+
 
     
-## solve an error in editing the user profile

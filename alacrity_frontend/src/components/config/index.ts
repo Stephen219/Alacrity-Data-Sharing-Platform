@@ -1,6 +1,21 @@
 
 export const NAV_ITEMS = [
 
+  {
+    label: "Dashboard",
+    value: "dashboard" as const,
+    roles: ["organization_admin", "contributor", "researcher"],
+    featured: [
+      {
+        name: "Dashboard",
+        href: "/dashboard",
+        imageSrc: "/navbar/account/viewDashboard.png",  
+      },],
+    
+
+  },
+
+
     {
       label: "Datasets",
       value: "datasets" as const,
@@ -29,6 +44,11 @@ export const NAV_ITEMS = [
       value: "review" as const,
       roles: ["organization_admin", "contributor"],
       featured: [
+        {
+          name: "All Requests",
+          href: "/requests/all",
+          imageSrc: "/navbar/review/accessRequests.jpg",
+        },
         {
           name: "Pending Requests",
           href: "/requests/pending",
@@ -106,7 +126,7 @@ export const NAV_ITEMS = [
       },
       {
         name: "Research Requests",
-        href: "#",
+        href: "/requests/researchRequests",
         imageSrc: "/navbar/researcher/reviewRequests.png",
       },
       ],
@@ -122,7 +142,7 @@ export const NAV_ITEMS = [
         imageSrc: "/navbar/researcher/browseDatasets.png",
       },
       {
-        name: "Bookmarks",
+        name: "Liked Research",
         href: "/researcher/bookmarks",
         imageSrc: "/navbar/researcher/browseDatasets.png",
       },

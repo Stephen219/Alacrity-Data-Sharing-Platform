@@ -15,6 +15,7 @@ interface RequestDetails {
   dataset_title: string;
   dataset_description: string;
   created_at: string;
+  request_status: string;
 }
 
 interface ApproveRequestProps {
@@ -36,7 +37,7 @@ export default function ApproveRequest({ requestId }: ApproveRequestProps) {
           return;
         }
 
-        const endpoint = `${BACKEND_URL}/requests/acceptreject/${requestId}/`;
+        const endpoint = `${BACKEND_URL}/requests/requestaction/${requestId}/`;
 
         const response = await fetchWithAuth(endpoint);
         if (!response.ok) {
@@ -67,7 +68,7 @@ export default function ApproveRequest({ requestId }: ApproveRequestProps) {
       }
 
       const idToUse = request?.request_id || requestId;
-      const endpoint = `${BACKEND_URL}/requests/acceptreject/${requestId}/`;
+      const endpoint = `${BACKEND_URL}/requests/requestaction/${requestId}/`;
 
       const response = await fetchWithAuth(endpoint, {
         method: "POST",
@@ -80,7 +81,11 @@ export default function ApproveRequest({ requestId }: ApproveRequestProps) {
         throw new Error(`Action failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
-      router.push("/requests/pending");
+      if (status === "revoke") {
+        router.push("/requests/all"); // Redirect to /requests/all after revoke
+      } else {
+        router.push("/requests/pending"); // For other actions, redirect to /requests/pending
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -96,7 +101,7 @@ export default function ApproveRequest({ requestId }: ApproveRequestProps) {
   return (
     <div className="min-h-screen bg-gray-100 p-6 flex justify-center items-center">
       <div className="max-w-3xl w-full bg-white shadow-lg rounded-lg overflow-hidden">
-        <div className="bg-indigo-600 p-6 text-white text-2xl font-bold">
+        <div className="bg-gray-700 p-6 text-white text-2xl font-bold">
           Request Details
         </div>
         {request ? (
@@ -129,29 +134,56 @@ export default function ApproveRequest({ requestId }: ApproveRequestProps) {
                 <strong>Dataset Title:</strong> {request.dataset_title}
               </p>
               <p>
-                <strong>Dataset description:</strong> {request.dataset_description}
+                <strong>Dataset Description:</strong> {request.dataset_description}
               </p>
             </div>
 
+            {/* Action buttons depending on request status */}
             <div className="mt-6 flex justify-end space-x-4">
-              <button
-                onClick={() => handleAction("accept")}
-                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-md"
-              >
-                Approve
-              </button>
-              <button
-                onClick={() => handleAction("reject")}
-                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-md"
-              >
-                Reject
-              </button>
-              <button
-                onClick={() => router.push("/requests/pending")}
-                className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-md"
-              >
-                Back
-              </button>
+              {request.request_status === "pending" ? (
+                <>
+                  <button
+                    onClick={() => handleAction("accept")}
+                    className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-md"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handleAction("reject")}
+                    className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-md"
+                  >
+                    Reject
+                  </button>
+                </>
+              ) : request.request_status === "approved" ? (
+                <button
+                  onClick={() => handleAction("revoke")}
+                  className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-md"
+                >
+                  Revoke
+                </button>
+              ) : request.request_status === "denied" ? (
+                <button
+                  onClick={() => router.push("/requests/all")}
+                  className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-md"
+                >
+                  Back
+                </button>
+              ) : null}
+
+              {/*  Correct Back button logic */}
+              {request.request_status !== "denied" && (
+                <button
+                  onClick={() =>
+                    request.request_status === "pending"
+                      ? router.push("/requests/pending")
+                      : router.push("/requests/all")
+                  }
+                  className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-md"
+                >
+                  Back
+                </button>
+              )}
             </div>
           </div>
         ) : (
