@@ -142,7 +142,7 @@ export const NAV_ITEMS = [
         imageSrc: "/navbar/researcher/browseDatasets.png",
       },
       {
-        name: "Bookmarks",
+        name: "Liked Research",
         href: "/researcher/bookmarks",
         imageSrc: "/navbar/researcher/browseDatasets.png",
       },
