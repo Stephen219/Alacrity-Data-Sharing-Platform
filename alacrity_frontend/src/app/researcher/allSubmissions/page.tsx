@@ -4,7 +4,7 @@ import { BACKEND_URL } from "@/config"
 import { fetchWithAuth } from "@/libs/auth"
 import { useEffect, useState } from "react"
 import parse from "html-react-parser"
-import { Bookmark } from "lucide-react"
+import { Heart } from "lucide-react"
 import { useRouter } from "next/navigation";
 
 interface Analysis {
@@ -148,12 +148,27 @@ if (sortBy === "recent") {
       if (!response.ok) throw new Error("Failed to toggle bookmark.");
   
       const data = await response.json(); 
+
+      // Extracts the updated bookmark status and count from the response
+    const { bookmark_count } = data;
   
       setBookmarkedSubmissions((prev) =>
         data.bookmarked
           ? [...prev, submissionId]
           : prev.filter((id) => id !== submissionId)
       );
+
+          // Updates the local state so the count doesnt require refreshing
+    setSubmissions((prev) =>
+      prev.map((sub) =>
+        sub.id === submissionId ? { ...sub, bookmark_count } : sub
+      )
+    );
+    setFilteredSubmissions((prev) =>
+      prev.map((sub) =>
+        sub.id === submissionId ? { ...sub, bookmark_count } : sub
+      )
+    );
   
     } catch (error) {
       console.error("Bookmark error:", error);
@@ -315,15 +330,22 @@ if (sortBy === "recent") {
                       </div>
                       <div className="flex justify-between items-center mt-auto">
                         {/* Bookmark Icon */}
+                        <div className="flex items-center">
               <button
                 onClick={() => toggleBookmark(submission.id)}
                 aria-label="Bookmark"
               >
-                <Bookmark
+                <Heart
                   size={24}
                   className={bookmarkedSubmissions.includes(submission.id) ? "fill-alacrityred text-alacrityred" : "text-gray-400"}
                 />
               </button>
+              {submission.bookmark_count && submission.bookmark_count > 0 && (
+                  <span className="text-sm text-gray-600 ml-1">
+                    {submission.bookmark_count}
+                  </span>
+                )}
+                </div>
                         <button 
                         onClick={() => router.push(`/researcher/allSubmissions/view/${submission.id}`)}
                         className="px-3 py-1 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm">
@@ -369,15 +391,23 @@ if (sortBy === "recent") {
                       <div className="text-gray-600 dark:text-gray-100 leading-6 mb-6 line-clamp-3">{parse(submission.description)}</div>
                       <div className="flex justify-between items-center">
                         {/* Bookmark Icon */}
+                        <div className="flex items-center">
+                        
               <button
                 onClick={() => toggleBookmark(submission.id)}
                 aria-label="Bookmark"
               >
-                <Bookmark
+                <Heart
                   size={24}
                   className={bookmarkedSubmissions.includes(submission.id) ? "fill-alacrityred text-alacrityred" : "text-gray-400"}
                 />
               </button>
+              {submission.bookmark_count && submission.bookmark_count > 0 && (
+  <span className="text-sm text-gray-600 ml-1">
+    {submission.bookmark_count}
+  </span>
+)}
+</div>
                         <button 
                         onClick={() => router.push(`/researcher/allSubmissions/view/${submission.id}`)}
                         className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
