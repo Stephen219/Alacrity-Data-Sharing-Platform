@@ -38,7 +38,7 @@ const DatasetRequestTable: React.FC<DatasetRequestTableProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [sortRecent, setSortRecent] = useState(false);
+  const [sortRecent, ] = useState(false);
   const [needToPay, setNeedToPay] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 

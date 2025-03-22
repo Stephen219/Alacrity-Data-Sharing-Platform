@@ -6,6 +6,16 @@ import DatasetRequestTable, { DatasetRequest } from "@/components/DatasetRequest
 import { fetchWithAuth } from "@/libs/auth";
 import { BACKEND_URL } from "@/config";
 
+interface RawDatasetRequest {
+  request_id: string;
+  dataset_id_id: string;
+  dataset_id__title: string;
+  dataset_id__price: string | number;
+  request_status: string;
+  created_at: string;
+  has_paid?: boolean | string;
+}
+
 const App: React.FC = () => {
   const [datasetRequests, setDatasetRequests] = useState<DatasetRequest[]>([]);
   const router = useRouter();
@@ -15,9 +25,12 @@ const App: React.FC = () => {
       try {
         const response = await fetchWithAuth(`${BACKEND_URL}dataset_requests/userrequests/`);
         if (response.ok) {
-          const data = await response.json();
+          const data: RawDatasetRequest[] = await response.json();
           const mappedData = data.map((req: any) => {
-            const price = parseFloat(req.dataset_id__price) || 0;
+            const price =
+              typeof req.dataset_id__price === "number"
+                ? req.dataset_id__price
+                : parseFloat(req.dataset_id__price as string) || 0;
             const hasPaid = req.has_paid === true || req.has_paid === "true";
             return {
               id: req.request_id,
@@ -27,7 +40,7 @@ const App: React.FC = () => {
               submitted_at: req.created_at,
               hasPaid,
               price,
-            };
+            } as DatasetRequest;
           });
           setDatasetRequests(mappedData);
         } else {
