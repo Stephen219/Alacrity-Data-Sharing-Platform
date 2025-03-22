@@ -285,19 +285,51 @@ class UserDatasetRequestsView(APIView):
     
     """
     permission_classes = [IsAuthenticated]
-    @role_required(["researcher"])
+    @role_required(["researcher", 'contributor'])
     def get(self, request):
         user = request.user
-        all_requests = DatasetRequest.objects.filter(researcher_id=user).values(
-            'request_id',  
-            'dataset_id_id',  
-            'dataset_id__title', 
-            'researcher_id__profile_picture', 
-            'request_status',
-            'created_at',
-            'updated_at'
-        )
-        return JsonResponse(list(all_requests), safe=False)
+
+        all_requests = (
+            DatasetRequest.objects
+            .filter(researcher_id=user)
+            .select_related('dataset_id')
+            .values(
+                'request_id',  
+                'dataset_id_id',  
+                'dataset_id__title', 
+                'dataset_id__price',
+                'researcher_id__profile_picture', 
+                'request_status',
+                'created_at',
+                'updated_at'
+            )
+)
+
+        # has paid boolean for each row 
+        results = []
+        for row in all_requests:
+            dataset_id = row['dataset_id_id']
+            purchased = DatasetPurchase.objects.filter(
+                dataset_id=dataset_id, 
+                buyer_id=user.id
+            ).exists()
+            
+            # Converts price safely to float
+            price = float(row['dataset_id__price'] or 0.0)
+
+            results.append({
+                "request_id": row["request_id"],
+                "dataset_id_id": dataset_id,
+                "dataset_id__title": row["dataset_id__title"],
+                "researcher_id__profile_picture": row["researcher_id__profile_picture"],
+                "request_status": row["request_status"],
+                "created_at": row["created_at"],
+                "updated_at": row["updated_at"],
+                "dataset_id__price": price,
+                "has_paid": purchased,
+            })
+
+        return JsonResponse(results, safe=False)
     
 
 

@@ -3,6 +3,8 @@ import uuid
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+
+from payments.models import DatasetPurchase
 from .models import Dataset
 from .serializer import DatasetSerializer
 import pandas as pd
@@ -103,12 +105,26 @@ def has_access_to_dataset(user_id, dataset_id):
     from dataset_requests.models import DatasetRequest
     """Check if user has access to dataset."""
     try:
-        requested_data = DatasetRequest.objects.filter(
+        approved_request_exists = DatasetRequest.objects.filter(
             dataset_id=dataset_id,
             researcher_id=user_id,
             request_status='approved'
         ).exists()  # More efficient than converting to list
-        return requested_data
+        if not approved_request_exists:
+            return False
+
+        # Also checks if dataset is free or user purchased it
+        dataset_obj = Dataset.objects.get(dataset_id=dataset_id)
+        if dataset_obj.price == 0.0:
+            # Free dataset
+            return True
+        else:
+            # Paid dataset: user must have purchased
+            return DatasetPurchase.objects.filter(
+                dataset_id=dataset_id,
+                buyer_id=user_id
+            ).exists()
+
     except Exception as e:
         logger.error(f"Error checking dataset access: {e}")
         return False

@@ -2,78 +2,97 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import DatasetRequestTable, { DatasetRequest } from "@/components/DatasetRequestTable";
 import { fetchWithAuth } from "@/libs/auth";
 import { BACKEND_URL } from "@/config";
-// Import the previously created dataset table component
-import DatasetRequestTable, { DatasetRequest } from "@/components/DatasetRequestTable";
 
-interface Dataset {
-  dataset_id: string;
-  title: string;
-  // If your datasets have a status, otherwise set a default
-  status?: string;
-  updated_at: string;
-  // Include other dataset fields if needed
-}
-
-const FullDatasetPage: React.FC = () => {
-  const [datasets, setDatasets] = useState<DatasetRequest[]>([]);
+const App: React.FC = () => {
+  const [datasetRequests, setDatasetRequests] = useState<DatasetRequest[]>([]);
   const router = useRouter();
 
-  // Fetch datasets from the API and map them to the fields expected by DatasetRequestTable
-  const getDatasets = async () => {
-    try {
-      const response = await fetchWithAuth(`${BACKEND_URL}datasets/`);
-      const data = await response.json();
-      console.log("API response:", data);
-  
-      // If data is already an array, use it; otherwise, use data.datasets if available.
-      const datasetsArray = Array.isArray(data) ? data : data.datasets;
-      if (!datasetsArray || !Array.isArray(datasetsArray)) {
-        throw new Error("Expected an array of datasets from API");
-      }
-  
-      const mappedDatasets: DatasetRequest[] = datasetsArray.map((ds: any) => ({
-        id: ds.dataset_id,
-        name: ds.title,
-        status: ds.status ? ds.status : "active",
-        requested_at: ds.updated_at,
-      }));
-  
-      setDatasets(mappedDatasets);
-    } catch (error) {
-      console.error("Error fetching datasets:", error);
-    }
-  };
-  
-
   useEffect(() => {
-    getDatasets();
+    const fetchDatasetRequests = async () => {
+      try {
+        const response = await fetchWithAuth(`${BACKEND_URL}dataset_requests/userrequests/`);
+        if (response.ok) {
+          const data = await response.json();
+          const mappedData = data.map((req: any) => {
+            const price = parseFloat(req.dataset_id__price) || 0;
+            const hasPaid = req.has_paid === true || req.has_paid === "true";
+            return {
+              id: req.request_id,
+              dataset_id: req.dataset_id_id,
+              title: req.dataset_id__title,
+              status: req.request_status,
+              submitted_at: req.created_at,
+              hasPaid,
+              price,
+            };
+          });
+          setDatasetRequests(mappedData);
+        } else {
+          console.error("Failed to fetch dataset requests");
+        }
+      } catch (error) {
+        console.error("Error fetching dataset requests", error);
+      }
+    };
+
+    fetchDatasetRequests();
   }, []);
 
-  const handleRowClick = (dataset: DatasetRequest) => {
-    // Navigate to a detailed view for the selected dataset.
-    router.push(`/researcher/datasets/view/${dataset.id}/`);
+  // For free datasets or paid and have been paid, allows row click to navigate to analysis page
+  const handleRowClick = (request: DatasetRequest) => {
+    if (request.status.toLowerCase() === "approved" && (request.price === 0 || request.hasPaid)) {
+      router.push(`/analyze/${request.dataset_id}`);
+    }
   };
 
-  // Optional: Customize row styling (if desired)
-  const getRowClass = (dataset: DatasetRequest) => {
-    return "cursor-pointer hover:bg-gray-50";
+  // For paid datasets that have not been paid, shows the Pay button.
+  const handlePayClick = async (request: DatasetRequest) => {
+    try {
+      const response = await fetchWithAuth(
+        `${BACKEND_URL}/payments/paypal/payment/${request.dataset_id}/`,
+        { method: "POST" }
+      );
+      if (!response.ok) {
+        throw new Error(`Payment request failed. Status: ${response.status}`);
+      }
+      const data = await response.json();
+      if (data.approval_url) {
+        window.location.href = data.approval_url;
+      } else if (data.message) {
+        alert(data.message);
+      } else {
+        alert("No PayPal approval URL returned from server.");
+      }
+    } catch (error) {
+      console.error("Error creating PayPal payment:", error);
+      alert("Error creating PayPal payment. Check console for details.");
+    }
+  };
+
+  // Uses same condition for row styling
+  const getRowClass = (request: DatasetRequest) => {
+    const clickable = request.status.toLowerCase() === "approved" && (request.price === 0 || request.hasPaid);
+    return clickable
+      ? "hover:bg-gray-50 cursor-pointer"
+      : "bg-secondary cursor-not-allowed";
   };
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">Datasets</h1>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-4">Dataset Requests</h1>
       <DatasetRequestTable
-        datasetRequests={datasets}
+        requests={datasetRequests}
         onRowClick={handleRowClick}
-        scrollable={false}
-        searchable={true} 
-        paginated={true}    
+        onPayClick={handlePayClick}
         getRowClass={getRowClass}
+        paginated={true}
+        searchable={true}
       />
     </div>
   );
 };
 
-export default FullDatasetPage;
+export default App;
