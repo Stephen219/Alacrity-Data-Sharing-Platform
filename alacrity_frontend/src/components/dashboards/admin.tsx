@@ -51,7 +51,6 @@ import { fetchUserData } from "@/libs/auth";
 import { User } from "@/types/types";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import parse from "html-react-parser"
 import PendingSubmissionsTable from "../tables/PendingSubmissionsTable";
 
 interface PendingSubmission {

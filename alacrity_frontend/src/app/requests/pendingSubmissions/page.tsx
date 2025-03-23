@@ -4,7 +4,6 @@ import type React from "react";
 import { fetchWithAuth } from "@/libs/auth";
 import { useEffect, useState } from "react";
 import { BACKEND_URL } from "@/config";
-import { useRouter } from "next/navigation";
 import PendingSubmissionsTable from "@/components/tables/PendingSubmissionsTable";
 
 
@@ -19,7 +18,6 @@ interface PendingSubmission {
 
 const PendingSubmissions: React.FC = () => {
   const [pendingSubmissions, setPendingSubmissions] = useState<PendingSubmission[]>([]);
-  const router = useRouter();
  
 
   const getPendingSubmissions = async () => {
