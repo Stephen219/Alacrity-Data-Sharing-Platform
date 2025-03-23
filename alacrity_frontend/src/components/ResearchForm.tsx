@@ -113,7 +113,7 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
       console.log("API Response:", response.status, data);
   
       if (response.ok) {
-        setMessage(publish ? "Research Published Successfully!" : "Draft Saved Successfully!");
+        setMessage(publish ? "Research Submitted for Approval!" : "Draft Saved Successfully!");
         setFormData({
           ...initialFormState,
           datasetId: formData.datasetId,
