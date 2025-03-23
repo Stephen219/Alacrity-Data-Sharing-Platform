@@ -25,7 +25,7 @@ export default function PendingRequest() {
   useEffect(() => {
     const fetchRequests = async () => {
       try {
-        const response = await fetchWithAuth(`${BACKEND_URL}/requests/viewrequests/`);
+        const response = await fetchWithAuth(`${BACKEND_URL}/requests/viewpending/`);
         if (!response.ok) {
           throw new Error(`Failed to fetch: ${response.statusText}`);
         }
