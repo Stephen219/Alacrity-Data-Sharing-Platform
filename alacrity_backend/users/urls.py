@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import  MonthlyUsersView, RegisterView, WeeklyActivityView
+from .views import  ForgotPasswordView, MonthlyUsersView, RegisterView, ResetPasswordView, WeeklyActivityView
 # from rest_framfework_simplejwt.views import TokenRefreshView
 # add login vhiejw
 from .views import  RegisterView, LoginView, UserView, CSRFTokenView, LogoutView
@@ -27,6 +27,8 @@ urlpatterns = [
 
    
     path('csrf-token/', CSRFTokenView.as_view(), name='csrf-token'),
+    path('forgot-password/', ForgotPasswordView.as_view(), name='forgot-password'),
+    path('reset-password/', ResetPasswordView.as_view(), name='reset-password'),
     
 
 

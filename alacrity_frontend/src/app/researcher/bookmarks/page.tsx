@@ -4,7 +4,7 @@ import { fetchWithAuth } from "@/libs/auth";
 import { useEffect, useState } from "react";
 import Published from "@/components/Published";
 import { Button } from "@/components/ui/button";
-import { Bookmark } from "lucide-react";
+import { Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface Bookmark {
@@ -62,7 +62,7 @@ const BookmarkList = () => {
 
   return (
     <Published
-      header="Your Bookmarked Research"
+      header="Your Liked Research"
       submissions={bookmarks}
       sortOrder={sortOrder}
       setSortOrder={setSortOrder}
@@ -73,7 +73,7 @@ const BookmarkList = () => {
           onClick={() => handleUnbookmark(id)}
           aria-label="Unbookmark"
         >
-          <Bookmark size={24} className="fill-alacrityred text-alacrityred hover:fill-white hover:text-gray-400" />
+          <Heart size={24} className="fill-alacrityred text-alacrityred hover:fill-white hover:text-gray-400" />
         </button>
 
 <Button 

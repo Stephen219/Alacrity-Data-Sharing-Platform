@@ -34,7 +34,8 @@ describe('ApproveRequest Component', () => {
     message: 'Need access to dataset for genetic research',
     dataset_title: 'Human Genome Project Data',
     dataset_description: 'Complete human genome sequencing data',
-    created_at: '2025-03-10T12:00:00Z'
+    created_at: '2025-03-10T12:00:00Z',
+    request_status: 'pending' // Add request_status field
   };
 
   test('should display loading state initially', () => {
@@ -50,7 +51,7 @@ describe('ApproveRequest Component', () => {
     render(<ApproveRequest requestId={undefined} />);
     
     await waitFor(() => {
-      expect(screen.getByText('Error: No request ID provided')).toBeInTheDocument();
+      expect(screen.getByText(/Error: No request ID provided/)).toBeInTheDocument();
     });
   });
 
@@ -64,7 +65,7 @@ describe('ApproveRequest Component', () => {
     render(<ApproveRequest requestId="REQ-123" />);
     
     await waitFor(() => {
-      expect(screen.getByText('Error: Failed to fetch: 404 Not Found')).toBeInTheDocument();
+      expect(screen.getByText(/Error: Failed to fetch: 404 Not Found/)).toBeInTheDocument();
     });
   });
 
@@ -79,34 +80,40 @@ describe('ApproveRequest Component', () => {
     await waitFor(() => {
       expect(screen.getByText('Request Details')).toBeInTheDocument();
       expect(screen.getByText('REQ-123')).toBeInTheDocument();
-      expect(screen.getByText('Dr. Jane Smith', { exact: false })).toBeInTheDocument();
-      expect(screen.getByText('Genomics', { exact: false })).toBeInTheDocument();
-      expect(screen.getByText('Need access to dataset for genetic research', { exact: false })).toBeInTheDocument();
+      expect(screen.getByText(/Dr\. Jane Smith/)).toBeInTheDocument();
+      expect(screen.getByText(/Genomics/)).toBeInTheDocument();
+      expect(screen.getByText(/Need access to dataset for genetic research/)).toBeInTheDocument();
     });
   });
 
   test('should handle approve action correctly', async () => {
-    (fetchWithAuth as jest.Mock).mockImplementation((url, options) => {
-      if (options && options.method === 'POST') {
-        return Promise.resolve({ ok: true });
-      }
-      return Promise.resolve({
+    // Mock the initial fetch to get request details
+    (fetchWithAuth as jest.Mock).mockImplementationOnce(() => 
+      Promise.resolve({
         ok: true,
         json: () => Promise.resolve(mockRequestData)
-      });
-    });
+      })
+    );
+    
+    // Mock the POST request for the action
+    (fetchWithAuth as jest.Mock).mockImplementationOnce(() => 
+      Promise.resolve({ ok: true })
+    );
     
     render(<ApproveRequest requestId="REQ-123" />);
     
+    // Wait for component to load data
     await waitFor(() => {
-      expect(screen.getByText('Approve')).toBeInTheDocument();
+      expect(screen.getByText('Request Details')).toBeInTheDocument();
     });
     
-    fireEvent.click(screen.getByText('Approve'));
+    // Find and click the Approve button
+    const approveButton = screen.getByText('Approve');
+    fireEvent.click(approveButton);
     
     await waitFor(() => {
       expect(fetchWithAuth).toHaveBeenCalledWith(
-        `${BACKEND_URL}/requests/acceptreject/REQ-123/`,
+        `${BACKEND_URL}/requests/requestaction/REQ-123/`,
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ request_id: 'REQ-123', action: 'accept' })
@@ -117,27 +124,33 @@ describe('ApproveRequest Component', () => {
   });
 
   test('should handle reject action correctly', async () => {
-    (fetchWithAuth as jest.Mock).mockImplementation((url, options) => {
-      if (options && options.method === 'POST') {
-        return Promise.resolve({ ok: true });
-      }
-      return Promise.resolve({
+    // Mock the initial fetch to get request details
+    (fetchWithAuth as jest.Mock).mockImplementationOnce(() => 
+      Promise.resolve({
         ok: true,
         json: () => Promise.resolve(mockRequestData)
-      });
-    });
+      })
+    );
+    
+    // Mock the POST request for the action
+    (fetchWithAuth as jest.Mock).mockImplementationOnce(() => 
+      Promise.resolve({ ok: true })
+    );
     
     render(<ApproveRequest requestId="REQ-123" />);
     
+    // Wait for component to load data
     await waitFor(() => {
-      expect(screen.getByText('Reject')).toBeInTheDocument();
+      expect(screen.getByText('Request Details')).toBeInTheDocument();
     });
     
-    fireEvent.click(screen.getByText('Reject'));
+    // Find and click the Reject button
+    const rejectButton = screen.getByText('Reject');
+    fireEvent.click(rejectButton);
     
     await waitFor(() => {
       expect(fetchWithAuth).toHaveBeenCalledWith(
-        `${BACKEND_URL}/requests/acceptreject/REQ-123/`,
+        `${BACKEND_URL}/requests/requestaction/REQ-123/`,
         expect.objectContaining({
           method: 'POST',
           body: JSON.stringify({ request_id: 'REQ-123', action: 'reject' })
@@ -148,6 +161,7 @@ describe('ApproveRequest Component', () => {
   });
 
   test('should navigate back when back button is clicked', async () => {
+    // Mock the initial fetch to get request details
     (fetchWithAuth as jest.Mock).mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(mockRequestData)
@@ -155,11 +169,14 @@ describe('ApproveRequest Component', () => {
     
     render(<ApproveRequest requestId="REQ-123" />);
     
+    // Wait for component to load data
     await waitFor(() => {
-      expect(screen.getByText('Back')).toBeInTheDocument();
+      expect(screen.getByText('Request Details')).toBeInTheDocument();
     });
     
-    fireEvent.click(screen.getByText('Back'));
+    // Find and click the Back button
+    const backButton = screen.getByText('Back');
+    fireEvent.click(backButton);
     
     expect(mockPush).toHaveBeenCalledWith('/requests/pending');
   });
@@ -185,14 +202,17 @@ describe('ApproveRequest Component', () => {
     
     render(<ApproveRequest requestId="REQ-123" />);
     
+    // Wait for component to load data
     await waitFor(() => {
-      expect(screen.getByText('Approve')).toBeInTheDocument();
+      expect(screen.getByText('Request Details')).toBeInTheDocument();
     });
     
-    fireEvent.click(screen.getByText('Approve'));
+    // Find and click the Approve button
+    const approveButton = screen.getByText('Approve');
+    fireEvent.click(approveButton);
     
     await waitFor(() => {
-      expect(screen.getByText('Error: Action failed: 500 Server Error - Internal server error')).toBeInTheDocument();
+      expect(screen.getByText(/Error: Action failed: 500 Server Error - Internal server error/)).toBeInTheDocument();
     });
   });
 

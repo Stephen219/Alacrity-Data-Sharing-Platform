@@ -216,7 +216,7 @@ const handleRead = (id: string) => {
 
   if (loading) return <div className="container mx-auto px-4 py-8">Loading profile...</div>;
   if (error) return <div className="container mx-auto px-4 py-8">Error: {error}</div>;
-  if (!userData) return (
+  if (!userData || userData.role == "organization_admin" || userData.role == "contributor") return (
     <div className="container mx-auto px-4 py-8">
       <button
         onClick={() => window.history.back()}

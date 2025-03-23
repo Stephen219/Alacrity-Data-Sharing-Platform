@@ -171,25 +171,27 @@ class View_pending(APIView):
 def send_email(dataset_request):
     try:
         subject = 'Update On Your Dataset Request'
-        # Initialize message as an empty string
         message = ''
-        
+
         # Add content to the message based on request status
         if dataset_request.request_status == 'approved':
-            #Todo make sure the links works
-            message += (f'Your request for dataset "{dataset_request.dataset_id.title}" has been approved. You can now access the dataset at this link: {FRONTEND_URL}/analyze/{dataset_request.dataset_id.dataset_id}')
+            message += (
+                f'Your request for dataset "{dataset_request.dataset_id.title}" has been approved. '
+                f'You can now access the dataset at this link: {FRONTEND_URL}/analyze/{dataset_request.dataset_id.dataset_id}'
+            )
         elif dataset_request.request_status == 'denied':
-            message += (f'Unfortunately, your request for dataset "{dataset_request.dataset_id.title}" has been denied.')
-        
+            message += f'Unfortunately, your request for dataset "{dataset_request.dataset_id.title}" has been denied.'
+        elif dataset_request.request_status == 'revoked':
+            message += f'Your access to dataset "{dataset_request.dataset_id.title}" has been revoked.'
+
         # Get researcher email
         recipient_email = [dataset_request.researcher_id.email]
-        
-        # Check if recipient email exists
+
         if not recipient_email or recipient_email == [""]:
             print("Email not found")
-            return False  # Return False if no email found
-        
-        # Sending the email
+            return False
+
+        # Send the email
         send_mail(
             subject=subject,
             message=message,
@@ -197,15 +199,12 @@ def send_email(dataset_request):
             recipient_list=recipient_email,
             fail_silently=False,
         )
-        
-        # Print the recipient email for debugging
         print(f"Email sent to: {recipient_email}")
-        return True  # Return True when the email is sent successfully
-    
+        return True
+
     except Exception as e:
         print(f"Error sending email: {str(e)}")
-        return False  # Return False if there's an error
-
+        return False
 
 
 # this view is used to accept / reject a request when the admin is viewing all the requests
@@ -214,10 +213,9 @@ class request_actions(APIView):
     def get(self, request, id):
         try:
             print(f"Received request for ID: {id}")  # Debugging
-            # Fetch by request_id (not id) since request_id is the primary key
             dataset_request = get_object_or_404(
                 DatasetRequest, 
-                request_id=id,  # Changed from `id` to `request_id`
+                request_id=id,  
                 dataset_id__contributor_id__organization=request.user.organization
             )
             serializer = DatasetRequestSerializer(dataset_request)
@@ -227,6 +225,7 @@ class request_actions(APIView):
             return Response({'error': 'Request does not exist'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     def post(self, request, id):
         request_id = id
         action = request.data.get('action')
@@ -241,29 +240,22 @@ class request_actions(APIView):
 
         if action == 'accept':
             dataset_request.request_status = 'approved'
-            
-            # Print the dataset ID for debugging
             print(f"Dataset ID: {dataset_request.dataset_id.dataset_id}")
 
             try:
-                # Try to get the dataset
                 dataset = Dataset.objects.get(dataset_id=dataset_request.dataset_id.dataset_id)
-
-                # Count how many requests for this dataset have been approved
                 approved_count = DatasetRequest.objects.filter(
                     dataset_id=dataset_request.dataset_id.dataset_id,
                     request_status='approved'
                 ).count()
                 print(f"Approved count: {approved_count}")
 
-                # Update the dataset's view_count with the approved count
                 dataset.view_count = approved_count
                 dataset.save()
             except Dataset.DoesNotExist:
                 return Response({'error': 'Dataset does not exist'}, status=status.HTTP_404_NOT_FOUND)
 
-            # Send email notification
-            if send_email(dataset_request) == True:
+            if send_email(dataset_request):
                 print("Email sent")
             else:
                 print("Email not sent")
@@ -271,13 +263,12 @@ class request_actions(APIView):
             Notification.objects.create(
                 user=dataset_request.researcher_id,
                 message=f"Your dataset request for '{dataset_request.dataset_id.title}' has been approved."
-    )
+            )
 
         elif action == 'reject':
             dataset_request.request_status = 'denied'
-            
-            # Send email notification
-            if send_email(dataset_request) == True:
+
+            if send_email(dataset_request):
                 print("Email sent")
             else:
                 print("Email not sent")
@@ -285,12 +276,27 @@ class request_actions(APIView):
             Notification.objects.create(
                 user=dataset_request.researcher_id,
                 message=f"Your dataset request for '{dataset_request.dataset_id.title}' has been denied."
-    )
+            )
+
+        elif action == 'revoke':
+            dataset_request.request_status = 'revoked'
+
+            if send_email(dataset_request):
+                print("Email sent")
+            else:
+                print("Email not sent")
+
+            Notification.objects.create(
+                user=dataset_request.researcher_id,
+                message=f"Your access to the dataset '{dataset_request.dataset_id.title}' has been revoked."
+            )
+
         
         else:
             return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
 
         dataset_request.save()
+        
         return Response({'message': f'Request {action}ed successfully'}, status=status.HTTP_200_OK)
     
 
@@ -301,19 +307,51 @@ class UserDatasetRequestsView(APIView):
     
     """
     permission_classes = [IsAuthenticated]
-    @role_required(["researcher"])
+    @role_required(["researcher", 'contributor'])
     def get(self, request):
         user = request.user
-        all_requests = DatasetRequest.objects.filter(researcher_id=user).values(
-            'request_id',  
-            'dataset_id_id',  
-            'dataset_id__title', 
-            'researcher_id__profile_picture', 
-            'request_status',
-            'created_at',
-            'updated_at'
-        )
-        return JsonResponse(list(all_requests), safe=False)
+
+        all_requests = (
+            DatasetRequest.objects
+            .filter(researcher_id=user)
+            .select_related('dataset_id')
+            .values(
+                'request_id',  
+                'dataset_id_id',  
+                'dataset_id__title', 
+                'dataset_id__price',
+                'researcher_id__profile_picture', 
+                'request_status',
+                'created_at',
+                'updated_at'
+            )
+)
+
+        # has paid boolean for each row 
+        results = []
+        for row in all_requests:
+            dataset_id = row['dataset_id_id']
+            purchased = DatasetPurchase.objects.filter(
+                dataset_id=dataset_id, 
+                buyer_id=user.id
+            ).exists()
+            
+            # Converts price safely to float
+            price = float(row['dataset_id__price'] or 0.0)
+
+            results.append({
+                "request_id": row["request_id"],
+                "dataset_id_id": dataset_id,
+                "dataset_id__title": row["dataset_id__title"],
+                "researcher_id__profile_picture": row["researcher_id__profile_picture"],
+                "request_status": row["request_status"],
+                "created_at": row["created_at"],
+                "updated_at": row["updated_at"],
+                "dataset_id__price": price,
+                "has_paid": purchased,
+            })
+
+        return JsonResponse(results, safe=False)
     
 
 

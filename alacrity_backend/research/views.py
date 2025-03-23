@@ -447,10 +447,19 @@ class ToggleBookmarkView(APIView):
 
         if submission.bookmarked_by.filter(id=user.id).exists():
             submission.bookmarked_by.remove(user)
-            return Response({"message": "Bookmark removed", "bookmarked": False}, status=200)
+            bookmarked = False
         else:
             submission.bookmarked_by.add(user)
-            return Response({"message": "Bookmarked successfully", "bookmarked": True}, status=200)
+            bookmarked = True
+
+        # Count how many users have bookmarked it now
+        bookmark_count = submission.bookmarked_by.count()
+
+        # Return bookmark status + count
+        return Response({
+            "bookmarked": bookmarked,
+            "bookmark_count": bookmark_count
+        }, status=200)
 
 
 class UserBookmarksView(APIView):
