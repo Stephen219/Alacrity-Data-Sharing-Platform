@@ -30,7 +30,6 @@ urlpatterns = [
     path("requests/", include("dataset_requests.urls")),
     path('payments/', include('payments.urls')),
     path("notifications/", include("notifications.urls")),
-    path('dataset_requests/', include('dataset_requests.urls')),
 ]
 
 if settings.DEBUG:
