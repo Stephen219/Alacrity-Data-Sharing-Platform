@@ -1,4 +1,6 @@
 from django.urls import path
+from django.urls import include
+from rest_framework.routers import DefaultRouter
 from .views import ( ToggleBookmarkDatasetView, UserBookmarkedDatasetsView, descriptive_statistics, 
 filter_and_clean_dataset, 
 get_datasets, get_filter_options, CreateDatasetView, 
@@ -6,7 +8,11 @@ get_datasets, get_filter_options, CreateDatasetView,
  pre_analysis)
 
 from .new import analyze_dataset , dataset_detail, all_datasets_view, clear_dataset_cache, dataset_view, download_dataset
+from .chat_view import ChatViewSet, MessageViewSet
 
+router = DefaultRouter()
+router.register(r'chats', ChatViewSet)
+router.register(r'messages', MessageViewSet)
 urlpatterns = [
 
     path('create_dataset/', CreateDatasetView.as_view(), name='create_dataset'),
@@ -14,6 +20,7 @@ urlpatterns = [
     path('testget/',get_datasets, name='testget'),
     #####
     path('download/<str:dataset_id>/', download_dataset, name='download_dataset'),
+    path('chats/', include(router.urls)),
    
 
 

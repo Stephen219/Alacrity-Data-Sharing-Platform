@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { fetchWithAuth } from "@/libs/auth"
 import { BACKEND_URL } from "@/config"
 import { Send, ArrowLeft } from "lucide-react"
@@ -25,6 +25,19 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState("")
   const [loading, setLoading] = useState(true)
+  const [socketStatus, setSocketStatus] = useState<string>("Connecting...")
+  
+  // Create a ref to hold the WebSocket connection
+  const socketRef = useRef<WebSocket | null>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   useEffect(() => {
     const fetchDatasetAndMessages = async () => {
@@ -36,8 +49,7 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
         setDataset(datasetData)
 
         // Fetch existing messages if any
-        // This endpoint would need to be implemented in your backend
-        const messagesResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/${params.dataset_id}/messages/`)
+        const messagesResponse = await fetchWithAuth(`${BACKEND_URL}datasets/chats/${params.dataset_id}/messages/`) 
         if (messagesResponse.ok) {
           const messagesData = await messagesResponse.json()
           setMessages(messagesData)
@@ -51,68 +63,120 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
     }
 
     fetchDatasetAndMessages()
-  }, [params.dataset_id])
+
+    // Create WebSocket connection
+    const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const wsHost = window.location.host;
+    const wsUrl = `${wsScheme}://${wsHost}/ws/chats/${params.dataset_id}/`;
+    
+    console.log("Attempting to connect to WebSocket at:", wsUrl);
+
+    const connectWebSocket = () => {
+      // Close existing connection if any
+      if (socketRef.current) {
+        socketRef.current.close();
+      }
+      
+      // Create new connection
+      socketRef.current = new WebSocket(wsUrl);
+      
+      socketRef.current.onopen = () => {
+        console.log('WebSocket connection established');
+        setSocketStatus("Connected");
+      };
+      
+      socketRef.current.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log("WebSocket message received:", data);
+          
+          if (data.message) {
+            setMessages(prev => [...prev, data.message]);
+          } else if (data.error) {
+            console.error("WebSocket error message:", data.error);
+          } else if (data.type === 'connection_established') {
+            console.log("Connection confirmation:", data.message);
+          }
+        } catch (error) {
+          console.error("Error parsing WebSocket message:", error);
+        }
+      };
+      
+      socketRef.current.onerror = (error) => {
+        console.error("WebSocket error:", error);
+        setSocketStatus("Error");
+      };
+      
+      socketRef.current.onclose = (event) => {
+        console.log("WebSocket closed. Code:", event.code, "Reason:", event.reason);
+        setSocketStatus("Disconnected");
+        
+        // Attempt to reconnect with delay
+        setTimeout(() => {
+          console.log("Attempting to reconnect...");
+          setSocketStatus("Reconnecting...");
+          connectWebSocket();
+        }, 3000);
+      };
+    };
+    
+    connectWebSocket();
+    
+    // Cleanup function
+    return () => {
+      console.log("Cleaning up WebSocket connection");
+      if (socketRef.current) {
+        // Use a normal close code (1000)
+        socketRef.current.close(1000, "Component unmounting");
+      }
+    };
+  }, [params.dataset_id]);
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !dataset) return
+    if (!newMessage.trim() || !dataset) return;
     
-    // Create a temporary ID and timestamp for immediate UI update
-    const tempId = Date.now().toString()
-    const timestamp = new Date()
-    
-    // Optimistically add message to UI
-    const userMessage: Message = {
-      id: tempId,
-      sender: 'user',
-      content: newMessage,
-      timestamp
+    // Add validation to check if socket exists
+    if (!socketRef.current) {
+      console.error("WebSocket is not initialized.");
+      setSocketStatus("Not connected");
+      return;
     }
     
-    setMessages(prev => [...prev, userMessage])
-    setNewMessage("")
-    
-    try {
-      // Send to backend
-      const response = await fetchWithAuth(`${BACKEND_URL}/datasets/${params.dataset_id}/messages/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content: newMessage
-        }),
-      })
+    // Check if WebSocket is open before sending the message
+    if (socketRef.current.readyState === WebSocket.OPEN) {
+      const timestamp = new Date();
+      const messageData = {
+        content: newMessage,
+        sender: 'user',
+        timestamp: timestamp.toISOString(),
+      };
       
-      if (!response.ok) throw new Error("Failed to send message")
+      console.log("Sending message:", messageData);
+      socketRef.current.send(JSON.stringify(messageData));
       
-      // Optionally update with the real message ID from the server
-      const savedMessage = await response.json()
+      // Optimistically add message to UI
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        sender: 'user',
+        content: newMessage,
+        timestamp,
+      };
       
-      // If it's the first message, add a welcome message from admin
-      if (messages.length === 0) {
-        setTimeout(() => {
-          setMessages(prev => [...prev, {
-            id: 'welcome',
-            sender: 'admin',
-            content: `Thank you for reaching out about "${dataset.title}". How can we help you today?`,
-            timestamp: new Date()
-          }])
-        }, 1000)
-      }
-    } catch (error) {
-      console.error("Error sending message:", error)
-      // Remove the message if sending failed
-      setMessages(prev => prev.filter(msg => msg.id !== tempId))
-      alert("Failed to send message. Please try again.")
+      setMessages(prev => [...prev, userMessage]);
+      setNewMessage("");
+    } else {
+      console.error("WebSocket is not open. Current state:", socketRef.current.readyState);
+      setSocketStatus(`Not connected (State: ${socketRef.current.readyState})`);
+      alert("Connection lost. Please wait while we reconnect...");
     }
-  }
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      sendMessage()
+      e.preventDefault();
+      sendMessage();
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -132,13 +196,22 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
         >
           <ArrowLeft size={24} />
         </button>
-        <div>
+        <div className="flex-1">
           <h1 className="font-semibold text-xl">
             {dataset?.title}
           </h1>
           <p className="text-sm text-gray-500">
             Issue support for {dataset?.organization}
           </p>
+        </div>
+        <div className={`text-xs px-2 py-1 rounded ${
+          socketStatus === "Connected" 
+            ? "bg-green-100 text-green-700" 
+            : socketStatus === "Reconnecting..." 
+              ? "bg-yellow-100 text-yellow-700"
+              : "bg-red-100 text-red-700"
+        }`}>
+          {socketStatus}
         </div>
       </div>
 
@@ -171,11 +244,12 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
                 <div className={`text-xs mt-1 ${
                   message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
                 }`}>
-                  {message.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  {new Date(message.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                 </div>
               </div>
             </div>
           ))}
+          <div ref={messagesEndRef} /> {/* Anchor for auto-scrolling */}
         </div>
       </div>
 
@@ -192,9 +266,9 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
           />
           <button
             onClick={sendMessage}
-            disabled={!newMessage.trim()}
+            disabled={!newMessage.trim() || socketRef.current?.readyState !== WebSocket.OPEN}
             className={`bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-r-md h-full flex items-center justify-center ${
-              !newMessage.trim() ? 'opacity-50 cursor-not-allowed' : ''
+              !newMessage.trim() || socketRef.current?.readyState !== WebSocket.OPEN ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
             <Send size={20} />
