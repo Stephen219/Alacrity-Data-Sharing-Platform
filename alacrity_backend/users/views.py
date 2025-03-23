@@ -40,8 +40,19 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth import get_user_model
 User = get_user_model()
+from alacrity_backend.settings import MINIO_URL, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, MINIO_BUCKET_NAME
+from minio import Minio, S3Error
+
+from rest_framework import status
 
 
+
+minioClient = Minio(
+    MINIO_URL,
+    access_key=MINIO_ACCESS_KEY,
+    secret_key=MINIO_SECRET_KEY,
+    secure=False
+)
 class ForgotPasswordView(APIView):
     """
     If user exists, generate a token and email them the reset password link.
@@ -427,7 +438,7 @@ class UserView(APIView):
             "username": user.username,
             "firstname": user.first_name,
             "lastname": user.sur_name,
-            "profile_picture": user.profile_picture.url if user.profile_picture else None,
+            "profile_picture": user.profile_picture if user.profile_picture else None,
             "date_joined": user.date_joined.isoformat(),
             "bio": user.bio,
             "phone_number": user.phone_number,
@@ -464,7 +475,8 @@ class UserView(APIView):
         user.bio = data.get('bio', user.bio)
         user.phone_number = data.get('phone_number', user.phone_number)
         user.field = data.get('field', user.field)
-        user.organization = data.get('organization', user.organization)  # Assuming this is a string or FK reference
+        user.organization = data.get('organization', user.organization)  
+       
         user.save()
 
         # Return updated profile
@@ -473,7 +485,7 @@ class UserView(APIView):
             "username": user.username,
             "first_name": user.first_name,
             "sur_name": user.sur_name,
-            "profile_picture": user.profile_picture.url if user.profile_picture else None,
+            "profile_picture": user.profile_picture if user.profile_picture else None,
             "date_joined": user.date_joined.isoformat(),
             "bio": user.bio,
             "phone_number": user.phone_number,
@@ -484,9 +496,51 @@ class UserView(APIView):
             "date_of_birth": user.date_of_birth.isoformat() if user.date_of_birth else None,
             "researches": list(AnalysisSubmission.objects.filter(researcher=user)
                               .values('id', 'title', 'description', 'status', 'submitted_at')),
-            "bookmarked_researches": [],  # Placeholder
+            "bookmarked_researches": [],  
         }
         return Response(response_data, status=status.HTTP_200_OK)
+    
+
+
+
+
+
+class ProfilePictureUpdateView(APIView):
+    def post(self, request):
+        if not request.user.is_authenticated:
+            return Response({"detail": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        user = request.user
+        profile_picture = request.FILES.get('profile_picture')
+
+        if not profile_picture:
+            return Response({"detail": "No profile picture provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not profile_picture.content_type.startswith('image/'):
+            return Response({"detail": "Only image files are allowed"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            file_extension = profile_picture.name.split('.')[-1] if '.' in profile_picture.name else 'png'
+            object_name = f"profile_pictures/{user.id}/profile_picture.{file_extension}"
+
+            minioClient.put_object(
+                settings.MINIO_BUCKET_NAME,
+                object_name,
+                profile_picture.file,
+                length=profile_picture.size,
+                content_type=profile_picture.content_type
+            )
+
+            # Store and return the raw MinIO URL (now public)
+            user.profile_picture = f"http://{MINIO_URL}/{MINIO_BUCKET_NAME}/{object_name}"
+            user.save()
+
+            return Response({"profile_picture": user.profile_picture}, status=status.HTTP_200_OK)
+
+        except S3Error as e:
+            return Response({"error": f"MinIO error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            return Response({"error": f"Error uploading profile picture: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 
 
@@ -812,6 +866,9 @@ class DatasetWithAccessView(APIView):
         response = accessible_datasets_view.get(request)
 
         return JsonResponse(response.data, safe=False)
+    
+
+
     
 
 

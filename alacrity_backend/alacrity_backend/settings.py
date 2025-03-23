@@ -14,11 +14,14 @@ from pathlib import Path
 from alacrity_backend.config import FRONTEND_URL, BACKEND_URL
 import os
 import sys
+from minio import Minio
+
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv()
+
 
 
 
@@ -172,10 +175,18 @@ CORS_ALLOW_CREDENTIALS = True
 ################################  file stosssrage config  ##############################################################
 
 # MINIO_URL = "http://localhost:9000" 
-MINIO_URL = "http://10.72.98.137:9000"
+MINIO_URL = "10.72.98.137:9000"
 MINIO_ACCESS_KEY = "admin"
 MINIO_SECRET_KEY = "Notgood1"
 MINIO_BUCKET_NAME = "alacrity"
+
+# MINIO CLIENT
+minioClient = Minio(
+    MINIO_URL,
+    access_key=MINIO_ACCESS_KEY,
+    secret_key=MINIO_SECRET_KEY,
+    secure=False
+)
 
 
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
