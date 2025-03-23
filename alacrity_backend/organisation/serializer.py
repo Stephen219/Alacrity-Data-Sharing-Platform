@@ -3,7 +3,7 @@ from rest_framework import serializers
 from organisation.models import Organization
 
 
-from users.serializers import RegisterSerializer
+from users.serializers import UserSerializer
 from django.db import transaction
 
 class OrganizationSerializer(serializers.ModelSerializer):
@@ -27,7 +27,7 @@ class OrganizationRegisterSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     phone = serializers.CharField(max_length=15, required=True)
     address = serializers.CharField(max_length=255, required=True)
-    admin = RegisterSerializer()
+    admin = UserSerializer()
 
     def validate(self, attrs):
         admin_data = attrs.get('admin', {})
@@ -51,7 +51,7 @@ class OrganizationRegisterSerializer(serializers.Serializer):
             
             admin_data['organization'] = organization.Organization_id
           
-            admin_serializer = RegisterSerializer(data=admin_data)
+            admin_serializer = UserSerializer(data=admin_data)
             if not admin_serializer.is_valid():
                 print(f"RegisterSerializer errors: {admin_serializer.errors}")
                 raise serializers.ValidationError(admin_serializer.errors)
@@ -63,5 +63,5 @@ class OrganizationRegisterSerializer(serializers.Serializer):
         ret = OrganizationSerializer(instance).data
         admin = instance.user_set.filter(role='organization_admin').first()
         if admin:
-            ret['admin'] = RegisterSerializer(admin).data
+            ret['admin'] = UserSerializer(admin).data
         return ret

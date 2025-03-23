@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from users.models import User, ActivationToken  
-from users.serializers import RegisterSerializer
+from users.serializers import UserSerializer
 from django.contrib.auth.hashers import make_password
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.core.exceptions import ValidationError
@@ -104,18 +104,16 @@ class AddContributors(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         try:
-            serializer = RegisterSerializer(data=data)
+            serializer = UserSerializer(data=data)
         except ValidationError as e:
             import traceback
             traceback.print_exc()
             print (e)
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        print (serializer
-        )
       
         print (serializer.is_valid())
         print (serializer.errors)
-        serializer = RegisterSerializer(data=data)
+        serializer = UserSerializer(data=data)
         if serializer.is_valid():
             try:
                 with transaction.atomic():

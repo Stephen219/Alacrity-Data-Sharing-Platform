@@ -2,6 +2,12 @@
 // to avoid types being in the camponents  define them here
 
 type User = {
+  followers_count: number;
+  following_count: number;
+  social_links: never[];
+  followers_count: number;
+  following_count: number;
+  social_links: never[];
   date_joined: string;
   profile_picture: string;
   date_of_birth: string;

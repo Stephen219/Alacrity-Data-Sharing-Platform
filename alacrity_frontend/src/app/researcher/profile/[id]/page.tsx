@@ -1,65 +1,76 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 
+"use client"
 
+import type React from "react"
 
-"use client";
-
-import { useRouter } from "next/navigation";
-import { useState, useEffect, ChangeEvent, MouseEvent, TouchEvent } from "react";
-import { useParams } from "next/navigation";
-import { fetchUserData, fetchWithAuth } from "@/libs/auth";
-import { BACKEND_URL } from "@/config";
-import { withAccessControl } from "@/components/auth_guard/AccessControl";
-import parse from "html-react-parser";
+import { useRouter } from "next/navigation"
+import { useState, useEffect, type ChangeEvent, type MouseEvent, type TouchEvent } from "react"
+import { useParams } from "next/navigation"
+import { fetchUserData, fetchWithAuth } from "@/libs/auth"
+import { BACKEND_URL } from "@/config"
+import { withAccessControl } from "@/components/auth_guard/AccessControl"
+import parse from "html-react-parser"
+import { Linkedin, Twitter, Facebook } from "lucide-react"
 
 type Profile = {
-  id: string;
-  email?: string | null;
-  username: string;
-  firstname: string;
-  lastname: string;
-  profile_picture: string | null;
-  date_joined: string;
-  bio: string | null;
-  phonenumber?: string | null;
-  role: string;
-  organization: string | null;
-  field: string | null;
-  researches: AnalysisSubmission[];
-  bookmarked_researches?: BookmarkedResearch[];
-};
+  id: string
+  email?: string | null
+  username: string
+  firstname: string
+  lastname: string
+  profile_picture: string | null
+  date_joined: string
+  bio: string | null
+  phonenumber?: string | null
+  role: string
+  organization: string | null
+  field: string | null
+  researches: AnalysisSubmission[]
+  bookmarked_researches?: BookmarkedResearch[]
+  followers_count: number
+  following_count: number
+  social_links: string[]
+  is_followed?: boolean 
+}
 
 type AnalysisSubmission = {
-  id: string;
-  title: string;
-  description: string;
-  status: string;
-  submitted_at: string;
-  is_private: boolean;
-};
+  id: string
+  title: string
+  description: string
+  status: string
+  submitted_at: string
+  is_private: boolean
+}
 
 type BookmarkedResearch = {
-  id: string;
-  title: string;
-  description: string;
-  publisher?: string;
-  date?: string;
-};
+  id: string
+  title: string
+  description: string
+  publisher?: string
+  date?: string
+}
+
+type SocialLinkError = {
+  message: string
+  index?: number
+}
 
 const fetchProfileData = async (profileId: string): Promise<Profile | null> => {
   try {
     const response = await fetchWithAuth(`${BACKEND_URL}/users/profile/${profileId}/`, {
       method: "GET",
-    });
+    })
     if (!response.ok) {
-      throw new Error(`Failed to fetch profile data: ${response.status} ${response.statusText}`);
+      throw new Error(`Failed to fetch profile data: ${response.status} ${response.statusText}`)
     }
-    return await response.json();
+    return await response.json()
   } catch (error) {
-    console.error("Error fetching profile data:", error);
-    return null;
+    console.error("Error fetching profile data:", error)
+    return null
   }
-};
+}
 
 const updateProfile = async (userId: string, updatedData: Partial<Profile>) => {
   try {
@@ -67,191 +78,334 @@ const updateProfile = async (userId: string, updatedData: Partial<Profile>) => {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updatedData),
-    });
+    })
     if (!response.ok) {
-      throw new Error(`Failed to update profile: ${response.status} ${response.statusText}`);
+      throw new Error(`Failed to update profile: ${response.status} ${response.statusText}`)
     }
-    return await response.json();
+    return await response.json()
   } catch (error) {
-    console.error("Error updating profile:", error);
-    throw error;
+    console.error("Error updating profile:", error)
+    throw error
   }
-};
+}
 
 const updateProfilePicture = async (userId: string, file: File) => {
   try {
-    const formData = new FormData();
-    formData.append("profile_picture", file);
+    const formData = new FormData()
+    formData.append("profile_picture", file)
 
-    const response = await fetchWithAuth(`${BACKEND_URL}/users/profile_pic_update/`, {
+    const response = await fetchWithAuth(`${BACKEND_URL}/user/profilepicupdate`, {
       method: "POST",
       body: formData,
-    });
+    })
 
     if (!response.ok) {
-      throw new Error(`Failed to update profile picture: ${response.status} ${response.statusText}`);
+      throw new Error(`Failed to update profile picture: ${response.status} ${response.statusText}`)
     }
-    return await response.json();
+    return await response.json()
   } catch (error) {
-    console.error("Error updating profile picture:", error);
-    throw error;
+    console.error("Error updating profile picture:", error)
+    throw error
   }
-};
+}
+
+
+const toggleFollowUser = async (userId: string, isFollowing: boolean): Promise<boolean> => {
+  try {
+    const endpoint = isFollowing ? "unfollow" : "follow"
+    const response = await fetchWithAuth(`${BACKEND_URL}/users/${endpoint}/${userId}/`, {
+      method: "POST",
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to ${endpoint} user: ${response.status} ${response.statusText}`)
+    }
+    return true
+  } catch (error) {
+    console.error(`Error ${isFollowing ? "unfollowing" : "following"} user:`, error)
+    return false
+  }
+}
 
 function ResearcherProfilePage() {
-  const params = useParams();
-  const router = useRouter();
-  const [isEditing, setIsEditing] = useState(false);
-  const [userData, setUserData] = useState<Profile | null>(null);
-  const [currentUser, setCurrentUser] = useState<Profile | null>(null);
-  const [activeTab, setActiveTab] = useState<"research" | "bookmarks">("research");
-  const [loading, setLoading] = useState(true);
-  const [profilePicLoading, setProfilePicLoading] = useState(false); 
-  const [error, setError] = useState<string | null>(null);
+  const params = useParams()
+  const router = useRouter()
+  const [isEditing, setIsEditing] = useState(false)
+  const [userData, setUserData] = useState<Profile | null>(null)
+  const [currentUser, setCurrentUser] = useState<Profile | null>(null)
+  const [activeTab, setActiveTab] = useState<"research" | "bookmarks">("research")
+  const [loading, setLoading] = useState(true)
+  const [profilePicLoading, setProfilePicLoading] = useState(false)
+  const [notfound, setNotFound] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     firstname: "",
     lastname: "",
     bio: "",
     email: "",
     phonenumber: "",
-    organization: "",
+    username: "",
     field: "",
-  });
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState<number | null>(null);
+    social_links: [] as string[],
+  })
+  const [previewImage, setPreviewImage] = useState<string | null>(null)
+  const [zoomLevel, setZoomLevel] = useState(1)
+  const [isDragging, setIsDragging] = useState(false)
+  const [startX, setStartX] = useState<number | null>(null)
+  const [newSocialLink, setNewSocialLink] = useState("")
+  const [socialLinkError, setSocialLinkError] = useState<SocialLinkError | null>(null)
+  const [followLoading, setFollowLoading] = useState(false)
 
-  const isOwner = currentUser?.id.toString() === (params.id as string);
+  const isOwner = currentUser?.id.toString() === (params.id as string)
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const loggedInUser = await fetchUserData();
+        const loggedInUser = await fetchUserData()
         if (!loggedInUser) {
-          setError("Failed to fetch current user data");
-          return;
+          setError("Failed to fetch current user data")
+          return
         }
         setCurrentUser({
           ...loggedInUser,
           id: loggedInUser.id as string,
           researches: [],
           bookmarked_researches: [],
-        });
+          followers_count: loggedInUser.followers_count || 0,
+          following_count: loggedInUser.following_count || 0,
+          social_links: loggedInUser.social_links || [],
+        })
 
-        const profileData = await fetchProfileData(params.id as string);
+        const profileData = await fetchProfileData(params.id as string)
         if (profileData) {
-          setUserData(profileData);
+          setUserData(profileData)
           setFormData({
             firstname: profileData.firstname || "",
             lastname: profileData.lastname || "",
             bio: profileData.bio || "",
             email: profileData.email || "",
             phonenumber: profileData.phonenumber || "",
-            organization: profileData.organization || "",
+            username: profileData.username || "",
             field: profileData.field || "",
-          });
+            social_links: profileData.social_links || [],
+          })
         } else {
-          setError("Failed to load profile");
+          setNotFound(true)
         }
       } catch (err) {
-        console.error("Load data error:", err);
-        setError("An error occurred while loading data");
+        console.error("Load data error:", err)
+        setError("An error occurred while loading data")
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
-    loadData();
-  }, [params.id]);
+    }
+    loadData()
+  }, [params.id])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
 
   const handleSave = async () => {
-    if (!userData?.id || !isOwner) return;
+    if (!userData?.id || !isOwner) return
+    setLoading(true)
     try {
-      const updatedProfile = await updateProfile(userData.id, formData);
-      setUserData((prev) => (prev ? { ...prev, ...updatedProfile } : prev));
-      setIsEditing(false);
+      const updatedProfile = await updateProfile(userData.id, formData)
+      setUserData((prev) => (prev ? { ...prev, ...updatedProfile } : prev))
+      setIsEditing(false)
     } catch (err) {
-      setError("Failed to save profile changes");
+      setError("Failed to save profile changes")
+    } finally {
+      setLoading(false)
     }
-  };
+  }
 
   const handleProfilePicChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (!isOwner || !userData?.id || !e.target.files || e.target.files.length === 0) return;
-    const file = e.target.files[0];
-    const previewUrl = URL.createObjectURL(file);
-    setPreviewImage(previewUrl);
-    setZoomLevel(1); 
-  };
+    if (!isOwner || !userData?.id || !e.target.files || e.target.files.length === 0) return
+    const file = e.target.files[0]
+    const previewUrl = URL.createObjectURL(file)
+    setPreviewImage(previewUrl)
+    setZoomLevel(1)
+  }
 
   const handleUpload = async () => {
-    if (!userData?.id || !previewImage) return;
-    const fileInput = document.querySelector<HTMLInputElement>("input[type='file']");
-    if (!fileInput?.files?.[0]) return;
+    if (!userData?.id || !previewImage) return
+    const fileInput = document.querySelector<HTMLInputElement>("input[type='file']")
+    if (!fileInput?.files?.[0]) return
 
-    setProfilePicLoading(true); // Start loading
+    setProfilePicLoading(true)
     try {
-      const updatedProfile = await updateProfilePicture(userData.id, fileInput.files[0]);
-      const newUrl = `${updatedProfile.profile_picture}?t=${Date.now()}`; // Cache-busting
-      setUserData((prev) => (prev ? { ...prev, profile_picture: newUrl } : prev));
-      setPreviewImage(null); // Close the preview modal
+      const updatedProfile = await updateProfilePicture(userData.id, fileInput.files[0])
+      const newUrl = `${updatedProfile.profile_picture}?t=${Date.now()}`
+      setUserData((prev) => (prev ? { ...prev, profile_picture: newUrl } : prev))
+      setPreviewImage(null)
     } catch (err) {
-      setError("Failed to update profile picture");
+      setError("Failed to update profile picture")
     } finally {
-      setProfilePicLoading(false); // Stop loading
+      setProfilePicLoading(false)
     }
-  };
+  }
 
   const handleZoomButton = (direction: "in" | "out") => {
     setZoomLevel((prev) => {
-      if (direction === "in") return Math.min(prev + 0.2, 3); // Max zoom 3x
-      return Math.max(prev - 0.2, 1); // Min zoom 1x
-    });
-  };
+      if (direction === "in") return Math.min(prev + 0.2, 3)
+      return Math.max(prev - 0.2, 1)
+    })
+  }
 
   const handleDragStart = (e: MouseEvent<HTMLDivElement> | TouchEvent<HTMLDivElement>) => {
-    setIsDragging(true);
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    setStartX(clientX);
-  };
+    setIsDragging(true)
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX
+    setStartX(clientX)
+  }
 
   const handleDragMove = (e: MouseEvent<HTMLDivElement> | TouchEvent<HTMLDivElement>) => {
-    if (!isDragging || startX === null) return;
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const deltaX = clientX - startX;
-    const zoomChange = deltaX * 0.005;
-    setZoomLevel((prev) => Math.max(1, Math.min(3, prev + zoomChange)));
-    setStartX(clientX);
-  };
+    if (!isDragging || startX === null) return
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX
+    const deltaX = clientX - startX
+    const zoomChange = deltaX * 0.005
+    setZoomLevel((prev) => Math.max(1, Math.min(3, prev + zoomChange)))
+    setStartX(clientX)
+  }
 
   const handleDragEnd = () => {
-    setIsDragging(false);
-    setStartX(null);
-  };
+    setIsDragging(false)
+    setStartX(null)
+  }
 
   const handleRead = (id: string) => {
-    router.push(`/researcher/Submissions/view/${id}`);
-  };
+    router.push(`/researcher/Submissions/view/${id}`)
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
-    });
-  };
+    })
+  }
 
-  const truncateDescription = (text: string, maxLength: number = 100) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + "...";
-  };
+  const truncateDescription = (text: string, maxLength = 100) => {
+    if (text.length <= maxLength) return text
+    return text.substring(0, maxLength) + "..."
+  }
 
-  if (loading) return <div className="container mx-auto px-4 py-8">Loading profile...</div>;
-  if (error) return <div className="container mx-auto px-4 py-8">Error: {error}</div>;
+  // Improved: Validate and add social link with better error handling
+  const addSocialLink = () => {
+    // Reset previous error
+    setSocialLinkError(null)
+
+    // Basic URL validation
+    if (!newSocialLink) {
+      setSocialLinkError({ message: "Please enter a social link" })
+      return
+    }
+
+    // Check if it's a valid URL
+    try {
+      new URL(newSocialLink)
+    } catch (e) {
+      setSocialLinkError({ message: "Please enter a valid URL" })
+      return
+    }
+
+    // Check for supported platforms
+    const validDomains = ["linkedin.com", "twitter.com", "x.com", "facebook.com"]
+    const isValid = validDomains.some((domain) => newSocialLink.includes(domain))
+
+    if (!isValid) {
+      setSocialLinkError({
+        message: "Only LinkedIn, Twitter/X, or Facebook URLs are supported",
+      })
+      return
+    }
+
+    if (!newSocialLink.startsWith("https://")) {
+      setSocialLinkError({
+        message: "URL must start with https://",
+      })
+      return
+    }
+
+    // Add the link if it passes validation
+    setFormData((prev) => ({
+      ...prev,
+      social_links: [...prev.social_links, newSocialLink],
+    }))
+    setNewSocialLink("")
+  }
+
+  // Remove social link
+  const removeSocialLink = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      social_links: prev.social_links.filter((_, i) => i !== index),
+    }))
+  }
+
+  // Get social icon based on link
+  const getSocialIcon = (link: string) => {
+    if (link.includes("linkedin.com")) {
+      return <Linkedin className="h-5 w-5 text-[#0077B5]" />
+    } else if (link.includes("twitter.com") || link.includes("x.com")) {
+      return <Twitter className="h-5 w-5 text-[#1DA1F2]" />
+    } else if (link.includes("facebook.com")) {
+      return <Facebook className="h-5 w-5 text-[#1877F2]" />
+    }
+    return null
+  }
+
+  // New: Handle follow/unfollow
+  const handleFollowToggle = async () => {
+    if (!userData || !currentUser || isOwner) return
+
+    setFollowLoading(true)
+    try {
+      const isCurrentlyFollowing = userData.is_followed || false
+      const success = await toggleFollowUser(userData.id, isCurrentlyFollowing)
+
+      if (success) {
+        // Update local state to reflect the change
+        setUserData((prev) => {
+          if (!prev) return null
+
+          return {
+            ...prev,
+            is_followed: !isCurrentlyFollowing,
+            followers_count: isCurrentlyFollowing ? prev.followers_count - 1 : prev.followers_count + 1,
+          }
+        })
+      }
+    } catch (err) {
+      setError(`Failed to ${userData.is_followed ? "unfollow" : "follow"} user`)
+    } finally {
+      setFollowLoading(false)
+    }
+  }
+
+  if (loading) return <div className="container mx-auto px-4 py-8">Loading profile...</div>
+  if (error)
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center py-8">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="80"
+            height="80"
+            viewBox="0 0 24 24"
+            fill="none"
+            className="mb-4 text-[#f97316]"
+          >
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" opacity="0.2" />
+            <path d="M12 7v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <circle cx="12" cy="16" r="1" fill="currentColor" />
+          </svg>
+          <div className="text-xl font-medium">An error occurred</div>
+          <p className="text-gray-500 mt-2 text-center">{error}</p>
+        </div>
+      </div>
+    )
   if (!userData || userData.role === "organization_admin" || userData.role === "contributor") {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -291,11 +445,11 @@ function ResearcherProfilePage() {
           </svg>
           <div className="text-xl font-medium">Profile not found</div>
           <p className="text-gray-500 mt-2 text-center">
-            The profile you're looking for doesn't exist or has been removed.
+            The profile you&apos;re looking for doesn&apos;t exist or has been removed.
           </p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -318,25 +472,14 @@ function ResearcherProfilePage() {
                         fill="none"
                         viewBox="0 0 24 24"
                       >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z"
-                        />
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z" />
                       </svg>
                     </div>
                   ) : userData.profile_picture ? (
                     <div className="h-32 w-32 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 border-4 border-white shadow-md relative">
                       <img
-                        src={userData.profile_picture}
+                        src={userData.profile_picture || "/placeholder.svg"}
                         alt={`${userData.firstname} ${userData.lastname}`}
                         className="h-full w-full object-cover"
                       />
@@ -355,12 +498,7 @@ function ResearcherProfilePage() {
                             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                             <circle cx="12" cy="13" r="4" />
                           </svg>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleProfilePicChange}
-                          />
+                          <input type="file" accept="image/*" className="hidden" onChange={handleProfilePicChange} />
                         </label>
                       )}
                     </div>
@@ -382,52 +520,144 @@ function ResearcherProfilePage() {
                             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                             <circle cx="12" cy="13" r="4" />
                           </svg>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleProfilePicChange}
-                          />
+                          <input type="file" accept="image/*" className="hidden" onChange={handleProfilePicChange} />
                         </label>
                       )}
                     </div>
                   )}
                 </div>
-                {isOwner && !isEditing ? (
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="px-4 py-2 border border-gray-300 rounded-md flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-500 transition-colors"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-                    </svg>
-                    Edit Profile
-                  </button>
-                ) : isOwner && isEditing ? (
-                  <div className="flex gap-2">
+                <div className="flex gap-2 mb-2">
+                  {isOwner && !isEditing ? (
                     <button
-                      onClick={() => setIsEditing(false)}
-                      className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                      onClick={() => setIsEditing(true)}
+                      className="px-4 py-2 border border-gray-300 rounded-md flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-500 transition-colors"
                     >
-                      Cancel
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                      </svg>
+                      Edit Profile
                     </button>
-                    <button
-                      onClick={handleSave}
-                      className="px-4 py-2 bg-[#F47521] text-white rounded-md hover:bg-[#E06010] transition-colors"
-                    >
-                      Save
-                    </button>
-                  </div>
-                ) : null}
+                  ) : isOwner && isEditing ? (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setIsEditing(false)}
+                        className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSave}
+                        className="px-4 py-2 bg-[#F47521] text-white rounded-md hover:bg-[#E06010] transition-colors flex items-center gap-2"
+                        disabled={loading}
+                      >
+                        {loading ? (
+                          <>
+                            <svg
+                              className="animate-spin h-5 w-5 text-white"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              />
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z"
+                              />
+                            </svg>
+                            Saving...
+                          </>
+                        ) : (
+                          "Save"
+                        )}
+                      </button>
+                    </div>
+                  ) : (
+                    // New: Follow button for non-owners
+                    !isOwner &&
+                    currentUser && (
+                      <button
+                        onClick={handleFollowToggle}
+                        disabled={followLoading}
+                        className={`px-4 py-2 rounded-md flex items-center gap-2 transition-colors ${
+                          userData.is_followed
+                            ? "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                            : "bg-[#F47521] text-white hover:bg-[#E06010]"
+                        }`}
+                      >
+                        {followLoading ? (
+                          <svg
+                            className="animate-spin h-5 w-5"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z" />
+                          </svg>
+                        ) : userData.is_followed ? (
+                          <>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M20 6L9 17l-5-5" />
+                            </svg>
+                            Following
+                          </>
+                        ) : (
+                          <>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                              <circle cx="8.5" cy="7" r="4" />
+                              <line x1="20" y1="8" x2="20" y2="14" />
+                              <line x1="23" y1="11" x2="17" y2="11" />
+                            </svg>
+                            Follow
+                          </>
+                        )}
+                      </button>
+                    )
+                  )}
+                </div>
               </div>
 
               {!isEditing ? (
@@ -438,13 +668,22 @@ function ResearcherProfilePage() {
                     </h2>
                     <p className="text-gray-500 dark:text-gray-200">@{userData.username}</p>
                   </div>
+                  {/* Followers and Following */}
+                  <div className="flex justify-center gap-6 mt-2">
+                    <div className="text-center">
+                      <span className="font-semibold">{userData.followers_count || 0}</span>
+                      <p className="text-gray-500 text-sm">Followers</p>
+                    </div>
+                    <div className="text-center">
+                      <span className="font-semibold">{userData.following_count || 0}</span>
+                      <p className="text-gray-500 text-sm">Following</p>
+                    </div>
+                  </div>
                   <div className="flex justify-center flex-wrap gap-2">
                     <span className="px-3 py-1 bg-[#F4752115] text-[#F47521] text-sm rounded-full">
                       {userData.role}
                     </span>
-                    <span className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full">
-                      {userData.field}
-                    </span>
+                    <span className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full">{userData.field}</span>
                   </div>
                   <div className="border-t border-b border-gray-100 py-4">
                     <p className="text-sm text-center">{userData.bio || "No bio available"}</p>
@@ -521,6 +760,24 @@ function ResearcherProfilePage() {
                       </svg>
                       <span>Joined {formatDate(userData.date_joined)}</span>
                     </div>
+                    {/* Display Social Links with proper icons */}
+                    {userData.social_links && userData.social_links.length > 0 && (
+                      <div className="space-y-2">
+                        {userData.social_links.map((link, index) => (
+                          <div key={index} className="flex items-center gap-3">
+                            {getSocialIcon(link)}
+                            <a
+                              href={link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[#F47521] hover:underline"
+                            >
+                              {link.split("/")[3] || link}
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -576,13 +833,13 @@ function ResearcherProfilePage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label htmlFor="organization" className="block text-sm font-medium text-gray-700">
-                        Organization
+                      <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                        Username
                       </label>
                       <input
-                        id="organization"
-                        name="organization"
-                        value={formData.organization}
+                        id="username"
+                        name="username"
+                        value={formData.username}
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#F47521]"
                       />
@@ -611,6 +868,87 @@ function ResearcherProfilePage() {
                         rows={4}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#F47521]"
                       />
+                    </div>
+                    {/* Edit Social Links with improved error handling */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">Social Links</label>
+                      {formData.social_links.map((link, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <div className="flex-grow relative">
+                            <input
+                              type="text"
+                              value={link}
+                              onChange={(e) => {
+                                const updatedLinks = [...formData.social_links]
+                                updatedLinks[index] = e.target.value
+                                setFormData((prev) => ({ ...prev, social_links: updatedLinks }))
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#F47521]"
+                            />
+                            {getSocialIcon(link) && (
+                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                {getSocialIcon(link)}
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => removeSocialLink(index)}
+                            className="p-2 text-red-500 hover:text-red-700"
+                            aria-label="Remove social link"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M3 6h18" />
+                              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                              <path d="M10 11v6" />
+                              <path d="M14 11v6" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                      <div className="mt-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-grow relative">
+                            <input
+                              type="text"
+                              value={newSocialLink}
+                              onChange={(e) => {
+                                setNewSocialLink(e.target.value)
+                                // Clear error when user starts typing again
+                                if (socialLinkError) setSocialLinkError(null)
+                              }}
+                              placeholder="https://linkedin.com/in/username"
+                              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#F47521] ${
+                                socialLinkError ? "border-red-500" : "border-gray-300"
+                              }`}
+                            />
+                            {getSocialIcon(newSocialLink) && (
+                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                {getSocialIcon(newSocialLink)}
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            onClick={addSocialLink}
+                            className="px-3 py-2 bg-[#F47521] text-white rounded-md hover:bg-[#E06010]"
+                          >
+                            Add
+                          </button>
+                        </div>
+                        {socialLinkError && <p className="text-red-500 text-sm mt-1">{socialLinkError.message}</p>}
+                        <p className="text-sm text-gray-500 mt-2">
+                          Only LinkedIn, Twitter/X, or Facebook links are supported (must start with https://).
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -687,17 +1025,14 @@ function ResearcherProfilePage() {
                 userData.researches
                   .filter((research) => research.status === "published" && !research.is_private)
                   .map((research) => (
-                    <div
-                      key={research.id}
-                      className="bg-white dark:bg-gray-700 rounded-lg shadow-md overflow-hidden"
-                    >
+                    <div key={research.id} className="bg-white dark:bg-gray-700 rounded-lg shadow-md overflow-hidden">
                       <div className="p-6">
                         <div className="flex items-start justify-between">
                           <div>
                             <h3 className="text-xl font-semibold mb-1">{parse(research.title)}</h3>
                             <p className="text-sm text-gray-500 mb-4 dark:text-gray-200">
-                              Status: <span className="text-[#F47521] dark:text-gray-100">{research.status}</span> | Submitted on{" "}
-                              {formatDate(research.submitted_at)}
+                              Status: <span className="text-[#F47521] dark:text-gray-100">{research.status}</span> |
+                              Submitted on {formatDate(research.submitted_at)}
                             </p>
                           </div>
                         </div>
@@ -715,7 +1050,7 @@ function ResearcherProfilePage() {
                   ))
               ) : (
                 <div className="text-center text-gray-500 py-8">
-                  {isOwner ? "You don’t have any published research yet." : "This user has no published research."}
+                  {isOwner ? "You don't have any published research yet." : "This user has no published research."}
                 </div>
               )}
             </div>
@@ -769,7 +1104,7 @@ function ResearcherProfilePage() {
                   </div>
                 ))
               ) : (
-                <div className="text-center text-gray-500 py-8">You don’t have any bookmarks yet.</div>
+                <div className="text-center text-gray-500 py-8">You don&apos;t have any bookmarks yet.</div>
               )}
             </div>
           )}
@@ -805,7 +1140,7 @@ function ResearcherProfilePage() {
               onTouchEnd={handleDragEnd}
             >
               <img
-                src={previewImage}
+                src={previewImage || "/placeholder.svg"}
                 alt="Profile picture preview"
                 className="max-w-full max-h-80 object-contain"
                 style={{ transform: `scale(${zoomLevel})`, transition: "transform 0.1s ease" }}
@@ -847,19 +1182,8 @@ function ResearcherProfilePage() {
                       fill="none"
                       viewBox="0 0 24 24"
                     >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z"
-                      />
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z" />
                     </svg>
                     Uploading...
                   </>
@@ -872,7 +1196,8 @@ function ResearcherProfilePage() {
         </div>
       )}
     </div>
-  );
+  )
 }
 
-export default withAccessControl(ResearcherProfilePage, ["researcher", "organization_admin", "contributor"]);
+export default withAccessControl(ResearcherProfilePage, ["researcher", "organization_admin", "contributor"])
+

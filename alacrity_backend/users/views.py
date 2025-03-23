@@ -13,7 +13,7 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from rest_framework.permissions import AllowAny
 from rest_framework import status
-from .serializers import RegisterSerializer
+from .serializers import UserSerializer
 from django.utils import timezone
 from dataset_requests.models import DatasetRequest
 from research.models import AnalysisSubmission
@@ -359,7 +359,7 @@ class RegisterView(APIView):
 
     def post(self, request):
         mapped_data = clean_data(request.data)
-        serializer = RegisterSerializer(data=mapped_data)
+        serializer = UserSerializer(data=mapped_data)
         try:
             if serializer.is_valid():
                 user = serializer.save()
@@ -367,6 +367,7 @@ class RegisterView(APIView):
                     "message": "User registered successfully",
                     "user": {
                         "id": user.id,
+
                         "email": user.email,
                         "firstname": user.first_name,
                         "surname": user.last_name,
@@ -420,85 +421,58 @@ class LoggedInUser(APIView):
 
 
 
+
+
+
 class UserView(APIView):
     def get(self, request, user_id):
-        # Fetch the user by the provided user_id
         user = get_object_or_404(User, id=user_id)
-        current_user = request.user  # Authenticated user
-
-        # Fetch researches for this user
-        researchers = list(AnalysisSubmission.objects.filter(researcher=user, status="published",
-        is_private=False)
-                          .values('id', 'title', 'description', 'status', 'submitted_at'))
-        bookmarked_researches = []  
-
-       
-        response_data = {
-            "id": user.id,
-            "username": user.username,
-            "firstname": user.first_name,
-            "lastname": user.sur_name,
-            "profile_picture": user.profile_picture if user.profile_picture else None,
-            "date_joined": user.date_joined.isoformat(),
-            "bio": user.bio,
-            "phone_number": user.phone_number,
-            "role": user.role,
-            "organization": user.organization.name if user.organization else None,
-            "field": user.field,
-            "researches": researchers,
-            "bookmarked_researches": bookmarked_researches,
-            # TODO: followers and following
-        }
-
-        # If the requester is authenticated and is the profile owner, include sensitive data
-        if request.user.is_authenticated and current_user.id == user.id:
-            response_data["email"] = user.email
-            response_data["date_of_birth"] = user.date_of_birth.isoformat() if user.date_of_birth else None
-        else:
-            # For non-owners, exclude sensitive fields
-            response_data["email"] = None
-            response_data["date_of_birth"] = None
-            response_data["phone_number"] = None
-
-        return Response(response_data, status=status.HTTP_200_OK)
+        serializer = UserSerializer(user, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, user_id):
-        # Update profile for the authenticated user only
         user = get_object_or_404(User, id=user_id)
         if not request.user.is_authenticated or request.user.id != user.id:
             return Response({"detail": "Not authorized to update this profile"}, status=status.HTTP_403_FORBIDDEN)
 
-        # Update fields from request data
-        data = request.data
-        user.first_name = data.get('first_name', user.first_name)
-        user.sur_name = data.get('sur_name', user.sur_name)
-        user.bio = data.get('bio', user.bio)
-        user.phone_number = data.get('phone_number', user.phone_number)
-        user.field = data.get('field', user.field)
-        user.organization = data.get('organization', user.organization)  
-       
-        user.save()
+        serializer = UserSerializer(user, data=request.data, partial=True, context={"request": request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def delete(self, request, user_id):
+        pass
 
-        # Return updated profile
-        response_data = {
-            "id": user.id,
-            "username": user.username,
-            "first_name": user.first_name,
-            "sur_name": user.sur_name,
-            "profile_picture": user.profile_picture if user.profile_picture else None,
-            "date_joined": user.date_joined.isoformat(),
-            "bio": user.bio,
-            "phone_number": user.phone_number,
-            "role": user.role,
-            "organization": user.organization.name if user.organization else None,
-            "field": user.field,
-            "email": user.email,
-            "date_of_birth": user.date_of_birth.isoformat() if user.date_of_birth else None,
-            "researches": list(AnalysisSubmission.objects.filter(researcher=user)
-                              .values('id', 'title', 'description', 'status', 'submitted_at')),
-            "bookmarked_researches": [],  
-        }
-        return Response(response_data, status=status.HTTP_200_OK)
+class FollowUserView(APIView):
+    def post(self, request, user_id):
+        if not request.user.is_authenticated:
+            return Response({"detail": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        target_user = get_object_or_404(User, id=user_id)
+        if target_user == request.user:
+            return Response({"detail": "You cannot follow yourself"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if request.user.following.filter(id=target_user.id).exists():
+            return Response({"detail": "You already follow this user"}, status=status.HTTP_400_BAD_REQUEST)
+
+        request.user.following.add(target_user)
+        print(request.user.following.all())
+        print(target_user.followers.all())
+        return Response({"detail": "Now following user"}, status=status.HTTP_200_OK)
+
+class UnfollowUserView(APIView):
+    def post(self, request, user_id):
+        if not request.user.is_authenticated:
+            return Response({"detail": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        target_user = get_object_or_404(User, id=user_id)
+        if not request.user.following.filter(id=target_user.id).exists():
+            return Response({"detail": "You do not follow this user"}, status=status.HTTP_400_BAD_REQUEST)
+
+        request.user.following.remove(target_user)
+        return Response({"detail": "Unfollowed user"}, status=status.HTTP_200_OK)
+        
+    
     
 
 
@@ -531,7 +505,7 @@ class ProfilePictureUpdateView(APIView):
                 content_type=profile_picture.content_type
             )
 
-            # Store and return the raw MinIO URL (now public)
+            
             user.profile_picture = f"http://{MINIO_URL}/{MINIO_BUCKET_NAME}/{object_name}"
             user.save()
 
