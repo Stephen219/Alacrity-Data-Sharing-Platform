@@ -26,7 +26,7 @@ const App: React.FC = () => {
         const response = await fetchWithAuth(`${BACKEND_URL}dataset_requests/userrequests/`);
         if (response.ok) {
           const data: RawDatasetRequest[] = await response.json();
-          const mappedData = data.map((req: any) => {
+          const mappedData = data.map((req: RawDatasetRequest) => {
             const price =
               typeof req.dataset_id__price === "number"
                 ? req.dataset_id__price
