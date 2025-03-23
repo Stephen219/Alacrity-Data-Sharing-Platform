@@ -289,7 +289,7 @@ export default function DatasetAccessed() {
           {filteredDatasets.map((dataset, index) => (
   <Link
     key={`${dataset.dataset_id}-${index}`} // Ensure key is unique by combining dataset_id with the index
-    href={`/analyze/${dataset.dataset_id}`}
+    href={`/requests/detail/${dataset.dataset_id}`} // Use the dataset_id as the URL parameter
   >
     <DatasetCard
       dataset_id={dataset.dataset_id}

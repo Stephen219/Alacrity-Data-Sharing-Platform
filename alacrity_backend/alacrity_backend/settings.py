@@ -15,6 +15,10 @@ from alacrity_backend.config import FRONTEND_URL, BACKEND_URL
 import os
 import sys
 from dotenv import load_dotenv
+import environ
+
+env = environ.Env()
+environ.Env.read_env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -57,6 +61,7 @@ INSTALLED_APPS = [
     'contact',
     'organisation',
     'dataset_requests',
+    'channels',
 
 ]
 
@@ -72,6 +77,8 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'alacrity_backend.urls'
+
+ASGI_APPLICATION = 'alacrity_backend.asgi.application'
 
 
 TEMPLATES = [
@@ -95,7 +102,23 @@ WSGI_APPLICATION = 'alacrity_backend.wsgi.application'
 IS_GITLAB_CI = os.getenv('CI', 'false').lower() == 'true'
 
 
-
+# ASGI and channel layers settings
+if env('ENV') == 'production':
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [(env('REDIS_HOST', '127.0.0.1'), env('REDIS_PORT', 6379))],
+            },
+        },
+    }
+else:
+    # Use InMemoryLayer for development
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }
 
 
 DATABASES = {
