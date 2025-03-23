@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import DatasetRequestTable, { DatasetRequest } from "@/components/DatasetRequestTable";
+import DatasetRequestTable, { DatasetRequest } from "@/components/tables/DatasetRequestTable";
 import { fetchWithAuth } from "@/libs/auth";
 import { BACKEND_URL } from "@/config";
 

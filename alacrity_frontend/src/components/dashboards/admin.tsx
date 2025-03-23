@@ -51,7 +51,7 @@ import { fetchUserData } from "@/libs/auth";
 import { User } from "@/types/types";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import parse from "html-react-parser"
+import PendingSubmissionsTable from "../tables/PendingSubmissionsTable";
 
 interface PendingSubmission {
   id: number;
@@ -88,7 +88,6 @@ const AdminDashboard: React.FC = () => {
   const [error, setError] = useState<Error | null>(null);
   // const [userData, setUserData] = useState(null);
   const [user, setUser] = useState<User | null>(null);
-  const stripHtml = (htmlString: string) => parse(htmlString.replace(/<\/?[^>]+(>|$)/g, ""));
   const router = useRouter();
  
 
@@ -308,59 +307,16 @@ const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-    {/* Pending Research Submissions */}
-    <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Pending Research Submissions</h2>
-          <button
-            className="px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f] transition-colors"
-            onClick={() => router.push("/submissions/pending")}
-          >
-            View All
-          </button>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Researcher</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted At</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {pendingSubmissions.length > 0 ? (
-                pendingSubmissions.slice(0, 5).map((submission) => (
-                  <tr key={submission.id} className="hover:bg-gray-100 cursor-pointer transition"
-                  onClick={() => router.push(`/requests/submissions/${submission.id}`)}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{submission.researcher_email}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {stripHtml(submission.title.split(" ").slice(0, 5).join(" "))}
-                        {submission.title.split(" ").length > 5 ? "..." : ""}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(submission.submitted_at)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#FF6B1A]">{submission.status}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                    No pending submissions found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    
-
-
+    {/* Pending Research Submissions table component */}
+  <PendingSubmissionsTable
+    submissions={pendingSubmissions}
+    enablePagination={false} 
+    pageSize={5}                 
+    enableVerticalScroll={true} 
+    verticalScrollHeight="400px"
+    showSortDropdown={false}
+    showSearchBar={false}
+  />
       
       <div>
         <div className="flex items-center justify-between mb-4 ">
