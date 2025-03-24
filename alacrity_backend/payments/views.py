@@ -6,13 +6,14 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import status
 from django.core.exceptions import ObjectDoesNotExist
-
+from rest_framework.views import APIView
 from django.contrib.auth import get_user_model
 User = get_user_model()
-
+from users.decorators import role_required
 from datasets.models import Dataset
 from dataset_requests.models import DatasetRequest
 from payments.models import DatasetPurchase, PendingPayment
+from django.db.models.functions import ExtractYear, ExtractMonth
 
 # Configures PayPal SDK from Django settings
 paypalrestsdk.configure({
@@ -137,6 +138,61 @@ def paypal_success(request):
         return Response({"error": "Dataset not found"}, status=404)
     except Exception as e:
         return Response({"error": str(e)}, status=500)
+    
+    
+class PurchaseHistoryView(APIView):
+    """
+    Returns a list of dataset purchases for the authenticated researcher/contributor.
+    Supports ordering by oldest/newest and filtering via query parameters by month/year
+    """
+    permission_classes = [IsAuthenticated]
+
+    @role_required(["researcher", "contributor"])
+    def get(self, request):
+        user = request.user
+        order_param = request.query_params.get("order", "asc").lower()
+        filter_month = request.query_params.get("filter_month")
+        filter_year = request.query_params.get("filter_year")
+
+        # Base queryset, purchases for the authenticated user
+        purchases_qs = DatasetPurchase.objects.filter(buyer=user)
+
+        # Applies filtering if provided
+        if filter_month:
+            # Annotates and filters by month
+            purchases_qs = purchases_qs.annotate(
+                purchase_month=ExtractMonth("purchased_at")
+            ).filter(purchase_month=int(filter_month))
+        if filter_year:
+            purchases_qs = purchases_qs.annotate(
+                purchase_year=ExtractYear("purchased_at")
+            ).filter(purchase_year=int(filter_year))
+
+        # Orders the queryset as requested
+        if order_param == "desc":
+            purchases = purchases_qs.order_by("-purchased_at")
+        elif order_param == "month":
+            # Annotates with year and month for ordering
+            purchases = purchases_qs.annotate(
+                purchase_year=ExtractYear("purchased_at"),
+                purchase_month=ExtractMonth("purchased_at")
+            ).order_by("purchase_year", "purchase_month")
+        else:
+            purchases = purchases_qs.order_by("purchased_at")
+
+        data = []
+        for purchase in purchases:
+            data.append({
+                "purchase_id": purchase.id,
+                "dataset_id": purchase.dataset.dataset_id,
+                "dataset_title": purchase.dataset.title,
+                "cost": float(purchase.dataset.price),
+                "purchased_at": purchase.purchased_at.isoformat(),
+                "purchase_year": getattr(purchase, "purchase_year", None),
+                "purchase_month": getattr(purchase, "purchase_month", None),
+            })
+
+        return Response({"purchases": data}, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def paypal_cancel(request):
