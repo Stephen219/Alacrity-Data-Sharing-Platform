@@ -25,10 +25,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.user = user
         print(f"User {self.user.email} authenticated with role {self.user.role}")
 
-        # Add user to the dataset's chat group
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
-
-        # Add the dataset's contributor (admin) to the group
         contributor = await self.get_dataset_contributor()
         if contributor and contributor != self.user:
             contributor_channel = f"user_{contributor.id}"
@@ -53,11 +50,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             saved_message = await self.save_message(content)
             if saved_message:
+                # Broadcast to chat group (for ChatPage)
                 await self.channel_layer.group_send(self.room_group_name, {
                     'type': 'chat_message',
-                    'message': saved_message
+                    'message': {
+                        'id': saved_message['id'],
+                        'sender': 'user' if self.user == await self.get_dataset_contributor() else 'admin',
+                        'content': saved_message['content'],
+                        'timestamp': saved_message['timestamp']
+                    }
                 })
-                # Notify contributor via their user channel
+                # Notify contributor via user channel (for ChatListPage)
                 contributor = await self.get_dataset_contributor()
                 if contributor and contributor != self.user:
                     dataset = await self.get_dataset()
@@ -67,10 +70,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
                             'type': 'user_message',
                             'message': {
                                 'dataset_id': self.dataset_id,
-                                'dataset_title': dataset.title,
+                                'title': dataset.title,  # Match ChatListPage naming
                                 'organization': dataset.organization_name,
-                                'content': saved_message['content'],
-                                'timestamp': saved_message['timestamp']
+                                'last_message': saved_message['content'],
+                                'last_timestamp': saved_message['timestamp']
                             }
                         }
                     )

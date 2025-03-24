@@ -26,7 +26,7 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [socketStatus, setSocketStatus] = useState<string>("Connecting...");
-  const [isTyping, setIsTyping] = useState(false); // New: Typing indicator
+  const [isTyping, setIsTyping] = useState(false);
 
   const socketRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -47,7 +47,7 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
         const datasetData = await datasetResponse.json();
         setDataset(datasetData);
 
-        const messagesResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/chats/${params.dataset_id}/messages/`);
+        const messagesResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/messages/${params.dataset_id}`);
         if (messagesResponse.ok) {
           const messagesData = await messagesResponse.json();
           setMessages(messagesData);
@@ -88,7 +88,12 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
           try {
             const data = JSON.parse(event.data);
             if (data.message) {
-              setMessages((prev) => [...prev, data.message]);
+              setMessages((prev) => [...prev, {
+                id: data.message.id,
+                sender: data.message.sender,  // Use sender from backend
+                content: data.message.content,
+                timestamp: new Date(data.message.timestamp)
+              }]);
             } else if (data.error) {
               console.error("WebSocket error:", data.error);
             } else if (data.type === "connection_established") {
@@ -139,15 +144,12 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
       const timestamp = new Date();
       const messageData = {
         content: newMessage,
-        sender: "user",
         timestamp: timestamp.toISOString(),
+        // Removed 'sender' here; backend will set it
       };
 
       socketRef.current.send(JSON.stringify(messageData));
-      setMessages((prev) => [
-        ...prev,
-        { id: Date.now().toString(), ...messageData, timestamp },
-      ]);
+      // Don’t add message here; wait for WebSocket response to avoid duplication
       setNewMessage("");
     } else {
       alert("Connection lost. Please wait while we reconnect...");
