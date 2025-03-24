@@ -1,5 +1,24 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+/**
+ * Researcher Profile Page**
+ * @fileoverview Researcher profile page
+ * @package @alacrity/researcher
+ * This file defines the ResearcherProfilePage component, which is responsible for displaying and managing the profile of a researcher.
+ * The component fetches the profile data from the backend, allows the profile owner to edit their information, and displays the research publications and bookmarks.
+ * 
+ * The main functionalities include:
+ * - Fetching and displaying the researcher's profile data.
+ * - Allowing the profile owner to edit and save their profile information.
+ * - Displaying the research publications and bookmarks of the researcher.
+ * - Handling loading and error states during data fetching.
+ * 
+ * The component uses various hooks such as useState and useEffect to manage state and side effects.
+ * It also utilizes the useParams hook from Next.js for dynamic routing based on the researcher's ID.
+ * 
+ * The component is wrapped with an access control HOC (withAccessControl) to restrict access to certain user roles.
+ */
 
+ 
 
 "use client"
 
@@ -12,7 +31,7 @@ import { fetchUserData, fetchWithAuth } from "@/libs/auth"
 import { BACKEND_URL } from "@/config"
 import { withAccessControl } from "@/components/auth_guard/AccessControl"
 import parse from "html-react-parser"
-import { Linkedin, Twitter, Facebook } from "lucide-react"
+
 
 type Profile = {
   id: string
@@ -310,7 +329,7 @@ function ResearcherProfilePage() {
       return
     }
 
-    // Check for supported platforms
+    
     const validDomains = ["linkedin.com", "twitter.com", "x.com", "facebook.com"]
     const isValid = validDomains.some((domain) => newSocialLink.includes(domain))
 
@@ -344,19 +363,23 @@ function ResearcherProfilePage() {
     }))
   }
 
-  // Get social icon based on link
+  
   const getSocialIcon = (link: string) => {
     if (link.includes("linkedin.com")) {
-      return <Linkedin className="h-5 w-5 text-[#0077B5]" />
+      return  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" className="h-5 w-5 text-[#0077B5]">
+        <path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3zM135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5zm282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9V416z"/></svg>
     } else if (link.includes("twitter.com") || link.includes("x.com")) {
-      return <Twitter className="h-5 w-5 text-[#1DA1F2]" />
+      return <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="h-5 w-5 text-[#1DA1F2]">
+    
+        <path d="M389.2 48h70.6L305.6 224.2 487 464H345L233.7 318.6 106.5 464H35.8L200.7 275.5 26.8 48H172.4L272.9 180.9 389.2 48zM364.4 421.8h39.1L151.1 88h-42L364.4 421.8z"/></svg>
     } else if (link.includes("facebook.com")) {
-      return <Facebook className="h-5 w-5 text-[#1877F2]" />
+      return <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="h-5 w-5 text-[#1877F2]">
+        <path fill="#2653d9" d="M512 256C512 114.6 397.4 0 256 0S0 114.6 0 256C0 376 82.7 476.8 194.2 504.5V334.2H141.4V256h52.8V222.3c0-87.1 39.4-127.5 125-127.5c16.2 0 44.2 3.2 55.7 6.4V172c-6-.6-16.5-1-29.6-1c-42 0-58.2 15.9-58.2 57.2V256h83.6l-14.4 78.2H287V510.1C413.8 494.8 512 386.9 512 256h0z"/></svg>
     }
     return null
   }
 
-  // New: Handle follow/unfollow
+  // Handle follow/unfollow
   const handleFollowToggle = async () => {
     if (!userData || !currentUser || isOwner) return
 
@@ -923,7 +946,7 @@ function ResearcherProfilePage() {
                               value={newSocialLink}
                               onChange={(e) => {
                                 setNewSocialLink(e.target.value)
-                                // Clear error when user starts typing again
+                                
                                 if (socialLinkError) setSocialLinkError(null)
                               }}
                               placeholder="https://linkedin.com/in/username"
@@ -932,7 +955,7 @@ function ResearcherProfilePage() {
                               }`}
                             />
                             {getSocialIcon(newSocialLink) && (
-                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                              <div className="absolute right-1 top-1/2 transform -translate-y-1/2">
                                 {getSocialIcon(newSocialLink)}
                               </div>
                             )}
@@ -1111,7 +1134,7 @@ function ResearcherProfilePage() {
         </div>
       </div>
 
-      {/* Image Preview Modal */}
+    
       {previewImage && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-lg w-full">
