@@ -59,6 +59,11 @@ export const NAV_ITEMS = [
           href: "#",
           imageSrc: "/navbar/review/reviewResearch.png",
         },
+        {
+          name: "chats",
+          href: "/chat",
+          imageSrc: "/datasets/image.png",
+        },
       ],
     },
   

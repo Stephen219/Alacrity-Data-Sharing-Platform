@@ -11,19 +11,16 @@ from .new import analyze_dataset , dataset_detail, all_datasets_view, clear_data
 from .chat_view import ChatViewSet, MessageViewSet
 
 router = DefaultRouter()
-router.register(r'chats', ChatViewSet)
-router.register(r'messages', MessageViewSet)
+router.register(r'', ChatViewSet, basename='chat')  # /datasets/chats/
+router.register(r'(?P<dataset_id>[^/.]+)/messages', MessageViewSet, basename='chat-messages')  # /datasets/chats/[dataset_id]/messages/
 urlpatterns = [
 
     path('create_dataset/', CreateDatasetView.as_view(), name='create_dataset'),
     path('clear_cache/<str:dataset_id>/', clear_dataset_cache, name='clear_dataset_cache'),
     path('testget/',get_datasets, name='testget'),
-    #####
     path('download/<str:dataset_id>/', download_dataset, name='download_dataset'),
-    # path('overview/<uuid:dataset_id>/', dataset_overview, name='dataset_overview'),
-    path('chat/', include(router.urls)),
-    path('chats/<str:dataset_id>/messages/', MessageViewSet.as_view({'get': 'list'}), name='chat-messages'),
-    # path('correlation/<str:dataset_id>/',correlation_analysis, name='correlation_analysis'),
+
+    path('chats/', include(router.urls)),  # Router at /datasets/chats/    
     path('details/<str:dataset_id>/', dataset_detail, name='dataset_detail'),
     path('datasets/<str:dataset_id>/', dataset_detail, name='dataset_detail'),
     path('datasets/analyze/<str:dataset_id>/', analyze_dataset, name='analyze_dataset'),
