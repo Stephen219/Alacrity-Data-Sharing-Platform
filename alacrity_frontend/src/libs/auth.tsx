@@ -17,7 +17,7 @@ const API_BASE_URL = BACKEND_URL;
 
 export async function login(email: string, password: string) {
     try {
-        const response = await fetch(`${API_BASE_URL}users/login/`, {
+        const response = await fetch(`${API_BASE_URL}/users/login/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password }),

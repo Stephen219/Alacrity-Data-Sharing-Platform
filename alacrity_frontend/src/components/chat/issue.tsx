@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { useRouter } from "next/navigation"
-import { useEffect, useState, useRef } from "react"
-import { fetchWithAuth } from "@/libs/auth"
-import { BACKEND_URL } from "@/config"
-import { Send, ArrowLeft } from "lucide-react"
+import { useRouter } from "next/navigation";
+import { useEffect, useState, useRef } from "react";
+import { fetchWithAuth } from "@/libs/auth";
+import { BACKEND_URL } from "@/config";
+import { Send, ArrowLeft, Loader2 } from "lucide-react";
 
 interface Message {
   id: string;
-  sender: 'user' | 'admin';
+  sender: "user" | "admin";
   content: string;
   timestamp: Date;
 }
@@ -20,16 +20,16 @@ interface Dataset {
 }
 
 export default function ChatPage({ params }: { params: { dataset_id: string } }) {
-  const router = useRouter()
-  const [dataset, setDataset] = useState<Dataset | null>(null)
-  const [messages, setMessages] = useState<Message[]>([])
-  const [newMessage, setNewMessage] = useState("")
-  const [loading, setLoading] = useState(true)
-  const [socketStatus, setSocketStatus] = useState<string>("Connecting...")
-  
-  // Create a ref to hold the WebSocket connection
-  const socketRef = useRef<WebSocket | null>(null)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const router = useRouter();
+  const [dataset, setDataset] = useState<Dataset | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [socketStatus, setSocketStatus] = useState<string>("Connecting...");
+  const [isTyping, setIsTyping] = useState(false); // New: Typing indicator
+
+  const socketRef = useRef<WebSocket | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -42,170 +42,120 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
   useEffect(() => {
     const fetchDatasetAndMessages = async () => {
       try {
-        // Fetch dataset info
-        const datasetResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/${params.dataset_id}/`)
-        if (!datasetResponse.ok) throw new Error("Failed to fetch dataset details")
-        const datasetData = await datasetResponse.json()
-        setDataset(datasetData)
+        const datasetResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/${params.dataset_id}/`);
+        if (!datasetResponse.ok) throw new Error("Failed to fetch dataset details");
+        const datasetData = await datasetResponse.json();
+        setDataset(datasetData);
 
-        // Fetch existing messages if any
-        const messagesResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/chats/${params.dataset_id}/messages/`) 
+        const messagesResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/chats/${params.dataset_id}/messages/`);
         if (messagesResponse.ok) {
-          const messagesData = await messagesResponse.json()
-          setMessages(messagesData)
+          const messagesData = await messagesResponse.json();
+          setMessages(messagesData);
         }
-
-        setLoading(false)
+        setLoading(false);
       } catch (error) {
-        console.error("Error fetching data:", error)
-        setLoading(false)
+        console.error("Error fetching data:", error);
+        setLoading(false);
       }
-    }
+    };
 
-    fetchDatasetAndMessages()
+    fetchDatasetAndMessages();
 
-    // Create WebSocket connection
     const connectWebSocket = () => {
-      // Close existing connection if any
-      if (socketRef.current) {
-        socketRef.current.close();
-      }
-      
-      // Track retry attempts
+      if (socketRef.current) socketRef.current.close();
+
       let retryCount = 0;
       const maxRetries = 5;
       let retryTimeout;
-      
-      // Use the full path with 'ws/' prefix as suggested
-      
-      const token = localStorage.getItem('access_token'); // Adjust based on your auth storage
-      const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
-      const wsHost = BACKEND_URL.replace(/^https?:\/\//, '');
+
+      const token = localStorage.getItem("access_token");
+      const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+      const wsHost = BACKEND_URL.replace(/^https?:\/\//, "");
       const wsUrl = `${wsScheme}://${wsHost}/ws/datasets/chats/${params.dataset_id}/messages/?token=${token}`;
       console.log("Attempting to connect to WebSocket at:", wsUrl);
-      socketRef.current = new WebSocket(wsUrl);
-      
+
       const attemptConnection = () => {
-        // Create new connection
         socketRef.current = new WebSocket(wsUrl);
-        
+
         socketRef.current.onopen = () => {
-          console.log('WebSocket connection established');
+          console.log("WebSocket connection established");
           setSocketStatus("Connected");
-          // Reset retry count on successful connection
           retryCount = 0;
-          // Clear any pending retry timeouts
-          if (retryTimeout) {
-            clearTimeout(retryTimeout);
-          }
+          if (retryTimeout) clearTimeout(retryTimeout);
         };
-        
+
         socketRef.current.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            console.log('Received message:', data);
-            
-            // Update your chat UI with the new message
             if (data.message) {
-              setMessages(prev => [...prev, data.message]);
+              setMessages((prev) => [...prev, data.message]);
             } else if (data.error) {
-              console.error("WebSocket error message:", data.error);
-            } else if (data.type === 'connection_established') {
+              console.error("WebSocket error:", data.error);
+            } else if (data.type === "connection_established") {
               console.log("Connection confirmation:", data.message);
             }
           } catch (error) {
-            console.error('Error parsing WebSocket message:', error);
+            console.error("Error parsing WebSocket message:", error);
           }
         };
-        
-        socketRef.current.onerror = (error) => {
-          console.error('WebSocket error:', error);
+
+        socketRef.current.onerror = () => {
+          console.error("WebSocket error occurred");
           setSocketStatus("Error");
         };
-        
+
         socketRef.current.onclose = (event) => {
           console.log("WebSocket closed. Code:", event.code, "Reason:", event.reason);
           setSocketStatus("Disconnected");
-          
-          // Check if we should retry
           if (retryCount < maxRetries) {
             retryCount++;
-            const delayMs = 3000; // 3 seconds between retries
-            
-            console.log(`Attempt ${retryCount} of ${maxRetries}. Reconnecting in ${delayMs/1000} seconds...`);
-            setSocketStatus(`Reconnecting... (Attempt ${retryCount}/${maxRetries})`);
-            
-            // Attempt to reconnect with delay
-            retryTimeout = setTimeout(() => {
-              attemptConnection();
-            }, delayMs);
+            const delayMs = 3000;
+            setSocketStatus(`Reconnecting... (${retryCount}/${maxRetries})`);
+            retryTimeout = setTimeout(attemptConnection, delayMs);
           } else {
-            console.log("Maximum retry attempts reached. Giving up.");
-            setSocketStatus("Failed to connect after 5 attempts");
+            setSocketStatus("Failed to connect");
           }
         };
       };
-      
-      // Start the first connection attempt
+
       attemptConnection();
-      
-      // Return the socketRef for external reference if needed
+
       return socketRef.current;
     };
-    
+
     connectWebSocket();
-    
-    // Cleanup function
+
     return () => {
-      console.log("Cleaning up WebSocket connection");
       if (socketRef.current) {
-        // Use a normal close code (1000)
         socketRef.current.close(1000, "Component unmounting");
       }
     };
   }, [params.dataset_id]);
 
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !dataset) return;
-    
-    // Add validation to check if socket exists
-    if (!socketRef.current) {
-      console.error("WebSocket is not initialized.");
-      setSocketStatus("Not connected");
-      return;
-    }
-    
-    // Check if WebSocket is open before sending the message
+  const sendMessage = () => {
+    if (!newMessage.trim() || !dataset || !socketRef.current) return;
+
     if (socketRef.current.readyState === WebSocket.OPEN) {
       const timestamp = new Date();
       const messageData = {
         content: newMessage,
-        sender: 'user',
+        sender: "user",
         timestamp: timestamp.toISOString(),
       };
-      
-      console.log("Sending message:", messageData);
+
       socketRef.current.send(JSON.stringify(messageData));
-      
-      // Optimistically add message to UI
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        sender: 'user',
-        content: newMessage,
-        timestamp,
-      };
-      
-      setMessages(prev => [...prev, userMessage]);
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now().toString(), ...messageData, timestamp },
+      ]);
       setNewMessage("");
     } else {
-      console.error("WebSocket is not open. Current state:", socketRef.current.readyState);
-      setSocketStatus(`Not connected (State: ${socketRef.current.readyState})`);
       alert("Connection lost. Please wait while we reconnect...");
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
@@ -213,101 +163,122 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Loading chat...
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
       </div>
-    )
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* Header */}
-      <div className="bg-white p-4 shadow-sm flex items-center">
-        <button 
-          onClick={() => router.back()} 
-          className="mr-4 text-gray-600 hover:text-gray-800"
+      <header className="bg-white shadow-md p-4 flex items-center sticky top-0 z-10">
+        <button
+          onClick={() => router.back()}
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          aria-label="Go back"
         >
-          <ArrowLeft size={24} />
+          <ArrowLeft className="w-6 h-6 text-gray-700" />
         </button>
-        <div className="flex-1">
-          <h1 className="font-semibold text-xl">
-            {dataset?.title}
-          </h1>
-          <p className="text-sm text-gray-500">
-            Issue support for {dataset?.organization}
+        <div className="flex-1 ml-3">
+          <h1 className="text-xl font-bold text-gray-800">{dataset?.title}</h1>
+          <p className="text-sm text-gray-600">
+            Support for {dataset?.organization}
           </p>
         </div>
-        <div className={`text-xs px-2 py-1 rounded ${
-          socketStatus === "Connected" 
-            ? "bg-green-100 text-green-700" 
-            : socketStatus === "Reconnecting..." 
-              ? "bg-yellow-100 text-yellow-700"
-              : "bg-red-100 text-red-700"
-        }`}>
+        <span
+          className={`text-xs font-medium px-3 py-1 rounded-full ${
+            socketStatus === "Connected"
+              ? "bg-green-100 text-green-800"
+              : socketStatus.includes("Reconnecting")
+              ? "bg-yellow-100 text-yellow-800"
+              : "bg-red-100 text-red-800"
+          }`}
+        >
           {socketStatus}
-        </div>
-      </div>
+        </span>
+      </header>
 
-      {/* Chat messages area */}
-      <div className="flex-1 p-4 overflow-y-auto">
-        <div className="max-w-3xl mx-auto space-y-4">
-          {/* Welcome message if no messages yet */}
-          {messages.length === 0 && (
-            <div className="bg-blue-50 p-4 rounded-lg text-center">
-              <p className="text-gray-700">
-                Start a conversation with the dataset administrators. Describe any issues, ask questions, or request assistance.
+      {/* Messages Area */}
+      <main className="flex-1 overflow-y-auto p-6 bg-gradient-to-b from-gray-50 to-gray-100">
+        <div className="max-w-4xl mx-auto space-y-4">
+          {messages.length === 0 ? (
+            <div className="bg-white p-6 rounded-lg shadow-sm text-center border border-gray-200">
+              <p className="text-gray-600">
+                Start a conversation with the dataset administrators. Ask questions or report issues.
               </p>
             </div>
-          )}
-
-          {/* Messages */}
-          {messages.map((message) => (
-            <div 
-              key={message.id}
-              className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div 
-                className={`max-w-xs md:max-w-md rounded-lg p-3 ${
-                  message.sender === 'user' 
-                    ? 'bg-blue-500 text-white rounded-br-none' 
-                    : 'bg-white border border-gray-200 rounded-bl-none'
+          ) : (
+            messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${
+                  message.sender === "user" ? "justify-end" : "justify-start"
                 }`}
               >
-                <p>{message.content}</p>
-                <div className={`text-xs mt-1 ${
-                  message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
-                }`}>
-                  {new Date(message.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                <div
+                  className={`flex items-end space-x-2 max-w-[70%] ${
+                    message.sender === "user" ? "flex-row-reverse space-x-reverse" : ""
+                  }`}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold ${
+                      message.sender === "user" ? "bg-blue-500" : "bg-gray-500"
+                    }`}
+                  >
+                    {message.sender === "user" ? "U" : "A"}
+                  </div>
+                  <div
+                    className={`p-3 rounded-lg shadow-sm ${
+                      message.sender === "user"
+                        ? "bg-blue-500 text-white rounded-br-none"
+                        : "bg-white text-gray-800 rounded-bl-none border border-gray-200"
+                    }`}
+                  >
+                    <p>{message.content}</p>
+                    <span
+                      className={`text-xs mt-1 block ${
+                        message.sender === "user" ? "text-blue-100" : "text-gray-500"
+                      }`}
+                    >
+                      {new Date(message.timestamp).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-          <div ref={messagesEndRef} /> {/* Anchor for auto-scrolling */}
+            ))
+          )}
+          <div ref={messagesEndRef} />
         </div>
-      </div>
+      </main>
 
-      {/* Message input area */}
-      <div className="bg-white border-t border-gray-200 p-4">
-        <div className="max-w-3xl mx-auto flex items-center">
+      {/* Input Area */}
+      <footer className="bg-white border-t border-gray-200 p-4 shadow-inner">
+        <div className="max-w-4xl mx-auto flex items-center gap-3">
           <textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type your message here..."
-            className="flex-1 border border-gray-300 rounded-l-md p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            placeholder="Type your message..."
+            className="flex-1 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-gray-800 placeholder-gray-400"
             rows={2}
           />
           <button
             onClick={sendMessage}
             disabled={!newMessage.trim() || socketRef.current?.readyState !== WebSocket.OPEN}
-            className={`bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-r-md h-full flex items-center justify-center ${
-              !newMessage.trim() || socketRef.current?.readyState !== WebSocket.OPEN ? 'opacity-50 cursor-not-allowed' : ''
+            className={`p-3 rounded-md flex items-center justify-center transition-colors ${
+              !newMessage.trim() || socketRef.current?.readyState !== WebSocket.OPEN
+                ? "bg-gray-300 cursor-not-allowed"
+                : "bg-blue-500 hover:bg-blue-600 text-white"
             }`}
           >
-            <Send size={20} />
+            <Send className="w-5 h-5" />
           </button>
         </div>
-      </div>
+      </footer>
     </div>
-  )
+  );
 }
