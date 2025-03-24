@@ -127,8 +127,7 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
         </div>
 
         <div className="flex flex-wrap gap-2">
-        {tags
-  .filter((tag) => tag.trim() !== "")
+        {tags.filter((tag) => tag.trim() !== "")
   .map((tag, index) => (
     <span
       key={`${tag}-${index}`}

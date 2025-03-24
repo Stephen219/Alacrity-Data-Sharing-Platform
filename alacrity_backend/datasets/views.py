@@ -536,7 +536,7 @@ class ToggleBookmarkDatasetView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
-    @role_required(['contributor', 'researcher'])
+    @role_required(['contributor', 'researcher', 'organization_admin'])
     def post(self, request, dataset_id):
 
         user = request.user
@@ -557,7 +557,7 @@ class ToggleBookmarkDatasetView(APIView):
 
 class UserBookmarkedDatasetsView(APIView):
     permission_classes = [IsAuthenticated]
-    @role_required(['contributor', 'researcher'])
+    @role_required(['contributor', 'researcher', 'organization_admin'])
 
     def get(self, request):
         """
@@ -574,4 +574,58 @@ class UserBookmarkedDatasetsView(APIView):
         print("Bookmarked datasets:", list(bookmarked_datasets))
 
         return Response(list(bookmarked_datasets))
+    
+
+class DatasetListView(APIView):
+    def get(self, request):
+        # Get org query parameter
+        org_id = request.query_params.get("org", None)
+        
+        # Base queryset with select_related for optimization
+        datasets = Dataset.objects.select_related("contributor_id__organization").all()
+
+        # Filter by organization if org_id is provided
+        if org_id:
+            datasets = datasets.filter(contributor_id__organization__Organization_id=org_id)
+            if not datasets.exists():
+                return Response(
+                    {"detail": f"No datasets found for organization ID {org_id}"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+        serializer = DatasetSerializer(datasets, many=True, context={"request": request})
+        return Response({"datasets": serializer.data}, status=status.HTTP_200_OK)
+
+    def put(self, request):
+        # Restrict to organization admins
+        if not request.user.is_authenticated or request.user.role != "organization_admin":
+            return Response(
+                {"detail": "Only organization admins can edit datasets"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        dataset_id = request.data.get("dataset_id")
+        if not dataset_id:
+            return Response(
+                {"detail": "Dataset ID is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
+
+        # Check if admin belongs to the dataset's contributor's organization
+        if (
+            dataset.contributor_id.organization
+            and request.user.organization != dataset.contributor_id.organization
+        ):
+            return Response(
+                {"detail": "You can only edit datasets from your organization"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = DatasetSerializer(dataset, data=request.data, partial=True, context={"request": request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

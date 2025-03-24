@@ -1,9 +1,12 @@
+
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import type React from "react";
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { DatasetCard } from "./datasetCard";
 import { BACKEND_URL } from "@/config";
 import { fetchWithAuth } from "@/libs/auth";
@@ -30,6 +33,7 @@ interface Dataset {
 const ITEMS_PER_PAGE = 6;
 
 const DatasetsPage: React.FC = () => {
+  const searchParams = useSearchParams();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<Record<string, string[]>>({});
@@ -42,15 +46,23 @@ const DatasetsPage: React.FC = () => {
     { id: string; label: string; options: string[] }[]
   >([]);
   const [bookmarkedDatasets, setBookmarkedDatasets] = useState<string[]>([]);
-  //const [darkMode, setDarkMode] = useState(false)
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDatasets = async () => {
       try {
-        const response = await fetchWithAuth(`${BACKEND_URL}/datasets/all`);
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+        const orgId = searchParams.get("org");
+        const url = orgId ? `${BACKEND_URL}/datasets/all?org=${orgId}` : `${BACKEND_URL}/datasets/all`;
+        const response = await fetchWithAuth(url);
+        if (!response.ok) {
+          if (response.status === 404 && orgId) {
+            setDatasets([]);  // Empty dataset list for org with no datasets
+            return;
+          }
+          throw new Error(`HTTP Error: ${response.status}`);
+        }
         const data = await response.json();
-  
+
         const mappedDatasets: Dataset[] = data.datasets.map((item: any) => ({
           ...item,
           size: item.size || "N/A",
@@ -62,17 +74,18 @@ const DatasetsPage: React.FC = () => {
                 .map((tag: string) => tag.trim())
                 .filter((tag: string) => tag.trim() !== "")
             : item.tags || [],
-            price: item.price ? Number(parseFloat(item.price).toFixed(2)) : 0,
-            hasPaid: item.hasPaid || false,
+          price: item.price ? Number(parseFloat(item.price).toFixed(2)) : 0,
+          hasPaid: item.hasPaid || false,
+          darkMode: false,
         }));
-  
+
         setDatasets(mappedDatasets);
-  
+
         const uniqueCategories = ["All", ...new Set(mappedDatasets.map((d) => d.category))];
         const uniqueOrgs = ["All", ...new Set(mappedDatasets.map((d) => d.organization_name || "No organization"))];
         const uniqueTags = ["All", ...new Set(mappedDatasets.flatMap((d) => d.tags))];
         const staticDateOptions = ["All Time", "Today", "This Week", "This Month", "This Year"];
-  
+
         setFilterCategories([
           { id: "category", label: "Category", options: uniqueCategories },
           { id: "organization_name", label: "Organization", options: uniqueOrgs },
@@ -86,39 +99,37 @@ const DatasetsPage: React.FC = () => {
         setIsLoading(false);
       }
     };
-  
+
+    const fetchUserRole = async () => {
+      try {
+        const response = await fetchWithAuth(`${BACKEND_URL}/users/profile/`);
+        if (!response.ok) throw new Error("Failed to fetch user data");
+        const userData = await response.json();
+        setUserRole(userData.role);
+      } catch (err) {
+        console.error("Error fetching user role:", err);
+      }
+    };
+
     fetchDatasets();
-  }, []);
-  
-  /**
-   * Fetches the datasets bookmarked by the researcher/contributor.
-   */
+    fetchUserRole();
+  }, [searchParams]);
+
   const fetchBookmarkedDatasets = async () => {
     try {
       console.log("Fetching bookmarked datasets...");
       const response = await fetchWithAuth(`${BACKEND_URL}/datasets/bookmarks/`);
-
       if (!response.ok) {
         throw new Error(`Failed to fetch bookmarked datasets: ${response.status}`);
       }
-
       const data = await response.json();
-      console.log("Bookmarked datasets response:", data);
-
-      /**
-       * Extract only the dataset IDs from the response.
-       * This allows us to efficiently check which datasets are bookmarked
-       * without needing to store all dataset details.
-       */
       setBookmarkedDatasets(data.map((ds: { dataset_id: string }) => ds.dataset_id));
-
     } catch (err) {
       console.error("Error fetching bookmarks:", err);
       setError("Error fetching bookmarks.");
     }
   };
 
-  // Ensures that the user's bookmarks are loaded when they visit the page.
   useEffect(() => {
     const loadAll = async () => {
       await fetchBookmarkedDatasets();
@@ -126,7 +137,6 @@ const DatasetsPage: React.FC = () => {
     loadAll();
   }, []);
 
-  // Toggles the bookmark status of a dataset for researcher/contributor
   const toggleDatasetBookmark = async (datasetId: string) => {
     try {
       setBookmarkedDatasets((prev) =>
@@ -134,16 +144,44 @@ const DatasetsPage: React.FC = () => {
           ? prev.filter((id) => id !== datasetId)
           : [...prev, datasetId]
       );
-
       const response = await fetchWithAuth(
         `${BACKEND_URL}/datasets/${datasetId}/bookmark/`,
-        {
-          method: "POST",
-        }
+        { method: "POST" }
       );
       if (!response.ok) throw new Error("Failed to toggle bookmark");
     } catch (error) {
       console.error("Dataset bookmark error:", error);
+    }
+  };
+
+  const handleEditDataset = async (dataset: Dataset) => {
+    if (userRole !== "organization_admin") return;
+
+    const updatedTitle = prompt("Edit dataset title:", dataset.title);
+    if (!updatedTitle) return;
+
+    try {
+      const response = await fetchWithAuth(`${BACKEND_URL}/datasets/all`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dataset_id: dataset.dataset_id,
+          title: updatedTitle,
+          description: dataset.description,
+          tags: dataset.tags.join(","),
+          category: dataset.category,
+          price: dataset.price,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to update dataset");
+      const updatedDataset = await response.json();
+      setDatasets((prev) =>
+        prev.map((d) => (d.dataset_id === dataset.dataset_id ? { ...d, ...updatedDataset, tags: updatedDataset.tags.split(",").map((t: string) => t.trim()) } : d))
+      );
+    } catch (err) {
+      console.error("Error updating dataset:", err);
+      setError("Failed to update dataset");
     }
   };
 
@@ -154,7 +192,7 @@ const DatasetsPage: React.FC = () => {
         dataset.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         dataset.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         dataset.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-  
+
       const matchesFilters = Object.entries(filters).every(([key, values]) => {
         const safeValues = Array.isArray(values) ? values : [];
         if (safeValues.length === 0 || safeValues.includes("All") || safeValues.includes("All Time")) return true;
@@ -174,7 +212,7 @@ const DatasetsPage: React.FC = () => {
         if (key === "tags") return safeValues.some((value) => dataset.tags.includes(value));
         return true;
       });
-  
+
       return matchesSearch && matchesFilters;
     });
   }, [searchQuery, filters, datasets]);
@@ -246,7 +284,6 @@ const DatasetsPage: React.FC = () => {
           />
         </div>
 
-        {/* Display Selected Filters */}
         <div className="mb-6">
           {Object.entries(filters).length > 0 && (
             <div className="flex flex-wrap gap-2 mb-4">
@@ -254,15 +291,14 @@ const DatasetsPage: React.FC = () => {
                 values.map((value) => (
                   <div
                     key={`${categoryId}-${value}`}
-                    className="flex items-center px-3 py-1 rounded-full text-sm bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-100">
-                  
+                    className="flex items-center px-3 py-1 rounded-full text-sm bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-100"
+                  >
                     <span>
                       {filterCategories.find((c) => c.id === categoryId)?.label}: {value}
                     </span>
                     <button
                       onClick={() => removeFilter(categoryId, value)}
                       className="ml-2 text-red-500 hover:text-red-700"
-                      aria-label={`Remove ${value} from ${categoryId} filter`}
                     >
                       ×
                     </button>
@@ -324,7 +360,6 @@ const DatasetsPage: React.FC = () => {
                   ? "bg-orange-500 text-white"
                   : "text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
               }`}
-              aria-label="Grid view"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -342,7 +377,6 @@ const DatasetsPage: React.FC = () => {
                   ? "bg-orange-500 text-white"
                   : "text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
               }`}
-              aria-label="List view"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -354,43 +388,75 @@ const DatasetsPage: React.FC = () => {
         <div
           className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"}`}
         >
-          {paginatedDatasets.map((dataset) => (
-            <Link
-              key={dataset.dataset_id}
-              href={`/datasets/description?id=${dataset.dataset_id}`} 
-              className="block" 
-            >
-              <DatasetCard
-                dataset_id={dataset.dataset_id}
-                title={dataset.title}
-                description={dataset.description}
-                organization={dataset.organization_name}
-                dateUploaded={new Date(dataset.created_at).toLocaleDateString()}
-                imageUrl={dataset.imageUrl || ""}
-                tags={dataset.tags}
-                category={dataset.category}
-                entries={dataset.entries || 0}
-                size={dataset.size || "N/A"}
-                view_count={dataset.view_count}
-                extraActions={() => toggleDatasetBookmark(dataset.dataset_id)}
-                isBookmarked={bookmarkedDatasets.includes(dataset.dataset_id)}
-                onToggleBookmark={() => toggleDatasetBookmark(dataset.dataset_id)}
-                viewMode={viewMode}
-                darkMode={false}
-                price={dataset.price}
-              />
-            </Link>
-          ))}
+          {paginatedDatasets.length > 0 ? (
+            paginatedDatasets.map((dataset) => (
+              <div key={dataset.dataset_id} className="relative">
+                <Link href={`/datasets/description?id=${dataset.dataset_id}`} className="block">
+                  <DatasetCard
+                    dataset_id={dataset.dataset_id}
+                    title={dataset.title}
+                    description={dataset.description}
+                    organization={dataset.organization_name}
+                    dateUploaded={new Date(dataset.created_at).toLocaleDateString()}
+                    imageUrl={dataset.imageUrl || ""}
+                    tags={dataset.tags}
+                    category={dataset.category}
+                    entries={dataset.entries || 0}
+                    size={dataset.size || "N/A"}
+                    view_count={dataset.view_count}
+                    extraActions={() => toggleDatasetBookmark(dataset.dataset_id)}
+                    isBookmarked={bookmarkedDatasets.includes(dataset.dataset_id)}
+                    onToggleBookmark={() => toggleDatasetBookmark(dataset.dataset_id)}
+                    viewMode={viewMode}
+                    darkMode={false}
+                    price={dataset.price}
+                  />
+                </Link>
+                {userRole === "organization_admin" && (
+                  <button
+                    onClick={() => handleEditDataset(dataset)}
+                    className="absolute top-2 right-2 p-2 bg-orange-500 text-white rounded-full hover:bg-orange-600"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            ))
+          ) : searchParams.get("org") ? (
+            <div className="col-span-full text-center py-8">
+              <p className="text-lg text-gray-600 dark:text-gray-300">
+                This organization has absolutely zero datasets.
+              </p>
+              <Link href="/datasets/all">
+                <button className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600">
+                  Explore All Datasets
+                </button>
+              </Link>
+            </div>
+          ) : (
+            <div className="col-span-full text-center py-8">
+              <p className="text-lg text-gray-600 dark:text-gray-300">No datasets match your filters.</p>
+            </div>
+          )}
         </div>
 
-        {totalPages > 1 && (
+        {totalPages > 1 && paginatedDatasets.length > 0 && (
           <div className="mt-8 flex justify-center">
             <nav className="flex items-center gap-1" aria-label="Pagination">
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
                 className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                aria-label="Previous page"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -411,7 +477,6 @@ const DatasetsPage: React.FC = () => {
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
                 className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                aria-label="Next page"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

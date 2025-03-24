@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ( ToggleBookmarkDatasetView, UserBookmarkedDatasetsView, descriptive_statistics, 
+from .views import ( ToggleBookmarkDatasetView, UserBookmarkedDatasetsView, descriptive_statistics, DatasetListView,
 filter_and_clean_dataset, 
 get_datasets, get_filter_options, CreateDatasetView, 
 
@@ -28,7 +28,8 @@ urlpatterns = [
     path('datasets/<str:dataset_id>/', dataset_detail, name='dataset_detail'),
     path('datasets/analyze/<str:dataset_id>/', analyze_dataset, name='analyze_dataset'),
     path('datasets/', all_datasets_view, name='all_datasets'),
-    path('all/', all_datasets_view, name='dataset-list'),
+    # path('all/', all_datasets_view, name='dataset-list'),
+    path('all/', DatasetListView.as_view(), name='dataset-list'),
     path('perform/<str:dataset_id>/', analyze_dataset, name='analyze_dataset'),
     path("", get_datasets, name="get_datasets"),
     path("analysis/pre-analysis/<str:dataset_id>/", pre_analysis, name="pre-analysis"),

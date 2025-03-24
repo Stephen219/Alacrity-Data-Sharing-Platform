@@ -415,12 +415,23 @@ def analyze_dataset(request, dataset_id):
     except Exception as e:
         logger.error(f"Error in analyze_dataset: {e}", exc_info=True)
         return Response({"error": "Something went wrong"}, status=500)
+    
+
+
+
+
+    
 
 @api_view(['GET'])
 def all_datasets_view(request):
     datasets = Dataset.objects.select_related('contributor_id__organization').all()
     serializer = DatasetSerializer(datasets, many=True, context={"request": request})
     return Response({"datasets": serializer.data}, status=status.HTTP_200_OK)
+
+
+
+
+
 
 @api_view(['GET'])
 def dataset_view(request, dataset_id):
