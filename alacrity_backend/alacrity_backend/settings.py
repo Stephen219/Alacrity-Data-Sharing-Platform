@@ -179,6 +179,7 @@ MINIO_URL = "10.72.98.137:9000"
 MINIO_ACCESS_KEY = "admin"
 MINIO_SECRET_KEY = "Notgood1"
 MINIO_BUCKET_NAME = "alacrity"
+MINIO_SECURE = False
 
 # MINIO CLIENT
 minioClient = Minio(
@@ -268,7 +269,7 @@ from datetime import timedelta
 
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=10),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=9000),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,

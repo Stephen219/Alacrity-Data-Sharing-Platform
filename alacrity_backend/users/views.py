@@ -417,13 +417,14 @@ class LoggedInUser(APIView):
             "date_joined": user.date_joined,
             "date_of_birth": user.date_of_birth,
             "bio": user.bio,
-            # to do 
-            # folowers and following
 
 
             "phonenumber": user.phone_number,
             "role": user.role,
+
             "organization": user.organization.name if user.organization else None,
+            # here we have to use fkey to get the organization id
+            "organization_id":  user.organization.Organization_id if user.organization else None,
             "field": user.field,
             "researches": researchers,
             "bookmarked_researches": bookmarked_researches

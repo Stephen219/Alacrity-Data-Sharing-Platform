@@ -113,7 +113,7 @@ const updateProfilePicture = async (userId: string, file: File) => {
     const formData = new FormData()
     formData.append("profile_picture", file)
 
-    const response = await fetchWithAuth(`${BACKEND_URL}/user/profilepicupdate`, {
+    const response = await fetchWithAuth(`${BACKEND_URL}/users/profile_pic_update/`, {
       method: "POST",
       body: formData,
     })

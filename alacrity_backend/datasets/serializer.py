@@ -32,7 +32,7 @@ class DatasetSerializer(serializers.ModelSerializer):
     def validate_price(self, value):
         """Ensure price is always a valid non-negative number"""
         if value is None:
-            return 0.00  # Default to Free (0.00)
+            return 0.00  
         if value < 0:
             raise serializers.ValidationError("Price cannot be negative.")
         return round(value, 2)
@@ -42,4 +42,8 @@ class DatasetSerializer(serializers.ModelSerializer):
         if not request or not request.user.is_authenticated:
             return False
         return DatasetPurchase.objects.filter(dataset=obj, buyer=request.user).exists()
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['tags'] = instance.tags.split(',') if instance.tags else []
+        return data
 

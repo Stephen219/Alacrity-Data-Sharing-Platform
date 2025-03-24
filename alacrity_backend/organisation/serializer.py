@@ -5,21 +5,45 @@ from organisation.models import Organization
 
 from users.serializers import UserSerializer
 from django.db import transaction
+from datasets.serializer import DatasetSerializer
 
 class OrganizationSerializer(serializers.ModelSerializer):
+    followers_count = serializers.SerializerMethodField()
+    following_count = serializers.SerializerMethodField()
+    # datasets_count = serializers.SerializerMethodField()
+    is_followed = serializers.SerializerMethodField()
+    bio = serializers.CharField(source='description', allow_null=True)
+    website = serializers.URLField(allow_blank=True, allow_null=True)
+    location = serializers.CharField(allow_blank=True, allow_null=True)
+    profile_picture = serializers.URLField(allow_blank=True, allow_null=True)
+    cover_image = serializers.URLField(allow_blank=True, allow_null=True)
+    social_links = serializers.JSONField(allow_null=True)
+
+
     class Meta:
         model = Organization
-        fields = ['Organization_id', 'name', 'description', 'email', 'phone', 'address']
+        fields = [
+            'Organization_id', 'name', 'profile_picture', 'bio', 'date_joined',
+            'website', 'location', 'followers_count', 'following_count', 'cover_image',
+             'is_followed', 'social_links', 
+        ]
+        read_only_fields = ['date_joined', 'followers_count', 'following_count']
 
-    def validate_email(self, value):
-        if Organization.objects.filter(email=value).exists():
-            raise serializers.ValidationError("An organization with this email already exists.")
-        return value
+    def get_followers_count(self, obj):
+        return obj.following.count()  
 
-    def validate_phone(self, value):
-        if Organization.objects.filter(phone=value).exists():
-            raise serializers.ValidationError("An organization with this phone number already exists.")
-        return value
+    def get_following_count(self, obj):
+        return obj.following.count() 
+
+
+
+        
+
+    def get_is_followed(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.following.filter(id=request.user.id).exists()
+        return False
     
 class OrganizationRegisterSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=100, required=True)
@@ -28,6 +52,7 @@ class OrganizationRegisterSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=15, required=True)
     address = serializers.CharField(max_length=255, required=True)
     admin = UserSerializer()
+   
 
     def validate(self, attrs):
         admin_data = attrs.get('admin', {})

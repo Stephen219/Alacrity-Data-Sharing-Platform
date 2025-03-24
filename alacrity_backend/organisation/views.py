@@ -17,6 +17,22 @@ from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from .serializer import OrganizationRegisterSerializer
 from django.db import transaction
+from .models import Organization
+from .serializer import OrganizationSerializer
+from datasets.models import Dataset
+from datasets.serializer import DatasetSerializer
+from rest_framework.parsers import MultiPartParser, FormParser
+from minio import Minio
+from alacrity_backend.settings import MINIO_ACCESS_KEY , MINIO_SECRET_KEY, MINIO_BUCKET_NAME, MINIO_URL, MINIO_SECURE
+import uuid
+
+minio_client = Minio(
+        endpoint=MINIO_URL,
+        access_key=MINIO_ACCESS_KEY,
+        secret_key=MINIO_SECRET_KEY,
+        secure=MINIO_SECURE
+
+    )
 
 
 
@@ -200,3 +216,143 @@ class RegisterOrganizationView(APIView):
                 return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         print(f"Serializer errors: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+
+
+
+
+
+        
+
+
+
+class OrganizationProfileView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, org_id):
+        try:
+            organization = Organization.objects.get(Organization_id=org_id)
+            serializer = OrganizationSerializer(organization, context={'request': request})
+            serializer_data = serializer.data
+            serializer_data['datasets_count'] =  Dataset.objects.filter(contributor_id_id__organization=organization).count()
+            return Response(serializer_data, status=status.HTTP_200_OK)
+        except Organization.DoesNotExist:
+            return Response({"error": "Organization not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    parser_classes = (MultiPartParser, FormParser)
+
+    def put(self, request, org_id):
+            
+            try:
+                print(request.user)
+                #print the request data
+                print(request.data)
+                
+                organization = Organization.objects.get(Organization_id=org_id)
+                
+                if not request.user.is_authenticated or request.user.role != 'organization_admin':
+                    return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+
+                if 'profile_picture' in request.FILES:
+                    file_obj = request.FILES['profile_picture']
+                    file_extension = file_obj.name.split('.')[-1]
+                    file_name = f"profile_pictures/{org_id}/profile_picture.{file_extension}"
+                    minio_client.put_object(
+                        MINIO_BUCKET_NAME,
+                        file_name,
+                        file_obj,
+                        length=file_obj.size,
+                        content_type=file_obj.content_type
+                    )
+                    url = f"http://{MINIO_URL}/{MINIO_BUCKET_NAME}/{file_name}"
+                    organization.profile_picture = url
+                if 'cover_image' in request.FILES:
+                    file_obj = request.FILES['cover_image']
+                    file_extension = file_obj.name.split('.')[-1]
+                    file_name = f"profile_pictures/cover/{org_id}/cover_image.{file_extension}"
+                    minio_client.put_object(
+                        MINIO_BUCKET_NAME,
+                        file_name,
+                        file_obj,
+                        length=file_obj.size,
+                        content_type=file_obj.content_type
+                    )
+                    url = f"http://{MINIO_URL}/{MINIO_BUCKET_NAME}/{file_name}"
+                    organization.cover_image = url
+
+                data = request.data.copy()
+                data.pop('profile_picture', None)
+                data.pop('cover_image', None)
+                data['profile_picture'] = organization.profile_picture
+                data['cover_image'] = organization.cover_image
+                serializer = OrganizationSerializer(
+                    organization,
+                    data=data,
+                    partial=True,
+                    context={'request': request}
+                )
+                if serializer.is_valid():
+
+                    serializer.save()
+                    return Response(serializer.data, status=status.HTTP_200_OK)
+                print(f"Serializer errors: {serializer.errors}")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            except Organization.DoesNotExist:
+                return Response({"error": "Organization not found"}, status=status.HTTP_404_NOT_FOUND)
+            except Exception as e:
+                print(f"Error during update: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class OrganizationDatasetsView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, org_id):
+        try:
+            organization = Organization.objects.get(Organization_id=org_id)
+            limit = int(request.query_params.get('limit', 6))
+            datasets = Dataset.objects.filter(
+                contributor_id__organization=organization
+            ).order_by('-created_at')[:limit]
+            serializer = DatasetSerializer(datasets, many=True, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Organization.DoesNotExist:
+            return Response({"error": "Organization not found"}, status=status.HTTP_404_NOT_FOUND)
+
+class FollowOrganizationView(APIView):
+    permission_classes = [IsAuthenticated]
+    """
+    Follow an organization.
+    """
+
+    def post(self, request, org_id):
+        try:
+            organization = Organization.objects.get(Organization_id=org_id)
+            if organization.following.filter(id=request.user.id).exists():
+                return Response({"error": "You are already following this organization"}, status=status.HTTP_400_BAD_REQUEST)
+            organization.following.add(request.user)
+            return Response({"message": "Successfully followed organization"}, status=status.HTTP_201_CREATED)
+        except Organization.DoesNotExist:
+            return Response({"error": "Organization not found"}, status=status.HTTP_404_NOT_FOUND)
+
+class UnfollowOrganizationView(APIView):
+    """
+    Unfollow an organization.
+    THIS   POST REQUEST  IS USED TO UNFOLLOW AN ORGANIZATION when the user is authenticated
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, org_id):
+        try:
+            organization = Organization.objects.get(Organization_id=org_id)
+            if not organization.following.filter(id=request.user.id).exists():
+                return Response({"error": "You are not following this organization"}, status=status.HTTP_400_BAD_REQUEST)
+            organization.following.remove(request.user)
+            return Response({"message": "Successfully unfollowed organization"}, status=status.HTTP_200_OK)
+        except Organization.DoesNotExist:
+            return Response({"error": "Organization not found"}, status=status.HTTP_404_NOT_FOUND)

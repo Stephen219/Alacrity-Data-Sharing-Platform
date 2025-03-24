@@ -1,6 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from organisation.models import Organization
+# from organisation.models import Organization
 import uuid
 from django.utils import timezone
 
@@ -24,7 +24,7 @@ class User(AbstractUser):
     username = models.CharField(max_length=30, unique=True)
     phone_number = models.CharField(max_length=15, unique=True, blank=True, null=True) 
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
-    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True)
+    organization = models.ForeignKey('organisation.Organization', on_delete=models.SET_NULL, null=True, blank=True)
     # organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True)
     field = models.TextField(blank=True, null=True)
     date_joined = models.DateTimeField(auto_now_add=True, blank=True, null=True)
