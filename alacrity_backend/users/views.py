@@ -263,7 +263,9 @@ class LoginView(APIView):
         try:
             email = request.data.get('email')
             password = request.data.get('password')
-            print(email, password)
+            remember_me = request.data.get('remember_me', False)
+
+            print(email, password, remember_me)
 
             if not email or not password:
                 return Response({
@@ -290,8 +292,17 @@ class LoginView(APIView):
                 user.last_login = timezone.now()
                 user.save()
                 refresh = RefreshToken.for_user(user)
+                if remember_me == True:
+                    refresh.lifetime=timedelta(days=7)
+                else:
+                    refresh.set_exp(lifetime=timedelta(days=1))
 
-                print(refresh)
+                print(refresh.check_exp)
+                print(refresh.check_exp)
+                print(refresh.access_token.current_time)
+                print(refresh.lifetime)
+               
+                
                 return Response({
                     'status': 'success',
                     'message': 'Login successful',
@@ -300,7 +311,7 @@ class LoginView(APIView):
                         'email': user.email,
                         'username': user.username,
                         'role': user.role,
-                        'organization': user.organization.name if user.organization else None, # gets the organization name from the database
+                        'organization': user.organization.name if user.organization else None,
                         'phone_number': user.phone_number,
                     },
                     'access_token': str(refresh.access_token),

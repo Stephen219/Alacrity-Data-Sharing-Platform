@@ -14,6 +14,7 @@ const SignInForm: React.FC = () => {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [remember_me, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   
 
@@ -21,7 +22,7 @@ const SignInForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const result = await login(email, password);
+    const result = await login(email, password, remember_me);
 
 
 
@@ -43,7 +44,7 @@ const SignInForm: React.FC = () => {
       window.location.href = "/dashboard";
 
     } else {
-      setError(result.error);
+      setError(result.error || "An unknown error occurred");
     }
   };
 
@@ -106,8 +107,12 @@ const SignInForm: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <input
-                    id="remember" 
+                    id="remember_me" 
                     type="checkbox" 
+                    checked={remember_me}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+
+
                     className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                    
                   />

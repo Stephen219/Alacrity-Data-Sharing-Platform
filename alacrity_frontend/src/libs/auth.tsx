@@ -15,12 +15,13 @@ const API_BASE_URL = BACKEND_URL;
  * @returns {Promise<{ success: boolean; user?: any; error?: string }>} - Login result.
  */
 
-export async function login(email: string, password: string) {
+export async function login(email: string, password: string, remember_me: boolean): Promise<{ success: boolean; user?: User; error?: string }>
+ {
     try {
         const response = await fetch(`${API_BASE_URL}/users/login/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ email, password , remember_me}),
         });
 
         const data = await response.json();
