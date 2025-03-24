@@ -1,7 +1,7 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .models import Chat, Message
+from .models import Chat, Message , Dataset
 from .serializer import ChatSerializer, MessageSerializer
 from rest_framework.decorators import action
 from users.decorators import role_required
@@ -39,4 +39,42 @@ class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
     
-    
+    @role_required(['organization_admin', 'contributor', 'researcher'])
+    def list(self, request, *args, **kwargs):
+        dataset_id = self.kwargs.get('dataset_id')
+        if not dataset_id:
+            return Response({'error': 'Dataset ID is required.'}, status=400)
+        
+        try:
+            # Add logging for debugging
+            print(f"Looking for chat with dataset_id: {dataset_id}")
+            
+            # First check if the dataset exists
+            try:
+                dataset = Dataset.objects.get(dataset_id=dataset_id)
+                print(f"Dataset found: {dataset.title}")
+            except Dataset.DoesNotExist:
+                print(f"No dataset found with ID: {dataset_id}")
+                return Response({'error': 'Dataset not found.'}, status=404)
+            
+            # Then look for the chat
+            chat = Chat.objects.get(dataset__dataset_id=dataset_id)
+            print(f"Chat found: {chat.chat_id}")
+            
+            # Get messages
+            messages = Message.objects.filter(chat=chat).order_by('created_at')
+            
+            if not messages.exists():
+                print(f"No messages found for chat: {chat.chat_id}")
+                return Response({'messages': [], 'info': 'No messages available for this chat.'}, status=200)
+            
+            print(f"Found {messages.count()} messages")
+            serializer = self.get_serializer(messages, many=True)
+            return Response(serializer.data)
+            
+        except Chat.DoesNotExist:
+                print(f"No chat found for dataset: {dataset_id}")
+                return Response([])  # Return empty list instead of 404
+        except Exception as e:
+            print(f"Unexpected error: {str(e)}")
+            return Response({'error': f'An error occurred: {str(e)}'}, status=500)

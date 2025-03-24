@@ -49,7 +49,7 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
         setDataset(datasetData)
 
         // Fetch existing messages if any
-        const messagesResponse = await fetchWithAuth(`${BACKEND_URL}datasets/chats/${params.dataset_id}/messages/`) 
+        const messagesResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/chats/${params.dataset_id}/messages/`) 
         if (messagesResponse.ok) {
           const messagesData = await messagesResponse.json()
           setMessages(messagesData)
@@ -65,59 +65,92 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
     fetchDatasetAndMessages()
 
     // Create WebSocket connection
-    const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const wsHost = window.location.host;
-    const wsUrl = `${wsScheme}://${wsHost}/ws/chats/${params.dataset_id}/`;
-    
-    console.log("Attempting to connect to WebSocket at:", wsUrl);
-
     const connectWebSocket = () => {
       // Close existing connection if any
       if (socketRef.current) {
         socketRef.current.close();
       }
       
-      // Create new connection
+      // Track retry attempts
+      let retryCount = 0;
+      const maxRetries = 5;
+      let retryTimeout;
+      
+      // Use the full path with 'ws/' prefix as suggested
+      
+      const token = localStorage.getItem('access_token'); // Adjust based on your auth storage
+      const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+      const wsHost = BACKEND_URL.replace(/^https?:\/\//, '');
+      const wsUrl = `${wsScheme}://${wsHost}/ws/datasets/chats/${params.dataset_id}/messages/?token=${token}`;
+      console.log("Attempting to connect to WebSocket at:", wsUrl);
       socketRef.current = new WebSocket(wsUrl);
       
-      socketRef.current.onopen = () => {
-        console.log('WebSocket connection established');
-        setSocketStatus("Connected");
-      };
-      
-      socketRef.current.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          console.log("WebSocket message received:", data);
-          
-          if (data.message) {
-            setMessages(prev => [...prev, data.message]);
-          } else if (data.error) {
-            console.error("WebSocket error message:", data.error);
-          } else if (data.type === 'connection_established') {
-            console.log("Connection confirmation:", data.message);
-          }
-        } catch (error) {
-          console.error("Error parsing WebSocket message:", error);
-        }
-      };
-      
-      socketRef.current.onerror = (error) => {
-        console.error("WebSocket error:", error);
-        setSocketStatus("Error");
-      };
-      
-      socketRef.current.onclose = (event) => {
-        console.log("WebSocket closed. Code:", event.code, "Reason:", event.reason);
-        setSocketStatus("Disconnected");
+      const attemptConnection = () => {
+        // Create new connection
+        socketRef.current = new WebSocket(wsUrl);
         
-        // Attempt to reconnect with delay
-        setTimeout(() => {
-          console.log("Attempting to reconnect...");
-          setSocketStatus("Reconnecting...");
-          connectWebSocket();
-        }, 3000);
+        socketRef.current.onopen = () => {
+          console.log('WebSocket connection established');
+          setSocketStatus("Connected");
+          // Reset retry count on successful connection
+          retryCount = 0;
+          // Clear any pending retry timeouts
+          if (retryTimeout) {
+            clearTimeout(retryTimeout);
+          }
+        };
+        
+        socketRef.current.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log('Received message:', data);
+            
+            // Update your chat UI with the new message
+            if (data.message) {
+              setMessages(prev => [...prev, data.message]);
+            } else if (data.error) {
+              console.error("WebSocket error message:", data.error);
+            } else if (data.type === 'connection_established') {
+              console.log("Connection confirmation:", data.message);
+            }
+          } catch (error) {
+            console.error('Error parsing WebSocket message:', error);
+          }
+        };
+        
+        socketRef.current.onerror = (error) => {
+          console.error('WebSocket error:', error);
+          setSocketStatus("Error");
+        };
+        
+        socketRef.current.onclose = (event) => {
+          console.log("WebSocket closed. Code:", event.code, "Reason:", event.reason);
+          setSocketStatus("Disconnected");
+          
+          // Check if we should retry
+          if (retryCount < maxRetries) {
+            retryCount++;
+            const delayMs = 3000; // 3 seconds between retries
+            
+            console.log(`Attempt ${retryCount} of ${maxRetries}. Reconnecting in ${delayMs/1000} seconds...`);
+            setSocketStatus(`Reconnecting... (Attempt ${retryCount}/${maxRetries})`);
+            
+            // Attempt to reconnect with delay
+            retryTimeout = setTimeout(() => {
+              attemptConnection();
+            }, delayMs);
+          } else {
+            console.log("Maximum retry attempts reached. Giving up.");
+            setSocketStatus("Failed to connect after 5 attempts");
+          }
+        };
       };
+      
+      // Start the first connection attempt
+      attemptConnection();
+      
+      // Return the socketRef for external reference if needed
+      return socketRef.current;
     };
     
     connectWebSocket();

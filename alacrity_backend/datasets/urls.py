@@ -21,14 +21,8 @@ urlpatterns = [
     #####
     path('download/<str:dataset_id>/', download_dataset, name='download_dataset'),
     # path('overview/<uuid:dataset_id>/', dataset_overview, name='dataset_overview'),
-    
-   
-
-
-
-
-
-
+    path('chat/', include(router.urls)),
+    path('chats/<str:dataset_id>/messages/', MessageViewSet.as_view({'get': 'list'}), name='chat-messages'),
     # path('correlation/<str:dataset_id>/',correlation_analysis, name='correlation_analysis'),
     path('details/<str:dataset_id>/', dataset_detail, name='dataset_detail'),
     path('datasets/<str:dataset_id>/', dataset_detail, name='dataset_detail'),

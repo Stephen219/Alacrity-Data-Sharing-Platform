@@ -1,8 +1,7 @@
 # datasets/routing.py
-from django.urls import path
-from .consumers import ChatConsumer
+from django.urls import re_path
+from . import consumers
 
 websocket_urlpatterns = [
-    # Match the URL pattern used in frontend
-    path('ws/chats/<str:dataset_id>/', ChatConsumer.as_asgi()),
+    re_path(r'ws/datasets/chats/(?P<dataset_id>[^/]+)/messages/$', consumers.ChatConsumer.as_asgi()),
 ]

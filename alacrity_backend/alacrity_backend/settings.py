@@ -41,6 +41,9 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
+    'channels_redis',
+    'daphne',
     'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -61,7 +64,7 @@ INSTALLED_APPS = [
     'contact',
     'organisation',
     'dataset_requests',
-    'channels',
+    
 
 ]
 
@@ -77,6 +80,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'alacrity_backend.urls'
+
 
 ASGI_APPLICATION = 'alacrity_backend.asgi.application'
 
@@ -100,6 +104,9 @@ TEMPLATES = [
 WSGI_APPLICATION = 'alacrity_backend.wsgi.application'
 
 IS_GITLAB_CI = os.getenv('CI', 'false').lower() == 'true'
+
+CORS_ALLOW_ALL_ORIGINS = True
+
 
 
 # ASGI and channel layers settings
