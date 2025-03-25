@@ -229,7 +229,7 @@ const AdminDashboard: React.FC = () => {
 
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Pending Access Requests</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Dataset Requests:</h2>
           <button className="px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f] transition-colors"
             onClick={handleViewAllClick}>
             View All
@@ -308,6 +308,7 @@ const AdminDashboard: React.FC = () => {
       </div>
 
     {/* Pending Research Submissions table component */}
+    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Submission Requests:</h2>
   <PendingSubmissionsTable
     submissions={pendingSubmissions}
     enablePagination={false} 
@@ -319,7 +320,7 @@ const AdminDashboard: React.FC = () => {
   />
       
       <div>
-        <div className="flex items-center justify-between mb-4 ">
+        <div className="flex items-center justify-between mb-4 mt-8">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 ">Dataset Analytics</h2>
           <div className="relative">
             <select className="block appearance-none w-full bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-[#FF6B1A] transition-colors">
