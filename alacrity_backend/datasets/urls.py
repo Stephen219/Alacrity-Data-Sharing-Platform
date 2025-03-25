@@ -1,7 +1,7 @@
 from django.urls import path
 from django.urls import include
 from rest_framework.routers import DefaultRouter
-from .views import ( ToggleBookmarkDatasetView, UserBookmarkedDatasetsView, descriptive_statistics, 
+from .views import ( ToggleBookmarkDatasetView, UserBookmarkedDatasetsView, descriptive_statistics, FeedbackView,
 filter_and_clean_dataset, 
 get_datasets, get_filter_options, CreateDatasetView, 
 
@@ -34,7 +34,7 @@ urlpatterns = [
     path('analysis/filter/<str:dataset_id>/', filter_and_clean_dataset, name='filter_clean_aggregate_dataset'),
     path("bookmarks/", UserBookmarkedDatasetsView.as_view(), name="user-bookmarked-datasets"), #this took forever for me to figure out. make sure your urls stay above str
     path('<str:dataset_id>/', dataset_view, name='dataset_detail'),
-
     path("<str:dataset_id>/bookmark/", ToggleBookmarkDatasetView.as_view(), name="toggle-bookmark-dataset"),
+    path('feedback/<str:dataset_id>/', FeedbackView.as_view(), name='feedback'),
 ]
 

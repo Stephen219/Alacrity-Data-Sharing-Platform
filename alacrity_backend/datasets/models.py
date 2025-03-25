@@ -71,3 +71,14 @@ class Message(models.Model):
 
     def __str__(self):
         return f"Message from {self.sender} in chat for {self.chat.dataset.title}"
+
+class Feedback(models.Model):
+    feedback_id = models.CharField(max_length=100, primary_key=True, default=generate_id, editable=False)
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name='feedbacks')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='feedbacks')
+    rating = models.PositiveIntegerField()
+    comment = models.TextField(validators=[MinLengthValidator(1)])
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Feedback for {self.dataset.title} from {self.user}"
