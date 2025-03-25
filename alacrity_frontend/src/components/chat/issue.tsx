@@ -1,22 +1,34 @@
+// app/chat/[dataset_id]/page.tsx
 "use client";
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
-import { fetchWithAuth } from "@/libs/auth";
+import { fetchWithAuth } from "@/libs/auth"; // Adjust path if needed
 import { BACKEND_URL } from "@/config";
 import { Send, ArrowLeft, Loader2 } from "lucide-react";
+import { jwtDecode } from "jwt-decode"; // Use named import instead of default
 
 interface Message {
-  id: string;
+  message_id: string;
   sender: "user" | "admin";
   content: string;
   timestamp: Date;
+  sender_first_name?: string;
+  sender_sur_name?: string;
+  sender_profile_picture?: string | null;
+  sender_email?: string; // Add this to identify the sender
 }
 
 interface Dataset {
   dataset_id: string;
   title: string;
   organization: string;
+}
+
+interface DecodedToken {
+  email: string;
+  user_id: number;
+  [key: string]: any;
 }
 
 export default function ChatPage({ params }: { params: { dataset_id: string } }) {
@@ -27,9 +39,11 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
   const [loading, setLoading] = useState(true);
   const [socketStatus, setSocketStatus] = useState<string>("Connecting...");
   const [isTyping, setIsTyping] = useState(false);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
 
   const socketRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -40,45 +54,55 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
   }, [messages]);
 
   useEffect(() => {
+    // Decode the JWT to get the current user's email
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      try {
+        const decoded: DecodedToken = jwtDecode(token);
+        setCurrentUserEmail(decoded.email);
+      } catch (error) {
+        console.error("Error decoding token:", error);
+      }
+    }
+
     const fetchDatasetAndMessages = async () => {
       try {
         console.log("Fetching for dataset_id:", params.dataset_id);
         const token = localStorage.getItem("access_token");
-        console.log("Token:", token ? "Present" : "Missing");
-  
+        if (!token) throw new Error("No access token found");
+
         const datasetResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/${params.dataset_id}/`);
         if (!datasetResponse.ok) {
-          const errorText = await datasetResponse.text();
-          console.error("Dataset fetch failed:", datasetResponse.status, errorText);
-          throw new Error(`Dataset fetch failed: ${datasetResponse.status} - ${errorText}`);
+          throw new Error(`Dataset fetch failed: ${datasetResponse.status}`);
         }
         const datasetData = await datasetResponse.json();
         console.log("Dataset data:", datasetData);
         setDataset(datasetData);
-  
-        const messagesResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/messages/${params.dataset_id}`);
+
+        const messagesResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/messages/${params.dataset_id}/`);
         if (!messagesResponse.ok) {
-          const errorText = await messagesResponse.text();
-          console.error("Messages fetch failed:", messagesResponse.status, errorText);
-          throw new Error(`Messages fetch failed: ${messagesResponse.status} - ${errorText}`);
+          throw new Error(`Messages fetch failed: ${messagesResponse.status}`);
         }
         const messagesData = await messagesResponse.json();
         console.log("Messages data:", messagesData);
         setMessages(
-          messagesData.map((msg) => ({
-            id: msg.id,
-            sender: msg.sender, // Already set by backend
-            content: msg.content,
-            timestamp: new Date(msg.timestamp || msg.created_at),
-          }))
+          Array.isArray(messagesData)
+            ? messagesData.map((msg) => ({
+                message_id: msg.message_id,
+                sender: msg.sender,
+                content: msg.content,
+                timestamp: new Date(msg.timestamp || msg.created_at),
+                sender_first_name: msg.sender_first_name,
+                sender_sur_name: msg.sender_sur_name,
+                sender_profile_picture: msg.sender_profile_picture,
+                sender_email: msg.sender_email || `${msg.sender_first_name}.${msg.sender_sur_name}@example.com`, // Fallback
+              }))
+            : []
         );
-  
-        setLoading(false);
       } catch (error) {
         console.error("Fetch error:", error);
+      } finally {
         setLoading(false);
-        // Optionally redirect to error page
-        // router.push("/errors/403");
       }
     };
 
@@ -89,13 +113,19 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
 
       let retryCount = 0;
       const maxRetries = 5;
-      let retryTimeout;
+      let retryTimeout: NodeJS.Timeout;
 
       const token = localStorage.getItem("access_token");
+      if (!token) {
+        console.error("No token for WebSocket");
+        setSocketStatus("Authentication failed");
+        return;
+      }
+
       const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
       const wsHost = BACKEND_URL.replace(/^https?:\/\//, "");
       const wsUrl = `${wsScheme}://${wsHost}/ws/datasets/chats/${params.dataset_id}/messages/?token=${token}`;
-      console.log("Attempting to connect to WebSocket at:", wsUrl);
+      console.log("Connecting to WebSocket at:", wsUrl);
 
       const attemptConnection = () => {
         socketRef.current = new WebSocket(wsUrl);
@@ -110,15 +140,29 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
         socketRef.current.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            if (data.message) {
-              setMessages((prev) => [...prev, {
-                id: data.message.id,
-                sender: data.message.sender,  // Use sender from backend
-                content: data.message.content,
-                timestamp: new Date(data.message.timestamp)
-              }]);
-            } else if (data.error) {
+            if (data.error) {
               console.error("WebSocket error:", data.error);
+              return;
+            }
+            if (data.message) {
+              setMessages((prev) => {
+                const newMessage = {
+                  message_id: data.message.message_id,
+                  sender: data.message.sender,
+                  content: data.message.content,
+                  timestamp: new Date(data.message.timestamp),
+                  sender_first_name: data.message.sender_first_name,
+                  sender_sur_name: data.message.sender_sur_name,
+                  sender_profile_picture: data.message.sender_profile_picture,
+                  sender_email: data.message.sender_email || `${data.message.sender_first_name}.${data.message.sender_sur_name}@example.com`, // Fallback
+                };
+                if (prev.some((m) => m.message_id === newMessage.message_id)) {
+                  return prev;
+                }
+                return [...prev, newMessage];
+              });
+            } else if (data.typing !== undefined) {
+              setIsTyping(data.is_typing);
             } else if (data.type === "connection_established") {
               console.log("Connection confirmation:", data.message);
             }
@@ -147,32 +191,36 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
       };
 
       attemptConnection();
-
-      return socketRef.current;
     };
 
     connectWebSocket();
 
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.close(1000, "Component unmounting");
+    const handleTyping = () => {
+      if (socketRef.current?.readyState === WebSocket.OPEN) {
+        socketRef.current.send(JSON.stringify({ typing: true }));
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => {
+          socketRef.current?.send(JSON.stringify({ typing: false }));
+        }, 2000);
       }
+    };
+
+    const textarea = document.querySelector("textarea");
+    textarea?.addEventListener("input", handleTyping);
+
+    return () => {
+      if (socketRef.current) socketRef.current.close(1000, "Component unmounting");
+      textarea?.removeEventListener("input", handleTyping);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
   }, [params.dataset_id]);
 
   const sendMessage = () => {
-    if (!newMessage.trim() || !dataset || !socketRef.current) return;
+    if (!newMessage.trim() || !socketRef.current) return;
 
     if (socketRef.current.readyState === WebSocket.OPEN) {
-      const timestamp = new Date();
-      const messageData = {
-        content: newMessage,
-        timestamp: timestamp.toISOString(),
-        // Removed 'sender' here; backend will set it
-      };
-
+      const messageData = { content: newMessage };
       socketRef.current.send(JSON.stringify(messageData));
-      // Don’t add message here; wait for WebSocket response to avoid duplication
       setNewMessage("");
     } else {
       alert("Connection lost. Please wait while we reconnect...");
@@ -186,6 +234,11 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
     }
   };
 
+  // Determine if a message is from the current user
+  const isCurrentUserMessage = (message: Message) => {
+    return currentUserEmail === message.sender_email;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -196,7 +249,6 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      {/* Header */}
       <header className="bg-white shadow-md p-4 flex items-center sticky top-0 z-10">
         <button
           onClick={() => router.back()}
@@ -206,9 +258,9 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
           <ArrowLeft className="w-6 h-6 text-gray-700" />
         </button>
         <div className="flex-1 ml-3">
-          <h1 className="text-xl font-bold text-gray-800">{dataset?.title}</h1>
+          <h1 className="text-xl font-bold text-gray-800">{dataset?.title || "Chat"}</h1>
           <p className="text-sm text-gray-600">
-            Support for {dataset?.organization}
+            Support for {dataset?.organization || "Unknown Organization"}
           </p>
         </div>
         <span
@@ -224,7 +276,6 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
         </span>
       </header>
 
-      {/* Messages Area */}
       <main className="flex-1 overflow-y-auto p-6 bg-gradient-to-b from-gray-50 to-gray-100">
         <div className="max-w-4xl mx-auto space-y-4">
           {messages.length === 0 ? (
@@ -234,53 +285,75 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
               </p>
             </div>
           ) : (
-            messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${
-                  message.sender === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
+            <>
+              {messages.map((message) => (
                 <div
-                  className={`flex items-end space-x-2 max-w-[70%] ${
-                    message.sender === "user" ? "flex-row-reverse space-x-reverse" : ""
+                  key={message.message_id}
+                  className={`flex ${
+                    isCurrentUserMessage(message) ? "justify-end" : "justify-start"
                   }`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold ${
-                      message.sender === "user" ? "bg-blue-500" : "bg-gray-500"
+                    className={`flex items-end space-x-2 max-w-[70%] ${
+                      isCurrentUserMessage(message) ? "flex-row-reverse space-x-reverse" : ""
                     }`}
                   >
-                    {message.sender === "user" ? "U" : "A"}
-                  </div>
-                  <div
-                    className={`p-3 rounded-lg shadow-sm ${
-                      message.sender === "user"
-                        ? "bg-blue-500 text-white rounded-br-none"
-                        : "bg-white text-gray-800 rounded-bl-none border border-gray-200"
-                    }`}
-                  >
-                    <p>{message.content}</p>
-                    <span
-                      className={`text-xs mt-1 block ${
-                        message.sender === "user" ? "text-blue-100" : "text-gray-500"
+                    <div className="w-8 h-8 rounded-full overflow-hidden">
+                      {message.sender_profile_picture ? (
+                        <img
+                          src={message.sender_profile_picture}
+                          alt={`${message.sender_first_name} ${message.sender_sur_name}`}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div
+                          className={`w-full h-full flex items-center justify-center text-white font-semibold ${
+                            isCurrentUserMessage(message) ? "bg-blue-500" : "bg-gray-500"
+                          }`}
+                        >
+                          {message.sender_first_name?.[0] || "U"}
+                          {message.sender_sur_name?.[0] || ""}
+                        </div>
+                      )}
+                    </div>
+                    <div
+                      className={`p-3 rounded-lg shadow-sm ${
+                        isCurrentUserMessage(message)
+                          ? "bg-blue-500 text-white rounded-br-none"
+                          : "bg-white text-gray-800 rounded-bl-none border border-gray-200"
                       }`}
                     >
-                      {new Date(message.timestamp).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
+                      <p>{message.content}</p>
+                      <span
+                        className={`text-xs mt-1 block ${
+                          isCurrentUserMessage(message) ? "text-blue-100" : "text-gray-500"
+                        }`}
+                      >
+                        {new Date(message.timestamp).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ))}
+              {isTyping && (
+                <div className="flex justify-start">
+                  <div className="flex items-end space-x-2 max-w-[70%]">
+                    <div className="w-8 h-8 rounded-full bg-gray-500" />
+                    <div className="p-3 rounded-lg shadow-sm bg-white text-gray-800 rounded-bl-none border border-gray-200">
+                      <span className="animate-pulse">...</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
           <div ref={messagesEndRef} />
         </div>
       </main>
 
-      {/* Input Area */}
       <footer className="bg-white border-t border-gray-200 p-4 shadow-inner">
         <div className="max-w-4xl mx-auto flex items-center gap-3">
           <textarea

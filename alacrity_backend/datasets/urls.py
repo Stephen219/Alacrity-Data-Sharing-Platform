@@ -8,7 +8,7 @@ get_datasets, get_filter_options, CreateDatasetView,
  pre_analysis)
 
 from .new import analyze_dataset , dataset_detail, all_datasets_view, clear_dataset_cache, dataset_view, download_dataset
-from .chat_view import ChatListView, ChatStartView, SendMessageView, MessageListView,DatasetDetailView
+from .chat_view import ChatListView, SendMessageView, MessageListView,DatasetDetailView
 
 urlpatterns = [
 
@@ -18,7 +18,7 @@ urlpatterns = [
     path('download/<str:dataset_id>/', download_dataset, name='download_dataset'),
     path('datasets/<uuid:dataset_id>/', DatasetDetailView.as_view(), name='dataset-detail'),
     path('chats/', ChatListView.as_view(), name='chat-list'),
-    path('chats/start/<str:dataset_id>/', ChatStartView.as_view(), name='chat-start'),
+    #path('chats/start/<str:dataset_id>/', ChatStartView.as_view(), name='chat-start'),
     path('chats/<int:pk>/send/', SendMessageView.as_view(), name='send-message'),
     path('messages/<str:dataset_id>/', MessageListView.as_view(), name='message-list'),   
     path('details/<str:dataset_id>/', dataset_detail, name='dataset_detail'),

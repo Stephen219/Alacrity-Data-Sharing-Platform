@@ -11,37 +11,44 @@ interface ChatSummary {
   dataset_id: string;
   title: string;
   organization: string;
+  participant: {
+    first_name: string;
+    sur_name: string;
+    profile_picture?: string | null;
+  };
   last_message?: string;
   last_timestamp?: string;
+  unread_count: number;
 }
 
 export default function ChatListPage() {
   const router = useRouter();
   const [chats, setChats] = useState<ChatSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [typingStatus, setTypingStatus] = useState<{ [key: string]: boolean }>({});
   const socketRef = useRef<WebSocket | null>(null);
 
-  useEffect(() => {
-    const fetchChats = async () => {
-      try {
-        const response = await fetchWithAuth(`${BACKEND_URL}/datasets/chats/`);
-        console.log("Fetch chats response status:", response.status);
-        if (response.ok) {
-          const chatData = await response.json();
-          console.log("Fetched chat data:", chatData);
-          setChats(Array.isArray(chatData) ? chatData : []);
-        } else {
-          console.warn("Failed to fetch chats:", response.status, await response.text());
-          setChats([]);
-        }
-      } catch (error) {
-        console.error("Error fetching chats:", error);
+  const fetchChats = async () => {
+    try {
+      const response = await fetchWithAuth(`${BACKEND_URL}/datasets/chats/`, { cache: "no-store" });
+      console.log("Fetch chats response status:", response.status);
+      if (response.ok) {
+        const chatData = await response.json();
+        console.log("Fetched chat data:", chatData);
+        setChats(Array.isArray(chatData) ? chatData : []);
+      } else {
+        console.warn("Failed to fetch chats, status:", response.status);
         setChats([]);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching chats:", error);
+      setChats([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchChats();
 
     const connectWebSocket = () => {
@@ -71,8 +78,9 @@ export default function ChatListPage() {
                 chat.dataset_id === data.message.dataset_id
                   ? {
                       ...chat,
-                      last_message: data.message.last_message || data.message.content,
-                      last_timestamp: data.message.last_timestamp || data.message.timestamp,
+                      last_message: data.message.last_message,
+                      last_timestamp: data.message.last_timestamp,
+                      unread_count: data.message.unread_count, // Use backend-provided count
                     }
                   : chat
               );
@@ -83,17 +91,28 @@ export default function ChatListPage() {
                   dataset_id: data.message.dataset_id,
                   title: data.message.title || "New Chat",
                   organization: data.message.organization || "Unknown",
-                  last_message: data.message.last_message || data.message.content,
-                  last_timestamp: data.message.last_timestamp || data.message.timestamp,
+                  participant: {
+                    first_name: data.message.participant_first_name || "Unknown",
+                    sur_name: data.message.participant_sur_name || "",
+                    profile_picture: data.message.participant_profile_picture || null,
+                  },
+                  last_message: data.message.last_message,
+                  last_timestamp: data.message.last_timestamp,
+                  unread_count: data.message.unread_count || 1,
                 },
               ];
             }
           });
+        } else if (data.typing !== undefined) {
+          setTypingStatus((prev) => ({
+            ...prev,
+            [data.dataset_id]: data.is_typing,
+          }));
         }
       };
 
       socketRef.current.onerror = (error) => {
-        console.error("User WebSocket error:", error);  // Improved logging
+        console.error("User WebSocket error:", error);
       };
 
       socketRef.current.onclose = (event) => {
@@ -103,10 +122,16 @@ export default function ChatListPage() {
 
     connectWebSocket();
 
+    // Refetch chats when the page regains focus
+    const handleFocus = () => {
+      console.log("Window regained focus, refetching chats...");
+      fetchChats();
+    };
+    window.addEventListener("focus", handleFocus);
+
     return () => {
-      if (socketRef.current) {
-        socketRef.current.close();
-      }
+      if (socketRef.current) socketRef.current.close();
+      window.removeEventListener("focus", handleFocus);
     };
   }, []);
 
@@ -134,15 +159,45 @@ export default function ChatListPage() {
               <div
                 key={chat.dataset_id}
                 onClick={() => router.push(`/chat/${chat.dataset_id}`)}
-                className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:bg-gray-50 cursor-pointer"
+                className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:bg-gray-50 cursor-pointer flex items-center space-x-4"
               >
-                <h2 className="text-lg font-semibold text-gray-800">{chat.title}</h2>
-                <p className="text-sm text-gray-600">{chat.organization}</p>
-                {chat.last_message && (
-                  <p className="text-sm text-gray-500 truncate">{chat.last_message}</p>
-                )}
-                {chat.last_timestamp && (
-                  <p className="text-xs text-gray-400">
+                <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                  {chat.participant.profile_picture ? (
+                    <img
+                      src={chat.participant.profile_picture}
+                      alt={`${chat.participant.first_name} ${chat.participant.sur_name}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-300 flex items-center justify-center text-white font-semibold">
+                      {chat.participant.first_name[0]}
+                      {chat.participant.sur_name[0] || ""}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg font-semibold text-gray-800 truncate">
+                    {chat.participant.first_name} {chat.participant.sur_name}
+                  </h2>
+                  <div className="flex items-center space-x-2">
+                    {typingStatus[chat.dataset_id] ? (
+                      <p className="text-sm text-gray-500 flex items-center">
+                        <span className="animate-pulse">...</span> Typing
+                      </p>
+                    ) : (
+                      <p className="text-sm text-gray-500 truncate">
+                        {chat.last_message || "No messages yet"}
+                      </p>
+                    )}
+                    {chat.unread_count > 0 && !typingStatus[chat.dataset_id] && (
+                      <span className="bg-blue-500 text-white text-xs font-semibold px-2 py-1 rounded-full">
+                        {chat.unread_count}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {chat.last_timestamp && !typingStatus[chat.dataset_id] && (
+                  <p className="text-xs text-gray-400 flex-shrink-0">
                     {new Date(chat.last_timestamp).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",

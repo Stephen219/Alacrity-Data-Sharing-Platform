@@ -34,46 +34,49 @@ class ChatListView(APIView):
         print(f"DEBUG: chat_summaries: {chat_summaries}")
         return Response(chat_summaries)
     
-class ChatStartView(APIView):
-    """Start a new chat or add user to an existing chat."""
+# datasets/views.py
+class ChatListView(APIView):
     serializer_class = ChatSerializer
 
     @role_required(['organization_admin', 'contributor', 'researcher'])
-    def post(self, request, dataset_id, *args, **kwargs):
-        try:
-            dataset = Dataset.objects.get(dataset_id=dataset_id)
-            chat, created = Chat.objects.get_or_create(dataset=dataset)
+    def get(self, request, *args, **kwargs):
+        print("DEBUG: ChatListView get called")
+        user = request.user
+        chats = (
+            Chat.objects.filter(participants=user)
+            .select_related('dataset')
+            .prefetch_related('participants', 'messages')
+            | Chat.objects.filter(dataset__contributor_id=user)
+            .select_related('dataset')
+            .prefetch_related('participants', 'messages')
+        ).distinct()
 
-            if request.user not in chat.participants.all():
-                chat.participants.add(request.user)
+        print(f"DEBUG: chats queryset: {chats}")
+        chat_summaries = []
+        for chat in chats:
+            other_participant = chat.participants.exclude(id=user.id).first()
+            if not other_participant:
+                continue
 
-            contributor = dataset.contributor_id
-            if contributor and contributor not in chat.participants.all():
-                chat.participants.add(contributor)
+            # Count only unread messages from others
+            unread_count = chat.messages.filter(read=False).exclude(sender=user).count()
+            last_message = chat.messages.last()
 
-            content = request.data.get('content')
-            if content:
-                message = Message.objects.create(chat=chat, sender=request.user, content=content)
-                return Response({
-                    'dataset_id': dataset.dataset_id,
-                    'title': dataset.title,
-                    'organization': dataset.organization_name,
-                    'last_message': message.content,
-                    'last_timestamp': message.created_at.isoformat()
-                }, status=status.HTTP_201_CREATED)
-
-            return Response({
-                'dataset_id': dataset.dataset_id,
-                'title': dataset.title,
-                'organization': dataset.organization_name,
-                'last_message': chat.messages.last().content if chat.messages.exists() else None,
-                'last_timestamp': chat.messages.last().created_at.isoformat() if chat.messages.exists() else None,
-            }, status=status.HTTP_200_OK if not created else status.HTTP_201_CREATED)
-
-        except Dataset.DoesNotExist:
-            return Response({'error': 'Dataset not found'}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            chat_summaries.append({
+                'dataset_id': chat.dataset.dataset_id,
+                'title': chat.dataset.title,
+                'organization': chat.dataset.organization_name,
+                'participant': {
+                    'first_name': other_participant.first_name,
+                    'sur_name': other_participant.sur_name,
+                    'profile_picture': other_participant.profile_picture,
+                },
+                'last_message': last_message.content if last_message else None,
+                'last_timestamp': last_message.created_at.isoformat() if last_message else None,
+                'unread_count': unread_count,
+            })
+        print(f"DEBUG: chat_summaries: {chat_summaries}")
+        return Response(chat_summaries)
 
 class SendMessageView(APIView):
     """Send a message in an existing chat."""
@@ -101,6 +104,7 @@ class SendMessageView(APIView):
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class MessageListView(APIView):
     serializer_class = MessageSerializer
 
@@ -116,7 +120,6 @@ class MessageListView(APIView):
             chat = Chat.objects.get(dataset__dataset_id=dataset_id)
             print(f"DEBUG: Chat found: {chat.chat_id}")
 
-            # Allow contributor or participants
             if request.user != dataset.contributor_id and request.user not in chat.participants.all():
                 return Response({'error': 'You are not authorized to view this chat'}, status=status.HTTP_403_FORBIDDEN)
 
@@ -125,19 +128,20 @@ class MessageListView(APIView):
                 print(f"DEBUG: No messages found for chat: {chat.chat_id}")
                 return Response({'messages': [], 'info': 'No messages available for this chat.'}, status=status.HTTP_200_OK)
 
-            print(f"DEBUG: Found {messages.count()} messages")
+            # Fix: Use exclude instead of sender__ne
+            messages.exclude(sender=request.user).update(read=True)
             serializer = MessageSerializer(messages, many=True)
+            print(f"DEBUG: Found {messages.count()} messages")
             return Response(serializer.data)
-
         except Dataset.DoesNotExist:
             print(f"DEBUG: No dataset found with ID: {dataset_id}")
             return Response({'error': 'Dataset not found'}, status=status.HTTP_404_NOT_FOUND)
         except Chat.DoesNotExist:
             print(f"DEBUG: No chat found for dataset: {dataset_id}")
             return Response([], status=status.HTTP_200_OK)
-        except Exception as e:
-            print(f"DEBUG: Unexpected error: {str(e)}")
-            return Response({'error': f'An error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+
         
 class DatasetDetailView(APIView):
     serializer_class = DatasetSerializer
