@@ -67,12 +67,12 @@ export default function DatasetDetailPage({ params }: { params: { dataset_id: st
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          rating: rating, // Send as number (1-5)
-          comments: comment.trim(), // Match backend expected field
+          rating: rating,
+          comments: comment.trim(),
         }),
       });
 
-      const data = await response.json(); // Read once here
+      const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || `Failed to submit feedback: ${response.status}`);
       }
@@ -86,7 +86,7 @@ export default function DatasetDetailPage({ params }: { params: { dataset_id: st
       setRating(0);
     } catch (error) {
       console.error("Error submitting feedback:", error);
-      setSubmissionStatus(error.message || "Failed to submit feedback. Please try again.");
+      setSubmissionStatus("Failed to submit feedback. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -102,7 +102,7 @@ export default function DatasetDetailPage({ params }: { params: { dataset_id: st
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" role="status" />
       </div>
     );
   }
@@ -148,6 +148,7 @@ export default function DatasetDetailPage({ params }: { params: { dataset_id: st
                 <Star
                   key={star}
                   size={32}
+                  data-testid="lucide-star" // Added for testability
                   className={`cursor-pointer transition-colors ${
                     star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
                   }`}

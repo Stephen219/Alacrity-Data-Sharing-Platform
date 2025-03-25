@@ -1,4 +1,3 @@
-// libs/auth.js
 "use client";
 
 import { useEffect, useState } from "react";
@@ -113,7 +112,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
     return response;
   };
 
-  let accessToken = localStorage.getItem("access_token");
+  const accessToken = localStorage.getItem("access_token"); // Changed from 'let' to 'const'
   console.log("Initial access token:", accessToken ? accessToken.slice(0, 10) + "..." : "Missing");
 
   if (!accessToken) {

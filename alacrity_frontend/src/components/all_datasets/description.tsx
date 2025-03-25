@@ -15,7 +15,7 @@ interface Dataset {
   schema: string;
   analysis_link: string;
   description: string;
-  tags: string[] | string;
+  tags: string[]; // ✅ Refactored to always be an array of strings
   created_at: string;
   updated_at: string;
 }
@@ -54,15 +54,17 @@ export default function DatasetDetail() {
           throw new Error(`Failed to fetch dataset: ${datasetResponse.status}`);
         }
         const datasetData: Dataset = await datasetResponse.json();
-        datasetData.tags =
-          typeof datasetData.tags === "string"
-            ? datasetData.tags
-                .split(",")
-                .map((tag) => tag.trim())
-                .filter((tag) => tag.length > 0)
-            : Array.isArray(datasetData.tags)
-            ? datasetData.tags
+
+        // ✅ Normalize tags to always be a string array
+        const rawTags = datasetData.tags as string | string[] | undefined;
+
+        datasetData.tags = typeof rawTags === "string"
+          ? rawTags.split(",").map(tag => tag.trim()).filter(tag => tag.length > 0)
+          : Array.isArray(rawTags)
+            ? rawTags
             : [];
+
+
         setDataset(datasetData);
 
         const feedbackResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/feedback/${datasetId}/`);
@@ -76,10 +78,9 @@ export default function DatasetDetail() {
         } else {
           const feedbackData: Feedback[] = await feedbackResponse.json();
           setFeedbacks(feedbackData);
-          const avg =
-            feedbackData.length > 0
-              ? feedbackData.reduce((sum, fb) => sum + fb.rating, 0) / feedbackData.length
-              : 0;
+          const avg = feedbackData.length > 0
+            ? feedbackData.reduce((sum, fb) => sum + fb.rating, 0) / feedbackData.length
+            : 0;
           setAverageRating(avg);
         }
       } catch (err) {
@@ -95,7 +96,7 @@ export default function DatasetDetail() {
 
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.focus(); // Auto-focus the textarea on load
+      textareaRef.current.focus();
     }
   }, []);
 
@@ -116,11 +117,15 @@ export default function DatasetDetail() {
       }
       setMessage("Request created successfully!");
       setObjective("");
-    } catch (error: any) {
-      setMessage(error.message || "Failed to create request.");
+    } catch (error) {
+      if (error instanceof Error) {
+        setMessage(error.message || "Failed to create request.");
+      } else {
+        setMessage("Failed to create request.");
+      }
     }
   };
-
+  
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();

@@ -1,4 +1,3 @@
-// app/chat/[dataset_id]/page.tsx
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -6,7 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import { fetchWithAuth } from "@/libs/auth"; // Adjust path if needed
 import { BACKEND_URL } from "@/config";
 import { Send, ArrowLeft, Loader2 } from "lucide-react";
-import { jwtDecode } from "jwt-decode"; // Use named import instead of default
+import { jwtDecode } from "jwt-decode"; // Changed to named import
 
 interface Message {
   message_id: string;
@@ -28,7 +27,6 @@ interface Dataset {
 interface DecodedToken {
   email: string;
   user_id: number;
-  [key: string]: any;
 }
 
 export default function ChatPage({ params }: { params: { dataset_id: string } }) {
@@ -58,7 +56,7 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
     const token = localStorage.getItem("access_token");
     if (token) {
       try {
-        const decoded: DecodedToken = jwtDecode(token);
+        const decoded = jwtDecode<DecodedToken>(token);
         setCurrentUserEmail(decoded.email);
       } catch (error) {
         console.error("Error decoding token:", error);
@@ -154,7 +152,7 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
                   sender_first_name: data.message.sender_first_name,
                   sender_sur_name: data.message.sender_sur_name,
                   sender_profile_picture: data.message.sender_profile_picture,
-                  sender_email: data.message.sender_email || `${data.message.sender_first_name}.${data.message.sender_sur_name}@example.com`, // Fallback
+                  sender_email: `${data.message.sender_first_name}.${data.message.sender_sur_name}@example.com`, // Fallback
                 };
                 if (prev.some((m) => m.message_id === newMessage.message_id)) {
                   return prev;

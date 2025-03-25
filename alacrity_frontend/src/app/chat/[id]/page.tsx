@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
 import DatasetDetailPage from "@/components/chat/issue";
 import { withAccessControl } from "@/components/auth_guard/AccessControl";
-import { useParams } from "next/navigation"; // Use useParams to get the ID from URL
+import { useParams } from "next/navigation";
 
 function Home() {
-    const { id } = useParams(); // since the folder is [id], you get 'id'
-    return <DatasetDetailPage params={{ dataset_id: id }} />; 
+  const { id } = useParams();
+  return <DatasetDetailPage params={{ dataset_id: id as string }} />;
 }
 
 export default withAccessControl(Home, ['organization_admin', 'researcher', 'contributor']);
