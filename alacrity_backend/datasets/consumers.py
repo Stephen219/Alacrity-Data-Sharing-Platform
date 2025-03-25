@@ -25,6 +25,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.user = user
         print(f"User {self.user.email} authenticated with role {self.user.role}")
 
+        # Add user and contributor to chat participants on connect
+        await self.add_user_and_contributor_to_chat()
+
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         contributor = await self.get_dataset_contributor()
         if contributor and contributor != self.user:
@@ -50,18 +53,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             saved_message = await self.save_message(content)
             if saved_message:
+                contributor = await self.get_dataset_contributor()
+                sender_role = 'admin' if self.user == contributor else 'user'
+                print(f"Message from {self.user.email} as {sender_role} for dataset {self.dataset_id}")
                 # Broadcast to chat group (for ChatPage)
                 await self.channel_layer.group_send(self.room_group_name, {
                     'type': 'chat_message',
                     'message': {
                         'id': saved_message['id'],
-                        'sender': 'user' if self.user == await self.get_dataset_contributor() else 'admin',
+                        'sender': sender_role,
                         'content': saved_message['content'],
                         'timestamp': saved_message['timestamp']
                     }
                 })
                 # Notify contributor via user channel (for ChatListPage)
-                contributor = await self.get_dataset_contributor()
                 if contributor and contributor != self.user:
                     dataset = await self.get_dataset()
                     await self.channel_layer.group_send(
@@ -70,7 +75,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                             'type': 'user_message',
                             'message': {
                                 'dataset_id': self.dataset_id,
-                                'title': dataset.title,  # Match ChatListPage naming
+                                'title': dataset.title,
                                 'organization': dataset.organization_name,
                                 'last_message': saved_message['content'],
                                 'last_timestamp': saved_message['timestamp']
@@ -124,10 +129,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
             chat, created = Chat.objects.get_or_create(dataset=dataset)
             if created or self.user not in chat.participants.all():
                 chat.participants.add(self.user)
-                # Add contributor as participant
-                contributor = dataset.contributor_id
-                if contributor and contributor not in chat.participants.all():
-                    chat.participants.add(contributor)
+            contributor = dataset.contributor_id
+            if contributor and contributor not in chat.participants.all():
+                chat.participants.add(contributor)
+                print(f"Added contributor {contributor.email} as participant in save_message")
             message = Message.objects.create(chat=chat, content=content, sender=self.user)
             return {
                 'id': message.message_id,
@@ -141,3 +146,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             print(f"Error saving message: {str(e)}")
             return None
+
+    @database_sync_to_async
+    def add_user_and_contributor_to_chat(self):
+        try:
+            dataset = Dataset.objects.get(dataset_id=self.dataset_id)
+            chat, created = Chat.objects.get_or_create(dataset=dataset)
+            if self.user not in chat.participants.all():
+                chat.participants.add(self.user)
+                print(f"Added user {self.user.email} as participant to chat {chat.chat_id}")
+            contributor = dataset.contributor_id
+            if contributor and contributor != self.user and contributor not in chat.participants.all():
+                chat.participants.add(contributor)
+                print(f"Added contributor {contributor.email} as participant to chat {chat.chat_id}")
+        except Dataset.DoesNotExist:
+            print(f"Dataset not found: {self.dataset_id}")
+        except Exception as e:
+            print(f"Error adding participants: {str(e)}")

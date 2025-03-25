@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Chat, Message, Dataset
-from .serializer import ChatSerializer, MessageSerializer  # Ensure this is correct (might be 'serializers')
+from .serializer import ChatSerializer, MessageSerializer, DatasetSerializer  # Ensure this is correct (might be 'serializers')
 from users.decorators import role_required
 
 class ChatListView(APIView):
@@ -102,7 +102,6 @@ class SendMessageView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class MessageListView(APIView):
-    """List messages for a chat by dataset_id."""
     serializer_class = MessageSerializer
 
     @role_required(['organization_admin', 'contributor', 'researcher'])
@@ -116,8 +115,12 @@ class MessageListView(APIView):
             print(f"DEBUG: Dataset found: {dataset.title}")
             chat = Chat.objects.get(dataset__dataset_id=dataset_id)
             print(f"DEBUG: Chat found: {chat.chat_id}")
-            messages = Message.objects.filter(chat=chat).order_by('created_at')
 
+            # Allow contributor or participants
+            if request.user != dataset.contributor_id and request.user not in chat.participants.all():
+                return Response({'error': 'You are not authorized to view this chat'}, status=status.HTTP_403_FORBIDDEN)
+
+            messages = Message.objects.filter(chat=chat).order_by('created_at')
             if not messages.exists():
                 print(f"DEBUG: No messages found for chat: {chat.chat_id}")
                 return Response({'messages': [], 'info': 'No messages available for this chat.'}, status=status.HTTP_200_OK)
@@ -135,3 +138,23 @@ class MessageListView(APIView):
         except Exception as e:
             print(f"DEBUG: Unexpected error: {str(e)}")
             return Response({'error': f'An error occurred: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class DatasetDetailView(APIView):
+    serializer_class = DatasetSerializer
+
+    @role_required(['organization_admin', 'contributor', 'researcher'])
+    def get(self, request, dataset_id, *args, **kwargs):
+        print(f"DEBUG: GET /datasets/{dataset_id}/ by {request.user.email} with token {request.headers.get('Authorization', 'No token')}")
+        try:
+            dataset = Dataset.objects.get(dataset_id=dataset_id)
+            print(f"DEBUG: Dataset found: {dataset.title}")
+            chat = Chat.objects.filter(dataset=dataset).first()
+            if request.user != dataset.contributor_id and (not chat or request.user not in chat.participants.all()):
+                print(f"DEBUG: User {request.user.email} not authorized for dataset {dataset_id}")
+                return Response({'error': 'You are not authorized to view this dataset'}, status=status.HTTP_403_FORBIDDEN)
+            serializer = DatasetSerializer(dataset)
+            print(f"DEBUG: Returning dataset data for {dataset_id}")
+            return Response(serializer.data)
+        except Dataset.DoesNotExist:
+            print(f"DEBUG: Dataset not found: {dataset_id}")
+            return Response({'error': 'Dataset not found'}, status=status.HTTP_404_NOT_FOUND)

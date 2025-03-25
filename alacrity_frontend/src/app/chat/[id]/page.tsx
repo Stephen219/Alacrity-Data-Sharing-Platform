@@ -9,4 +9,4 @@ function Home() {
     return <DatasetDetailPage params={{ dataset_id: id }} />; 
 }
 
-export default withAccessControl(Home, ['researcher']);
+export default withAccessControl(Home, ['organization_admin', 'researcher', 'contributor']);

@@ -1,3 +1,4 @@
+// app/chats/page.tsx
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -28,7 +29,7 @@ export default function ChatListPage() {
         if (response.ok) {
           const chatData = await response.json();
           console.log("Fetched chat data:", chatData);
-          setChats(Array.isArray(chatData) ? chatData : []); // Ensure array
+          setChats(Array.isArray(chatData) ? chatData : []);
         } else {
           console.warn("Failed to fetch chats:", response.status, await response.text());
           setChats([]);
@@ -70,8 +71,8 @@ export default function ChatListPage() {
                 chat.dataset_id === data.message.dataset_id
                   ? {
                       ...chat,
-                      last_message: data.message.content,
-                      last_timestamp: data.message.timestamp,
+                      last_message: data.message.last_message || data.message.content,
+                      last_timestamp: data.message.last_timestamp || data.message.timestamp,
                     }
                   : chat
               );
@@ -80,10 +81,10 @@ export default function ChatListPage() {
                 ...prev,
                 {
                   dataset_id: data.message.dataset_id,
-                  title: data.message.dataset_title || "New Chat",
+                  title: data.message.title || "New Chat",
                   organization: data.message.organization || "Unknown",
-                  last_message: data.message.content,
-                  last_timestamp: data.message.timestamp,
+                  last_message: data.message.last_message || data.message.content,
+                  last_timestamp: data.message.last_timestamp || data.message.timestamp,
                 },
               ];
             }
@@ -92,7 +93,7 @@ export default function ChatListPage() {
       };
 
       socketRef.current.onerror = (error) => {
-        console.error("User WebSocket error:", error);
+        console.error("User WebSocket error:", error);  // Improved logging
       };
 
       socketRef.current.onclose = (event) => {
@@ -132,7 +133,7 @@ export default function ChatListPage() {
             chats.map((chat) => (
               <div
                 key={chat.dataset_id}
-                onClick={() => router.push(`/chats/${chat.dataset_id}`)}
+                onClick={() => router.push(`/chat/${chat.dataset_id}`)}
                 className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:bg-gray-50 cursor-pointer"
               >
                 <h2 className="text-lg font-semibold text-gray-800">{chat.title}</h2>

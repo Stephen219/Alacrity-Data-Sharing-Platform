@@ -42,20 +42,43 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
   useEffect(() => {
     const fetchDatasetAndMessages = async () => {
       try {
+        console.log("Fetching for dataset_id:", params.dataset_id);
+        const token = localStorage.getItem("access_token");
+        console.log("Token:", token ? "Present" : "Missing");
+  
         const datasetResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/${params.dataset_id}/`);
-        if (!datasetResponse.ok) throw new Error("Failed to fetch dataset details");
-        const datasetData = await datasetResponse.json();
-        setDataset(datasetData);
-
-        const messagesResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/messages/${params.dataset_id}`);
-        if (messagesResponse.ok) {
-          const messagesData = await messagesResponse.json();
-          setMessages(messagesData);
+        if (!datasetResponse.ok) {
+          const errorText = await datasetResponse.text();
+          console.error("Dataset fetch failed:", datasetResponse.status, errorText);
+          throw new Error(`Dataset fetch failed: ${datasetResponse.status} - ${errorText}`);
         }
+        const datasetData = await datasetResponse.json();
+        console.log("Dataset data:", datasetData);
+        setDataset(datasetData);
+  
+        const messagesResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/messages/${params.dataset_id}`);
+        if (!messagesResponse.ok) {
+          const errorText = await messagesResponse.text();
+          console.error("Messages fetch failed:", messagesResponse.status, errorText);
+          throw new Error(`Messages fetch failed: ${messagesResponse.status} - ${errorText}`);
+        }
+        const messagesData = await messagesResponse.json();
+        console.log("Messages data:", messagesData);
+        setMessages(
+          messagesData.map((msg) => ({
+            id: msg.id,
+            sender: msg.sender, // Already set by backend
+            content: msg.content,
+            timestamp: new Date(msg.timestamp || msg.created_at),
+          }))
+        );
+  
         setLoading(false);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Fetch error:", error);
         setLoading(false);
+        // Optionally redirect to error page
+        // router.push("/errors/403");
       }
     };
 

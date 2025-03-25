@@ -10,5 +10,5 @@ function DisplayChats() {
   );
 }
 
-export default withAccessControl(DisplayChats, ['organization_admin', 'researcher', 'contributor']);
+export default withAccessControl(DisplayChats, ['organization_admin',  'contributor']);
   
