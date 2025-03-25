@@ -128,7 +128,7 @@ describe("ResearchForm", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Research Published Successfully!"))
+      expect(screen.getByText("Research Submitted for Approval!"))
         .toBeInTheDocument();
     });
   });

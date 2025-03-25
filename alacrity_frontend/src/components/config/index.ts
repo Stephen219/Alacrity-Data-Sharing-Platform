@@ -56,7 +56,7 @@ export const NAV_ITEMS = [
         },
         {
           name: "Review Research",
-          href: "#",
+          href: "/requests/pendingSubmissions",
           imageSrc: "/navbar/review/reviewResearch.png",
         },
       ],
@@ -71,12 +71,12 @@ export const NAV_ITEMS = [
       {
         name: "Explore Datasets",
         href: "/datasets/all",
-        imageSrc: "/navbar/researcher/browseDatasets.png",
+        imageSrc: "/navbar/analysis/descriptive.png",
       },
       {
         name: "Bookmarks",
         href: "/datasets/bookmarks",
-        imageSrc: "/navbar/researcher/browseDatasets.png",
+        imageSrc: "/navbar/analysis/correlational.png",
       },
       {
         name: "My Datasets",
@@ -127,7 +127,7 @@ export const NAV_ITEMS = [
       {
         name: "Liked Research",
         href: "/researcher/bookmarks",
-        imageSrc: "/navbar/researcher/browseDatasets.png",
+        imageSrc: "/navbar/analysis/correlational.png",
       },
       ],
     },
@@ -165,7 +165,7 @@ export const NAV_ITEMS = [
         },
         {
           name: "Purchase History",
-          href: "#",
+          href: "/researcher/purchaseHistory",
           imageSrc: "/navbar/account/billing.png",
         },
         {

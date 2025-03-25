@@ -11,7 +11,7 @@ import { fetchWithAuth } from "@/libs/auth"
 import { useEffect, useState } from "react"
 import { BACKEND_URL } from "@/config"
 import { useRouter } from "next/navigation"
-import PublicationTable, { Publication } from "@/components/PublicationTable"
+import PublicationTable, { Publication } from "@/components/tables/PublicationTable"
 import Link from "next/link"
 
 
