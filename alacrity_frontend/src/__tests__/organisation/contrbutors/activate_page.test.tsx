@@ -127,7 +127,7 @@ describe('ActivateAccount Component', () => {
     // Assert
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
-        'http://127.0.0.1:8000//organisation/activate_contributor/', // Match exact URL with double slash
+        'http://127.0.0.1:8000/organisation/activate_contributor/', // Match exact URL with double slash
         expect.objectContaining({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

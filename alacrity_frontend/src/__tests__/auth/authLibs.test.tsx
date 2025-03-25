@@ -1,6 +1,5 @@
-
 import { renderHook } from "@testing-library/react";
-import { waitFor } from "@testing-library/react"; 
+import { waitFor } from "@testing-library/react";
 import {
   login,
   logout,
@@ -9,10 +8,30 @@ import {
   scheduleTokenRefresh,
   useAuth,
   fetchUserData,
-} from "../../libs/auth"; 
+} from "../../libs/auth";
 import { useRouter } from "next/navigation";
 import { User } from "@/types/types";
 import { BACKEND_URL } from "@/config";
+
+// Polyfill Response for Node environment
+global.Response = class Response {
+  constructor(body: BodyInit | null, init: ResponseInit = {}) {
+    this.body = JSON.stringify(body);
+    this.status = init.status || 200;
+    this.ok = this.status >= 200 && this.status < 300;
+    this.headers = new Map(Object.entries(init.headers || {}));
+  }
+  body: string;
+  status: number;
+  ok: boolean;
+  headers: Map<string, string>;
+  json() {
+    return Promise.resolve(JSON.parse(this.body));
+  }
+  text() {
+    return Promise.resolve(this.body);
+  }
+} as unknown as typeof globalThis.Response; // Cast to the global Response type
 
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
@@ -40,14 +59,13 @@ describe("Authentication Functions", () => {
     jest.clearAllMocks();
     mockRouter = { push: jest.fn() } as ReturnType<typeof useRouter>;
     (useRouter as jest.Mock).mockReturnValue(mockRouter);
-    (window.localStorage.getItem as jest.Mock).mockReset();
-    (window.localStorage.setItem as jest.Mock).mockReset();
-    (window.localStorage.removeItem as jest.Mock).mockReset();
     jest.useFakeTimers();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    delete (window as any).location;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).location = { href: "" };
+
+    // Reset window.location for redirect checks
+    // @ts-expect-error Allow deleting window.location for test setup
+    delete window.location;
+    // @ts-expect-error Allow assigning to window.location for mocking
+    window.location = { href: "" };
   });
 
   afterEach(() => {
@@ -59,7 +77,11 @@ describe("Authentication Functions", () => {
       const mockUser: User = { id: 1, email: "test@example.com" };
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
-        json: async () => ({ access_token: "access123", refresh_token: "refresh123", user: mockUser }),
+        json: async () => ({
+          access_token: "access123",
+          refresh_token: "refresh123",
+          user: mockUser,
+        }),
       });
 
       const result = await login("test@example.com", "password123");
@@ -92,7 +114,7 @@ describe("Authentication Functions", () => {
 
   describe("logout", () => {
     it("logs out with tokens successfully", async () => {
-      (window.localStorage.getItem as jest.Mock).mockImplementation((key: string) =>
+      (window.localStorage.getItem as jest.Mock).mockImplementation((key) =>
         key === "refresh_token" ? "refresh123" : key === "access_token" ? "access123" : null
       );
       (global.fetch as jest.Mock).mockResolvedValue({
@@ -107,50 +129,53 @@ describe("Authentication Functions", () => {
         expect.objectContaining({
           method: "POST",
           headers: expect.objectContaining({
-            "Authorization": "Bearer access123", 
+            Authorization: "Bearer access123",
             "Content-Type": "application/json",
           }),
           body: JSON.stringify({ refresh_token: "refresh123" }),
         })
       );
-      expect(window.localStorage.removeItem).toHaveBeenCalledWith("access_token");
-      expect(window.localStorage.removeItem).toHaveBeenCalledWith("refresh_token");
-      expect(window.localStorage.removeItem).toHaveBeenCalledWith("user");
+      ["access_token", "refresh_token", "user"].forEach((token) =>
+        expect(window.localStorage.removeItem).toHaveBeenCalledWith(token)
+      );
       expect(window.location.href).toBe("/auth/sign-in");
     });
 
-
-
-    it("logs out without tokens", async () => {
+    it("logs out gracefully without tokens", async () => {
       (window.localStorage.getItem as jest.Mock).mockReturnValue(null);
 
       await logout();
 
       expect(global.fetch).not.toHaveBeenCalled();
-      expect(window.localStorage.removeItem).toHaveBeenCalledWith("access_token");
-      expect(window.localStorage.removeItem).toHaveBeenCalledWith("refresh_token");
-      expect(window.localStorage.removeItem).toHaveBeenCalledWith("user");
+      ["access_token", "refresh_token", "user"].forEach((token) =>
+        expect(window.localStorage.removeItem).toHaveBeenCalledWith(token)
+      );
       expect(window.location.href).toBe("/auth/sign-in");
     });
 
-    it("handles server failure", async () => {
-      (window.localStorage.getItem as jest.Mock).mockImplementation((key: string) =>
+    it("handles server failure during logout", async () => {
+      (window.localStorage.getItem as jest.Mock).mockImplementation((key) =>
         key === "refresh_token" ? "refresh123" : key === "access_token" ? "access123" : null
       );
-      (global.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 500 });
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: async () => "Server error",
+      });
 
       await logout();
 
       expect(global.fetch).toHaveBeenCalled();
-      expect(window.localStorage.removeItem).toHaveBeenCalledWith("access_token");
-      expect(window.localStorage.removeItem).toHaveBeenCalledWith("refresh_token");
+      ["access_token", "refresh_token"].forEach((token) =>
+        expect(window.localStorage.removeItem).toHaveBeenCalledWith(token)
+      );
       expect(window.location.href).toBe("/auth/sign-in");
     });
   });
 
   describe("refreshToken", () => {
     it("refreshes token successfully", async () => {
-      (window.localStorage.getItem as jest.Mock).mockImplementation((key: string) =>
+      (window.localStorage.getItem as jest.Mock).mockImplementation((key) =>
         key === "refresh_token" ? "refresh123" : null
       );
       (global.fetch as jest.Mock).mockResolvedValue({
@@ -173,10 +198,14 @@ describe("Authentication Functions", () => {
     });
 
     it("logs out on refresh failure", async () => {
-      (window.localStorage.getItem as jest.Mock).mockImplementation((key: string) =>
+      (window.localStorage.getItem as jest.Mock).mockImplementation((key) =>
         key === "refresh_token" ? "refresh123" : key === "access_token" ? "access123" : null
       );
-      (global.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 401 });
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: false,
+        status: 401,
+        text: async () => "Unauthorized",
+      });
 
       const newToken = await refreshToken();
 
@@ -186,11 +215,16 @@ describe("Authentication Functions", () => {
   });
 
   describe("fetchWithAuth", () => {
-    it("fetches with valid token", async () => {
-      (window.localStorage.getItem as jest.Mock).mockImplementation((key: string) =>
+    it("fetches successfully with valid token", async () => {
+      (window.localStorage.getItem as jest.Mock).mockImplementation((key) =>
         key === "access_token" ? "access123" : null
       );
-      const mockResponse = { ok: true, status: 200, json: async () => ({}) };
+      const mockResponse = {
+        ok: true,
+        status: 200,
+        json: async () => ({}),
+        text: async () => "{}",
+      };
       (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
 
       const response = await fetchWithAuth("http://example.com");
@@ -199,19 +233,32 @@ describe("Authentication Functions", () => {
       expect(global.fetch).toHaveBeenCalledWith(
         "http://example.com",
         expect.objectContaining({
-          headers: expect.objectContaining({ "Authorization": "Bearer access123" }),
+          headers: expect.objectContaining({ Authorization: "Bearer access123" }),
         })
       );
     });
 
-    it("refreshes token on 401", async () => {
-      (window.localStorage.getItem as jest.Mock).mockImplementation((key: string) =>
+    it("refreshes token and retries on 401", async () => {
+      (window.localStorage.getItem as jest.Mock).mockImplementation((key) =>
         key === "access_token" ? "oldAccess123" : key === "refresh_token" ? "refresh123" : null
       );
       (global.fetch as jest.Mock)
-        .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
-        .mockResolvedValueOnce({ ok: true, json: async () => ({ access: "newAccess123" }) })
-        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) });
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 401,
+          text: async () => "Unauthorized",
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ access: "newAccess123" }),
+          text: async () => JSON.stringify({ access: "newAccess123" }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: async () => ({}),
+          text: async () => "{}",
+        });
 
       const response = await fetchWithAuth("http://example.com");
 
@@ -219,7 +266,7 @@ describe("Authentication Functions", () => {
       expect(window.localStorage.setItem).toHaveBeenCalledWith("access_token", "newAccess123");
     });
 
-    it("logs out without access token", async () => {
+    it("logs out if no access token", async () => {
       (window.localStorage.getItem as jest.Mock).mockReturnValue(null);
 
       const response = await fetchWithAuth("http://example.com");
@@ -230,32 +277,36 @@ describe("Authentication Functions", () => {
   });
 
   describe("scheduleTokenRefresh", () => {
-    it("schedules refresh with token", () => {
-      (window.localStorage.getItem as jest.Mock).mockImplementation((key: string) =>
+    it("schedules refresh if token exists", () => {
+      (window.localStorage.getItem as jest.Mock).mockImplementation((key) =>
         key === "refresh_token" ? "refresh123" : null
       );
-      const setIntervalSpy = jest.spyOn(global, "setInterval");
+      const intervalSpy = jest.spyOn(global, "setInterval");
 
       scheduleTokenRefresh();
 
-      expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 1000 * 60 * 10);
+      expect(intervalSpy).toHaveBeenCalledWith(expect.any(Function), 1000 * 60 * 10);
     });
 
-    it("does not schedule without token", () => {
+    it("does not schedule refresh without token", () => {
       (window.localStorage.getItem as jest.Mock).mockReturnValue(null);
-      const setIntervalSpy = jest.spyOn(global, "setInterval");
+      const intervalSpy = jest.spyOn(global, "setInterval");
 
       scheduleTokenRefresh();
 
-      expect(setIntervalSpy).not.toHaveBeenCalled();
+      expect(intervalSpy).not.toHaveBeenCalled();
     });
   });
 
   describe("useAuth", () => {
-    it("returns user with existing data", async () => {
+    it("returns user when data exists in storage", async () => {
       const mockUser: User = { id: 1, email: "test@example.com" };
-      (window.localStorage.getItem as jest.Mock).mockImplementation((key: string) =>
-        key === "access_token" ? "access123" : key === "user" ? JSON.stringify(mockUser) : null
+      (window.localStorage.getItem as jest.Mock).mockImplementation((key) =>
+        key === "access_token"
+          ? "access123"
+          : key === "user"
+          ? JSON.stringify(mockUser)
+          : null
       );
 
       const { result } = renderHook(() => useAuth());
@@ -266,7 +317,7 @@ describe("Authentication Functions", () => {
       expect(result.current.loading).toBe(false);
     });
 
-    it("redirects without token", async () => {
+    it("redirects to sign-in if no token", async () => {
       (window.localStorage.getItem as jest.Mock).mockReturnValue(null);
 
       renderHook(() => useAuth());
@@ -276,12 +327,13 @@ describe("Authentication Functions", () => {
 
     it("fetches user data if missing", async () => {
       const mockUser: User = { id: 1, email: "test@example.com" };
-      (window.localStorage.getItem as jest.Mock).mockImplementation((key: string) =>
+      (window.localStorage.getItem as jest.Mock).mockImplementation((key) =>
         key === "access_token" ? "access123" : null
       );
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
         json: async () => mockUser,
+        text: async () => JSON.stringify(mockUser),
       });
 
       const { result } = renderHook(() => useAuth());
@@ -296,12 +348,13 @@ describe("Authentication Functions", () => {
   describe("fetchUserData", () => {
     it("fetches user data successfully", async () => {
       const mockUser: User = { id: 1, email: "test@example.com" };
-      (window.localStorage.getItem as jest.Mock).mockImplementation((key: string) =>
+      (window.localStorage.getItem as jest.Mock).mockImplementation((key) =>
         key === "access_token" ? "access123" : null
       );
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
         json: async () => mockUser,
+        text: async () => JSON.stringify(mockUser),
       });
 
       const userData = await fetchUserData();
@@ -318,10 +371,14 @@ describe("Authentication Functions", () => {
     });
 
     it("returns null on failure", async () => {
-      (window.localStorage.getItem as jest.Mock).mockImplementation((key: string) =>
+      (window.localStorage.getItem as jest.Mock).mockImplementation((key) =>
         key === "access_token" ? "access123" : null
       );
-      (global.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 500 });
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: async () => "Server error",
+      });
 
       const userData = await fetchUserData();
 

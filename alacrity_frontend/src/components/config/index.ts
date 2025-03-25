@@ -59,6 +59,11 @@ export const NAV_ITEMS = [
           href: "/requests/pendingSubmissions",
           imageSrc: "/navbar/review/reviewResearch.png",
         },
+        {
+          name: "chats",
+          href: "/chat",
+          imageSrc: "/datasets/image.png",
+        },
       ],
     },
   

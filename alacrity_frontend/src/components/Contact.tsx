@@ -50,7 +50,7 @@ export default function Contact() {
         }
 
         try {
-            const response = await fetch(`${BACKEND_URL}api/contact/`, {
+            const response = await fetch(`${BACKEND_URL}/api/contact/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData),

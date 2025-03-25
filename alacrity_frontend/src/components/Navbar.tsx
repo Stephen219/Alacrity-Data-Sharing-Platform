@@ -43,7 +43,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
   // fetches unread count
   async function fetchNotificationCount(): Promise<number> {
     try {
-      const res = await fetchWithAuth(`${BACKEND_URL}notifications/count/`, { method: "GET" });
+      const res = await fetchWithAuth(`${BACKEND_URL}/notifications/count/`, { method: "GET" });
       if (!res.ok) {
         console.error("Failed to fetch notification count");
         return 0;
@@ -59,7 +59,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
   // fetches full list
   async function fetchNotificationList() {
     try {
-      const res = await fetchWithAuth(`${BACKEND_URL}notifications/list/`, { method: "GET" });
+      const res = await fetchWithAuth(`${BACKEND_URL}/notifications/list/`, { method: "GET" });
       if (res.ok) {
         const data = await res.json();
         setNotifications(data);
@@ -75,7 +75,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
   async function markAllRead() {
     try {
       const res = await fetchWithAuth(
-        `${BACKEND_URL}notifications/mark_all_read/`,
+        `${BACKEND_URL}/notifications/mark_all_read/`,
         { method: "PATCH" }
       );
       if (!res.ok) {
@@ -93,7 +93,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
   async function deleteNotification(notifId: string) {
     try {
       const res = await fetchWithAuth(
-        `${BACKEND_URL}notifications/${notifId}/delete/`,
+        `${BACKEND_URL}/notifications/${notifId}/delete/`,
         { method: "DELETE" }
       );
       if (!res.ok) {

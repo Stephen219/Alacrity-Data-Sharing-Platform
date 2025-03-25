@@ -69,7 +69,7 @@ const ResearcherDashboard: React.FC = () => {
     // Fetch publications that are submitted (pending, published, rejected)
     const getPublications = async () => {
       try {
-        const response = await fetchWithAuth(`${BACKEND_URL}research/submissions/submitted`)
+        const response = await fetchWithAuth(`${BACKEND_URL}/research/submissions/submitted`)
         const data = await response.json()
         setPublications(data)
       } catch (error) {

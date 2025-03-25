@@ -38,7 +38,7 @@ from rest_framework.views import APIView
 
 from alacrity_backend.settings import MINIO_ACCESS_KEY, MINIO_BUCKET_NAME, MINIO_SECRET_KEY, MINIO_URL
 from users.decorators import role_required
-from .models import Dataset
+from .models import Dataset , Feedback
 from .serializer import DatasetSerializer
 # from .tasks import compute_correlation, fetch_json_from_minio
 
@@ -575,3 +575,52 @@ class UserBookmarkedDatasetsView(APIView):
 
         return Response(list(bookmarked_datasets))
 
+
+# feedback will be taking in the dataset_id and the feedback from the user
+class FeedbackView(APIView):
+    """
+    API endpoint to submit and retrieve feedback on datasets.
+    """
+    @role_required(['contributor', 'researcher', 'organization_admin'])
+    def get(self, request, dataset_id):
+        try:
+            dataset = Dataset.objects.get(dataset_id=dataset_id)
+            feedback = dataset.feedbacks.all().values("user__username", "rating", "comment", "created_at")
+            return Response(list(feedback))
+        except Dataset.DoesNotExist:
+            return Response({"error": "Dataset not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error fetching feedback: {e}", exc_info=True)
+            return Response({"error": "Failed to fetch feedback"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    """View for submitting feedback on a dataset."""
+    @role_required("researcher")
+    def post(self, request, dataset_id):
+        """Submit feedback for a dataset."""
+        try:
+            dataset = Dataset.objects.get(dataset_id=dataset_id)
+            rating = request.data.get("rating")
+            comments = request.data.get("comments")
+            if not rating or not comments:
+                return Response({"error": "Rating and comments are required"}, status=status.HTTP_400_BAD_REQUEST)
+            rating = int(rating)  # Ensure rating is an integer
+            if not 1 <= rating <= 5:
+                return Response({"error": "Rating must be between 1 and 5"}, status=status.HTTP_400_BAD_REQUEST)
+            feedback = Feedback.objects.create(
+                dataset=dataset,
+                user=request.user,
+                rating=rating,
+                comment=comments  # Match model field (assuming typo in your original)
+            )
+            return Response({"message": "Feedback submitted"}, status=status.HTTP_201_CREATED)
+        except Dataset.DoesNotExist:
+            return Response({"error": "Dataset not found"}, status=status.HTTP_404_NOT_FOUND)
+        except ValueError:
+            return Response({"error": "Rating must be a number"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Error submitting feedback: {e}", exc_info=True)
+            return Response({"error": "Failed to submit feedback"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # takes back the comments and the rating of the dataset to a given dataset_id
+        # this will be used to give feedback to the dataset
+
+   
