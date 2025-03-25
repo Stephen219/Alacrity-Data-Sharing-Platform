@@ -14,7 +14,7 @@ class AnalysisSubmissionSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     """
-    this was inoilally named as registerserializer now userserialize but i changed it to user serializer   so incse of import issues  
+    this was inoilally named as registerserializer now but i changed it to user serializer   so incse of import issues  
     change and use the latter 
     """
     email = serializers.EmailField(required=True)
@@ -70,6 +70,7 @@ class UserSerializer(serializers.ModelSerializer):
             "follows_you",
             "password",
             "password2",
+           
         ]
         extra_kwargs = {
             "password": {"write_only": True},

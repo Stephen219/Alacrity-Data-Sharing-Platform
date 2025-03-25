@@ -75,6 +75,7 @@ export async function logout() {
             console.log(data.message);
         } catch (error) {
             console.error("Error during logout:", error);
+            window.location.href = "/auth/sign-in";
          
         }
     }

@@ -15,6 +15,7 @@ class AddContributorsTestCase(TestCase):
         """Set up test case with initial user and organization data."""
         User = get_user_model()
         self.user = User.objects.create_user(
+        
             email='admin@example.com',
             password='adminpassword',
             username='adminuser',
@@ -29,11 +30,11 @@ class AddContributorsTestCase(TestCase):
         self.user.save()
         
         self.valid_contributor_data = {
-            'email': 'contributor@example.com',
-            'first_name': 'Test',
-            'sur_name': 'Contributor',
-            'phone_number': '1234567890'
-        }
+        'email': 'contributor@example.com',
+        'firstname': 'Test',
+        'lastname': 'Contributor',  
+        'phonenumber': '1234567890'  
+    }
         
         self.client = APIClient()
 
@@ -65,8 +66,8 @@ class AddContributorsTestCase(TestCase):
         
         # Assert
         self.assertEqual(response.status_code, 201)
-        self.assertIn('email', response.data)
-        self.assertEqual(response.data['email'], 'contributor@example.com')
+        self.assertIn('username', response.data)
+        self.assertEqual(response.data['username'], 'contributor_test_abc123')
 
     def test_add_contributor_unauthenticated(self):
         """Test adding a contributor without authentication."""
