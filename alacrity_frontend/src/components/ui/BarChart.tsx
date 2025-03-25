@@ -21,7 +21,7 @@ const BarChart: React.FC = () => {
   // Fetches dynamic data on hover
   const loadRealData = () => {
     if (!realDataLoaded) {
-      fetch(`${BACKEND_URL}users/weekly-activity/`)
+      fetch(`${BACKEND_URL}/users/weekly-activity/`)
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
           return res.json();

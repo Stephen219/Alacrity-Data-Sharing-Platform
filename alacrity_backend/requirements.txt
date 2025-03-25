@@ -14,11 +14,14 @@ seaborn
 scikit-learn
 tenseal
 
+channels
+channels-redis
+daphne
 
 
 
 
-
+matplotlib
 # dotenv
 python-dotenv
 
@@ -54,7 +57,7 @@ Pillow
 
 
 
-
+django-environ
 
 
 

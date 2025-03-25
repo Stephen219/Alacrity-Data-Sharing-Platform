@@ -50,3 +50,35 @@ class Dataset(models.Model):
         if self.contributor_id and self.contributor_id.organization:
             return self.contributor_id.organization.name
         return "No Organization"
+    
+class Chat(models.Model):
+    chat_id = models.CharField(max_length=100, primary_key=True, default=generate_id, editable=False)
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name='chats')
+    participants = models.ManyToManyField(User, related_name='chats')  # Users involved in the chat (researcher, admin)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Chat for {self.dataset.title} - Participants: {', '.join([str(p) for p in self.participants.all()])}"
+
+
+class Message(models.Model):
+    message_id = models.CharField(max_length=100, primary_key=True, default=generate_id, editable=False)
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='messages')
+    content = models.TextField(validators=[MinLengthValidator(1)])
+    created_at = models.DateTimeField(auto_now_add=True)
+    read = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Message from {self.sender} in chat for {self.chat.dataset.title}"
+
+class Feedback(models.Model):
+    feedback_id = models.CharField(max_length=100, primary_key=True, default=generate_id, editable=False)
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name='feedbacks')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='feedbacks')
+    rating = models.PositiveIntegerField()
+    comment = models.TextField(validators=[MinLengthValidator(1)])
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Feedback for {self.dataset.title} from {self.user}"

@@ -1,6 +1,6 @@
 
 from rest_framework import serializers
-from .models import Dataset
+from .models import Dataset , Chat, Message , Feedback
 from payments.models import DatasetPurchase
 
 class DatasetSerializer(serializers.ModelSerializer):
@@ -43,3 +43,26 @@ class DatasetSerializer(serializers.ModelSerializer):
             return False
         return DatasetPurchase.objects.filter(dataset=obj, buyer=request.user).exists()
 
+
+class MessageSerializer(serializers.ModelSerializer):
+    sender_first_name = serializers.CharField(source='sender.first_name', read_only=True)
+    sender_sur_name = serializers.CharField(source='sender.sur_name', read_only=True)
+    sender_profile_picture = serializers.URLField(source='sender.profile_picture', read_only=True)
+
+    class Meta:
+        model = Message
+        fields = ['message_id', 'content', 'sender', 'created_at', 'sender_first_name', 'sender_sur_name', 'sender_profile_picture']
+
+
+class ChatSerializer(serializers.ModelSerializer):
+    messages = MessageSerializer(many=True, read_only=True)
+    participants = serializers.StringRelatedField(many=True)  # Show participant usernames
+
+    class Meta:
+        model = Chat
+        fields = ['chat_id', 'dataset', 'participants', 'created_at', 'messages']
+
+class FeebackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Feedback
+        fields = ['feedback_id', 'user','comment', 'rating','created_at']

@@ -301,7 +301,7 @@ class request_actions(APIView):
     
 
 
-class UserDatasetRequestsView(APIView):
+class user_requests(APIView):
     """
     View to get all requests made by a researcher
     
