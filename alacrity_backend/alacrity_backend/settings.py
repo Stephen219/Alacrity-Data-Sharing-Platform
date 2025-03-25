@@ -14,32 +14,40 @@ from pathlib import Path
 from alacrity_backend.config import FRONTEND_URL, BACKEND_URL
 import os
 import sys
-from dotenv import load_dotenv
 import environ
-
-env = environ.Env()
-environ.Env.read_env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv()
 
+# Initialize environment variables with defaults
+env = environ.Env(
+    # Define defaults for critical variables
+    ENV=(str, 'development'),  # Default to 'development' if ENV is not set
+    DEBUG=(bool, True),        # Default to True for local dev
+    DJANGO_DATABASE_NAME=(str, 'alacrity_db'),
+    DJANGO_DATABASE_USER=(str, 'root'),
+    DJANGO_DATABASE_PASSWORD=(str, 'comsc'),
+    DJANGO_DATABASE_HOST=(str, 'mysql'),
+    DJANGO_DATABASE_PORT=(str, '3306'),
+    REDIS_HOST=(str, '127.0.0.1'),
+    REDIS_PORT=(int, 6379),
+)
 
+# Load .env file if it exists (optional for local dev)
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY ="9cdf91842b864472c0570e917223afcc51a390b39a083a3f0de114cadf408f41"
+SECRET_KEY = env('SECRET_KEY', default='9cdf91842b864472c0570e917223afcc51a390b39a083a3f0de114cadf408f41')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[]) if env('ENV') == 'production' else ['*']
 
 # Application definition
-
 INSTALLED_APPS = [
     'channels',
     'channels_redis',
@@ -64,8 +72,6 @@ INSTALLED_APPS = [
     'contact',
     'organisation',
     'dataset_requests',
-    
-
 ]
 
 MIDDLEWARE = [
@@ -81,9 +87,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'alacrity_backend.urls'
 
-
 ASGI_APPLICATION = 'alacrity_backend.asgi.application'
-
 
 TEMPLATES = [
     {
@@ -105,9 +109,13 @@ WSGI_APPLICATION = 'alacrity_backend.wsgi.application'
 
 IS_GITLAB_CI = os.getenv('CI', 'false').lower() == 'true'
 
-CORS_ALLOW_ALL_ORIGINS = True
-
-
+# CORS settings
+CORS_ALLOW_ALL_ORIGINS = False if env('ENV') == 'production' else True
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
+    FRONTEND_URL,
+    "http://127.0.0.1:3000",
+    "http://localhost:3000",
+]) if env('ENV') == 'production' else []
 
 # ASGI and channel layers settings
 if env('ENV') == 'production':
@@ -115,35 +123,34 @@ if env('ENV') == 'production':
         'default': {
             'BACKEND': 'channels_redis.core.RedisChannelLayer',
             'CONFIG': {
-                'hosts': [(env('REDIS_HOST', '127.0.0.1'), env('REDIS_PORT', 6379))],
+                'hosts': [(env('REDIS_HOST'), env('REDIS_PORT'))],
             },
         },
     }
 else:
-    # Use InMemoryLayer for development
+    # Use InMemoryChannelLayer for development
     CHANNEL_LAYERS = {
         'default': {
             'BACKEND': 'channels.layers.InMemoryChannelLayer',
         },
     }
 
-
+# Database configuration
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DJANGO_DATABASE_NAME', 'alacrity_db'),
-        'USER': os.getenv('DJANGO_DATABASE_USER', 'root'),
-
-        'PASSWORD':"" if IS_GITLAB_CI else os.getenv('DJANGO_DATABASE_PASSWORD', 'comsc'),
-        'HOST': os.getenv('DJANGO_DATABASE_HOST', 'mysql'),
-        'PORT': os.getenv('DJANGO_DATABASE_PORT', '3306'),
+        'NAME': env('DJANGO_DATABASE_NAME'),
+        'USER': env('DJANGO_DATABASE_USER'),
+        'PASSWORD': '' if IS_GITLAB_CI else env('DJANGO_DATABASE_PASSWORD'),
+        'HOST': env('DJANGO_DATABASE_HOST'),
+        'PORT': env('DJANGO_DATABASE_PORT'),
         'TEST': {
             'NAME': 'alacrity_dbtes',
-        }
+        },
     }
 }
 
-
+# Use SQLite for tests
 if 'test' in sys.argv:
     DATABASES = {
         'default': {
@@ -152,16 +159,9 @@ if 'test' in sys.argv:
         }
     }
 
-ENCRYPTION_KEY = "EHqnpsZeTQrwcmGfADez0GCRcJ_vQNCg5ch_pQg83Z0="
+ENCRYPTION_KEY = env('ENCRYPTION_KEY', default="EHqnpsZeTQrwcmGfADez0GCRcJ_vQNCg5ch_pQg83Z0=")
 
-# change this when deploying to production
-CORS_ALLOWED_ORIGINS = [
-    FRONTEND_URL, 
-    "http://127.0.0.1:3000",
-    "http://localhost:3000",
-]
-
-
+# CORS configuration
 CORS_ALLOW_HEADERS = [
     'content-type',
     'authorization',
@@ -169,16 +169,13 @@ CORS_ALLOW_HEADERS = [
     'origin',
     'x-requested-with',
     'x-csrftoken',
-    'x-requested-with',
     'accept-encoding',
     'accept-language',
     'cache-control',
     'connection',
     'content-length',
-    'content-type',
     'cookie',
     'host',
-    'origin',
 ]
 
 CORS_ALLOW_METHODS = [
@@ -191,64 +188,38 @@ CORS_ALLOW_METHODS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
-CORS_ORIGIN_ALLOW_ALL = False
 
-CORS_ALLOW_CREDENTIALS = True
-
-
-
-
-
-################################  file stosssrage config  ##############################################################
-
-# MINIO_URL = "http://localhost:9000" 
-MINIO_URL = "http://10.72.98.137:9000"
-MINIO_ACCESS_KEY = "admin"
-MINIO_SECRET_KEY = "Notgood1"
-MINIO_BUCKET_NAME = "alacrity"
-
+# File storage configuration (MinIO/S3)
+MINIO_URL = env('MINIO_URL', default="http://10.72.98.137:9000")
+MINIO_ACCESS_KEY = env('MINIO_ACCESS_KEY', default="admin")
+MINIO_SECRET_KEY = env('MINIO_SECRET_KEY', default="Notgood1")
+MINIO_BUCKET_NAME = env('MINIO_BUCKET_NAME', default="alacrity")
 
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-
-DATA_UPLOAD_MAX_MEMORY_SIZE = 524288000  
-FILE_UPLOAD_MAX_MEMORY_SIZE = 524288000 
-
+DATA_UPLOAD_MAX_MEMORY_SIZE = 524288000  # 500MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 524288000  # 500MB
 
 AWS_ACCESS_KEY_ID = MINIO_ACCESS_KEY
-
 AWS_SECRET_ACCESS_KEY = MINIO_SECRET_KEY
 AWS_STORAGE_BUCKET_NAME = MINIO_BUCKET_NAME
 AWS_S3_ENDPOINT_URL = MINIO_URL
 AWS_S3_CUSTOM_DOMAIN = f"{MINIO_URL}/{MINIO_BUCKET_NAME}"
-# AWS_S3_CUSTOM_DOMAIN = MINIO_URL
 AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
+AWS_S3_REGION_NAME = 'us-east-1'
 
-AWS_S3_REGION_NAME = 'us-east-1'  
-##########################################***####################################################
-
-
+# MySQL compatibility
 import pymysql
 pymysql.install_as_MySQLdb()
+
+# Authentication settings
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-
-
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
-#3####################################################################
-# auth 
-AUTH_USER_MODEL = 'users.User'
 
+AUTH_USER_MODEL = 'users.User'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -256,11 +227,8 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',  
-        'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.TemplateHTMLRenderer',
         'rest_framework.renderers.MultiPartRenderer',
-        
     ],
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',
@@ -269,22 +237,18 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
-        #"rest_framework.permissions.AllowAny",
     ],
-    'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler'
+    'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
 }
 
 if DEBUG:
     REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'].append('rest_framework.renderers.BrowsableAPIRenderer')
 
-
-
-
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
-from datetime import timedelta
 
+from datetime import timedelta
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=300),
@@ -292,7 +256,7 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,
     'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY, 
+    'SIGNING_KEY': SECRET_KEY,
     'BLACKLIST_ENABLED': True,
     'VERIFYING_KEY': None,
     'AUTH_HEADER_TYPES': ('Bearer',),
@@ -302,72 +266,26 @@ SIMPLE_JWT = {
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
 
-
-CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-]
-
-CORS_ALLOW_METHODS = [
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
-]
-
-CORS_ALLOW_CREDENTIALS = True
-CORS_ORIGIN_ALLOW_ALL = False
-
-
-
 # Internationalization
-# https://docs.djangoproject.com/en/5.1/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
-
+# Static files
 STATIC_URL = 'static/'
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
-
-AUTH_USER_MODEL = 'users.User'
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-
-
-
-###################################  EMALIL CONFIG   #########################################################################
-
+# Email configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST ='smtp.gmail.com'
+EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.getenv('EMAIL_USER')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_PASSWORD')
-DEFAULT_FROM_EMAIL = os.getenv('EMAIL_USER')
-
-
+EMAIL_HOST_USER = env('EMAIL_USER', default='')
+EMAIL_HOST_PASSWORD = env('EMAIL_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
@@ -376,11 +294,9 @@ if DEBUG:
     import mimetypes
     mimetypes.add_type("application/javascript", ".js", True)
 
-
-#paypal integration
-load_dotenv()
-PAYPAL_CLIENT_ID = os.getenv("PAYPAL_CLIENT_ID", "").strip()
-PAYPAL_SECRET = os.getenv("PAYPAL_SECRET", "").strip()
-PAYPAL_MODE = os.getenv("PAYPAL_MODE", "sandbox")  # Default to sandbox
-PAYPAL_RETURN_URL = os.getenv("PAYPAL_RETURN_URL")
-PAYPAL_CANCEL_URL = os.getenv("PAYPAL_CANCEL_URL")
+# PayPal integration
+PAYPAL_CLIENT_ID = env('PAYPAL_CLIENT_ID', default='').strip()
+PAYPAL_SECRET = env('PAYPAL_SECRET', default='').strip()
+PAYPAL_MODE = env('PAYPAL_MODE', default='sandbox')  # Default to sandbox
+PAYPAL_RETURN_URL = env('PAYPAL_RETURN_URL', default='')
+PAYPAL_CANCEL_URL = env('PAYPAL_CANCEL_URL', default='')
