@@ -1,6 +1,6 @@
 
 from rest_framework import serializers
-from .models import Dataset , Chat, Message
+from .models import Dataset , Chat, Message , Feedback
 from payments.models import DatasetPurchase
 
 class DatasetSerializer(serializers.ModelSerializer):
@@ -61,3 +61,8 @@ class ChatSerializer(serializers.ModelSerializer):
     class Meta:
         model = Chat
         fields = ['chat_id', 'dataset', 'participants', 'created_at', 'messages']
+
+class FeebackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Feedback
+        fields = ['feedback_id', 'user','comment', 'rating','created_at']

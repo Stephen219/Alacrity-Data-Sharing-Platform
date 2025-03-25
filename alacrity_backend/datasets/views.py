@@ -578,6 +578,20 @@ class UserBookmarkedDatasetsView(APIView):
 
 # feedback will be taking in the dataset_id and the feedback from the user
 class FeedbackView(APIView):
+    """
+    API endpoint to submit and retrieve feedback on datasets.
+    """
+    @role_required(['contributor', 'researcher', 'organization_admin'])
+    def get(self, request, dataset_id):
+        try:
+            dataset = Dataset.objects.get(dataset_id=dataset_id)
+            feedback = dataset.feedbacks.all().values("user__username", "rating", "comment", "created_at")
+            return Response(list(feedback))
+        except Dataset.DoesNotExist:
+            return Response({"error": "Dataset not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error fetching feedback: {e}", exc_info=True)
+            return Response({"error": "Failed to fetch feedback"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     """View for submitting feedback on a dataset."""
     @role_required("researcher")
     def post(self, request, dataset_id):
@@ -605,3 +619,8 @@ class FeedbackView(APIView):
         except Exception as e:
             logger.error(f"Error submitting feedback: {e}", exc_info=True)
             return Response({"error": "Failed to submit feedback"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # takes back the comments and the rating of the dataset to a given dataset_id
+        # this will be used to give feedback to the dataset
+
+   

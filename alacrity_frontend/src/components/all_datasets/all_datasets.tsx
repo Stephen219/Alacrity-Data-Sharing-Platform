@@ -25,6 +25,7 @@ interface Dataset {
   price: number;
   view_count: number;
   darkMode: boolean;
+  averageRating?: number; // Add average rating
 }
 
 const ITEMS_PER_PAGE = 6;
@@ -42,37 +43,62 @@ const DatasetsPage: React.FC = () => {
     { id: string; label: string; options: string[] }[]
   >([]);
   const [bookmarkedDatasets, setBookmarkedDatasets] = useState<string[]>([]);
-  //const [darkMode, setDarkMode] = useState(false)
 
   useEffect(() => {
-    const fetchDatasets = async () => {
+    const fetchDatasetsAndFeedback = async () => {
       try {
-        const response = await fetchWithAuth(`${BACKEND_URL}/datasets/all`);
-        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-        const data = await response.json();
-  
+        // Fetch datasets
+        const datasetsResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/all`);
+        if (!datasetsResponse.ok) throw new Error(`HTTP Error: ${datasetsResponse.status}`);
+        const data = await datasetsResponse.json();
+
         const mappedDatasets: Dataset[] = data.datasets.map((item: any) => ({
           ...item,
           size: item.size || "N/A",
           entries: item.entries || 0,
           imageUrl: item.imageUrl || `https://picsum.photos/300/200?random=${item.dataset_id}`,
-          tags: typeof item.tags === "string"
-            ? item.tags
-                .split(",")
-                .map((tag: string) => tag.trim())
-                .filter((tag: string) => tag.trim() !== "")
-            : item.tags || [],
-            price: item.price ? Number(parseFloat(item.price).toFixed(2)) : 0,
-            hasPaid: item.hasPaid || false,
+          tags:
+            typeof item.tags === "string"
+              ? item.tags
+                  .split(",")
+                  .map((tag: string) => tag.trim())
+                  .filter((tag: string) => tag.trim() !== "")
+              : item.tags || [],
+          price: item.price ? Number(parseFloat(item.price).toFixed(2)) : 0,
+          hasPaid: item.hasPaid || false,
         }));
-  
-        setDatasets(mappedDatasets);
-  
-        const uniqueCategories = ["All", ...new Set(mappedDatasets.map((d) => d.category))];
-        const uniqueOrgs = ["All", ...new Set(mappedDatasets.map((d) => d.organization_name || "No organization"))];
-        const uniqueTags = ["All", ...new Set(mappedDatasets.flatMap((d) => d.tags))];
+
+        // Fetch feedback for each dataset
+        const datasetsWithRatings = await Promise.all(
+          mappedDatasets.map(async (dataset) => {
+            try {
+              const feedbackResponse = await fetchWithAuth(
+                `${BACKEND_URL}/datasets/feedback/${dataset.dataset_id}/`
+              );
+              if (!feedbackResponse.ok) {
+                if (feedbackResponse.status === 404) return { ...dataset, averageRating: 0 }; // No feedback yet
+                throw new Error(`Feedback fetch failed: ${feedbackResponse.status}`);
+              }
+              const feedbackData = await feedbackResponse.json();
+              const ratings = feedbackData.map((fb: any) => fb.rating);
+              const averageRating =
+                ratings.length > 0 ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length : 0;
+              return { ...dataset, averageRating };
+            } catch (err) {
+              console.warn(`No rating for ${dataset.dataset_id}: ${err}`);
+              return { ...dataset, averageRating: 0 }; // Default to 0 if fetch fails
+            }
+          })
+        );
+
+        setDatasets(datasetsWithRatings);
+
+        // Set filter categories
+        const uniqueCategories = ["All", ...new Set(datasetsWithRatings.map((d) => d.category))];
+        const uniqueOrgs = ["All", ...new Set(datasetsWithRatings.map((d) => d.organization_name || "No organization"))];
+        const uniqueTags = ["All", ...new Set(datasetsWithRatings.flatMap((d) => d.tags))];
         const staticDateOptions = ["All Time", "Today", "This Week", "This Month", "This Year"];
-  
+
         setFilterCategories([
           { id: "category", label: "Category", options: uniqueCategories },
           { id: "organization_name", label: "Organization", options: uniqueOrgs },
@@ -86,61 +112,37 @@ const DatasetsPage: React.FC = () => {
         setIsLoading(false);
       }
     };
-  
-    fetchDatasets();
+
+    fetchDatasetsAndFeedback();
   }, []);
-  
-  /**
-   * Fetches the datasets bookmarked by the researcher/contributor.
-   */
+
   const fetchBookmarkedDatasets = async () => {
     try {
       console.log("Fetching bookmarked datasets...");
       const response = await fetchWithAuth(`${BACKEND_URL}/datasets/bookmarks/`);
-
       if (!response.ok) {
         throw new Error(`Failed to fetch bookmarked datasets: ${response.status}`);
       }
-
       const data = await response.json();
-      console.log("Bookmarked datasets response:", data);
-
-      /**
-       * Extract only the dataset IDs from the response.
-       * This allows us to efficiently check which datasets are bookmarked
-       * without needing to store all dataset details.
-       */
       setBookmarkedDatasets(data.map((ds: { dataset_id: string }) => ds.dataset_id));
-
     } catch (err) {
       console.error("Error fetching bookmarks:", err);
       setError("Error fetching bookmarks.");
     }
   };
 
-  // Ensures that the user's bookmarks are loaded when they visit the page.
   useEffect(() => {
-    const loadAll = async () => {
-      await fetchBookmarkedDatasets();
-    };
-    loadAll();
+    fetchBookmarkedDatasets();
   }, []);
 
-  // Toggles the bookmark status of a dataset for researcher/contributor
   const toggleDatasetBookmark = async (datasetId: string) => {
     try {
       setBookmarkedDatasets((prev) =>
-        prev.includes(datasetId)
-          ? prev.filter((id) => id !== datasetId)
-          : [...prev, datasetId]
+        prev.includes(datasetId) ? prev.filter((id) => id !== datasetId) : [...prev, datasetId]
       );
-
-      const response = await fetchWithAuth(
-        `${BACKEND_URL}/datasets/${datasetId}/bookmark/`,
-        {
-          method: "POST",
-        }
-      );
+      const response = await fetchWithAuth(`${BACKEND_URL}/datasets/${datasetId}/bookmark/`, {
+        method: "POST",
+      });
       if (!response.ok) throw new Error("Failed to toggle bookmark");
     } catch (error) {
       console.error("Dataset bookmark error:", error);
@@ -154,7 +156,7 @@ const DatasetsPage: React.FC = () => {
         dataset.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         dataset.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         dataset.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-  
+
       const matchesFilters = Object.entries(filters).every(([key, values]) => {
         const safeValues = Array.isArray(values) ? values : [];
         if (safeValues.length === 0 || safeValues.includes("All") || safeValues.includes("All Time")) return true;
@@ -174,7 +176,7 @@ const DatasetsPage: React.FC = () => {
         if (key === "tags") return safeValues.some((value) => dataset.tags.includes(value));
         return true;
       });
-  
+
       return matchesSearch && matchesFilters;
     });
   }, [searchQuery, filters, datasets]);
@@ -246,7 +248,6 @@ const DatasetsPage: React.FC = () => {
           />
         </div>
 
-        {/* Display Selected Filters */}
         <div className="mb-6">
           {Object.entries(filters).length > 0 && (
             <div className="flex flex-wrap gap-2 mb-4">
@@ -254,8 +255,8 @@ const DatasetsPage: React.FC = () => {
                 values.map((value) => (
                   <div
                     key={`${categoryId}-${value}`}
-                    className="flex items-center px-3 py-1 rounded-full text-sm bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-100">
-                  
+                    className="flex items-center px-3 py-1 rounded-full text-sm bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-100"
+                  >
                     <span>
                       {filterCategories.find((c) => c.id === categoryId)?.label}: {value}
                     </span>
@@ -357,8 +358,8 @@ const DatasetsPage: React.FC = () => {
           {paginatedDatasets.map((dataset) => (
             <Link
               key={dataset.dataset_id}
-              href={`/datasets/description?id=${dataset.dataset_id}`} 
-              className="block" 
+              href={`/datasets/description?id=${dataset.dataset_id}`}
+              className="block"
             >
               <DatasetCard
                 dataset_id={dataset.dataset_id}
@@ -378,6 +379,7 @@ const DatasetsPage: React.FC = () => {
                 viewMode={viewMode}
                 darkMode={false}
                 price={dataset.price}
+                averageRating={dataset.averageRating || 0} // Pass average rating
               />
             </Link>
           ))}
