@@ -46,7 +46,8 @@ const AnalysisList: React.FC = () => {
 
   const fetchPublicSubmissions = async () => {
     try {
-      const response = await fetch("http://127.0.0.1:8000/research/submissions/view/");
+      const response = await fetch(`${BACKEND_URL}/research/submissions/view/`
+      );
       if (!response.ok) throw new Error("Failed to fetch public submissions.");
   
       const data = await response.json();
@@ -69,7 +70,8 @@ const AnalysisList: React.FC = () => {
 
     try {
       const response = await fetchWithAuth(
-        `http://127.0.0.1:8000/research/submissions/delete/${id}/`,
+        `${BACKEND_URL}/research/submissions/delete/${id}/`,
+        
         { method: "DELETE" }
       );
 
@@ -95,7 +97,7 @@ const AnalysisList: React.FC = () => {
   const handleTogglePrivacy = async (id: number, currentStatus: boolean) => {
     try {
       const response = await fetchWithAuth(
-        `http://127.0.0.1:8000/research/submissions/toggle-privacy/${id}/`,
+        `${BACKEND_URL}/research/submissions/toggle-privacy/${id}/`,
         { method: "PATCH" }
       );
   
