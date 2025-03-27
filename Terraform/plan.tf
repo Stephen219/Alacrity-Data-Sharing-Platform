@@ -15,6 +15,18 @@ resource "openstack_compute_secgroup_v2" "security_group" {
     ip_protocol = "tcp"
     cidr        = "0.0.0.0/0"
   }
+  rule {
+    from_port   = 80    # Frontend on port 80 (Nginx)
+    to_port     = 80
+    ip_protocol = "tcp"
+    cidr        = "0.0.0.0/0"
+  }
+  rule {
+    from_port   = 8000  # Backend on port 8000
+    to_port     = 8000
+    ip_protocol = "tcp"
+    cidr        = "0.0.0.0/0"
+  }
 }
 
 resource "openstack_compute_instance_v2" "instance_1" {
@@ -43,4 +55,13 @@ resource "openstack_compute_floatingip_associate_v2" "floating_ip_1" {
 resource "openstack_compute_floatingip_associate_v2" "floating_ip_2" {
   floating_ip = openstack_networking_floatingip_v2.floating_ip_2.address
   instance_id = openstack_compute_instance_v2.instance_2.id
+}
+
+# Outputs for convenience
+output "frontend_ip" {
+  value = openstack_networking_floatingip_v2.floating_ip_1.address
+}
+
+output "backend_ip" {
+  value = openstack_networking_floatingip_v2.floating_ip_2.address
 }

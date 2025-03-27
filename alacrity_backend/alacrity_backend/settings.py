@@ -21,9 +21,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Initialize environment variables with defaults
 env = environ.Env(
-    # Define defaults for critical variables
-    ENV=(str, 'development'),  # Default to 'development' if ENV is not set
-    DEBUG=(bool, True),        # Default to True for local dev
+    ENV=(str, 'development'),
+    DEBUG=(bool, True),
     DJANGO_DATABASE_NAME=(str, 'alacrity_db'),
     DJANGO_DATABASE_USER=(str, 'root'),
     DJANGO_DATABASE_PASSWORD=(str, 'comsc'),
@@ -37,14 +36,8 @@ env = environ.Env(
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env('SECRET_KEY', default='9cdf91842b864472c0570e917223afcc51a390b39a083a3f0de114cadf408f41')
-
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
-
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[]) if env('ENV') == 'production' else ['*']
 
 # Application definition
@@ -86,7 +79,6 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'alacrity_backend.urls'
-
 ASGI_APPLICATION = 'alacrity_backend.asgi.application'
 
 TEMPLATES = [
@@ -106,7 +98,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'alacrity_backend.wsgi.application'
-
 IS_GITLAB_CI = os.getenv('CI', 'false').lower() == 'true'
 
 # CORS settings
@@ -128,7 +119,6 @@ if env('ENV') == 'production':
         },
     }
 else:
-    # Use InMemoryChannelLayer for development
     CHANNEL_LAYERS = {
         'default': {
             'BACKEND': 'channels.layers.InMemoryChannelLayer',
@@ -150,12 +140,11 @@ DATABASES = {
     }
 }
 
-# Use SQLite for tests
 if 'test' in sys.argv:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': ':memory:',  # Use in-memory database for faster tests
+            'NAME': ':memory:',
         }
     }
 
@@ -295,8 +284,8 @@ if DEBUG:
     mimetypes.add_type("application/javascript", ".js", True)
 
 # PayPal integration
-PAYPAL_CLIENT_ID = env('PAYPAL_CLIENT_ID', default='').strip()
-PAYPAL_SECRET = env('PAYPAL_SECRET', default='').strip()
-PAYPAL_MODE = env('PAYPAL_MODE', default='sandbox')  # Default to sandbox
-PAYPAL_RETURN_URL = env('PAYPAL_RETURN_URL', default='')
-PAYPAL_CANCEL_URL = env('PAYPAL_CANCEL_URL', default='')
+PAYPAL_CLIENT_ID = env('PAYPAL_CLIENT_ID', default='')
+PAYPAL_SECRET = env('PAYPAL_SECRET', default='')
+PAYPAL_MODE = env('PAYPAL_MODE', default='sandbox')
+PAYPAL_RETURN_URL = env('PAYPAL_RETURN_URL', default='http://localhost:8000/payments/paypal/success/')
+PAYPAL_CANCEL_URL = env('PAYPAL_CANCEL_URL', default='http://localhost:8000/payments/paypal/cancel/')

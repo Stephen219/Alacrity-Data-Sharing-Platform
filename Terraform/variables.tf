@@ -1,10 +1,10 @@
 variable "flavor" { default = "m1.large" }
 variable "image" { default = "Rocky 9.3" }
-variable "name1" { default = "Project-123456789" } # replace 123456789 with your student number
-variable "name2" { default = "Jenkins-123456789" } # replace 123456789 with your student number
-variable "keypair" { default = "cloud" } # do not change this for any reason
+variable "name1" { default = "frontend-alacrity_frontend" } 
+variable "name2" { default = "backend-alacrity_backend" }
+variable "keypair" { default = "alacrity" } # do not change this for any reason
 variable "pool" { default = "cscloud_private_floating" }
-variable "server1_script" { default = "./project.sh" }
-variable "server2_script" { default = "./jenkins.sh" }
+variable "server1_script" { default = "./frontend.sh" }
+variable "server2_script" { default = "./backend.sh" }
 variable "security_description" { default = "Terraform security group" }
 variable "security_name" { default = "Terraform-123456789" } # replace 123456789 with your student number
