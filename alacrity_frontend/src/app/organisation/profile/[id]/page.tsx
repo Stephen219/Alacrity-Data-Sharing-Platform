@@ -187,8 +187,11 @@ const updateOrganization = async (orgId: string, data: FormData): Promise<Organi
   try {
     const response = await fetchWithAuth(`${BACKEND_URL}/organisation/${orgId}/`, {
       method: "PUT",
-      body: data, // No Content-Type header needed; fetch sets multipart/form-data automatically with FormData
+      body: data, 
     });
+
+   
+
     if (!response.ok) throw new Error(`Failed to update organization: ${response.status}`);
     return await response.json();
   } catch (error) {
@@ -370,6 +373,9 @@ export default function OrganizationProfilePage() {
         setProfileImage(null);
         setCoverPreview(updatedOrg.cover_image);
         setProfilePreview(updatedOrg.profile_picture);
+        window.location.reload() 
+        window.scrollTo(0, 0) 
+
       } else {
         setError("Failed to update organization");
       }
@@ -775,7 +781,8 @@ export default function OrganizationProfilePage() {
             ) : (
               <button
                 onClick={handleFollowToggle}
-                disabled={followLoading}
+                disabled={followLoading || isCurrentUserAdmin}
+
                 className={`px-6 py-2 rounded-md flex items-center gap-2 transition-colors ${
                   orgData.is_followed
                     ? "bg-gray-200 text-gray-800 hover:bg-gray-300"
