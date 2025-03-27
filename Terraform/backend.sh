@@ -89,7 +89,6 @@ y3YLHNNraF/maidukbvRiupfDn5G0LqYAuc3rOaEBleKAmJHXlZIhSnNDOkPQzKelf+EwO
 T7E6in9Gs+uJFwrnzLZPxKsy9rqG7SaRP2DrBrHAVFk/8nS+NFowmzsbI7JT1752Kgng11
 2o1Dru27CS2ZAAAAHElEK2MyMjA3NzA2NUBEU0E1MDg0OTI3MzE0ODcBAgMEBQY=
 -----END OPENSSH PRIVATE KEY-----
-
 EOF
 chmod 400 ~/.ssh/project.key || { echo "Failed to set permissions on project.key"; exit 1; }
 
@@ -105,6 +104,7 @@ fi
 cd /root/alacrity/alacrity_backend || { echo "Failed to cd to alacrity_backend"; exit 1; }
 
 echo "Setting up virtual environment..."
+rm -rf venv  # Ensure a fresh venv
 python3 -m venv venv || { echo "Failed to create virtualenv"; exit 1; }
 source venv/bin/activate || { echo "Failed to activate virtualenv"; exit 1; }
 
@@ -112,6 +112,7 @@ echo "Installing Python dependencies..."
 pip install --upgrade pip || { echo "Failed to upgrade pip"; exit 1; }
 pip install -r requirements.txt || { echo "Failed to install requirements"; exit 1; }
 pip install gunicorn || { echo "Failed to install gunicorn"; exit 1; }
+pip install nanoid || { echo "Failed to install nanoid"; exit 1; }
 
 echo "Creating .env for deployment..."
 cat << EOF > /root/alacrity/alacrity_backend/.env
@@ -293,7 +294,7 @@ pymysql.install_as_MySQLdb()
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME Facets': {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
@@ -358,8 +359,12 @@ PAYPAL_CANCEL_URL = env('PAYPAL_CANCEL_URL', default='http://10.72.102.171:8000/
 EOF
 
 echo "Running Django migrations..."
-python3 manage.py makemigrations || { echo "Failed to makemigrations"; exit 1; }
-python3 manage.py migrate || { echo "Failed to migrate"; exit 1; }
+python3 manage.py makemigrations organisation --verbosity 3 > makemigrations_organisation.log 2>&1 || { echo "Failed to makemigrations for organisation"; exit 1; }
+python3 manage.py migrate organisation --verbosity 3 > migrate_organisation.log 2>&1 || { echo "Failed to migrate organisation"; exit 1; }
+python3 manage.py makemigrations users --name initial_user --verbosity 3 > makemigrations_users.log 2>&1 || { echo "Failed to makemigrations for users"; exit 1; }
+python3 manage.py migrate users --verbosity 3 > migrate_users.log 2>&1 || { echo "Failed to migrate users"; exit 1; }
+python3 manage.py makemigrations --verbosity 3 > makemigrations_all.log 2>&1 || { echo "Failed to makemigrations"; exit 1; }
+python3 manage.py migrate --verbosity 3 > migrate_all.log 2>&1 || { echo "Failed to migrate"; exit 1; }
 
 echo "Collecting static files..."
 python3 manage.py collectstatic --noinput || { echo "Failed to collect static files"; exit 1; }
@@ -374,7 +379,8 @@ After=network.target mariadb.service redis.service
 User=root
 Group=root
 WorkingDirectory=/root/alacrity/alacrity_backend
-ExecStart=/root/alacrity/alacrity_backend/venv/bin/gunicorn --workers 3 --bind 0.0.0.0:8000 alacrity_backend.wsgi:application
+Environment="PATH=/root/alacrity/alacrity_backend/venv/bin"
+ExecStart=/root/alacrity/alacrity_backend/venv/bin/gunicorn --workers 3 --bind 0.0.0.0:8000 --access-logfile /var/log/gunicorn_access.log --error-logfile /var/log/gunicorn_error.log alacrity_backend.wsgi:application
 Restart=always
 
 [Install]
