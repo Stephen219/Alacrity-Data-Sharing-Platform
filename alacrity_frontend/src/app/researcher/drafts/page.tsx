@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Published from "@/components/Published";
 import SubmissionButtons from "@/components/SubmissionsButtons";
 import { useRouter } from "next/navigation";
+import { BACKEND_URL } from "@/config";
 
 interface Analysis {
   id: number;
@@ -29,7 +30,7 @@ const DraftList = () => {
       setLoading(true);
       try {
         const response = await fetchWithAuth(
-          `http://127.0.0.1:8000/research/drafts/?sort=${sortOrder}`
+          `${BACKEND_URL}/research/drafts/?sort=${sortOrder}`
         );
         if (!response.ok) throw new Error("Failed to fetch drafts.");
         const data = await response.json();
@@ -46,7 +47,7 @@ const DraftList = () => {
 
   const handleSoftDeleteDraft = async (id: number) => {  
     try {
-      const response = await fetchWithAuth(`http://127.0.0.1:8000/research/drafts/delete/${id}/`, {
+      const response = await fetchWithAuth(`${BACKEND_URL}/research/drafts/delete/${id}/`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
       });
@@ -80,7 +81,7 @@ const DraftList = () => {
 
     try {
       const response = await fetchWithAuth(
-        `http://127.0.0.1:8000/research/submissions/edit/${editingDraft.id}/`,
+        `${BACKEND_URL}/research/submissions/edit/${editingDraft.id}/`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },

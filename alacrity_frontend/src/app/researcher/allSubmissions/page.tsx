@@ -34,7 +34,7 @@ const PublicSubmissions = () => {
   useEffect(() => {
     const fetchSubmissions = async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}research/submissions/view/`);
+        const response = await fetch(`${BACKEND_URL}/research/submissions/view/`);
         if (!response.ok) throw new Error(`Failed to fetch submissions. Status: ${response.status}`);
   
         const data = await response.json();
@@ -141,7 +141,7 @@ if (sortBy === "recent") {
 
   const toggleBookmark = async (submissionId: number) => {
     try {
-      const response = await fetchWithAuth(`${BACKEND_URL}research/bookmark/${submissionId}/`, {
+      const response = await fetchWithAuth(`${BACKEND_URL}/research/bookmark/${submissionId}/`, {
         method: "POST",
       });
   

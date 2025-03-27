@@ -6,6 +6,7 @@ import Published from "@/components/Published";
 import { Button } from "@/components/ui/button";
 import { Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { BACKEND_URL } from "@/config";
 
 interface Bookmark {
   id: number;
@@ -39,7 +40,7 @@ const BookmarkList = () => {
 
   const handleUnbookmark = async (id: number) => {
     try {
-      const response = await fetchWithAuth(`http://127.0.0.1:8000/research/bookmark/${id}/`, {
+      const response = await fetchWithAuth(`${BACKEND_URL}/research/bookmark/${id}/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
