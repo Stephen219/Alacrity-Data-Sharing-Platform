@@ -98,6 +98,7 @@ const updateProfile = async (userId: string, updatedData: Partial<Profile>) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updatedData),
     })
+    
     if (!response.ok) {
       throw new Error(`Failed to update profile: ${response.status} ${response.statusText}`)
     }
@@ -227,18 +228,24 @@ function ResearcherProfilePage() {
   }
 
   const handleSave = async () => {
-    if (!userData?.id || !isOwner) return
-    setLoading(true)
-    try {
-      const updatedProfile = await updateProfile(userData.id, formData)
-      setUserData((prev) => (prev ? { ...prev, ...updatedProfile } : prev))
-      setIsEditing(false)
-    } catch (err) {
-      setError("Failed to save profile changes")
-    } finally {
-      setLoading(false)
-    }
+  if (!userData?.id || !isOwner) return
+  setLoading(true)
+  try {
+    const updatedProfile = await updateProfile(userData.id, formData)
+    setUserData((prev) => {
+      if (!prev) return prev 
+      return { ...prev, ...updatedProfile }
+    })
+    setIsEditing(false)
+  } catch (err) {
+    setError("Failed to save profile changes")
+    console.error("Save error:", err)
+  } finally {
+    setLoading(false)
+    window.location.reload() 
+    window.scrollTo(0, 0) 
   }
+}
 
   const handleProfilePicChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (!isOwner || !userData?.id || !e.target.files || e.target.files.length === 0) return

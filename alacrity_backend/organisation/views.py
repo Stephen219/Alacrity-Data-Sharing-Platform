@@ -15,7 +15,6 @@ from alacrity_backend.settings import DEFAULT_FROM_EMAIL
 from django.db import transaction   
 from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
-from .serializer import OrganizationRegisterSerializer
 from django.db import transaction
 from .models import Organization
 from .serializer import OrganizationSerializer
@@ -203,7 +202,10 @@ class RegisterOrganizationView(APIView):
         data = request.data.copy()
         data['admin']['username'] = generate_username(data['admin']['first_name'], data['admin']['sur_name'])
         data['admin']['password2'] = data['admin']['password']
-        serializer = OrganizationRegisterSerializer(data=data)
+        
+
+        serializer = OrganizationSerializer(data=data)
+
         if serializer.is_valid():
             try:
                 with transaction.atomic():

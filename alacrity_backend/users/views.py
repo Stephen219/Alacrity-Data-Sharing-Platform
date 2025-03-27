@@ -226,11 +226,11 @@ class MonthlyUsersView(APIView):
                 .order_by("month")
             )
 
-            # retrieves the last 6 months 
+         
             months_list = [(now() - timedelta(days=30 * i)).strftime("%b") for i in range(6)]
             months_list.reverse()  
 
-            # Converts query results into dictionaries
+          
             def get_data(users):
                 return {entry["month"].strftime("%b"): entry["count"] for entry in users}
 
@@ -351,26 +351,31 @@ def generate_username(first_name: str, last_name: str) -> str:
 
 def clean_data(request_data):
     cleaned_data = request_data.copy()
-    cleaned_data['first_name'] = cleaned_data.get('firstname', cleaned_data.get('first_name'))
-    cleaned_data['sur_name'] = cleaned_data.get('surname', cleaned_data.get('sur_name'))
-    cleaned_data['phone_number'] = cleaned_data.get('phonenumber', cleaned_data.get('phone_number'))
+    cleaned_data['first_name'] = cleaned_data.get('firstname', cleaned_data.get('first_name', ''))
+    cleaned_data['sur_name'] = cleaned_data.get('surname', cleaned_data.get('sur_name', ''))
+    cleaned_data['phone_number'] = cleaned_data.get('phonenumber', cleaned_data.get('phone_number', ''))
     cleaned_data.pop('firstname', None)
     cleaned_data.pop('surname', None)
     cleaned_data.pop('phonenumber', None)
-    cleaned_data['role'] = 'researcher'  
-
-    cleaned_data['password2'] = cleaned_data.get('password', cleaned_data.get('password2'))
-   
-    cleaned_data['username'] = generate_username(cleaned_data.get('first_name'), cleaned_data.get('sur_name'))
-
+    cleaned_data['role'] = 'researcher'
+    cleaned_data['password2'] = cleaned_data.get('password', cleaned_data.get('password2', ''))
+    cleaned_data['username'] = generate_username(cleaned_data['first_name'], cleaned_data['sur_name'])
     return cleaned_data
+
+
+
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        print(f"Received data: {request.data}")
         mapped_data = clean_data(request.data)
+        print("#############################################3")
+        print(f"Mapped data: {mapped_data}")
         serializer = UserSerializer(data=mapped_data)
+        print("serializer")
+        print(serializer)
         try:
             if serializer.is_valid():
                 user = serializer.save()
@@ -378,26 +383,32 @@ class RegisterView(APIView):
                     "message": "User registered successfully",
                     "user": {
                         "id": user.id,
-
                         "email": user.email,
-                        "firstname": user.first_name,
-                        "surname": user.last_name,
-                        "phonenumber": user.phone_number,
+                        "firstname": user.first_name,  
+                        "surname": user.sur_name,     
+                        "phonenumber": user.phone_number, 
                         "role": user.role,
                         "organization": user.organization.name if user.organization else None,
                         "field": user.field,
                     }
                 }
                 return Response(response_data, status=status.HTTP_201_CREATED)
-            print(serializer.errors)
+            print(f"Serializer errors: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            print(e)
+            print(f"Exception: {e}")
+            import traceback
+            traceback.print_exc()
             return Response(
                 {"error": "Registration failed", "details": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        
+
+
+
+
+
+
 
 class LoggedInUser(APIView):
     def get(self, request):
@@ -439,15 +450,59 @@ class LoggedInUser(APIView):
 class UserView(APIView):
     def get(self, request, user_id):
         user = get_object_or_404(User, id=user_id)
+
         serializer = UserSerializer(user, context={"request": request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        data = serializer.data
+        first_name = data['first_name']
+        sur_name = data['sur_name']
+        phone_number = data['phone_number']
+
+        print("first_name", first_name, sur_name, phone_number)
+
+        data.pop('first_name', None)
+        data.pop('sur_name', None)
+        data.pop('phone_number', None)
+
+
+        data['firstname'] = first_name
+        data['lastname'] = sur_name
+        data['phonenumber'] = phone_number
+
+        #remname the keys to match the frontend
+        # data['firstname'] = data.pop('first_name', None)
+        # data['surname'] = data.pop('sur_name', None)
+        # data['phonenumber'] = data.pop('phone_number', None)
+        print(data)
+        return Response(data, status=status.HTTP_200_OK)
 
     def put(self, request, user_id):
         user = get_object_or_404(User, id=user_id)
+        print(request.data)
+        print(request.data)
+
         if not request.user.is_authenticated or request.user.id != user.id:
             return Response({"detail": "Not authorized to update this profile"}, status=status.HTTP_403_FORBIDDEN)
+        first_name = request.data.get('firstname', None)
+        sur_name = request.data.get('lastname', None)
+        phone_number = request.data.get('phonenumber', None)
+        data = request.data.copy()
+        data.pop('firstname', None)
+        data.pop('surname', None)
+        data.pop('phonenumber', None)
 
-        serializer = UserSerializer(user, data=request.data, partial=True, context={"request": request})
+        data['first_name'] = first_name
+        data['sur_name'] = sur_name
+        data['phone_number'] = phone_number
+
+        print ("data going to serializer", data)
+
+
+        
+        
+
+        serializer = UserSerializer(user, data, partial=True, context={"request": request})
+        print(serializer.is_valid())
+        print(serializer.errors)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
