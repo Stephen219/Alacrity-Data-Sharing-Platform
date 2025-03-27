@@ -43,7 +43,7 @@ const ReviewSubmissionPage: React.FC = () => {
   useEffect(() => {
     const fetchSubmission = async () => {
       try {
-        const response = await fetchWithAuth(`${BACKEND_URL}research/submissions/review/${id}/`);
+        const response = await fetchWithAuth(`${BACKEND_URL}/research/submissions/review/${id}/`);
 
         if (!response.ok) {
           const errorData = await response.json();
@@ -76,7 +76,7 @@ const ReviewSubmissionPage: React.FC = () => {
 
   const handleApprove = async () => {
     try {
-      const response = await fetchWithAuth(`${BACKEND_URL}research/submissions/review/${id}/`, {
+      const response = await fetchWithAuth(`${BACKEND_URL}/research/submissions/review/${id}/`, {
         method: "POST",
         body: JSON.stringify({ action: "approve", message }),
         headers: { "Content-Type": "application/json" },
@@ -97,7 +97,7 @@ const ReviewSubmissionPage: React.FC = () => {
   
   const handleReject = async () => {
     try {
-      const response = await fetchWithAuth(`${BACKEND_URL}research/submissions/review/${id}/`, {
+      const response = await fetchWithAuth(`${BACKEND_URL}/research/submissions/review/${id}/`, {
         method: "POST",
         body: JSON.stringify({ action: "reject", message }),
         headers: { "Content-Type": "application/json" },

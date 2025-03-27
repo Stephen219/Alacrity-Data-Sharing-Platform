@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import Published from "@/components/Published";
 import SubmissionButtons from "@/components/SubmissionsButtons";
 import { useRouter } from "next/navigation";
+import { BACKEND_URL } from "@/config";
 
 interface Analysis {
   id: number;
@@ -28,7 +29,7 @@ const AnalysisList: React.FC = () => {
       setLoading(true);
       try {
         const response = await fetchWithAuth(
-          `http://127.0.0.1:8000/research/submissions/?sort=${sortOrder}`
+          `${BACKEND_URL}/research/submissions/?sort=${sortOrder}`
         );
         if (!response.ok) throw new Error("Failed to fetch submissions.");
         const data = await response.json();
