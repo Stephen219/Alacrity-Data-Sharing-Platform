@@ -15,7 +15,6 @@ class AddContributorsTestCase(TestCase):
         """Set up test case with initial user and organization data."""
         User = get_user_model()
         self.user = User.objects.create_user(
-        
             email='admin@example.com',
             password='adminpassword',
             username='adminuser',
@@ -29,12 +28,13 @@ class AddContributorsTestCase(TestCase):
         self.user.organization = self.org
         self.user.save()
         
+       
         self.valid_contributor_data = {
-        'email': 'contributor@example.com',
-        'firstname': 'Test',
-        'lastname': 'Contributor',  
-        'phonenumber': '1234567890'  
-    }
+            'email': 'contributor@example.com',
+            'first_name': 'Test',
+            'sur_name': 'Contributor',
+            'phone_number': '1234567890'
+        }
         
         self.client = APIClient()
 
@@ -68,6 +68,71 @@ class AddContributorsTestCase(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertIn('username', response.data)
         self.assertEqual(response.data['username'], 'contributor_test_abc123')
+
+    def test_add_contributor_unauthenticated(self):
+        """Test adding a contributor without authentication."""
+        # Act
+        response = self.client.post(
+            reverse('add_contributor'),
+            self.valid_contributor_data,
+            format='json'
+        )
+        
+        # Assert
+        self.assertEqual(response.status_code, 401)
+
+    @patch('organisation.views.generate_username')
+    @patch('organisation.views.generate_password')
+    def test_add_contributor_invalid_role(self, mock_generate_password, mock_generate_username):
+        """Test adding a contributor with an invalid role in request data."""
+        # Arrange
+        mock_generate_username.return_value = 'contributor_test_abc123'
+        mock_generate_password.return_value = 'SecurePass123!'
+        
+        token = self.get_jwt_token()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        
+        invalid_role_data = self.valid_contributor_data.copy()
+        invalid_role_data['role'] = 'super_admin'
+        
+        # Act
+        response = self.client.post(
+            reverse('add_contributor'),
+            invalid_role_data,
+            format='json'
+        )
+        
+        # Assert
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('Invalid role', str(response.data['error']))
+
+    @patch('organisation.views.generate_username')
+    @patch('organisation.views.generate_password')
+    def test_add_contributor_invalid_data(self, mock_generate_password, mock_generate_username):
+        """Test adding a contributor with missing required data fields."""
+        # Arrange
+        mock_generate_username.return_value = 'contributor_test_abc123'
+        mock_generate_password.return_value = 'SecurePass123!'
+        
+        token = self.get_jwt_token()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
+        
+        invalid_data = {
+            'first_name': 'Test',
+            'sur_name': 'Contributor'
+        }
+        
+        # Act
+        response = self.client.post(
+            reverse('add_contributor'),
+            invalid_data,
+            format='json'
+        )
+        
+        # Assert
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('email', response.data)
+
 
     def test_add_contributor_unauthenticated(self):
         """Test adding a contributor without authentication."""
