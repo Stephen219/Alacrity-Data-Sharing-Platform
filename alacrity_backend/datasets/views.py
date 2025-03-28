@@ -78,6 +78,8 @@ class CreateDatasetView(APIView):
 
     @role_required(['organization_admin', 'contributor'])
     def post(self, request, *args, **kwargs):
+        print("Request data:", request.data)
+        print("Request files:", request.FILES)
         start_time = datetime.now()
         logger.info(f"Processing upload request at {start_time}")
         local_file = request.FILES.get('file')

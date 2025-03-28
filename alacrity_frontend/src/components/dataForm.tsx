@@ -11,6 +11,7 @@ import LoadingSpinner from "./ui/Loader";
 import UploadIcon from "./ui/Upload";
 import { BACKEND_URL } from "@/config";
 import { fetchWithAuth } from "@/libs/auth";
+import HealthCategoryInput from "./ui/cartegorySelect";
 import MaxWidthWrapper from "./MaxWidthWrapper";
 import {
   AlertCircle,
@@ -22,7 +23,7 @@ import {
   Upload,
 } from "lucide-react";
 
-// Type definitions for global window object
+
 declare global {
   interface Window {
     gapi: any;
@@ -67,6 +68,7 @@ const Tooltip = ({ text, children }: { text: string; children: React.ReactNode }
  * @returns {JSX.Element}
  */
 const DatasetForm = () => {
+  // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
@@ -75,10 +77,10 @@ const DatasetForm = () => {
   const [cloudFileUrl, setCloudFileUrl] = useState("");
   const [cloudFileName, setCloudFileName] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [price, setPrice] = useState<string>("");
+  const [price, setPrice] = useState("");
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null); 
 
-
+  // UI state
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
@@ -348,26 +350,6 @@ const DatasetForm = () => {
     tokenClient.requestAccessToken();
   };
 
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-  
-    // Prevents negative values
-    if (value.startsWith("-")) return;
-  
-    // Allos only numbers and a single decimal point
-    if (!/^\d*\.?\d{0,2}$/.test(value)) return;
-  
-    setPrice(value); // Allows natural typing without immediate formatting
-  };
-
-  const handlePriceBlur = () => {
-    if (price === "" || isNaN(parseFloat(price))) {
-      setPrice(""); // Resets empty or invalid input
-    } else {
-      setPrice(parseFloat(price).toFixed(2)); // Formats correctly when leaving the input
-    }
-  };
-
   const createGooglePicker = (accessToken: string) => {
     console.log("Loading Picker API with access token:", accessToken);
     window.gapi.load("picker", () => {
@@ -566,41 +548,39 @@ const DatasetForm = () => {
                     Category <span className="text-[#f97316] ml-1">*</span>
                   </Tooltip>
                 </label>
-                <div className="relative">
-  <input
-    type="text"
-    id="category"
-    value={category}
-    onChange={(e) => setCategory(e.target.value)}
-    list="category-options"
-    placeholder="Select category or type your own"
-    className="w-full px-3 py-2 border border-[#f97316] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-[#f97316] dark:bg-gray-700 dark:text-white"
-  />
-  <datalist id="category-options">
-    <option value="Thyroid" />
-    <option value="HIV" />
-    <option value="Smoking" />
-    <option value="Pancreatic Cancer" />
-    <option value="Cancer" />
-    <option value="Diabetes" />
-    <option value="Mental Health" />
-    <option value="Heart Disease" />
-  </datalist>
-  <svg
-    className="absolute right-3 top-2.5 h-5 w-5 text-gray-400 pointer-events-none dark:text-gray-100"
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 20 20"
-    fill="currentColor"
-  >
-    <path
-      fillRule="evenodd"
-      d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-      clipRule="evenodd"
-    />
-  </svg>
-</div>
+                {/* <div className="relative">
+                  <select
+                    id="category"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#f97316] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-[#f97316] appearance-none transition-colors dark:bg-gray-700 dark:text-white"
+                  >
+                    <option value="">Select category</option>
+                    <option value="category1">Category 1</option>
+                    <option value="category2">Category 2</option>
+                    <option value="category3">Category 3</option>
+                  </select>
+                  <svg
+                    className="absolute right-3 top-2.5 h-5 w-5 text-gray-400 pointer-events-none dark:text-gray-100"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div> */}
 
-           {errors.category && (
+<HealthCategoryInput
+                  category={category}
+                  onCategoryChange={setCategory}
+                />
+
+
+                {errors.category && (
                   <p className="text-red-500 text-xs flex items-center">
                     <AlertCircle className="h-3 w-3 mr-1" />
                     {errors.category}
@@ -729,8 +709,9 @@ const DatasetForm = () => {
                   type="number"
                   id="price"
                   value={price}
-                  onChange={handlePriceChange}
-                  onBlur={handlePriceBlur}
+                  onChange={(e) => setPrice(e.target.value)}
+                  min="0"
+                  step="0.01"
                   className="w-full pl-8 pr-3 py-2 border border-[#f97316] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-[#f97316] transition-colors dark:bg-gray-700 dark:text-white"
                   placeholder="0.00"
                 />

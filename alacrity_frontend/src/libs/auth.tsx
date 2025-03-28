@@ -139,50 +139,51 @@ export async function refreshToken(): Promise<string | null> {
   }
 }
 
+
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
   const executeRequest = async (token: string): Promise<Response> => {
-    const headers = {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json",
-      ...options.headers,
-    };
-    console.log(`Fetching ${url} with headers:`, headers);
-    const response = await fetch(url, { ...options, headers });
-    console.log(`Response from ${url}: Status ${response.status}`);
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Fetch failed for ${url}: ${response.status} - ${errorText}`);
-    }
-    return response;
+      return fetch(url, {
+          ...options,
+          headers: {
+              ...options.headers,
+              'Authorization': `Bearer ${token}`,
+          },
+      });
   };
 
-  const accessToken = localStorage.getItem("access_token"); // Changed from 'let' to 'const'
-  console.log("Initial access token:", accessToken ? accessToken.slice(0, 10) + "..." : "Missing");
-
+  const accessToken = localStorage.getItem("access_token");
+  
   if (!accessToken) {
-    console.error("No access token found, redirecting to login");
-    await logout();
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
+      console.error("No access token found");
+       await logout();
+       return new (class MockResponse {
+          ok = false;
+          status = 401;
+          json = async () => ({});
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      })() as any; 
+  
   }
 
+  
   let response = await executeRequest(accessToken);
 
+ 
   if (response.status === 401) {
-    console.warn("Received 401, attempting token refresh");
-    const newToken = await refreshToken();
-    if (!newToken) {
-      console.error("Token refresh failed, logging out");
-      await logout();
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-    console.log("Retrying request with new token:", newToken.slice(0, 10) + "...");
-    response = await executeRequest(newToken);
+      try {
+          const newToken = await refreshToken();
+          if (!newToken) {
+              logout();
+              return new Response(null, { status: 401 });
+          }
+          
+         
+          response = await executeRequest(newToken);
+      } catch (error) {
+          console.error("Token refresh failed:", error);
+          await logout();
+          return new Response(null, { status: 401 });
+      }
   }
 
   return response;
