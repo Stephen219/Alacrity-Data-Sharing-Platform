@@ -831,6 +831,8 @@ def get_datasets_user_has_access(user_id):
             "description": ds.description,
             "category": ds.category,
             "tags": ds.tags,
+            "entries": ds.entries,
+            "size": ds.size,
             "contributor_id__organization__name":
                 ds.contributor_id.organization.name if ds.contributor_id and ds.contributor_id.organization else None,
             "requests__updated_at":
@@ -889,6 +891,9 @@ class UserAccessibleDatasetsView(APIView):
                 else None,
                 "price": float(dataset.price),
                 "hasPaid": has_paid,
+                "entries": dataset.number_of_rows,
+                "size": dataset.size,
+
                 "updated_at": dataset.updated_at.isoformat(),
             })
 

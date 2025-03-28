@@ -30,6 +30,9 @@ class DatasetSerializer(serializers.ModelSerializer):
             'hasPaid',
             'is_active',
             'is_deleted',
+            'number_of_downloads',
+            'number_of_rows',
+            'size',
 
         ]
 
@@ -70,7 +73,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
 class ChatSerializer(serializers.ModelSerializer):
     messages = MessageSerializer(many=True, read_only=True)
-    participants = serializers.StringRelatedField(many=True)  # Show participant usernames
+    participants = serializers.StringRelatedField(many=True)  
 
     class Meta:
         model = Chat

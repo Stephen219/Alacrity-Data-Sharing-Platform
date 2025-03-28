@@ -25,12 +25,15 @@ interface Dataset {
   analysis_link: string | null;
   updated_at: string;
   size?: string;
-  entries?: number;
+  number_of_rows?: number;
   imageUrl?: string;
   price: number;
   view_count: number;
   darkMode: boolean;
   averageRating?: number;
+  number_of_downloads?: number;
+  
+
 }
 
 const ITEMS_PER_PAGE = 6;
@@ -62,7 +65,7 @@ const DatasetsPage: React.FC = () => {
       const mappedDatasets: Dataset[] = data.datasets.map((item: any) => ({
         ...item,
         size: item.size || "N/A",
-        entries: item.entries || 0,
+        entries: item.number_of_rows || 0,
         imageUrl: item.imageUrl || `https://picsum.photos/300/200?random=${item.dataset_id}`,
         tags:
           typeof item.tags === "string"
@@ -393,7 +396,7 @@ const DatasetsPage: React.FC = () => {
                     imageUrl={dataset.imageUrl || ""}
                     tags={dataset.tags}
                     category={dataset.category}
-                    entries={dataset.entries || 0}
+                    entries={dataset.number_of_rows || 0}
                     size={dataset.size || "N/A"}
                     view_count={dataset.view_count}
                     extraActions={() => toggleDatasetBookmark(dataset.dataset_id)}

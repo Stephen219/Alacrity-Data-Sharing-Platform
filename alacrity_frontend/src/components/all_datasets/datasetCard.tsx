@@ -22,7 +22,7 @@ interface DatasetCardProps {
   price: number;
   hasPaid?: boolean;
   onToggleBookmark: (event: React.MouseEvent<HTMLButtonElement>) => void;
-  averageRating?: number; // Add average rating prop
+  averageRating?: number; 
 }
 
 export const DatasetCard: React.FC<DatasetCardProps> = ({
@@ -40,7 +40,7 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
   isBookmarked,
   price,
   onToggleBookmark,
-  averageRating = 0, // Default to 0 if not provided
+  averageRating = 0,
 }) => {
   const isListView = viewMode === "list";
   const truncatedDescription = description.length > 200 ? description.substring(0, 200) + "..." : description;
@@ -109,11 +109,11 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
           </div>
           <div className="flex items-center gap-2">
             <Database size={16} className="text-[#ff6b2c]" />
-            <span className="text-gray-500">{entries.toLocaleString()} entries</span>
+            <span className="text-gray-500">{entries.toLocaleString()} rows</span>
           </div>
           <div className="flex items-center gap-2">
             <HardDrive size={16} className="text-[#ff6b2c]" />
-            <span className="text-gray-500">{size}</span>
+            <span className="text-gray-500">{size} MBs</span>
           </div>
         </div>
 
