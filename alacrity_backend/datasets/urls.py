@@ -3,7 +3,7 @@ from django.urls import include
 from rest_framework.routers import DefaultRouter
 from .views import ( ToggleBookmarkDatasetView, UserBookmarkedDatasetsView, descriptive_statistics, FeedbackView,
 filter_and_clean_dataset, 
-get_datasets, get_filter_options, CreateDatasetView, 
+get_datasets, get_filter_options, CreateDatasetView, DatasetListView, get_datasets,  get_datasets,
 
  pre_analysis)
 

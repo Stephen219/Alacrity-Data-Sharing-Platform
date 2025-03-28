@@ -76,35 +76,35 @@ export async function logout() {
  *
  * @returns {Promise<string | null>} - The new access token or null if refresh fails.
  */
-export async function refreshToken(): Promise<string | null> {
-    const refreshToken = localStorage.getItem("refresh_token");
-    if (!refreshToken) return null;
+// export async function refreshToken(): Promise<string | null> {
+//     const refreshToken = localStorage.getItem("refresh_token");
+//     if (!refreshToken) return null;
 
-  if (refreshToken) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/users/logout/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ refresh_token: refreshToken }),
-      });
+//   if (refreshToken) {
+//     try {
+//       const response = await fetch(`${API_BASE_URL}/users/logout/`, {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//           "Authorization": `Bearer ${accessToken}`,
+//         },
+//         body: JSON.stringify({ refresh_token: refreshToken }),
+//       });
 
-      if (!response.ok) {
-        throw new Error("Logout failed");
-      }
-      const data = await response.json();
-      console.log(data.message);
-    } catch (error) {
-      console.error("Error during logout:", error);
-    }
-  }
-  localStorage.removeItem("access_token");
-  localStorage.removeItem("refresh_token");
-  localStorage.removeItem("user");
-  window.location.href = "/auth/sign-in";
-}
+//       if (!response.ok) {
+//         throw new Error("Logout failed");
+//       }
+//       const data = await response.json();
+//       console.log(data.message);
+//     } catch (error) {
+//       console.error("Error during logout:", error);
+//     }
+//   }
+//   localStorage.removeItem("access_token");
+//   localStorage.removeItem("refresh_token");
+//   localStorage.removeItem("user");
+//   window.location.href = "/auth/sign-in";
+// }
 
 export async function refreshToken(): Promise<string | null> {
   const refreshToken = localStorage.getItem("refresh_token");
