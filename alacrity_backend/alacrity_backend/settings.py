@@ -121,13 +121,13 @@ if 'test' in sys.argv:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': ':memory:',  # Use in-memory database for faster tests
+            'NAME': ':memory:', 
         }
     }
 
 ENCRYPTION_KEY = "EHqnpsZeTQrwcmGfADez0GCRcJ_vQNCg5ch_pQg83Z0="
 
-# change this when deploying to production
+
 CORS_ALLOWED_ORIGINS = [
     FRONTEND_URL, 
     "http://127.0.0.1:3000",
