@@ -567,31 +567,40 @@ const DatasetForm = () => {
                   </Tooltip>
                 </label>
                 <div className="relative">
-                  <select
-                    id="category"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#f97316] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-[#f97316] appearance-none transition-colors dark:bg-gray-700 dark:text-white"
-                  >
-                    <option value="">Select category</option>
-                    <option value="category1">Category 1</option>
-                    <option value="category2">Category 2</option>
-                    <option value="category3">Category 3</option>
-                  </select>
-                  <svg
-                    className="absolute right-3 top-2.5 h-5 w-5 text-gray-400 pointer-events-none dark:text-gray-100"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                {errors.category && (
+  <input
+    type="text"
+    id="category"
+    value={category}
+    onChange={(e) => setCategory(e.target.value)}
+    list="category-options"
+    placeholder="Select category or type your own"
+    className="w-full px-3 py-2 border border-[#f97316] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-[#f97316] dark:bg-gray-700 dark:text-white"
+  />
+  <datalist id="category-options">
+    <option value="Thyroid" />
+    <option value="HIV" />
+    <option value="Smoking" />
+    <option value="Pancreatic Cancer" />
+    <option value="Cancer" />
+    <option value="Diabetes" />
+    <option value="Mental Health" />
+    <option value="Heart Disease" />
+  </datalist>
+  <svg
+    className="absolute right-3 top-2.5 h-5 w-5 text-gray-400 pointer-events-none dark:text-gray-100"
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 20 20"
+    fill="currentColor"
+  >
+    <path
+      fillRule="evenodd"
+      d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+      clipRule="evenodd"
+    />
+  </svg>
+</div>
+
+           {errors.category && (
                   <p className="text-red-500 text-xs flex items-center">
                     <AlertCircle className="h-3 w-3 mr-1" />
                     {errors.category}
