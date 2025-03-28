@@ -30,6 +30,8 @@ class Dataset(models.Model):
 
 
     view_count = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    is_deleted = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ['title', 'link']

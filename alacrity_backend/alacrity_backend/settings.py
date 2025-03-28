@@ -175,7 +175,7 @@ CORS_ALLOW_CREDENTIALS = True
 ################################  file stosssrage config  ##############################################################
 
 # MINIO_URL = "http://localhost:9000" 
-MINIO_URL = "10.72.98.137:9000"
+MINIO_URL = "10.72.98.50:9000"
 MINIO_ACCESS_KEY = "admin"
 MINIO_SECRET_KEY = "Notgood1"
 MINIO_BUCKET_NAME = "alacrity"

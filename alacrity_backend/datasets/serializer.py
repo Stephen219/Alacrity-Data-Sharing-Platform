@@ -8,6 +8,7 @@ class DatasetSerializer(serializers.ModelSerializer):
     organization_name = serializers.CharField()
     price = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=True)
     hasPaid = serializers.SerializerMethodField()
+    is_active = serializers.BooleanField()
 
 # this is the data that will be returned when a dataset is queried
     class Meta:
@@ -27,6 +28,9 @@ class DatasetSerializer(serializers.ModelSerializer):
             'updated_at',
             'price',
             'hasPaid',
+            'is_active',
+            'is_deleted',
+
         ]
 
     def validate_price(self, value):
@@ -44,6 +48,12 @@ class DatasetSerializer(serializers.ModelSerializer):
         return DatasetPurchase.objects.filter(dataset=obj, buyer=request.user).exists()
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data['tags'] = instance.tags.split(',') if instance.tags else []
+        data['tags'] = [tag.strip() for tag in instance.tags] if isinstance(instance.tags, list) else \
+               [tag.strip() for tag in instance.tags.split(',')] if instance.tags else []
+
+
+
+
+    
         return data
 

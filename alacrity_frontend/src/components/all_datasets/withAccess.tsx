@@ -175,7 +175,6 @@ export default function DatasetAccessed() {
           </div>
 
           <div className="flex gap-2 items-center">
-            {/* Sort dropdown */}
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}

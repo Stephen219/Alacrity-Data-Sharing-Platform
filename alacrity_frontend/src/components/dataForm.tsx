@@ -67,7 +67,6 @@ const Tooltip = ({ text, children }: { text: string; children: React.ReactNode }
  * @returns {JSX.Element}
  */
 const DatasetForm = () => {
-  // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
@@ -79,7 +78,7 @@ const DatasetForm = () => {
   const [price, setPrice] = useState<string>("");
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null); 
 
-  // UI state
+
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
@@ -92,7 +91,7 @@ const DatasetForm = () => {
   const [gapiInited, setGapiInited] = useState(false);
   const [gisInited, setGisInited] = useState(false);
 
-  const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY; // DO NOT COMMIT THIS KEY   IT CAN USE MONEY
+  const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY; 
   const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   const DROPBOX_APP_KEY = process.env.NEXT_PUBLIC_DROPBOX_APP_KEY;
   const ONEDRIVE_CLIENT_ID = process.env.NEXT_PUBLIC_ONEDRIVE_CLIENT_ID;
@@ -212,7 +211,7 @@ const DatasetForm = () => {
       formData.append("fileUrl", cloudFileUrl);
       formData.append("fileName", cloudFileName || "cloud_file");
       if (cloudFileUrl.includes("drive.google.com") && googleAccessToken) {
-        formData.append("accessToken", googleAccessToken); // Append access token for Google Drive
+        formData.append("accessToken", googleAccessToken); 
       }
     } else {
       formData.append("fileUrl", "");

@@ -229,7 +229,7 @@ export default function OrganizationProfilePage() {
     const checkAdminAndLoadData = async () => {
       setLoading(true);
       try {
-        // Step 1: Fetch current user data
+       
         const userResponse = await fetchWithAuth(`${BACKEND_URL}/users/profile/`);
         if (!userResponse.ok) {
           if (userResponse.status === 401) {

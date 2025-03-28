@@ -12,9 +12,9 @@ urlpatterns = [
     path('create_dataset/', CreateDatasetView.as_view(), name='create_dataset'),
     path('clear_cache/<str:dataset_id>/', clear_dataset_cache, name='clear_dataset_cache'),
     path('testget/',get_datasets, name='testget'),
-    #####
+
     path('download/<str:dataset_id>/', download_dataset, name='download_dataset'),
-    # path('overview/<uuid:dataset_id>/', dataset_overview, name='dataset_overview'),
+  
     
    
 

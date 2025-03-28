@@ -29,7 +29,7 @@ export const NAV_ITEMS = [
         },
         {
           name: "Manage Datasets",
-          href: "#",
+          href: "/organisation/admin/datasets",
           imageSrc: "/navbar/datasets/manageDataset.png",
         },
         {

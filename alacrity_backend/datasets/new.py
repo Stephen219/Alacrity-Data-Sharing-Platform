@@ -30,12 +30,18 @@ import time
 from typing import List, Dict
 from django.http import HttpResponse
 from .pre_analysis import pre_analysis
+from alacrity_backend.settings import MINIO_ACCESS_KEY, MINIO_BUCKET_NAME, MINIO_SECRET_KEY, MINIO_URL, MINIO_SECURE
 
 
 logger = logging.getLogger(__name__)
 
-MINIO_URL = "10.72.98.137:9000"
-minio_client = Minio(endpoint=MINIO_URL, access_key="admin", secret_key="Notgood1", secure=False)
+
+minio_client = Minio(
+    endpoint=MINIO_URL, 
+    access_key=MINIO_ACCESS_KEY,
+    secret_key=MINIO_SECRET_KEY, 
+    secure=MINIO_SECURE
+    )
 BUCKET = "alacrity"
 DATASET_CACHE = OrderedDict()
 CACHE_LOCK = Lock()

@@ -46,7 +46,7 @@ const DatasetsPage: React.FC = () => {
     { id: string; label: string; options: string[] }[]
   >([]);
   const [bookmarkedDatasets, setBookmarkedDatasets] = useState<string[]>([]);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const [, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDatasets = async () => {
@@ -56,7 +56,7 @@ const DatasetsPage: React.FC = () => {
         const response = await fetchWithAuth(url);
         if (!response.ok) {
           if (response.status === 404 && orgId) {
-            setDatasets([]);  // Empty dataset list for org with no datasets
+            setDatasets([]);  
             return;
           }
           throw new Error(`HTTP Error: ${response.status}`);
@@ -154,36 +154,7 @@ const DatasetsPage: React.FC = () => {
     }
   };
 
-  const handleEditDataset = async (dataset: Dataset) => {
-    if (userRole !== "organization_admin") return;
 
-    const updatedTitle = prompt("Edit dataset title:", dataset.title);
-    if (!updatedTitle) return;
-
-    try {
-      const response = await fetchWithAuth(`${BACKEND_URL}/datasets/all`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dataset_id: dataset.dataset_id,
-          title: updatedTitle,
-          description: dataset.description,
-          tags: dataset.tags.join(","),
-          category: dataset.category,
-          price: dataset.price,
-        }),
-      });
-
-      if (!response.ok) throw new Error("Failed to update dataset");
-      const updatedDataset = await response.json();
-      setDatasets((prev) =>
-        prev.map((d) => (d.dataset_id === dataset.dataset_id ? { ...d, ...updatedDataset, tags: updatedDataset.tags.split(",").map((t: string) => t.trim()) } : d))
-      );
-    } catch (err) {
-      console.error("Error updating dataset:", err);
-      setError("Failed to update dataset");
-    }
-  };
 
   const filteredDatasets = useMemo(() => {
     return datasets.filter((dataset) => {
@@ -412,24 +383,7 @@ const DatasetsPage: React.FC = () => {
                     price={dataset.price}
                   />
                 </Link>
-                {userRole === "organization_admin" && (
-                  <button
-                    onClick={() => handleEditDataset(dataset)}
-                    className="absolute top-2 right-2 p-2 bg-orange-500 text-white rounded-full hover:bg-orange-600"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                    </svg>
-                  </button>
-                )}
+               
               </div>
             ))
           ) : searchParams.get("org") ? (

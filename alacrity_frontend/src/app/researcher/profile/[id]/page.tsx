@@ -317,12 +317,10 @@ function ResearcherProfilePage() {
     return text.substring(0, maxLength) + "..."
   }
 
-  // Improved: Validate and add social link with better error handling
+  
   const addSocialLink = () => {
-    // Reset previous error
+  
     setSocialLinkError(null)
-
-    // Basic URL validation
     if (!newSocialLink) {
       setSocialLinkError({ message: "Please enter a social link" })
       return
@@ -396,7 +394,7 @@ function ResearcherProfilePage() {
       const success = await toggleFollowUser(userData.id, isCurrentlyFollowing)
 
       if (success) {
-        // Update local state to reflect the change
+  
         setUserData((prev) => {
           if (!prev) return null
 
@@ -528,7 +526,7 @@ function ResearcherProfilePage() {
                             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                             <circle cx="12" cy="13" r="4" />
                           </svg>
-                          <input type="file" accept="image/*" className="hidden" onChange={handleProfilePicChange} />
+                          <input type="file" accept="image/*" data-testid= "camera" className="hidden" onChange={handleProfilePicChange} />
                         </label>
                       )}
                     </div>
@@ -550,7 +548,7 @@ function ResearcherProfilePage() {
                             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                             <circle cx="12" cy="13" r="4" />
                           </svg>
-                          <input type="file" accept="image/*" className="hidden" onChange={handleProfilePicChange} />
+                          <input type="file" data-testid= "camera" accept="image/*" className="hidden" onChange={handleProfilePicChange} />
                         </label>
                       )}
                     </div>
@@ -619,7 +617,7 @@ function ResearcherProfilePage() {
                       </button>
                     </div>
                   ) : (
-                    // New: Follow button for non-owners
+        
                     !isOwner &&
                     currentUser && (
                       <button

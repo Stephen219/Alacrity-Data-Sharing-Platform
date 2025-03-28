@@ -34,13 +34,15 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-
-from alacrity_backend.settings import MINIO_ACCESS_KEY, MINIO_BUCKET_NAME, MINIO_SECRET_KEY, MINIO_URL
+from alacrity_backend.settings import MINIO_ACCESS_KEY, MINIO_BUCKET_NAME, MINIO_SECRET_KEY, MINIO_URL, MINIO_SECURE
 from users.decorators import role_required
 from .models import Dataset
 from .serializer import DatasetSerializer
-# from .tasks import compute_correlation, fetch_json_from_minio
+
+from rest_framework.parsers import JSONParser
+# from django.http import JsonResponse
+
+
 
 default_storage = S3Boto3Storage()
 
@@ -54,11 +56,13 @@ def is_valid_url(url):
         return False
 
 minio_client = Minio(
-    endpoint="10.72.98.137:9000",
-    access_key="admin",
-    secret_key="Notgood1",
-    secure=False  
-)
+    endpoint= MINIO_URL,
+    access_key=MINIO_ACCESS_KEY,
+    secret_key= MINIO_SECRET_KEY,
+    secure= MINIO_SECURE
+    )
+
+
 BUCKET = MINIO_BUCKET_NAME
 
 
@@ -70,7 +74,7 @@ def generate_id():
 @method_decorator(csrf_exempt, name='dispatch')
 class CreateDatasetView(APIView):
     renderer_classes = [JSONRenderer]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     @role_required(['organization_admin', 'contributor'])
     def post(self, request, *args, **kwargs):
@@ -252,6 +256,33 @@ class CreateDatasetView(APIView):
         except requests.RequestException as e:
             logger.error(f"Dropbox download failed: {str(e)}")
             raise Exception(f"Failed to download from Dropbox: {str(e)}")
+        
+
+    @role_required(['organization_admin', 'contributor'])
+    def put(self, request, *args, **kwargs):
+        dataset_id = request.data.get('dataset_id')
+        print(f"Dataset ID:" , request.data.get('dataset_id'))
+        print(f"Request data:", request.data)
+           
+
+        dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
+        print(f"Dataset ", dataset)
+        print (dataset.contributor_id.organization.Organization_id)
+    
+        if (request.user.role not in ['organization_admin', 'contributor'] or 
+            str(request.user.organization.Organization_id) != str(dataset.contributor_id.organization.Organization_id)):
+            return Response({"error": "You are not authorized to edit this dataset"}, status=403)
+        
+        print("Request data:")
+
+        serializer = DatasetSerializer(dataset, data=request.data, partial=True)
+        print("serializer", serializer)
+
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
 
 @api_view(['GET'])
 @role_required(['organization_admin', 'contributor', 'researcher'])
@@ -276,14 +307,7 @@ def get_datasets(request):
         })
     return Response(data, status=200)
 
-#analysis
 
-minio_client = Minio(
-    endpoint="10.72.98.137:9000",
-    access_key="admin",
-    secret_key="Notgood1",
-    secure=False  
-)
 
 def fetch_dataset_from_minio(dataset_url):
     """Fetch dataset in chunks from MinIO and return a generator (iterator)."""

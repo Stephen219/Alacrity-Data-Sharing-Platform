@@ -65,19 +65,18 @@ class ForgotPasswordView(APIView):
             if not email:
                 return Response({'error': 'Email field is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Check if this email belongs to a registered user
+           
             try:
                 user = User.objects.get(email=email)
             except User.DoesNotExist:
-                # Security best-practice: do NOT reveal that user does not exist
+                
                 return Response({"message": "If that email is recognised, a reset link will be sent."},
                                 status=status.HTTP_200_OK)
 
-            # Generate token
+           
             token_generator = PasswordResetTokenGenerator()
             token = token_generator.make_token(user)
 
-            # Encode user’s primary key in base64
             uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
 
             # Builds a link 
