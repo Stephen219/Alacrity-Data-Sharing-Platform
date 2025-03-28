@@ -1,6 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from organisation.models import Organization
+# from organisation.models import Organization
 import uuid
 from django.utils import timezone
 
@@ -9,7 +9,7 @@ class User(AbstractUser):
         ('organization_admin', 'Organization Admin'),
         ('admin', 'Admin'),
         ('contributor', 'organization_employee'), 
-        ('researcher', 'Researcher'), # default role
+        ('researcher', 'Researcher'), 
     ]
     
     email = models.EmailField(
@@ -24,23 +24,38 @@ class User(AbstractUser):
     username = models.CharField(max_length=30, unique=True)
     phone_number = models.CharField(max_length=15, unique=True, blank=True, null=True) 
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
-    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True)
+    organization = models.ForeignKey('organisation.Organization', on_delete=models.SET_NULL, null=True, blank=True)
     # organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True)
     field = models.TextField(blank=True, null=True)
     date_joined = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     bio = models.TextField(blank=True, null=True, default='No bio provided')
     date_of_birth = models.DateField(blank=True, null=True)
-    bio = models.TextField(blank=True, null=True)  # Corrected spelling
+    bio = models.TextField(blank=True, null=True)  
+    social_links = models.JSONField(blank=True, null=True)
+
+
+    # Chose ManyToManyField because it’s simple and gets the job done for basic follow/unfollow functionality. 
+    # It keeps the code clean and easy to manage without needing a separate table. 
+    # Since we don’t need extra data like follow timestamps or statuses, this approach works well. 
+    # The symmetrical=False part makes sure that following someone doesn’t automatically mean they follow you back. 
+    # Plus, using related_name makes it easy to get a list of followers or who a user is following.
+    # but it is not the best approach for large-scale applications so we can as well change if need be 
+
+    following = models.ManyToManyField(
+        'self',
+        symmetrical=False,
+        related_name='followers'
+    )
     
-    #TODO PROFILE PIC  but as a url
+
+    
+   
     profile_picture = models.URLField(blank=True, null=True)
 
-    # Email is used as primary field
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'role']
 
     @property
-    # If organization is a ForeignKey or field, no need for @property
     def get_organization(self):
         return self.organization if self.organization else None
 

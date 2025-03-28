@@ -13,8 +13,8 @@ interface Dataset {
   dataset_id: string
   title: string
   description: string
-  contributor_id__organization__name: string
-  requests__updated_at: string
+  organization: string
+  updated_at: string
   tags: string
   category: string
   entries?: number
@@ -70,7 +70,7 @@ export default function DatasetAccessed() {
           dataset.description.toLowerCase().includes(query) ||
           dataset.tags.toLowerCase().includes(query) ||
           dataset.category.toLowerCase().includes(query) ||
-          dataset.contributor_id__organization__name.toLowerCase().includes(query),
+          dataset.organization.toLowerCase().includes(query),
       )
     }
 
@@ -80,8 +80,8 @@ export default function DatasetAccessed() {
         return sortDirection === "asc" ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title)
       } else if (sortBy === "date") {
         return sortDirection === "asc"
-          ? new Date(a.requests__updated_at).getTime() - new Date(b.requests__updated_at).getTime()
-          : new Date(b.requests__updated_at).getTime() - new Date(a.requests__updated_at).getTime()
+          ? new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
+          : new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
       } else if (sortBy === "category") {
         return sortDirection === "asc" ? a.category.localeCompare(b.category) : b.category.localeCompare(a.category)
       } else if (sortBy === "entries") {
@@ -175,7 +175,6 @@ export default function DatasetAccessed() {
           </div>
 
           <div className="flex gap-2 items-center">
-            {/* Sort dropdown */}
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -295,8 +294,8 @@ export default function DatasetAccessed() {
       dataset_id={dataset.dataset_id}
       title={dataset.title}
       description={dataset.description}
-      organization={dataset.contributor_id__organization__name}
-      dateUploaded={formatDate(dataset.requests__updated_at)}
+      organization={dataset.organization}
+      dateUploaded={formatDate(dataset.updated_at)}
       imageUrl={`https://picsum.photos/seed/${dataset.dataset_id}/800/450`}
       tags={Array.isArray(dataset.tags) ? dataset.tags : dataset.tags.split(",").map((tag) => tag.trim())}
       category={dataset.category}

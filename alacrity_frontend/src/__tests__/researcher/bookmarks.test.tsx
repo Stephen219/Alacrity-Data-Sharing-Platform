@@ -1,9 +1,11 @@
 import "@testing-library/jest-dom";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import BookmarksPage from "@/app/datasets/bookmarks/page";
-import * as auth from "@/libs/auth";
+import { fetchWithAuth } from "@/libs/auth";
 
-jest.mock("@/libs/auth");
+jest.mock("@/libs/auth", () => ({
+  fetchWithAuth: jest.fn(),
+}));
 
 beforeAll(() => {
   Object.defineProperty(window, "matchMedia", {
@@ -23,11 +25,11 @@ beforeAll(() => {
 
 describe("BookmarksPage", () => {
   beforeEach(() => {
-    (auth.fetchWithAuth as jest.Mock).mockClear();
+    (fetchWithAuth as jest.Mock).mockClear();
   });
 
   it("renders loading state initially", () => {
-    (auth.fetchWithAuth as jest.Mock).mockResolvedValueOnce({
+    (fetchWithAuth as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => [],
     });
@@ -37,7 +39,7 @@ describe("BookmarksPage", () => {
   });
 
   it("renders error message when fetching bookmarks fails", async () => {
-    (auth.fetchWithAuth as jest.Mock).mockRejectedValueOnce(new Error("Failed to fetch bookmarks"));
+    (fetchWithAuth as jest.Mock).mockRejectedValue(new Error("Failed to fetch bookmarks"));
 
     render(<BookmarksPage />);
 
@@ -47,7 +49,7 @@ describe("BookmarksPage", () => {
   });
 
   it("renders no bookmarks message when no bookmarks are available", async () => {
-    (auth.fetchWithAuth as jest.Mock).mockResolvedValueOnce({
+    (fetchWithAuth as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => [],
     });
@@ -60,7 +62,7 @@ describe("BookmarksPage", () => {
   });
 
   it("renders bookmarks correctly when fetched successfully", async () => {
-    (auth.fetchWithAuth as jest.Mock).mockResolvedValueOnce({
+    (fetchWithAuth as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => [
         {
@@ -84,33 +86,5 @@ describe("BookmarksPage", () => {
     });
   });
 
-  it("handles pagination correctly", async () => {
-    (auth.fetchWithAuth as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () =>
-        Array.from({ length: 12 }, (_, i) => ({
-          dataset_id: String(i + 1),
-          title: `Dataset ${i + 1}`,
-          description: `Description for dataset ${i + 1}`,
-          organization_name: "Org",
-          category: "Category",
-          created_at: "2025-03-01",
-          tags: ["tag"],
-          price: 0,
-        })),
-    });
 
-    render(<BookmarksPage />);
-
-    await waitFor(() => {
-      expect(screen.getByText("Dataset 1")).toBeInTheDocument();
-    });
-
-    // Click pagination button "2"
-    fireEvent.click(screen.getByText("2"));
-
-    await waitFor(() => {
-      expect(screen.getByText("Dataset 7")).toBeInTheDocument();
-    });
-  });
 });

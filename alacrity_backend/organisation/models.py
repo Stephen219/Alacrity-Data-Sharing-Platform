@@ -4,6 +4,8 @@ from django.core.validators import MinLengthValidator, MaxLengthValidator, URLVa
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from django.contrib.auth import get_user_model
+
 
 def generate_id():
     return generate(size=10)
@@ -26,6 +28,22 @@ class Organization(models.Model):
     )
     phone = models.CharField(max_length=15, unique=True, blank=True, null=True) 
     address = models.CharField(max_length=255)
+    website = models.URLField(validators=[URLValidator], blank=True, null=True)
+    location = models.CharField(max_length=255, blank=True, null=True)
+    profile_picture = models.URLField(validators=[URLValidator], blank=True, null=True)
+    cover_image = models.URLField(validators=[URLValidator], blank=True, null=True
+    )
+    date_joined = models.DateTimeField(auto_now_add=True, editable=False, null=True)
+    social_links = models.JSONField(blank=True, null=True)
+    following = models.ManyToManyField(
+        get_user_model(),
+        symmetrical=False,
+
+
+        related_name='followed_organizations',
+        blank=True
+    )
+    # admin = models.OneToOneField('users.User', on_delete=models.CASCADE, related_name='organization', null=True)
 
     def __str__(self):
         return self.name

@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { User } from "@/types/types";
 import  { logout } from "@/libs/auth";
 import Link from "next/link";
+import Image from "next/image";
 
 function TopBarProfile({ User }: { User: User }) {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -24,9 +25,27 @@ function TopBarProfile({ User }: { User: User }) {
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
                     className="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6B1A]"
                   >
-                    <div className="h-8 w-8 rounded-full bg-[#FF6B1A] flex items-center justify-center text-white">
+                    {/* <div className="h-8 w-8 rounded-full bg-[#FF6B1A] flex items-center justify-center text-white">
                       {User?.firstname[0]}
-                    </div>
+                    </div> */}
+                    {User.profile_picture ? (
+                      <Image
+                        className="h-8 w-8 rounded-full"
+                        src={User.profile_picture}
+                        alt="profile"
+                        width={32}
+                        height={32}
+                      />
+                      
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-[#FF6B1A] flex items-center justify-center text-white">
+                        {User?.firstname[0]}
+                      </div>
+                    )}
+
+
+
+
                   </button>
                 </div>
                 {isProfileOpen && (
