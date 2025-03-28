@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ['picsum.photos','10.72.98.137' ],
+    domains: ['picsum.photos','10.72.98.50' ],
 
   },
   reactStrictMode: true,

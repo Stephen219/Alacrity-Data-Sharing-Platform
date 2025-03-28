@@ -181,7 +181,13 @@ class CreateDatasetView(APIView):
                 data=io.BytesIO(encrypted_data),
                 length=len(encrypted_data)
             )
-            stored_url = f"{MINIO_URL}/{BUCKET}/{minio_key}"
+            #store the url and add http:// or https:// to the url depending on the minio secure value
+            if MINIO_SECURE:
+                stored_url = f"https://{MINIO_URL}/{BUCKET}/{minio_key}"
+            else:
+                stored_url = f"http://{MINIO_URL}/{BUCKET}/{minio_key}"
+
+            # stored_url = f"{MINIO_URL}/{BUCKET}/{minio_key}"
             title = request.POST.get('title')
             category = request.POST.get('category')
             tags = request.POST.get('tags', '')
