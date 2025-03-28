@@ -186,7 +186,7 @@ describe('DatasetForm Component', () => {
 
     await waitFor(() => {
       expect(fetchWithAuth).toHaveBeenCalledWith(
-        `${BACKEND_URL}datasets/create_dataset/`,
+        `${BACKEND_URL}/datasets/create_dataset/`,
         expect.objectContaining({ method: 'POST', body: expect.any(FormData) })
       );
       expect(screen.getByText(/Dataset uploaded successfully!/i)).toBeInTheDocument();

@@ -287,8 +287,8 @@ export default function DatasetAccessed() {
           <div className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
           {filteredDatasets.map((dataset, index) => (
   <Link
-    key={`${dataset.dataset_id}-${index}`} 
-    href={`/analyze/${dataset.dataset_id}`}
+    key={`${dataset.dataset_id}-${index}`} // Ensure key is unique by combining dataset_id with the index
+    href={`/requests/detail/${dataset.dataset_id}`} // Use the dataset_id as the URL parameter
   >
     <DatasetCard
       dataset_id={dataset.dataset_id}

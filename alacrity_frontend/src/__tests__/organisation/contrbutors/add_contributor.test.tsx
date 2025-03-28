@@ -72,7 +72,7 @@ describe('AddContributorForm Component', () => {
       expect(screen.getByText('Contributor Added Successfully!')).toBeInTheDocument();
       expect(screen.getByText('Redirecting you to the dashboard...')).toBeInTheDocument();
       expect(fetchWithAuth).toHaveBeenCalledWith(
-        'http://127.0.0.1:8000//organisation/add_contributor/',
+        'http://127.0.0.1:8000/organisation/add_contributor/',
         expect.objectContaining({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

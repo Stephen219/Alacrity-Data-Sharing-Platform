@@ -29,7 +29,7 @@ cd alacrity_backend
 
 ```bash
 python -m venv venv
-source venv/Scripts/activate
+venv/Scripts/activate
 ```
 
 3. Create a local database known as 'project_db'

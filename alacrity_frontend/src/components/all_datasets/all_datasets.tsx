@@ -28,6 +28,7 @@ interface Dataset {
   price: number;
   view_count: number;
   darkMode: boolean;
+  averageRating?: number; // Add average rating
 }
 
 const ITEMS_PER_PAGE = 6;
@@ -49,41 +50,58 @@ const DatasetsPage: React.FC = () => {
   const [, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchDatasets = async () => {
+    const fetchDatasetsAndFeedback = async () => {
       try {
-        const orgId = searchParams.get("org");
-        const url = orgId ? `${BACKEND_URL}/datasets/all?org=${orgId}` : `${BACKEND_URL}/datasets/all`;
-        const response = await fetchWithAuth(url);
-        if (!response.ok) {
-          if (response.status === 404 && orgId) {
-            setDatasets([]);  
-            return;
-          }
-          throw new Error(`HTTP Error: ${response.status}`);
-        }
-        const data = await response.json();
+        // Fetch datasets
+        const datasetsResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/all`);
+        if (!datasetsResponse.ok) throw new Error(`HTTP Error: ${datasetsResponse.status}`);
+        const data = await datasetsResponse.json();
 
         const mappedDatasets: Dataset[] = data.datasets.map((item: any) => ({
           ...item,
           size: item.size || "N/A",
           entries: item.entries || 0,
           imageUrl: item.imageUrl || `https://picsum.photos/300/200?random=${item.dataset_id}`,
-          tags: typeof item.tags === "string"
-            ? item.tags
-                .split(",")
-                .map((tag: string) => tag.trim())
-                .filter((tag: string) => tag.trim() !== "")
-            : item.tags || [],
+          tags:
+            typeof item.tags === "string"
+              ? item.tags
+                  .split(",")
+                  .map((tag: string) => tag.trim())
+                  .filter((tag: string) => tag.trim() !== "")
+              : item.tags || [],
           price: item.price ? Number(parseFloat(item.price).toFixed(2)) : 0,
           hasPaid: item.hasPaid || false,
-          darkMode: false,
         }));
 
-        setDatasets(mappedDatasets);
+        // Fetch feedback for each dataset
+        const datasetsWithRatings = await Promise.all(
+          mappedDatasets.map(async (dataset) => {
+            try {
+              const feedbackResponse = await fetchWithAuth(
+                `${BACKEND_URL}/datasets/feedback/${dataset.dataset_id}/`
+              );
+              if (!feedbackResponse.ok) {
+                if (feedbackResponse.status === 404) return { ...dataset, averageRating: 0 }; // No feedback yet
+                throw new Error(`Feedback fetch failed: ${feedbackResponse.status}`);
+              }
+              const feedbackData = await feedbackResponse.json();
+              const ratings = feedbackData.map((fb: any) => fb.rating);
+              const averageRating =
+                ratings.length > 0 ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length : 0;
+              return { ...dataset, averageRating };
+            } catch (err) {
+              console.warn(`No rating for ${dataset.dataset_id}: ${err}`);
+              return { ...dataset, averageRating: 0 }; // Default to 0 if fetch fails
+            }
+          })
+        );
 
-        const uniqueCategories = ["All", ...new Set(mappedDatasets.map((d) => d.category))];
-        const uniqueOrgs = ["All", ...new Set(mappedDatasets.map((d) => d.organization_name || "No organization"))];
-        const uniqueTags = ["All", ...new Set(mappedDatasets.flatMap((d) => d.tags))];
+        setDatasets(datasetsWithRatings);
+
+        // Set filter categories
+        const uniqueCategories = ["All", ...new Set(datasetsWithRatings.map((d) => d.category))];
+        const uniqueOrgs = ["All", ...new Set(datasetsWithRatings.map((d) => d.organization_name || "No organization"))];
+        const uniqueTags = ["All", ...new Set(datasetsWithRatings.flatMap((d) => d.tags))];
         const staticDateOptions = ["All Time", "Today", "This Week", "This Month", "This Year"];
 
         setFilterCategories([
@@ -131,10 +149,7 @@ const DatasetsPage: React.FC = () => {
   };
 
   useEffect(() => {
-    const loadAll = async () => {
-      await fetchBookmarkedDatasets();
-    };
-    loadAll();
+    fetchBookmarkedDatasets();
   }, []);
 
   const toggleDatasetBookmark = async (datasetId: string) => {
@@ -148,6 +163,9 @@ const DatasetsPage: React.FC = () => {
         `${BACKEND_URL}/datasets/${datasetId}/bookmark/`,
         { method: "POST" }
       );
+      const response = await fetchWithAuth(`${BACKEND_URL}/datasets/${datasetId}/bookmark/`, {
+        method: "POST",
+      });
       if (!response.ok) throw new Error("Failed to toggle bookmark");
     } catch (error) {
       console.error("Dataset bookmark error:", error);

@@ -11,7 +11,7 @@ import { fetchWithAuth } from "@/libs/auth"
 import { useEffect, useState } from "react"
 import { BACKEND_URL } from "@/config"
 import { useRouter } from "next/navigation"
-import PublicationTable, { Publication } from "@/components/PublicationTable"
+import PublicationTable, { Publication } from "@/components/tables/PublicationTable"
 import Link from "next/link"
 
 
@@ -69,7 +69,7 @@ const ResearcherDashboard: React.FC = () => {
     // Fetch publications that are submitted (pending, published, rejected)
     const getPublications = async () => {
       try {
-        const response = await fetchWithAuth(`${BACKEND_URL}research/submissions/submitted`)
+        const response = await fetchWithAuth(`${BACKEND_URL}/research/submissions/submitted`)
         const data = await response.json()
         setPublications(data)
       } catch (error) {

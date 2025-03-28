@@ -56,8 +56,13 @@ export const NAV_ITEMS = [
         },
         {
           name: "Review Research",
-          href: "#",
+          href: "/requests/pendingSubmissions",
           imageSrc: "/navbar/review/reviewResearch.png",
+        },
+        {
+          name: "chats",
+          href: "/chat",
+          imageSrc: "/datasets/image.png",
         },
       ],
     },
@@ -71,12 +76,12 @@ export const NAV_ITEMS = [
       {
         name: "Explore Datasets",
         href: "/datasets/all",
-        imageSrc: "/navbar/researcher/browseDatasets.png",
+        imageSrc: "/navbar/analysis/descriptive.png",
       },
       {
         name: "Bookmarks",
         href: "/datasets/bookmarks",
-        imageSrc: "/navbar/researcher/browseDatasets.png",
+        imageSrc: "/navbar/analysis/correlational.png",
       },
       {
         name: "My Datasets",
@@ -87,50 +92,33 @@ export const NAV_ITEMS = [
       }
       ],
     },
-    {
-      label: "Analysis Tools",
-      value: "analysis-tools",
-      roles: ["researcher"],
-      featured: [
-      {
-        name: "Pre Analysis",
-        href: "/analysis/pre-analysis",
-        imageSrc: "/navbar/analysis/pre.png",
-        },
-      {
-        name: "Descriptive Statistics",
-        href: "/analysis/descriptive",
-        imageSrc: "/navbar/analysis/descriptive.png",
-        },
-        {
-        name: "Inferential Statistics",
-        href: "/analysis/inferential",
-        imageSrc: "/navbar/analysis/inferential.png",
-        },
-        {
-        name: "Correlational Analysis",
-        href: "/analysis/correlational",
-        imageSrc: "/navbar/analysis/correlational.png",
-        },
-      ],
-    },
-    {
-      label: "View Requests",
-      value: "view-pending",
-      roles: ["researcher"],
-      featured: [
-      {
-        name: "Dataset Requests",
-        href: "#",
-        imageSrc: "/navbar/researcher/pendingApprovals.png",
-      },
-      {
-        name: "Research Requests",
-        href: "/requests/researchRequests",
-        imageSrc: "/navbar/researcher/reviewRequests.png",
-      },
-      ],
-    },
+    // {
+    //   label: "Analysis Tools",
+    //   value: "analysis-tools",
+    //   roles: ["researcher"],
+    //   featured: [
+    //   {
+    //     name: "Pre Analysis",
+    //     href: "/analysis/pre-analysis",
+    //     imageSrc: "/navbar/analysis/pre.png",
+    //     },
+    //   {
+    //     name: "Descriptive Statistics",
+    //     href: "/analysis/descriptive",
+    //     imageSrc: "/navbar/analysis/descriptive.png",
+    //     },
+    //     {
+    //     name: "Inferential Statistics",
+    //     href: "/analysis/inferential",
+    //     imageSrc: "/navbar/analysis/inferential.png",
+    //     },
+    //     {
+    //     name: "Correlational Analysis",
+    //     href: "/analysis/correlational",
+    //     imageSrc: "/navbar/analysis/correlational.png",
+    //     },
+    //   ],
+    // },
     {
       label: "Browse Research",
       value: "browse-research",
@@ -144,7 +132,24 @@ export const NAV_ITEMS = [
       {
         name: "Liked Research",
         href: "/researcher/bookmarks",
-        imageSrc: "/navbar/researcher/browseDatasets.png",
+        imageSrc: "/navbar/analysis/correlational.png",
+      },
+      ],
+    },
+    {
+      label: "View Requests",
+      value: "view-pending",
+      roles: ["researcher"],
+      featured: [
+      {
+        name: "Dataset Requests",
+        href: "/requests/datasetRequests",
+        imageSrc: "/navbar/researcher/pendingApprovals.png",
+      },
+      {
+        name: "Research Requests",
+        href: "/requests/researchRequests",
+        imageSrc: "/navbar/researcher/reviewRequests.png",
       },
       ],
     },
@@ -165,7 +170,7 @@ export const NAV_ITEMS = [
         },
         {
           name: "Purchase History",
-          href: "#",
+          href: "/researcher/purchaseHistory",
           imageSrc: "/navbar/account/billing.png",
         },
         {

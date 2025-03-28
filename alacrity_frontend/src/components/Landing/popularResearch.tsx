@@ -29,7 +29,7 @@ export default function TrendingResearchCarousel() {
   useEffect(() => {
     async function fetchSubmissions() {
       try {
-        const res = await fetch(`${BACKEND_URL}research/submissions/view/`);
+        const res = await fetch(`${BACKEND_URL}/research/submissions/view/`);
         const data = await res.json();
   
         // Check if popular submissions exist; otherwise, use recent submissions

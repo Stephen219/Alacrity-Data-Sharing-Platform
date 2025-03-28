@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
-import PublicationTable, { Publication } from "@/components/PublicationTable"
+import PublicationTable, { Publication } from "@/components/tables/PublicationTable"
 import { fetchWithAuth } from "@/libs/auth"
 import { BACKEND_URL } from "@/config"
 import { useRouter } from "next/navigation"
@@ -44,8 +44,7 @@ const FullPublicationPage: React.FC = () => {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">Research Request: Status</h1>
-      {/* For the full page view, we disable scrolling and pagination if desired */}
+      <h1 className="text-2xl font-semibold mb-4">Research Requests</h1>
       <PublicationTable
         publications={publications}
         onRowClick={handleRowClick}

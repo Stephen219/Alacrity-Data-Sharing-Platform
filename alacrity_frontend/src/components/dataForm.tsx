@@ -219,7 +219,7 @@ const DatasetForm = () => {
     if (file) formData.append("file", file);
 
     try {
-      const response = await fetchWithAuth(`${BACKEND_URL}datasets/create_dataset/`, {
+      const response = await fetchWithAuth(`${BACKEND_URL}/datasets/create_dataset/`, {
         method: "POST",
         body: formData,
       });
