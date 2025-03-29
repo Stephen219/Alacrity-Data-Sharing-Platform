@@ -9,10 +9,17 @@ jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
 }));
 
+interface ViewSubmissionProps {
+    submissionId: string;
+    fetchUrl: string;
+    backUrl: string;
+    onBack: () => void;
+  }
+
 //mocks the submission component to allow inspection of props and behavior
 jest.mock("@/components/ViewSubmission", () => ({
   __esModule: true,
-  default: (props: any) => (
+  default: (props: ViewSubmissionProps) => (
     <div data-testid="submission-component">
       <div>Submission ID: {props.submissionId}</div>
       <div>Fetch URL: {props.fetchUrl}</div>

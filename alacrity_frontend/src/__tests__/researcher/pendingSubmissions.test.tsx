@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import PendingSubmissions from "@/app/requests/pendingSubmissions/page";
 import { fetchWithAuth } from "@/libs/auth";
 import { BACKEND_URL } from "@/config";
+import { PendingSubmission, PendingSubmissionsTableProps } from "@/components/tables/PendingSubmissionsTable";
 
 // Mock the fetchWithAuth function.
 jest.mock("@/libs/auth", () => ({
@@ -12,10 +13,10 @@ jest.mock("@/libs/auth", () => ({
 // Mock the PendingSubmissionsTable component to expose its props.
 jest.mock("@/components/tables/PendingSubmissionsTable", () => ({
   __esModule: true,
-  default: (props: any) => {
+  default: (props: PendingSubmissionsTableProps) => {
     return (
       <div data-testid="pending-submissions-table">
-        {props.submissions.map((submission: any) => (
+        {props.submissions.map((submission: PendingSubmission) => (
           <div key={submission.id} data-testid="submission-item">
             {submission.title}
           </div>

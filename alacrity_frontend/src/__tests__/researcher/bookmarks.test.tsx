@@ -1,11 +1,9 @@
-import React from "react";
+import React, { JSX } from "react";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import BookmarkList from "@/app/researcher/bookmarks/page";
 import { fetchWithAuth } from "@/libs/auth";
 import { useRouter } from "next/navigation";
-import { BACKEND_URL } from "@/config";
 
-// --- Mocks ---
 // Mock Next.js router.
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
@@ -16,14 +14,20 @@ jest.mock("@/libs/auth", () => ({
   fetchWithAuth: jest.fn(),
 }));
 
+interface PublishedProps {
+  header: string;
+  submissions: { id: number | string; title: string; summary: string }[];
+  renderButtons: (id: number | string) => JSX.Element;
+}
+
 // Mock the Published component to render bookmarks and the provided buttons.
 jest.mock("@/components/Published", () => ({
   __esModule: true,
-  default: ({ header, submissions, sortOrder, setSortOrder, renderButtons }: any) => {
+  default: ({ header, submissions, renderButtons }: PublishedProps) => {
     return (
       <div data-testid="published-component">
         <h1>{header}</h1>
-        {submissions.map((bookmark: any) => (
+        {submissions.map((bookmark) => (
           <div key={bookmark.id} data-testid="bookmark-item">
             <span>{bookmark.title}</span>
             {renderButtons(bookmark.id)}

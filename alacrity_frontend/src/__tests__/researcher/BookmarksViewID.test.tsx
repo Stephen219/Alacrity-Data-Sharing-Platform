@@ -9,10 +9,16 @@ jest.mock("next/navigation", () => ({
   useParams: jest.fn(),
 }));
 
+interface SubmissionDetailsProps {
+    submissionId: string;
+    fetchUrl: string;
+    backUrl: string;
+  }
+
 // Mock the SubmissionDetails component to inspect its props.
 jest.mock("@/components/ViewSubmission", () => ({
   __esModule: true,
-  default: (props: any) => (
+  default: (props: SubmissionDetailsProps) => (
     <div data-testid="submission-details">
       <div>Submission ID: {props.submissionId}</div>
       <div>Fetch URL: {props.fetchUrl}</div>

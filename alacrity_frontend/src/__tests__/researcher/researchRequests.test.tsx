@@ -2,6 +2,7 @@ import React from "react";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import FullPublicationPage from "@/app/requests/researchRequests/page";
 import { fetchWithAuth } from "@/libs/auth";
+import { Publication } from "@/components/tables/PublicationTable";
 
 // Mocks
 // Mocks fetchWithAuth to simulate API responses.
@@ -21,9 +22,9 @@ jest.mock("next/navigation", () => ({
 jest.mock("@/components/tables/PublicationTable", () => ({
   __esModule: true,
   default: ({ publications, onRowClick, getRowClass }: { 
-    publications: any[], 
-    onRowClick: (pub: any) => void,
-    getRowClass: (pub: any) => string 
+    publications: Publication[], 
+    onRowClick: (pub: Publication) => void,
+    getRowClass: (pub: Publication) => string 
   }) => {
     return (
       <div>

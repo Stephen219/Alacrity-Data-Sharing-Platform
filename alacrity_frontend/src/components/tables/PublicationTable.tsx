@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useMemo } from "react"
-import { Button } from "../ui/button"
+import { Button } from "@/components/ui/button"
 
 export interface Publication {
   id: string
