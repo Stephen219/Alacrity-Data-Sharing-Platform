@@ -51,7 +51,7 @@ export default function ResetPasswordForm() {
 
     // Sends post request to backend with new password
     try {
-      const response = await fetch(`${BACKEND_URL}users/reset-password/`, {
+      const response = await fetch(`${BACKEND_URL}/users/reset-password/`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
         credentials: "include",

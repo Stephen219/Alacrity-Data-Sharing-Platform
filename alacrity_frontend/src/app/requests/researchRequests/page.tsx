@@ -12,7 +12,7 @@ const FullPublicationPage: React.FC = () => {
 
   const getPublications = async () => {
     try {
-      const response = await fetchWithAuth(`${BACKEND_URL}research/submissions/submitted`)
+      const response = await fetchWithAuth(`${BACKEND_URL}/research/submissions/submitted`)
       const data = await response.json()
       setPublications(data)
     } catch (error) {
