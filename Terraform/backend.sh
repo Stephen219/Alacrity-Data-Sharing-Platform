@@ -21,9 +21,9 @@ sudo mysql -uroot -pcomsc -e "DROP DATABASE IF EXISTS alacrity_db;" &>/dev/null 
 
 # Step 2: Install base system
 echo "Installing base system..."
-sudo dnf install -y -q python3.11 python3.11-pip python3.11-devel git mariadb-server redis gcc mariadb-connector-c-devel
-sudo systemctl enable mariadb redis
-sudo systemctl start mariadb redis
+sudo dnf install -y -q python3.11 python3.11-pip python3.11-devel git mariadb-server redis gcc mariadb-connector-c-devel policycoreutils-python-utils net-tools firewalld
+sudo systemctl enable mariadb redis firewalld
+sudo systemctl start mariadb redis firewalld
 
 # Step 3: Setup user and directory
 echo "Setting up user and directory..."
@@ -100,9 +100,7 @@ cd /var/www/alacrity/alacrity_backend || { echo "Failed to cd into /var/www/alac
 echo "Setting up Python environment and installing requirements..."
 sudo -u alacrity bash -c "python3.11 -m venv /var/www/alacrity/alacrity_backend/venv"
 sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && pip install --upgrade pip"
-echo "Installing requirements from requirements.txt..."
 sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && pip install -r /var/www/alacrity/alacrity_backend/requirements.txt"
-echo "Installing Channels dependencies..."
 sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && pip install channels channels-redis daphne"
 
 # Step 7: Configure environment variables
@@ -110,7 +108,7 @@ echo "Setting up environment variables..."
 sudo -u alacrity bash -c "cat << EOF > /var/www/alacrity/alacrity_backend/.env
 ENV=production
 DEBUG=False
-SECRET_KEY=your-secret-key-here
+SECRET_KEY=9cdf91842b864472c0570e917223afcc51a390b39a083a3f0de114cadf408f41
 DJANGO_DATABASE_NAME=alacrity_db
 DJANGO_DATABASE_USER=alacrity
 DJANGO_DATABASE_PASSWORD=${DB_PASSWORD}
@@ -125,39 +123,91 @@ MINIO_URL=http://10.72.98.137:9000
 MINIO_ACCESS_KEY=admin
 MINIO_SECRET_KEY=Notgood1
 MINIO_BUCKET_NAME=alacrity
-EMAIL_USER=your-email@gmail.com
-EMAIL_PASSWORD=your-email-password
-PAYPAL_CLIENT_ID=your-paypal-client-id
-PAYPAL_SECRET=your-paypal-secret
+MINIO_SECURE=False
+EMAIL_USER=alacritytestingemail@gmail.com
+EMAIL_PASSWORD=qyzb spmi fpfz ddmf
+PAYPAL_CLIENT_ID=Afx9-bD4bxsIEX7UcDlofJ-BCHMjMrNeSNpQqXT1oUKd-crxbOgvq_5mOT-gNahXaEI6I2XYGOWWTVO3
+PAYPAL_SECRET=EOGFcNtzPiuRkoiv7EhMZnbdspuMS-PEhtJk5f2KrXdnknGHGItHcuEQ_VcJPaBkYuV4dHt_a-v5DTol
 PAYPAL_MODE=sandbox
 PAYPAL_RETURN_URL=http://${FRONTEND_IP}/payments/paypal/success/
 PAYPAL_CANCEL_URL=http://${FRONTEND_IP}/payments/paypal/cancel/
 EOF"
 
-# Step 8: Override settings.py with production-ready version and validate
-echo "Overriding settings.py with production configuration..."
+# Step 8: Patch settings.py
+echo "Patching settings.py with deployment-specific settings..."
 SETTINGS_FILE="/var/www/alacrity/alacrity_backend/alacrity_backend/settings.py"
-TEMP_FILE="/tmp/settings.py.tmp"
-
-# Write settings.py using echo -e to avoid heredoc issues
-sudo -u alacrity bash -c "echo -e 'from pathlib import Path\nimport os\nimport sys\nimport environ\n\nBASE_DIR = Path(__file__).resolve().parent.parent\nprint(f\"Debug: BASE_DIR is {BASE_DIR}\")  # Debug output\n\nenv = environ.Env(\n    ENV=(str, \"development\"),\n    DEBUG=(bool, False),\n    DJANGO_DATABASE_NAME=(str, \"alacrity_db\"),\n    DJANGO_DATABASE_USER=(str, \"alacrity\"),\n    DJANGO_DATABASE_PASSWORD=(str, \"${DB_PASSWORD}\"),\n    DJANGO_DATABASE_HOST=(str, \"localhost\"),\n    DJANGO_DATABASE_PORT=(str, \"3306\"),\n    REDIS_HOST=(str, \"127.0.0.1\"),\n    REDIS_PORT=(int, 6379),\n)\n\nenviron.Env.read_env(os.path.join(BASE_DIR, \".env\"))\n\nSECRET_KEY = env(\"SECRET_KEY\")\nDEBUG = env(\"DEBUG\")\nALLOWED_HOSTS = env.list(\"ALLOWED_HOSTS\")\n\nINSTALLED_APPS = [\n    \"daphne\",\n    \"channels\",\n    \"channels_redis\",\n    \"corsheaders\",\n    \"django.contrib.admin\",\n    \"django.contrib.auth\",\n    \"django.contrib.contenttypes\",\n    \"django.contrib.sessions\",\n    \"django.contrib.messages\",\n    \"django.contrib.staticfiles\",\n    \"rest_framework\",\n    \"alacrity_backend\",\n    \"organisation\",  # Must come before \"users\" due to ForeignKey dependency\n    \"users\",\n    \"datasets\",\n    \"storages\",\n    \"research\",\n    \"payments\",\n    \"rest_framework_simplejwt\",\n    \"rest_framework_simplejwt.token_blacklist\",\n    \"notifications\",\n    \"contact\",\n    \"dataset_requests\",\n]\n\nMIDDLEWARE = [\n    \"corsheaders.middleware.CorsMiddleware\",\n    \"django.middleware.security.SecurityMiddleware\",\n    \"django.contrib.sessions.middleware.SessionMiddleware\",\n    \"django.middleware.common.CommonMiddleware\",\n    \"django.middleware.csrf.CsrfViewMiddleware\",\n    \"django.contrib.auth.middleware.AuthenticationMiddleware\",\n    \"django.contrib.messages.middleware.MessageMiddleware\",\n    \"django.middleware.clickjacking.XFrameOptionsMiddleware\",\n]\n\nROOT_URLCONF = \"alacrity_backend.urls\"\nASGI_APPLICATION = \"alacrity_backend.asgi.application\"\n\nTEMPLATES = [\n    {\n        \"BACKEND\": \"django.template.backends.django.DjangoTemplates\",\n        \"DIRS\": [],\n        \"APP_DIRS\": True,\n        \"OPTIONS\": {\n            \"context_processors\": [\n                \"django.template.context_processors.debug\",\n                \"django.template.context_processors.request\",\n                \"django.contrib.auth.context_processors.auth\",\n                \"django.contrib.messages.context_processors.messages\",\n            ],\n        },\n    },\n]\n\nWSGI_APPLICATION = \"alacrity_backend.wsgi.application\"\nIS_GITLAB_CI = os.getenv(\"CI\", \"false\").lower() == \"true\"\n\nCORS_ALLOW_ALL_ORIGINS = False\nCORS_ALLOWED_ORIGINS = env.list(\"CORS_ALLOWED_ORIGINS\")\n\nCHANNEL_LAYERS = {\n    \"default\": {\n        \"BACKEND\": \"channels_redis.core.RedisChannelLayer\",\n        \"CONFIG\": {\n            \"hosts\": [(env(\"REDIS_HOST\"), env(\"REDIS_PORT\"))],\n        },\n    },\n}\n\nDATABASES = {\n    \"default\": {\n        \"ENGINE\": \"django.db.backends.mysql\",\n        \"NAME\": env(\"DJANGO_DATABASE_NAME\"),\n        \"USER\": env(\"DJANGO_DATABASE_USER\"),\n        \"PASSWORD\": env(\"DJANGO_DATABASE_PASSWORD\"),\n        \"HOST\": env(\"DJANGO_DATABASE_HOST\"),\n        \"PORT\": env(\"DJANGO_DATABASE_PORT\"),\n        \"TEST\": {\n            \"NAME\": \"alacrity_dbtes\",\n        },\n        \"OPTIONS\": {\n            \"init_command\": \"SET sql_mode=\\\"STRICT_TRANS_TABLES\\\"\",\n        },\n    }\n}\n\nif \"test\" in sys.argv:\n    DATABASES = {\n        \"default\": {\n            \"ENGINE\": \"django.db.backends.sqlite3\",\n            \"NAME\": \":memory:\",\n        }\n    }\n\nENCRYPTION_KEY = env(\"ENCRYPTION_KEY\", default=\"EHqnpsZeTQrwcmGfADez0GCRcJ_vQNCg5ch_pQg83Z0=\")\n\nCORS_ALLOW_HEADERS = [\n    \"content-type\",\n    \"authorization\",\n    \"accept\",\n    \"origin\",\n    \"x-requested-with\",\n    \"x-csrftoken\",\n    \"accept-encoding\",\n    \"accept-language\",\n    \"cache-control\",\n    \"connection\",\n    \"content-length\",\n    \"cookie\",\n    \"host\",\n]\n\nCORS_ALLOW_METHODS = [\n    \"DELETE\",\n    \"GET\",\n    \"OPTIONS\",\n    \"PATCH\",\n    \"POST\",\n    \"PUT\",\n]\n\nCORS_ALLOW_CREDENTIALS = True\n\nMINIO_URL = env(\"MINIO_URL\")\nMINIO_ACCESS_KEY = env(\"MINIO_ACCESS_KEY\")\nMINIO_SECRET_KEY = env(\"MINIO_SECRET_KEY\")\nMINIO_BUCKET_NAME = env(\"MINIO_BUCKET_NAME\")\n\nDEFAULT_FILE_STORAGE = \"storages.backends.s3boto3.S3Boto3Storage\"\nDATA_UPLOAD_MAX_MEMORY_SIZE = 524288000  # 500MB\nFILE_UPLOAD_MAX_MEMORY_SIZE = 524288000  # 500MB\n\nAWS_ACCESS_KEY_ID = MINIO_ACCESS_KEY\nAWS_SECRET_ACCESS_KEY = MINIO_SECRET_KEY\nAWS_STORAGE_BUCKET_NAME = MINIO_BUCKET_NAME\nAWS_S3_ENDPOINT_URL = MINIO_URL\nAWS_S3_CUSTOM_DOMAIN = f\"{MINIO_URL}/{MINIO_BUCKET_NAME}\"\nAWS_S3_OBJECT_PARAMETERS = {\"CacheControl\": \"max-age=86400\"}\nAWS_S3_REGION_NAME = \"us-east-1\"\n\nimport pymysql\npymysql.install_as_MySQLdb()\n\nAUTH_PASSWORD_VALIDATORS = [\n    {\"NAME\": \"django.contrib.auth.password_validation.UserAttributeSimilarityValidator\"},\n    {\"NAME\": \"django.contrib.auth.password_validation.MinimumLengthValidator\"},\n    {\"NAME\": \"django.contrib.auth.password_validation.CommonPasswordValidator\"},\n    {\"NAME\": \"django.contrib.auth.password_validation.NumericPasswordValidator\"},\n]\n\nAUTH_USER_MODEL = \"users.User\"\n\nREST_FRAMEWORK = {\n    \"DEFAULT_AUTHENTICATION_CLASSES\": (\n        \"rest_framework_simplejwt.authentication.JWTAuthentication\",\n    ),\n    \"DEFAULT_RENDERER_CLASSES\": [\n        \"rest_framework.renderers.JSONRenderer\",\n        \"rest_framework.renderers.TemplateHTMLRenderer\",\n        \"rest_framework.renderers.MultiPartRenderer\",\n    ],\n    \"DEFAULT_PARSER_CLASSES\": [\n        \"rest_framework.parsers.JSONParser\",\n        \"rest_framework.parsers.MultiPartParser\",\n        \"rest_framework.parsers.FormParser\",\n    ],\n    \"DEFAULT_PERMISSION_CLASSES\": [\n        \"rest_framework.permissions.IsAuthenticated\",\n    ],\n    \"EXCEPTION_HANDLER\": \"rest_framework.views.exception_handler\",\n}\n\nif DEBUG:\n    REST_FRAMEWORK[\"DEFAULT_RENDERER_CLASSES\"].append(\"rest_framework.renderers.BrowsableAPIRenderer\")\n\nAUTHENTICATION_BACKENDS = [\n    \"django.contrib.auth.backends.ModelBackend\",\n]\n\nfrom datetime import timedelta\n\nSIMPLE_JWT = {\n    \"ACCESS_TOKEN_LIFETIME\": timedelta(minutes=300),\n    \"REFRESH_TOKEN_LIFETIME\": timedelta(days=1),\n    \"ROTATE_REFRESH_TOKENS\": False,\n    \"BLACKLIST_AFTER_ROTATION\": True,\n    \"ALGORITHM\": \"HS256\",\n    \"SIGNING_KEY\": SECRET_KEY,\n    \"BLACKLIST_ENABLED\": True,\n    \"VERIFYING_KEY\": None,\n    \"AUTH_HEADER_TYPES\": (\"Bearer\",),\n    \"USER_ID_FIELD\": \"id\",\n    \"USER_ID_CLAIM\": \"user_id\",\n    \"AUTH_TOKEN_CLASSES\": (\"rest_framework_simplejwt.tokens.AccessToken\",),\n    \"TOKEN_TYPE_CLAIM\": \"token_type\",\n}\n\nLANGUAGE_CODE = \"en-us\"\nTIME_ZONE = \"UTC\"\nUSE_I18N = True\nUSE_TZ = True\n\nSTATIC_URL = \"/static/\"\nSTATIC_ROOT = \"/var/www/alacrity/alacrity_backend/static\"  # Hardcoded for clarity\nprint(f\"Debug: STATIC_ROOT is {STATIC_ROOT}\")  # Debug output\n\nDEFAULT_AUTO_FIELD = \"django.db.models.BigAutoField\"\n\nEMAIL_BACKEND = \"django.core.mail.backends.smtp.EmailBackend\"\nEMAIL_HOST = \"smtp.gmail.com\"\nEMAIL_PORT = 587\nEMAIL_USE_TLS = True\nEMAIL_HOST_USER = env(\"EMAIL_USER\")\nEMAIL_HOST_PASSWORD = env(\"EMAIL_PASSWORD\")\nDEFAULT_FROM_EMAIL = EMAIL_HOST_USER\n\nMEDIA_URL = \"/media/\"\nMEDIA_ROOT = os.path.join(BASE_DIR, \"media\")\n\nif DEBUG:\n    import mimetypes\n    mimetypes.add_type(\"application/javascript\", \".js\", True)\n\nPAYPAL_CLIENT_ID = env(\"PAYPAL_CLIENT_ID\")\nPAYPAL_SECRET = env(\"PAYPAL_SECRET\")\nPAYPAL_MODE = env(\"PAYPAL_MODE\")\nPAYPAL_RETURN_URL = env(\"PAYPAL_RETURN_URL\")\nPAYPAL_CANCEL_URL = env(\"PAYPAL_CANCEL_URL\")\n' > ${TEMP_FILE}"
-
-# Validate settings.py syntax and line count
-echo "Validating settings.py syntax..."
-EXPECTED_LINES=238  # Approximate line count of the full settings.py
-ACTUAL_LINES=$(wc -l < "${TEMP_FILE}")
-echo "Expected lines: $EXPECTED_LINES, Actual lines: $ACTUAL_LINES"
-if [ "$ACTUAL_LINES" -lt "$EXPECTED_LINES" ]; then
-    echo "Error: settings.py is truncated. Check ${TEMP_FILE} contents:"
-    cat "${TEMP_FILE}"
-    exit 1
+sudo -u alacrity bash -c "cp ${SETTINGS_FILE} ${SETTINGS_FILE}.bak"
+if grep -q "STATIC_ROOT =" "${SETTINGS_FILE}"; then
+    sudo -u alacrity bash -c "sed -i 's|STATIC_ROOT =.*|STATIC_ROOT = \"/var/www/alacrity/alacrity_backend/static\"|' ${SETTINGS_FILE}"
+else
+    sudo -u alacrity bash -c "echo -e '\nSTATIC_ROOT = \"/var/www/alacrity/alacrity_backend/static\"' >> ${SETTINGS_FILE}"
 fi
-python3.11 -m py_compile "${TEMP_FILE}" || { echo "Syntax error in settings.py; check ${TEMP_FILE}"; cat "${TEMP_FILE}"; exit 1; }
-sudo -u alacrity bash -c "mv ${TEMP_FILE} ${SETTINGS_FILE}"
-echo "Contents of settings.py after writing (first 10 and last 10 lines):"
-sudo -u alacrity bash -c "head -n 10 ${SETTINGS_FILE}; echo '...'; tail -n 10 ${SETTINGS_FILE}"
+if grep -q "DEFAULT_FILE_STORAGE =" "${SETTINGS_FILE}"; then
+    sudo -u alacrity bash -c "sed -i 's|DEFAULT_FILE_STORAGE =.*|DEFAULT_FILE_STORAGE = \"storages.backends.s3boto3.S3Boto3Storage\"|' ${SETTINGS_FILE}"
+else
+    sudo -u alacrity bash -c "echo -e '\nDEFAULT_FILE_STORAGE = \"storages.backends.s3boto3.S3Boto3Storage\"' >> ${SETTINGS_FILE}"
+fi
+if ! grep -q "MINIO_URL =" "${SETTINGS_FILE}"; then
+    sudo -u alacrity bash -c "cat << EOF >> ${SETTINGS_FILE}
 
-# Step 9: Database setup
+# MinIO settings from environment
+MINIO_URL = env('MINIO_URL')
+MINIO_ACCESS_KEY = env('MINIO_ACCESS_KEY')
+MINIO_SECRET_KEY = env('MINIO_SECRET_KEY')
+MINIO_BUCKET_NAME = env('MINIO_BUCKET_NAME')
+MINIO_SECURE = env('MINIO_SECURE', default=False)
+AWS_ACCESS_KEY_ID = MINIO_ACCESS_KEY
+AWS_SECRET_ACCESS_KEY = MINIO_SECRET_KEY
+AWS_STORAGE_BUCKET_NAME = MINIO_BUCKET_NAME
+AWS_S3_ENDPOINT_URL = MINIO_URL
+AWS_S3_REGION_NAME = 'us-east-1'
+EOF"
+fi
+sudo -u alacrity bash -c "python3.11 -m py_compile ${SETTINGS_FILE}" || { echo "Syntax error in settings.py; check ${SETTINGS_FILE}"; cat "${SETTINGS_FILE}"; exit 1; }
+
+# Step 9: Patch asgi.py with provided version and logging
+echo "Patching asgi.py with provided version and logging..."
+ASGI_FILE="/var/www/alacrity/alacrity_backend/alacrity_backend/asgi.py"
+echo "Current asgi.py content before patching (if exists):"
+if [ -f "${ASGI_FILE}" ]; then cat "${ASGI_FILE}"; else echo "No existing asgi.py"; fi
+sudo -u alacrity bash -c "cp ${ASGI_FILE} ${ASGI_FILE}.bak" || true
+sudo -u alacrity bash -c "cat << EOF > ${ASGI_FILE}
+import os
+import django
+import logging
+from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.auth import AuthMiddlewareStack
+from django.core.asgi import get_asgi_application
+import datasets.routing
+
+# Setup logging
+logging.basicConfig(level=logging.DEBUG, filename='/tmp/asgi_debug.log', filemode='a')
+logger = logging.getLogger('asgi')
+
+logger.debug('Starting ASGI setup...')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'alacrity_backend.settings')
+logger.debug('DJANGO_SETTINGS_MODULE set to: %s', os.environ['DJANGO_SETTINGS_MODULE'])
+
+logger.debug('Calling django.setup()...')
+django.setup()
+logger.debug('django.setup() completed.')
+
+logger.debug('Importing datasets.routing...')
+application = ProtocolTypeRouter({
+    'http': get_asgi_application(),
+    'websocket': AuthMiddlewareStack(
+        URLRouter(datasets.routing.websocket_urlpatterns)
+    ),
+})
+logger.debug('ASGI application initialized.')
+EOF"
+sudo -u alacrity bash -c "python3.11 -m py_compile ${ASGI_FILE}" || { echo "Syntax error in asgi.py; check ${ASGI_FILE}"; cat "${ASGI_FILE}"; exit 1; }
+echo "Verifying asgi.py content after patching:"
+cat "${ASGI_FILE}"
+echo "Testing asgi.py import:"
+sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && python3.11 -c 'import alacrity_backend.asgi'" || { echo "Failed to import asgi.py"; exit 1; }
+
+# Step 10: Database setup
 echo "Setting up database..."
 sudo mysql -uroot -pcomsc << EOF
 DROP DATABASE IF EXISTS alacrity_db;
@@ -167,24 +217,55 @@ GRANT ALL PRIVILEGES ON alacrity_db.* TO 'alacrity'@'localhost';
 FLUSH PRIVILEGES;
 EOF
 
-# Step 10: Django setup with explicit migration order
+# Step 11: Django setup
 echo "Configuring Django..."
-echo "Creating and verifying static directory..."
 sudo mkdir -p /var/www/alacrity/alacrity_backend/static
 sudo chown alacrity:alacrity /var/www/alacrity/alacrity_backend/static
 sudo chmod 755 /var/www/alacrity/alacrity_backend/static
-sleep 1
-echo "Static directory status before collectstatic:"
-ls -ld /var/www/alacrity/alacrity_backend/static
 sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && cd /var/www/alacrity/alacrity_backend && export DJANGO_SETTINGS_MODULE=alacrity_backend.settings && python manage.py makemigrations organisation users --noinput"
 sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && cd /var/www/alacrity/alacrity_backend && export DJANGO_SETTINGS_MODULE=alacrity_backend.settings && python manage.py makemigrations --noinput"
 sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && cd /var/www/alacrity/alacrity_backend && export DJANGO_SETTINGS_MODULE=alacrity_backend.settings && python manage.py migrate --noinput"
-echo "Running collectstatic..."
 sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && cd /var/www/alacrity/alacrity_backend && export DJANGO_SETTINGS_MODULE=alacrity_backend.settings && python manage.py collectstatic --noinput --verbosity 2"
-echo "Static directory status after collectstatic:"
-ls -ld /var/www/alacrity/alacrity_backend/static
 
-# Step 11: Setup Daphne service
+# Step 12: Pre-flight checks
+echo "Running pre-flight checks..."
+if command -v netstat >/dev/null 2>&1; then
+    if sudo netstat -tuln | grep -q ":8080 "; then
+        echo "Port 8080 is in use, attempting to free it..."
+        PID=$(sudo lsof -t -i:8080)
+        if [ -n "$PID" ]; then
+            sudo kill -9 "$PID"
+            echo "Killed process $PID using port 8080."
+        else
+            echo "Could not identify process using port 8080; manual intervention required."
+            exit 1
+        fi
+    fi
+elif command -v ss >/dev/null 2>&1; then
+    if sudo ss -tuln | grep -q ":8080 "; then
+        echo "Port 8080 is in use, attempting to free it..."
+        PID=$(sudo lsof -t -i:8080)
+        if [ -n "$PID" ]; then
+            sudo kill -9 "$PID"
+            echo "Killed process $PID using port 8080."
+        else
+            echo "Could not identify process using port 8080; manual intervention required."
+            exit 1
+        fi
+    fi
+else
+    echo "Warning: Neither netstat nor ss is available; skipping port 8080 check."
+fi
+if ! sudo systemctl is-active redis >/dev/null; then
+    echo "Redis is not running, starting it..."
+    sudo systemctl start redis
+fi
+if ! redis-cli -h 127.0.0.1 -p 6379 ping | grep -q "PONG"; then
+    echo "Redis is not responding on 127.0.0.1:6379; check Redis configuration."
+    exit 1
+fi
+
+# Step 13: Setup Daphne service
 echo "Configuring Daphne service..."
 sudo bash -c "cat << EOF > /etc/systemd/system/alacrity.service
 [Unit]
@@ -199,29 +280,61 @@ Environment=\"PATH=/var/www/alacrity/alacrity_backend/venv/bin\"
 Environment=\"DJANGO_SETTINGS_MODULE=alacrity_backend.settings\"
 ExecStart=/var/www/alacrity/alacrity_backend/venv/bin/daphne -b 0.0.0.0 -p 8080 alacrity_backend.asgi:application
 Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
 EOF"
 
-# Step 12: Configure firewall
-echo "Configuring firewall..."
-sudo firewall-cmd --permanent --add-port=8080/tcp
-sudo firewall-cmd --reload
+# Step 14: Configure firewall and SELinux
+echo "Configuring firewall and SELinux..."
+if command -v firewall-cmd >/dev/null 2>&1 && sudo systemctl is-active firewalld >/dev/null; then
+    sudo firewall-cmd --permanent --add-port=8080/tcp
+    sudo firewall-cmd --reload
+    echo "Firewall configured to allow port 8080."
+else
+    echo "Warning: firewalld is not running or firewall-cmd not found; skipping firewall configuration."
+fi
+if sestatus | grep -q "SELinux status:.*enabled"; then
+    sudo semanage port -a -t http_port_t -p tcp 8080 || echo "Port 8080 already allowed or semanage failed (non-critical)."
+fi
 
-# Step 13: Finalize deployment
+# Step 15: Test Daphne manually
+echo "Testing Daphne manually..."
+sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && cd /var/www/alacrity/alacrity_backend && echo 'Environment:' && env && ls -l /var/www/alacrity/alacrity_backend/alacrity_backend/asgi.py && DJANGO_SETTINGS_MODULE=alacrity_backend.settings /var/www/alacrity/alacrity_backend/venv/bin/daphne -b 0.0.0.0 -p 8080 alacrity_backend.asgi:application &> /tmp/daphne_test.log &"
+sleep 5
+if pgrep -f "daphne" >/dev/null; then
+    echo "Daphne started successfully in manual test."
+    sudo pkill -f "daphne"
+else
+    echo "Daphne failed to start in manual test. Check /tmp/daphne_test.log:"
+    cat /tmp/daphne_test.log
+    echo "Dumping ASGI debug log (if exists):"
+    cat /tmp/asgi_debug.log || echo "No /tmp/asgi_debug.log found"
+    exit 1
+fi
+
+# Step 16: Finalize deployment
 echo "Finalizing deployment..."
 sudo systemctl daemon-reload
 sudo systemctl enable alacrity
 sudo systemctl start alacrity
 
-# Step 14: Verify deployment
+# Step 17: Verify deployment
 echo "Verifying deployment..."
 sleep 5
+if sudo systemctl is-active alacrity >/dev/null; then
+    echo "Daphne service is running."
+else
+    echo "Daphne service failed to start. Dumping logs:"
+    sudo journalctl -u alacrity --since "10 minutes ago"
+    exit 1
+fi
 if curl http://${BACKEND_IP}:8080 &>/dev/null; then
     echo "Backend deployed successfully! Running on http://${BACKEND_IP}:8080"
 else
-    echo "Backend deployment failed. Check logs with: journalctl -u alacrity"
+    echo "Backend deployment failed (no response from http://${BACKEND_IP}:8080). Dumping logs:"
+    sudo journalctl -u alacrity --since "10 minutes ago"
     exit 1
 fi
 
