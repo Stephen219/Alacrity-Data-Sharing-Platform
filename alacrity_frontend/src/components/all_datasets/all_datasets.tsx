@@ -1,8 +1,12 @@
+
+
+
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import type React from "react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { DatasetCard } from "./datasetCard";
@@ -21,12 +25,15 @@ interface Dataset {
   analysis_link: string | null;
   updated_at: string;
   size?: string;
-  entries?: number;
+  number_of_rows?: number;
   imageUrl?: string;
   price: number;
   view_count: number;
   darkMode: boolean;
   averageRating?: number;
+  number_of_downloads?: number;
+  
+
 }
 
 const ITEMS_PER_PAGE = 6;
@@ -48,9 +55,9 @@ const DatasetsPage: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [userRole, setUserRole] = useState<string | null>(null);
 
-  const fetchDatasetsAndFeedback = async () => {
+  const fetchDatasetsAndFeedback = useCallback(async (): Promise<void> => {
     try {
-      // Fetch datasets
+      setIsLoading(true);
       const datasetsResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/all`);
       if (!datasetsResponse.ok) throw new Error(`HTTP Error: ${datasetsResponse.status}`);
       const data = await datasetsResponse.json();
@@ -58,7 +65,7 @@ const DatasetsPage: React.FC = () => {
       const mappedDatasets: Dataset[] = data.datasets.map((item: any) => ({
         ...item,
         size: item.size || "N/A",
-        entries: item.entries || 0,
+        entries: item.number_of_rows || 0,
         imageUrl: item.imageUrl || `https://picsum.photos/300/200?random=${item.dataset_id}`,
         tags:
           typeof item.tags === "string"
@@ -69,10 +76,9 @@ const DatasetsPage: React.FC = () => {
             : item.tags || [],
         price: item.price ? Number(parseFloat(item.price).toFixed(2)) : 0,
         hasPaid: item.hasPaid || false,
-        darkMode: false, // Explicitly set default
+        darkMode: false,
       }));
 
-      // Fetch feedback for each dataset
       const datasetsWithRatings = await Promise.all(
         mappedDatasets.map(async (dataset) => {
           try {
@@ -97,7 +103,6 @@ const DatasetsPage: React.FC = () => {
 
       setDatasets(datasetsWithRatings);
 
-      // Set filter categories
       const uniqueCategories = ["All", ...new Set(datasetsWithRatings.map((d) => d.category))];
       const uniqueOrgs = ["All", ...new Set(datasetsWithRatings.map((d) => d.organization_name || "No organization"))];
       const uniqueTags = ["All", ...new Set(datasetsWithRatings.flatMap((d) => d.tags))];
@@ -115,9 +120,9 @@ const DatasetsPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []); // Empty deps since no external state is used
 
-  const fetchUserRole = async () => {
+  const fetchUserRole = useCallback(async (): Promise<void> => {
     try {
       const response = await fetchWithAuth(`${BACKEND_URL}/users/profile/`);
       if (!response.ok) throw new Error("Failed to fetch user data");
@@ -126,14 +131,9 @@ const DatasetsPage: React.FC = () => {
     } catch (err) {
       console.error("Error fetching user role:", err);
     }
-  };
+  }, []);
 
-  useEffect(() => {
-    fetchDatasetsAndFeedback(); // Correct function name
-    fetchUserRole();
-  }, [searchParams, fetchDatasetsAndFeedback, fetchUserRole]); // Add dependencies
-
-  const fetchBookmarkedDatasets = async () => {
+  const fetchBookmarkedDatasets = useCallback(async (): Promise<void> => {
     try {
       console.log("Fetching bookmarked datasets...");
       const bookmarksResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/bookmarks/`);
@@ -146,32 +146,39 @@ const DatasetsPage: React.FC = () => {
       console.error("Error fetching bookmarks:", err);
       setError("Error fetching bookmarks.");
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchDatasetsAndFeedback();
+    fetchUserRole();
+  }, [searchParams, fetchDatasetsAndFeedback, fetchUserRole]);
 
   useEffect(() => {
     fetchBookmarkedDatasets();
-  }, []);
+  }, [fetchBookmarkedDatasets]);
 
-  const toggleDatasetBookmark = async (datasetId: string) => {
-    const wasBookmarked = bookmarkedDatasets.includes(datasetId);
-    const optimisticBookmarks = wasBookmarked
-      ? bookmarkedDatasets.filter((id) => id !== datasetId)
-      : [...bookmarkedDatasets, datasetId];
+  const toggleDatasetBookmark = useCallback(
+    async (datasetId: string): Promise<void> => {
+      const wasBookmarked = bookmarkedDatasets.includes(datasetId);
+      const optimisticBookmarks = wasBookmarked
+        ? bookmarkedDatasets.filter((id) => id !== datasetId)
+        : [...bookmarkedDatasets, datasetId];
 
-    setBookmarkedDatasets(optimisticBookmarks); // Optimistic update
+      setBookmarkedDatasets(optimisticBookmarks); // Optimistic update
 
-    try {
-      const bookmarkResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/${datasetId}/bookmark/`, {
-        method: "POST",
-      });
-      if (!bookmarkResponse.ok) throw new Error(`Failed to toggle bookmark: ${bookmarkResponse.status}`);
-    } catch (error) {
-      console.error("Dataset bookmark error:", error);
-      // Revert on failure
-      setBookmarkedDatasets(bookmarkedDatasets);
-      setError("Failed to update bookmark. Please try again.");
-    }
-  };
+      try {
+        const bookmarkResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/${datasetId}/bookmark/`, {
+          method: "POST",
+        });
+        if (!bookmarkResponse.ok) throw new Error(`Failed to toggle bookmark: ${bookmarkResponse.status}`);
+      } catch (error) {
+        console.error("Dataset bookmark error:", error);
+        setBookmarkedDatasets(bookmarkedDatasets); // Revert on failure
+        setError("Failed to update bookmark. Please try again.");
+      }
+    },
+    [bookmarkedDatasets]
+  );
 
   const filteredDatasets = useMemo(() => {
     return datasets.filter((dataset) => {
@@ -212,7 +219,7 @@ const DatasetsPage: React.FC = () => {
 
   const totalPages = Math.ceil(filteredDatasets.length / ITEMS_PER_PAGE);
 
-  const handleFilterChange = (categoryId: string, value: string) => {
+  const handleFilterChange = useCallback((categoryId: string, value: string): void => {
     setFilters((prev) => {
       const currentValues = prev[categoryId] || [];
       if (value === "All" || value === "All Time") {
@@ -225,20 +232,20 @@ const DatasetsPage: React.FC = () => {
       return { ...prev, [categoryId]: [...currentValues.filter((v) => v !== "All" && v !== "All Time"), value] };
     });
     setCurrentPage(1);
-  };
+  }, []);
 
-  const removeFilter = (categoryId: string, value: string) => {
+  const removeFilter = useCallback((categoryId: string, value: string): void => {
     setFilters((prev) => {
       const currentValues = prev[categoryId] || [];
       const newValues = currentValues.filter((v) => v !== value);
       return { ...prev, [categoryId]: newValues.length > 0 ? newValues : [] };
     });
     setCurrentPage(1);
-  };
+  }, []);
 
-  const toggleFilterCategory = (categoryId: string) => {
+  const toggleFilterCategory = useCallback((categoryId: string): void => {
     setActiveFilterCategory((prev) => (prev === categoryId ? null : categoryId));
-  };
+  }, []);
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-screen">Loading datasets...</div>;
@@ -389,7 +396,7 @@ const DatasetsPage: React.FC = () => {
                     imageUrl={dataset.imageUrl || ""}
                     tags={dataset.tags}
                     category={dataset.category}
-                    entries={dataset.entries || 0}
+                    entries={dataset.number_of_rows || 0}
                     size={dataset.size || "N/A"}
                     view_count={dataset.view_count}
                     extraActions={() => toggleDatasetBookmark(dataset.dataset_id)}

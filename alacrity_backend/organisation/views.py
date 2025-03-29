@@ -358,3 +358,80 @@ class UnfollowOrganizationView(APIView):
             return Response({"message": "Successfully unfollowed organization"}, status=status.HTTP_200_OK)
         except Organization.DoesNotExist:
             return Response({"error": "Organization not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+
+class OrganizationFollowersView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, org_id):
+        try:
+            organization = Organization.objects.get(Organization_id=org_id)
+            followers = organization.following.all()
+            serializer = UserSerializer(followers, many=True, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Organization.DoesNotExist:
+            return Response({"error": "Organization not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+
+#from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from dataset_requests.models import DatasetRequest
+from users.models import User
+from users.serializers import UserSerializer
+from datasets.models import Dataset
+class UsersWithDatasetAccessView(APIView):
+    permission_classes = [IsAuthenticated]
+  
+
+    def get_users_with_access(self, dataset_id):
+        """
+        Helper method to get all users with access to a dataset including updated_by information.
+        """
+        try:
+            dataset = Dataset.objects.get(dataset_id=dataset_id)
+            dataset_requests = DatasetRequest.objects.filter(dataset_id=dataset, request_status='approved')
+            
+            users_with_access_data = []
+            for request in dataset_requests:
+                user = User.objects.get(id=request.researcher_id.id)
+                updated_by_user = request.updated_by  # This is already a User object or None
+                
+                user_data = {
+                    'user': UserSerializer(user).data,
+                    'updated_by': UserSerializer(updated_by_user).data if updated_by_user else None,
+                    'request_id': request.request_id,
+                    'created_at': request.created_at.strftime('%B %d, %Y'),  # Format as string
+                    'updated_at': request.updated_at.strftime('%B %d, %Y'),  # Format as string
+                }
+                users_with_access_data.append(user_data)
+            
+            return users_with_access_data
+        
+        except Dataset.DoesNotExist:
+            return None
+        except User.DoesNotExist:
+            return None
+        
+    @role_required(['organization_admin', 'contributor'])
+
+    def get(self, request, dataset_id):
+        """
+        Get all users with access to a dataset.
+        """
+        try:
+            users_with_access = self.get_users_with_access(dataset_id)
+            if users_with_access is None:
+                return Response(
+                    {"error": "Dataset or related data not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            return Response(users_with_access, status=status.HTTP_200_OK)
+       
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

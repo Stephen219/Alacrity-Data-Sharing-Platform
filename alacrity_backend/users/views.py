@@ -40,10 +40,12 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth import get_user_model
 User = get_user_model()
-from alacrity_backend.settings import MINIO_URL, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, MINIO_BUCKET_NAME
+from alacrity_backend.settings import MINIO_URL, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, MINIO_BUCKET_NAME, MINIO_SECURE
 from minio import Minio, S3Error
 
 from rest_framework import status
+from  notifications.models import Notification
+
 
 
 
@@ -79,7 +81,7 @@ class ForgotPasswordView(APIView):
 
             uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
 
-            # Builds a link 
+           
             frontend_reset_url = f"{settings.FRONTEND_URL}/reset-password?uidb64={uidb64}&token={token}"
 
             # Sends email
@@ -145,6 +147,12 @@ class ResetPasswordView(APIView):
             # If token is valid, set the new password
             user.set_password(new_password)
             user.save()
+
+            Notification.objects.create(
+                user=user,
+                message="Your password has been reset successfully.",
+                is_read=False
+            )
 
             return Response({"message": "Password reset successful."},
                             status=status.HTTP_200_OK)
@@ -449,29 +457,22 @@ class LoggedInUser(APIView):
 class UserView(APIView):
     def get(self, request, user_id):
         user = get_object_or_404(User, id=user_id)
-
+        
+        # i odont know why the phone number is not being returned in the serializer
+        # so i will add it manually to the data for now
         serializer = UserSerializer(user, context={"request": request})
         data = serializer.data
+        data['phone_number'] = user.phone_number
+       
         first_name = data['first_name']
         sur_name = data['sur_name']
         phone_number = data['phone_number']
-
-        print("first_name", first_name, sur_name, phone_number)
-
         data.pop('first_name', None)
         data.pop('sur_name', None)
         data.pop('phone_number', None)
-
-
         data['firstname'] = first_name
         data['lastname'] = sur_name
         data['phonenumber'] = phone_number
-
-        #remname the keys to match the frontend
-        # data['firstname'] = data.pop('first_name', None)
-        # data['surname'] = data.pop('sur_name', None)
-        # data['phonenumber'] = data.pop('phone_number', None)
-        print(data)
         return Response(data, status=status.HTTP_200_OK)
 
     def put(self, request, user_id):
@@ -492,16 +493,7 @@ class UserView(APIView):
         data['first_name'] = first_name
         data['sur_name'] = sur_name
         data['phone_number'] = phone_number
-
-        print ("data going to serializer", data)
-
-
-        
-        
-
         serializer = UserSerializer(user, data, partial=True, context={"request": request})
-        print(serializer.is_valid())
-        print(serializer.errors)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -522,8 +514,13 @@ class FollowUserView(APIView):
             return Response({"detail": "You already follow this user"}, status=status.HTTP_400_BAD_REQUEST)
 
         request.user.following.add(target_user)
-        print(request.user.following.all())
-        print(target_user.followers.all())
+
+        Notification.objects.create(
+            user=target_user,
+            message=f"{request.user.first_name} {request.user.sur_name} has followed you.",
+            is_read=False
+        )
+       
         return Response({"detail": "Now following user"}, status=status.HTTP_200_OK)
 
 class UnfollowUserView(APIView):
@@ -571,19 +568,18 @@ class ProfilePictureUpdateView(APIView):
                 content_type=profile_picture.content_type
             )
 
-            
-            user.profile_picture = f"http://{MINIO_URL}/{MINIO_BUCKET_NAME}/{object_name}"
+            if MINIO_SECURE:
+                user.profile_picture = f"https://{MINIO_URL}/{MINIO_BUCKET_NAME}/{object_name}"
+            else:
+                user.profile_picture = f"http://{MINIO_URL}/{MINIO_BUCKET_NAME}/{object_name}"
             user.save()
-
             return Response({"profile_picture": user.profile_picture}, status=status.HTTP_200_OK)
 
         except S3Error as e:
-            return Response({"error": f"MinIO error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": f" error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
             return Response({"error": f"Error uploading profile picture: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-
-
 class LogoutView(APIView):
     def post(self, request):
         try:
@@ -831,6 +827,8 @@ def get_datasets_user_has_access(user_id):
             "description": ds.description,
             "category": ds.category,
             "tags": ds.tags,
+            "entries": ds.entries,
+            "size": ds.size,
             "contributor_id__organization__name":
                 ds.contributor_id.organization.name if ds.contributor_id and ds.contributor_id.organization else None,
             "requests__updated_at":
@@ -889,6 +887,9 @@ class UserAccessibleDatasetsView(APIView):
                 else None,
                 "price": float(dataset.price),
                 "hasPaid": has_paid,
+                "entries": dataset.number_of_rows,
+                "size": dataset.size,
+
                 "updated_at": dataset.updated_at.isoformat(),
             })
 

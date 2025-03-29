@@ -32,6 +32,11 @@ class Dataset(models.Model):
     view_count = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
     is_deleted = models.BooleanField(default=False)
+    number_of_downloads = models.PositiveIntegerField(default=0)
+    number_of_rows = models.PositiveIntegerField(default=0)
+
+    # The size of the dataset in bytes (or any other unit you prefe   can be a decimal field if you want to allow for fractions)
+    size = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     class Meta:
         unique_together = ['title', 'link']

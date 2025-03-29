@@ -300,7 +300,7 @@ export default function DatasetAccessed() {
       tags={Array.isArray(dataset.tags) ? dataset.tags : dataset.tags.split(",").map((tag) => tag.trim())}
       category={dataset.category}
       entries={dataset.entries || 0}
-      size={dataset.size || "0 KB"}
+      size={dataset.size || "0"}
       viewMode={viewMode}
       darkMode={darkMode}
       view_count={dataset.view_count}
