@@ -93,7 +93,7 @@ const ResearcherDashboard: React.FC = () => {
       if (status === "pending") {
         return "cursor-default opacity-50"
       }
-      return "cursor-pointer hover:bg-gray-50"
+      return "cursor-pointer hover:bg-gray-50 "
     }
 
   const getData = async () => {
@@ -169,10 +169,10 @@ const ResearcherDashboard: React.FC = () => {
   if (error) return <div className="p-6">Error loading dashboard data. Please try again.</div>
 
   return (
-    <div className="p-6 bg-gray-50">
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">Researcher Dashboard</h1>
+    <div className="p-6 bg-gray-50 dark:bg-gray-900">
+      <h1 className="text-2xl font-semibold text-gray-800 mb-6 dark:text-gray-100">Researcher Dashboard</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 ">
         <MetricCard title="Datasets Accessed" value={(data?.datasets_accessed || 0).toString()} icon="📂" />
         <MetricCard title="Requests Approved" value={(data?.requests_approved || 0).toString()} icon="✅" />
         <MetricCard title="Pending Reviews" value={(data?.pending_reviews || 0).toString()} icon="⏳" />
@@ -180,15 +180,15 @@ const ResearcherDashboard: React.FC = () => {
       </div>
 
       <div className="mb-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Dataset Feed</h2>
-        <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-          <div className="p-4 border-b border-gray-200">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4 dark:text-gray-100">Dataset Feed</h2>
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <input
               type="text"
               placeholder="Search datasets..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B1A] focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B1A] focus:border-transparent"
             />
           </div>
           <div className="overflow-y-auto" style={{ maxHeight: "400px" }}>
@@ -207,172 +207,25 @@ const ResearcherDashboard: React.FC = () => {
                 />
               ))
             ) : (
-              <div className="p-8 text-center text-gray-500">No datasets found </div>
+              <div className="p-8 text-center text-gray-500 dark:text-gray-400">No datasets found </div>
             )}
           </div>
         </div>
       </div>
 
       {/* Active Research Table */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-        <div className="border-b border-gray-200">
-          <nav className="flex -mb-px overflow-x-auto">
-            <button
-              onClick={() => setActiveTab("publications")}
-              className={`py-4 px-6 text-sm font-medium whitespace-nowrap ${
-                activeTab === "publications"
-                  ? "border-b-2 border-[#FF6B1A] text-[#FF6B1A]"
-                  : "text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              Publication Tracker
-            </button>
-            <button
-              onClick={() => setActiveTab("recommendations")}
-              className={`py-4 px-6 text-sm font-medium whitespace-nowrap ${
-                activeTab === "recommendations"
-                  ? "border-b-2 border-[#FF6B1A] text-[#FF6B1A]"
-                  : "text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              Dataset Recommendations
-            </button>
-            <button
-              onClick={() => setActiveTab("timeline")}
-              className={`py-4 px-6 text-sm font-medium whitespace-nowrap ${
-                activeTab === "timeline"
-                  ? "border-b-2 border-[#FF6B1A] text-[#FF6B1A]"
-                  : "text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              Research Timeline
-            </button>
-          </nav>
+      <h2 className="text-xl font-semibold text-gray-800 mb-4 dark:text-gray-100">Research Submissions Feed</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+        <div className="border-b border-gray-200 dark:border-gray-700">
         </div>
 
-        {/* Dataset Recommendations Tab */}
-        {activeTab === "recommendations" && (
-          <div className="p-6">
-            <p className="text-sm text-gray-500 mb-4">
-              Based on your research interests and recent activity, we recommend these datasets:
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[
-                {
-                  id: "rec1",
-                  name: "Global Climate Data 2023",
-                  category: "Environmental Science",
-                  relevance: "98% match",
-                  users: 342,
-                },
-                {
-                  id: "rec2",
-                  name: "Consumer Behavior Survey",
-                  category: "Market Research",
-                  relevance: "95% match",
-                  users: 189,
-                },
-                {
-                  id: "rec3",
-                  name: "Healthcare Outcomes Database",
-                  category: "Medical Research",
-                  relevance: "92% match",
-                  users: 276,
-                },
-                {
-                  id: "rec4",
-                  name: "Urban Development Metrics",
-                  category: "Social Sciences",
-                  relevance: "90% match",
-                  users: 124,
-                },
-                {
-                  id: "rec5",
-                  name: "Technology Adoption Patterns",
-                  category: "Technology",
-                  relevance: "88% match",
-                  users: 231,
-                },
-                {
-                  id: "rec6",
-                  name: "Financial Markets Analysis",
-                  category: "Economics",
-                  relevance: "85% match",
-                  users: 198,
-                },
-              ].map((dataset) => (
-                <div key={dataset.id} className="bg-gray-50 p-4 rounded-lg hover:shadow-md transition-shadow">
-                  <h3 className="font-medium text-gray-900">{dataset.name}</h3>
-                  <p className="text-sm text-gray-500 mb-2">{dataset.category}</p>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-medium text-[#FF6B1A]">{dataset.relevance}</span>
-                    <span className="text-xs text-gray-500">{dataset.users} researchers</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Research Timeline Tab */}
-        {activeTab === "timeline" && (
-          <div className="p-6">
-            <p className="text-sm text-gray-500 mb-4">Upcoming research milestones and deadlines:</p>
-            <div className="space-y-4">
-              {[
-                {
-                  id: "tl1",
-                  event: "Research Proposal Deadline",
-                  project: "Urban Data Analysis",
-                  date: "May 15, 2023",
-                  daysLeft: 12,
-                },
-                {
-                  id: "tl2",
-                  event: "Interim Results Presentation",
-                  project: "Consumer Behavior Study",
-                  date: "June 3, 2023",
-                  daysLeft: 31,
-                },
-                {
-                  id: "tl3",
-                  event: "Data Collection Phase End",
-                  project: "Healthcare Metrics",
-                  date: "June 20, 2023",
-                  daysLeft: 48,
-                },
-                {
-                  id: "tl4",
-                  event: "Final Report Submission",
-                  project: "Market Analysis",
-                  date: "July 10, 2023",
-                  daysLeft: 68,
-                },
-              ].map((milestone) => (
-                <div
-                  key={milestone.id}
-                  className="flex items-center p-4 bg-gray-50 rounded-lg hover:shadow-md transition-shadow"
-                >
-                  <div className="flex-shrink-0 h-12 w-12 bg-[#FF6B1A] bg-opacity-10 rounded-full flex items-center justify-center text-[#FF6B1A] font-bold">
-                    {milestone.daysLeft}d
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="font-medium text-gray-900">{milestone.event}</h3>
-                    <p className="text-sm text-gray-500">{milestone.project}</p>
-                    <p className="text-xs text-[#FF6B1A]">Due: {milestone.date}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Publication Tracker Tab */}
         {activeTab === "publications" && (
           <div>
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <p className="text-sm text-gray-500">Track and manage your research publications</p>
-              <button className="px-4 py-1 text-sm text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f]"
+              <p className="text-sm text-gray-500 dark:text-gray-100">Track and manage your research publications</p>
+              <button className="px-4 py-1 text-sm text-white dark:text-gray-100 bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f]"
               onClick={handleNewPublicationClick}>
                 New Publication
               </button>
@@ -406,8 +259,8 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon }) => (
         </div>
         <div className="ml-5 w-0 flex-1">
           <dl>
-            <dt className="text-sm font-medium text-gray-500 truncate">{title}</dt>
-            <dd className="text-lg font-medium text-gray-900">{value}</dd>
+            <dt className="text-sm font-medium text-gray-500 dark:text-gray-100 truncate">{title}</dt>
+            <dd className="text-lg font-medium text-gray-900 dark:text-gray-100">{value}</dd>
           </dl>
         </div>
       </div>
@@ -479,7 +332,7 @@ const DatasetCard: React.FC<DatasetCardProps> = ({ dataset_id, title, descriptio
       // show pay if not purchased
       return (
         <button
-          className="mt-2 px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md"
+          className="mt-2 px-4 py-2 text-sm font-medium text-white dark:text-gray-100 bg-[#FF6B1A] rounded-md"
           onClick={handlePayment}
         >
           Pay £{price.toFixed(2)}
@@ -490,7 +343,7 @@ const DatasetCard: React.FC<DatasetCardProps> = ({ dataset_id, title, descriptio
       return (
         <Link
   href={`/analyze/${dataset_id}`}
-  className="mt-2 px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md"
+  className="mt-2 px-4 py-2 text-sm font-medium text-white dark:text-gray-100 bg-[#FF6B1A] rounded-md"
   
 >
   Analyze
@@ -502,24 +355,24 @@ const DatasetCard: React.FC<DatasetCardProps> = ({ dataset_id, title, descriptio
   return (
     <div className="p-4 border-b border-gray-200 hover:bg-gray-50">
       <div className="flex justify-between items-start mb-2">
-        <h3 className="text-lg font-medium text-gray-900">{title}</h3>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{title}</h3>
         <div className="text-right">
-          <div className="text-sm font-medium text-[#FF6B1A]">{organization}</div>
-          <div className="text-xs text-gray-500">{formattedDate}</div>
+          <div className="text-sm font-medium text-[#FF6B1A] dark:text-gray-100">{organization}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-100">{formattedDate}</div>
         </div>
       </div>
-      <p className="text-sm text-gray-500 mb-2">{description}</p>
+      <p className="text-sm text-gray-500 mb-2 dark:text-gray-100">{description}</p>
       <div className="flex flex-wrap gap-2">
         {displayTags.map((tag) => (
           <span
             key={tag}
-            className="px-2 py-1 text-xs font-medium bg-[#FF6B1A] bg-opacity-10 text-[#FF6B1A] rounded-full"
+            className="px-2 py-1 text-xs font-medium bg-[#FF6B1A] bg-opacity-10 text-[#FF6B1A] dark:text-gray-100 rounded-full"
           >
             {tag}
           </span>
         ))}
         {hasMoreTags && (
-          <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
+          <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 dark:text-gray-100 rounded-full">
             +{safeTags.length - 3} more
           </span>
         )}

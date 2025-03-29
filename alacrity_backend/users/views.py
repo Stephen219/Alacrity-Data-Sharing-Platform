@@ -827,7 +827,7 @@ def get_datasets_user_has_access(user_id):
             "description": ds.description,
             "category": ds.category,
             "tags": ds.tags,
-            "entries": ds.entries,
+            "entries": ds.number_of_rows,
             "size": ds.size,
             "contributor_id__organization__name":
                 ds.contributor_id.organization.name if ds.contributor_id and ds.contributor_id.organization else None,

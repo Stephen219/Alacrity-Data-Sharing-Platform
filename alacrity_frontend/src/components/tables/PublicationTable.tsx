@@ -26,7 +26,7 @@ const PublicationTable: React.FC<PublicationTableProps> = ({
   paginated = true,
   rowsPerPage = 10,
   scrollable = false,
-  searchable = false,
+  searchable = true,
   getRowClass,
 }) => {
   const [searchQuery, setSearchQuery] = useState("")
@@ -36,13 +36,13 @@ const PublicationTable: React.FC<PublicationTableProps> = ({
   const getBadgeClass = (status: string) => {
     switch (status.toLowerCase()) {
       case "published":
-        return "bg-green-100 text-green-800"
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
       case "pending":
-        return "bg-yellow-100 text-yellow-800"
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
       case "rejected":
-        return "bg-red-100 text-red-800"
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
     }
   }
 
@@ -65,33 +65,33 @@ const PublicationTable: React.FC<PublicationTableProps> = ({
   }
 
   const TableContent = () => (
-    <table className="min-w-full divide-y divide-gray-200">
-      <thead className="bg-gray-50">
+    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+      <thead className="bg-gray-50 dark:bg-gray-800">
         <tr>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">
             Title
           </th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">
             Status
           </th>
-          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">
             Submitted at
           </th>
         </tr>
       </thead>
-      <tbody className="bg-white divide-y divide-gray-200">
+      <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
         {displayPublications.length > 0 ? (
           displayPublications.map((pub) => {
             const rowClass = getRowClass
               ? getRowClass(pub)
-              : "hover:bg-gray-50 cursor-pointer"
+              : "hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
             return (
               <tr
                 key={pub.id}
                 className={rowClass}
                 onClick={() => onRowClick && onRowClick(pub)}
               >
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                   {pub.title}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -103,7 +103,7 @@ const PublicationTable: React.FC<PublicationTableProps> = ({
                     {pub.status.charAt(0).toUpperCase() + pub.status.slice(1)}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right dark:text-gray-100">
                   {new Date(pub.submitted_at).toLocaleDateString()}
                 </td>
               </tr>
@@ -113,7 +113,7 @@ const PublicationTable: React.FC<PublicationTableProps> = ({
           <tr>
             <td
               colSpan={3}
-              className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center"
+              className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center dark:text-gray-100"
             >
               No publications found.
             </td>
@@ -126,7 +126,7 @@ const PublicationTable: React.FC<PublicationTableProps> = ({
   return (
     <div>
       {searchable && (
-        <div className="mb-4">
+        <div className="p-4">
           <input
             type="text"
             placeholder="Search publications..."
@@ -135,7 +135,7 @@ const PublicationTable: React.FC<PublicationTableProps> = ({
               setSearchQuery(e.target.value)
               setCurrentPage(1)
             }}
-            className="border p-2 rounded-lg w-full"
+            className="border p-2 rounded-lg w-full dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
           />
         </div>
       )}
@@ -151,11 +151,11 @@ const PublicationTable: React.FC<PublicationTableProps> = ({
           <Button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
-            className="px-4 py-2 border rounded-l disabled:opacity-50"
+            className="px-4 py-2 border rounded-l disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
           >
             Previous
           </Button>
-          <span className="px-4 py-2 border-t border-b">
+          <span className="px-4 py-2 border-t border-b dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
             {currentPage} / {totalPages}
           </span>
           <Button

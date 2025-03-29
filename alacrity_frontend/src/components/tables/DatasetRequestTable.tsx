@@ -46,13 +46,13 @@ const DatasetRequestTable: React.FC<DatasetRequestTableProps> = ({
   const getBadgeClass = (status: string) => {
     switch (status.toLowerCase()) {
       case "approved":
-        return "bg-green-100 text-green-800";
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
       case "pending":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
       case "denied":
-        return "bg-red-100 text-red-800";
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
     }
   };
 
@@ -109,32 +109,32 @@ const DatasetRequestTable: React.FC<DatasetRequestTableProps> = ({
     req.status.toLowerCase() === "approved" && (req.price === 0 || req.hasPaid);
 
   const TableContent = () => (
-    <table className="min-w-full divide-y divide-gray-200">
-      <thead className="bg-gray-50">
+    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+      <thead className="bg-gray-50 dark:bg-gray-800">
         <tr>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">
             Title
           </th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">
             Status
           </th>
-          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">
             Submitted at
           </th>
-          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">
             Action
           </th>
         </tr>
       </thead>
-      <tbody className="bg-white divide-y divide-gray-200">
+      <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
         {displayRequests.length > 0 ? (
           displayRequests.map((req) => {
             const clickable = isClickable(req);
             const rowClass = getRowClass
               ? getRowClass(req)
               : clickable
-              ? "hover:bg-gray-50 cursor-pointer"
-              : "bg-gray-200 cursor-not-allowed";
+              ? "hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+              : "bg-gray-200 dark:bg-gray-700 cursor-not-allowed";
             return (
               <tr
                 key={req.id}
@@ -145,7 +145,7 @@ const DatasetRequestTable: React.FC<DatasetRequestTableProps> = ({
                   }
                 }}
               >
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                   {req.title}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -157,13 +157,13 @@ const DatasetRequestTable: React.FC<DatasetRequestTableProps> = ({
                     {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right dark:text-gray-100">
                   {new Date(req.submitted_at).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                   {req.price > 0 && req.status.toLowerCase() === "approved" ? (
                     req.hasPaid ? (
-                      <span className="text-green-600">Paid</span>
+                      <span className="text-green-600 dark:text-green-400">Paid</span>
                     ) : (
                       <Button
                         onClick={(e) => {
@@ -172,7 +172,7 @@ const DatasetRequestTable: React.FC<DatasetRequestTableProps> = ({
                             onPayClick(req);
                           }
                         }}
-                        className="text-white"
+                        className="text-white bg-[#FF6B1A] dark:bg-[#FF6B1A] hover:bg-[#e65c0f] dark:hover:bg-[#e65c0f]"
                       >
                         Pay
                       </Button>
@@ -186,7 +186,7 @@ const DatasetRequestTable: React.FC<DatasetRequestTableProps> = ({
           <tr>
             <td
               colSpan={4}
-              className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center"
+              className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center dark:text-gray-100"
             >
               No dataset requests found.
             </td>
@@ -205,10 +205,10 @@ const DatasetRequestTable: React.FC<DatasetRequestTableProps> = ({
             setStatusFilter("all");
             setCurrentPage(1);
           }}
-          className={`px-3 py-1 rounded-md border ${
+          className={`px-3 py-1 rounded-md border dark:border-gray-700 ${
             statusFilter === "all"
               ? "bg-[#FF6B1A] text-white"
-              : "bg-white text-gray-700"
+              : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
           }`}
         >
           All
@@ -218,10 +218,10 @@ const DatasetRequestTable: React.FC<DatasetRequestTableProps> = ({
             setStatusFilter("approved");
             setCurrentPage(1);
           }}
-          className={`px-3 py-1 rounded-md border ${
+          className={`px-3 py-1 rounded-md border dark:border-gray-700${
             statusFilter === "approved"
               ? "bg-[#FF6B1A] text-white"
-              : "bg-white text-gray-700"
+              : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
           }`}
         >
           Approved
@@ -231,10 +231,10 @@ const DatasetRequestTable: React.FC<DatasetRequestTableProps> = ({
             setStatusFilter("pending");
             setCurrentPage(1);
           }}
-          className={`px-3 py-1 rounded-md border ${
+          className={`px-3 py-1 rounded-md border dark:border-gray-700 ${
             statusFilter === "pending"
               ? "bg-[#FF6B1A] text-white"
-              : "bg-white text-gray-700"
+              : "bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-300"
           }`}
         >
           Pending
@@ -244,10 +244,10 @@ const DatasetRequestTable: React.FC<DatasetRequestTableProps> = ({
             setStatusFilter("denied");
             setCurrentPage(1);
           }}
-          className={`px-3 py-1 rounded-md border ${
+          className={`px-3 py-1 rounded-md border dark:border-gray-700${
             statusFilter === "denied"
               ? "bg-[#FF6B1A] text-white"
-              : "bg-white text-gray-700"
+              : "bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-300"
           }`}
         >
           Rejected
@@ -257,8 +257,10 @@ const DatasetRequestTable: React.FC<DatasetRequestTableProps> = ({
             setNeedToPay(!needToPay);
             setCurrentPage(1);
           }}
-          className={`px-3 py-1 rounded-md border ${
-            needToPay ? "bg-[#FF6B1A] text-white" : "bg-white text-gray-700"
+          className={`px-3 py-1 rounded-md border dark:border-gray-700 ${
+            needToPay 
+            ? "bg-[#FF6B1A] text-white" 
+            : "bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-300"
           }`}
         >
           Need to Pay
@@ -275,7 +277,7 @@ const DatasetRequestTable: React.FC<DatasetRequestTableProps> = ({
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            className="border p-2 rounded-lg w-full"
+            className="border p-2 rounded-lg w-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#FF6B1A] focus:border-transparent dark:border-gray-700"
           />
         </div>
       )}
@@ -297,7 +299,7 @@ const DatasetRequestTable: React.FC<DatasetRequestTableProps> = ({
           >
             Previous
           </Button>
-          <span className="px-4 py-2 border-t border-b">
+          <span className="px-4 py-2 border-t border-b dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
             {currentPage} / {totalPages}
           </span>
           <Button
