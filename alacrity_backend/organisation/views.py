@@ -400,14 +400,14 @@ class UsersWithDatasetAccessView(APIView):
             users_with_access_data = []
             for request in dataset_requests:
                 user = User.objects.get(id=request.researcher_id.id)
-                updated_by_user = request.updated_by  # This is already a User object or None
+                updated_by_user = request.updated_by  
                 
                 user_data = {
                     'user': UserSerializer(user).data,
                     'updated_by': UserSerializer(updated_by_user).data if updated_by_user else None,
                     'request_id': request.request_id,
-                    'created_at': request.created_at.strftime('%B %d, %Y'),  # Format as string
-                    'updated_at': request.updated_at.strftime('%B %d, %Y'),  # Format as string
+                    'created_at': request.created_at.strftime('%B %d, %Y' ', %H:%M %p'),
+                    'updated_at': request.updated_at.strftime('%B %d, %Y' ', %H:%M %p'),
                 }
                 users_with_access_data.append(user_data)
             
@@ -460,7 +460,8 @@ class RequestsProcessedByContributorAndAdminView(APIView):
                     'dataset_title': request.dataset_id.title,
                     'request_status': request.request_status,
                     'created_at': request.created_at.strftime('%B %d, %Y'),
-                    'updated_at': request.updated_at.strftime('%B %d, %Y'),
+                   
+                    'date_processed': request.updated_at.strftime('%B %d, %Y' ', %H:%M %p'),  
                     'request_id': request.request_id,
                     'researcher_id': request.researcher_id.id if request.researcher_id else None,
                     'researcher_name': (

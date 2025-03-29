@@ -125,19 +125,7 @@ const AdminDashboard: React.FC = () => {
   const handleViewAllClick = () => {
     router.push("/requests/pending");
   };
-  // const getData = async () => {
-  //   try {
-  //     setLoading(true);
-  //     const response = await fetchWithAuth(`${BACKEND_URL}/users/dashboard`);
-  //     const result = await response.json();
-  //     setData(result);
-  //     console.log(result);
-  //   } catch (error) {
-  //     setError(error as Error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+
 
   useEffect(() => {
     getUserdata();
