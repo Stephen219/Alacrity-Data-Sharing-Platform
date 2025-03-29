@@ -133,9 +133,9 @@ export default function DatasetDetailPage({ params }: { params: { dataset_id: st
             {dataset.title}
           </h1>
           <Link href={`/analyze/${dataset.dataset_id}`}>
-            <button className="px-6 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors font-medium">
-              Analyse Dataset
-            </button>
+            <Button className="hover:bg-orange-300 text-white transition-colors">
+              Analyze Dataset
+            </Button>
           </Link>
         </div>
 
