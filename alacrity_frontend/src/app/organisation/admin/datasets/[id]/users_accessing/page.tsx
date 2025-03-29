@@ -12,6 +12,7 @@ import { fetchWithAuth } from "@/libs/auth"
 import { BACKEND_URL } from "@/config"
 import Image from "next/image"
 import Link from "next/link"
+import { withAccessControl } from "@/components/auth_guard/AccessControl"
 
 type UserAccess = {
   user: {
@@ -32,7 +33,7 @@ type UserAccess = {
   updated_at: string
 }
 
-export default function DatasetUsersPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
+function DatasetUsersPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const params = React.use(paramsPromise)
   const datasetId = params.id
@@ -467,3 +468,6 @@ export default function DatasetUsersPage({ params: paramsPromise }: { params: Pr
     </div>
   )
 }
+
+export default withAccessControl(DatasetUsersPage, ["organization_admin", "contributor"])
+
