@@ -322,22 +322,22 @@ export default function DatasetDetail() {
           </div>
           {/* Reviews Content */}
           {feedbacks.length === 0 ? (
-            <p className="text-gray-600">No reviews yet.</p>
+            <p className="text-gray-600 dark:text-gray-100">No reviews yet.</p>
           ) : (
             <div className="space-y-4">
               {feedbacks.map((fb, index) => (
                 <div
                   key={index}
-                  className="bg-white p-4 rounded-md shadow-sm border border-gray-200 flex flex-col gap-2"
+                  className="mt-4 bg-gray-50 dark:bg-card p-4 rounded-md shadow-sm border border-gray-200 flex flex-col gap-2"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-gray-800">
+                    <span className="font-semibold text-gray-800 dark:text-gray-100">
                       {fb.user__username}
                     </span>
                     <div className="flex gap-1">{renderStars(fb.rating)}</div>
                   </div>
-                  <p className="text-gray-700">{fb.comment}</p>
-                  <span className="text-xs text-gray-500">
+                  <p className="text-gray-700 dark:text-gray-100">{fb.comment}</p>
+                  <span className="text-xs text-gray-500 dark:text-gray-100">
                     {new Date(fb.created_at).toLocaleString()}
                   </span>
                 </div>

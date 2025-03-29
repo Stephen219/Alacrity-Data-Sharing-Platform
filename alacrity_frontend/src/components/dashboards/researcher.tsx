@@ -172,7 +172,7 @@ const ResearcherDashboard: React.FC = () => {
     <div className="p-6 bg-gray-50 dark:bg-gray-900">
       <h1 className="text-2xl font-semibold text-gray-800 mb-6 dark:text-gray-100">Researcher Dashboard</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 ">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <MetricCard title="Datasets Accessed" value={(data?.datasets_accessed || 0).toString()} icon="📂" />
         <MetricCard title="Requests Approved" value={(data?.requests_approved || 0).toString()} icon="✅" />
         <MetricCard title="Pending Reviews" value={(data?.pending_reviews || 0).toString()} icon="⏳" />
