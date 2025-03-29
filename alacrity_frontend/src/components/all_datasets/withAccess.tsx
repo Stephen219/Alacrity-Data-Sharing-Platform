@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Search, Grid, List, ArrowUpDown, ChevronDown, Sun, Moon } from "lucide-react"
+import { Search, Grid, List, ArrowUpDown, ChevronDown } from "lucide-react"
 import { DatasetCard } from "./datasetCard"
 import { fetchWithAuth } from "@/libs/auth"
 import { BACKEND_URL } from "@/config"

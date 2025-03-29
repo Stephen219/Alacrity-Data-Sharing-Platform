@@ -1,4 +1,4 @@
-
+//add side nav items 
 export const NAV_ITEMS = [
 
   {
@@ -47,7 +47,7 @@ export const NAV_ITEMS = [
         {
           name: "All Requests",
           href: "/requests/all",
-          imageSrc: "/navbar/review/accessRequests.jpg",
+          imageSrc: "/navbar/review/all.png",
         },
         {
           name: "Pending Requests",
@@ -62,7 +62,7 @@ export const NAV_ITEMS = [
         {
           name: "chats",
           href: "/chat",
-          imageSrc: "/datasets/image.png",
+          imageSrc: "/navbar/review/chat.png",
         },
       ],
     },
