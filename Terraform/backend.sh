@@ -2,44 +2,42 @@
 
 set -e
 
-echo "Starting backend deployment script..."
-cd /root || { echo "Failed to cd to /root"; exit 1; }
+echo "Starting fresh backend deployment..."
 
-echo "Current user:" $(whoami)
-echo "Current directory:" $(/bin/pwd)
+# Define IPs and credentials
+BACKEND_IP="10.72.102.171"
+FRONTEND_IP="10.72.102.244"
+DB_PASSWORD="comsc"  # Replace with a secure password
 
-echo "Updating system packages and refreshing metadata..."
-sudo dnf upgrade -y -q || { echo "Failed to upgrade packages"; exit 1; }
-sudo dnf makecache || { echo "Failed to refresh repository metadata"; exit 1; }
+# Step 1: Clean up everything
+echo "Cleaning up previous setup..."
+sudo systemctl stop alacrity &>/dev/null || true
+sudo systemctl disable alacrity &>/dev/null || true
+sudo rm -f /etc/systemd/system/alacrity.service
+sudo systemctl daemon-reload
+sudo rm -rf /var/www/alacrity
+sudo userdel -r alacrity &>/dev/null || true
+sudo mysql -uroot -pcomsc -e "DROP DATABASE IF EXISTS alacrity_db;" &>/dev/null || true
 
-echo "Installing prerequisites..."
-sudo dnf install -y -q epel-release || { echo "Failed to install epel-release"; exit 1; }
-sudo dnf install -y -q python3 python3-pip python3-devel git mariadb-server mariadb-connector-c-devel redis pkg-config gcc || { echo "Failed to install prerequisites"; exit 1; }
+# Step 2: Install base system
+echo "Installing base system..."
+sudo dnf install -y -q python3.11 python3.11-pip python3.11-devel git mariadb-server redis gcc mariadb-connector-c-devel
+sudo systemctl enable mariadb redis
+sudo systemctl start mariadb redis
 
-echo "Starting MariaDB and Redis..."
-sudo systemctl enable mariadb.service
-sudo systemctl start mariadb.service || { echo "Failed to start mariadb"; exit 1; }
-sudo systemctl enable redis
-sudo systemctl start redis || { echo "Failed to start redis"; exit 1; }
+# Step 3: Setup user and directory
+echo "Setting up user and directory..."
+sudo useradd -m -s /bin/bash alacrity
+sudo mkdir -p /var/www/alacrity
+sudo chown alacrity:alacrity /var/www/alacrity
+sudo chmod 755 /var/www/alacrity
 
-echo "Setting MariaDB root password..."
-sudo mysqladmin -u root password 'comsc' || { echo "Failed to set MariaDB root password"; exit 1; }
-
-echo "Creating database and setting privileges..."
-sudo mysql -uroot -pcomsc -e "DROP DATABASE IF EXISTS alacrity_db;" || { echo "Failed to drop database"; exit 1; }
-sudo mysql -uroot -pcomsc -e "CREATE DATABASE alacrity_db;" || { echo "Failed to create database"; exit 1; }
-sudo mysql -uroot -pcomsc -e "GRANT ALL PRIVILEGES ON alacrity_db.* TO 'root'@'localhost' IDENTIFIED BY 'comsc';" || { echo "Failed to set privileges"; exit 1; }
-sudo mysql -uroot -pcomsc -e "FLUSH PRIVILEGES;" || { echo "Failed to flush privileges"; exit 1; }
-
+# Step 4: SSH setup
 echo "Configuring SSH for git.cardiff.ac.uk..."
-mkdir -p ~/.ssh || { echo "Failed to create ~/.ssh"; exit 1; }
-chmod 700 ~/.ssh
-touch ~/.ssh/known_hosts
-chmod 644 ~/.ssh/known_hosts
-ssh-keyscan git.cardiff.ac.uk >> ~/.ssh/known_hosts 2>/dev/null || { echo "Failed to add git.cardiff.ac.uk to known_hosts"; exit 1; }
-
-echo "Installing GitLab deployment key..."
-cat << EOF > ~/.ssh/project.key
+sudo -u alacrity bash -c "mkdir -p ~alacrity/.ssh && chmod 700 ~alacrity/.ssh"
+sudo -u alacrity bash -c "touch ~alacrity/.ssh/known_hosts && chmod 644 ~alacrity/.ssh/known_hosts"
+sudo -u alacrity bash -c "ssh-keyscan git.cardiff.ac.uk >> ~alacrity/.ssh/known_hosts 2>/dev/null"
+sudo -u alacrity bash -c "cat << EOF > ~alacrity/.ssh/project.key
 -----BEGIN OPENSSH PRIVATE KEY-----
 b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAACFwAAAAdzc2gtcn
 NhAAAAAwEAAQAAAgEA0MGhkCBFmLFafAIqe8t3hsj/aE32rpxezTdmzY0fvA9+GGVDv42n
@@ -89,65 +87,70 @@ y3YLHNNraF/maidukbvRiupfDn5G0LqYAuc3rOaEBleKAmJHXlZIhSnNDOkPQzKelf+EwO
 T7E6in9Gs+uJFwrnzLZPxKsy9rqG7SaRP2DrBrHAVFk/8nS+NFowmzsbI7JT1752Kgng11
 2o1Dru27CS2ZAAAAHElEK2MyMjA3NzA2NUBEU0E1MDg0OTI3MzE0ODcBAgMEBQY=
 -----END OPENSSH PRIVATE KEY-----
-EOF
-chmod 400 ~/.ssh/project.key || { echo "Failed to set permissions on project.key"; exit 1; }
+EOF"
+sudo -u alacrity bash -c "chmod 400 ~alacrity/.ssh/project.key"
 
-echo "Cloning backend repository..."
-if [ ! -d "/root/alacrity" ]; then
-    ssh-agent bash -c "ssh-add ~/.ssh/project.key && git clone git@git.cardiff.ac.uk:c2051028/alacrity.git" || { echo "Failed to clone repository"; exit 1; }
-else
-    echo "Repository already exists, pulling latest changes..."
-    cd /root/alacrity
-    ssh-agent bash -c "ssh-add ~/.ssh/project.key && git pull origin main" || { echo "Failed to pull repository"; exit 1; }
-fi
+# Step 5: Clone repo and setup
+echo "Cloning repository..."
+sudo -u alacrity bash -c "cd /var/www && ssh-agent bash -c 'ssh-add ~alacrity/.ssh/project.key && git clone git@git.cardiff.ac.uk:c2051028/alacrity.git alacrity'"
+sudo chown -R alacrity:alacrity /var/www/alacrity  # Ensure ownership after cloning
+cd /var/www/alacrity/alacrity_backend || { echo "Failed to cd into /var/www/alacrity/alacrity_backend"; exit 1; }
 
-cd /root/alacrity/alacrity_backend || { echo "Failed to cd to alacrity_backend"; exit 1; }
+# Step 6: Setup Python environment and install requirements
+echo "Setting up Python environment and installing requirements..."
+sudo -u alacrity bash -c "python3.11 -m venv /var/www/alacrity/alacrity_backend/venv"
+sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && pip install --upgrade pip"
+echo "Installing requirements from requirements.txt..."
+sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && pip install -r /var/www/alacrity/alacrity_backend/requirements.txt"
+echo "Installing Channels dependencies..."
+sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && pip install channels channels-redis daphne"
 
-echo "Setting up virtual environment..."
-rm -rf venv  # Ensure a fresh venv
-python3 -m venv venv || { echo "Failed to create virtualenv"; exit 1; }
-source venv/bin/activate || { echo "Failed to activate virtualenv"; exit 1; }
-
-echo "Installing Python dependencies..."
-pip install --upgrade pip || { echo "Failed to upgrade pip"; exit 1; }
-pip install -r requirements.txt || { echo "Failed to install requirements"; exit 1; }
-pip install gunicorn || { echo "Failed to install gunicorn"; exit 1; }
-pip install nanoid || { echo "Failed to install nanoid"; exit 1; }
-
-echo "Creating .env for deployment..."
-cat << EOF > /root/alacrity/alacrity_backend/.env
+# Step 7: Configure environment variables
+echo "Setting up environment variables..."
+sudo -u alacrity bash -c "cat << EOF > /var/www/alacrity/alacrity_backend/.env
+ENV=production
+DEBUG=False
+SECRET_KEY=your-secret-key-here
 DJANGO_DATABASE_NAME=alacrity_db
-DJANGO_DATABASE_USER=root
-DJANGO_DATABASE_PASSWORD=comsc
+DJANGO_DATABASE_USER=alacrity
+DJANGO_DATABASE_PASSWORD=${DB_PASSWORD}
 DJANGO_DATABASE_HOST=localhost
 DJANGO_DATABASE_PORT=3306
-EMAIL_USER=alacritytestingemail@gmail.com
-EMAIL_PASSWORD=qyzb spmi fpfz ddmf
-PAYPAL_CLIENT_ID=Afx9-bD4bxsIEX7UcDlofJ-BCHMjMrNeSNpQqXT1oUKd-crxbOgvq_5mOT-gNahXaEI6I2XYGOWWTVO3
-PAYPAL_SECRET=EOGFcNtzPiuRkoiv7EhMZnbdspuMS-PEhtJk5f2KrXdnknGHGItHcuEQ_VcJPaBkYuV4dHt_a-v5DTol
-PAYPAL_MODE=sandbox
-PAYPAL_RETURN_URL=http://10.72.102.171:8000/payments/paypal/success/
-PAYPAL_CANCEL_URL=http://10.72.102.171:8000/payments/paypal/cancel/
-ENV=production
-REDIS_HOST=localhost
+ALLOWED_HOSTS=${BACKEND_IP},localhost,127.0.0.1
+CORS_ALLOWED_ORIGINS=http://${FRONTEND_IP},http://${FRONTEND_IP}:80
+REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
-EOF
+BACKEND_PORT=8080
+MINIO_URL=http://10.72.98.137:9000
+MINIO_ACCESS_KEY=admin
+MINIO_SECRET_KEY=Notgood1
+MINIO_BUCKET_NAME=alacrity
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASSWORD=your-email-password
+PAYPAL_CLIENT_ID=your-paypal-client-id
+PAYPAL_SECRET=your-paypal-secret
+PAYPAL_MODE=sandbox
+PAYPAL_RETURN_URL=http://${FRONTEND_IP}/payments/paypal/success/
+PAYPAL_CANCEL_URL=http://${FRONTEND_IP}/payments/paypal/cancel/
+EOF"
 
-echo "Configuring settings.py for production..."
-cat << EOF > alacrity_backend/settings.py
+# Step 8: Override settings.py with production-ready version and hardcode STATIC_ROOT
+echo "Overriding settings.py with production configuration..."
+sudo -u alacrity bash -c "cat << EOF > /var/www/alacrity/alacrity_backend/alacrity_backend/settings.py
 from pathlib import Path
 import os
 import sys
 import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+print(f'Debug: BASE_DIR is {BASE_DIR}')  # Debug output
 
 env = environ.Env(
     ENV=(str, 'development'),
-    DEBUG=(bool, True),
+    DEBUG=(bool, False),
     DJANGO_DATABASE_NAME=(str, 'alacrity_db'),
-    DJANGO_DATABASE_USER=(str, 'root'),
-    DJANGO_DATABASE_PASSWORD=(str, 'comsc'),
+    DJANGO_DATABASE_USER=(str, 'alacrity'),
+    DJANGO_DATABASE_PASSWORD=(str, '${DB_PASSWORD}'),
     DJANGO_DATABASE_HOST=(str, 'localhost'),
     DJANGO_DATABASE_PORT=(str, '3306'),
     REDIS_HOST=(str, '127.0.0.1'),
@@ -156,23 +159,14 @@ env = environ.Env(
 
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
-SECRET_KEY = env('SECRET_KEY', default='9cdf91842b864472c0570e917223afcc51a390b39a083a3f0de114cadf408f41')
+SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG')
-ENV = env('ENV')
-IS_GITLAB_CI = os.getenv('CI', 'false').lower() == 'true'
-
-ALLOWED_HOSTS = ['10.72.102.171', 'localhost', '127.0.0.1'] if ENV == 'production' else ['*']
-CORS_ALLOW_ALL_ORIGINS = False if ENV == 'production' else True
-CORS_ALLOWED_ORIGINS = [
-    'http://10.72.102.244:80',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-] if ENV == 'production' else []
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
 
 INSTALLED_APPS = [
+    'daphne',
     'channels',
     'channels_redis',
-    'daphne',
     'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -182,16 +176,16 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'alacrity_backend',
+    'organisation',  # Must come before 'users' due to ForeignKey dependency
+    'users',
     'datasets',
     'storages',
-    'users',
     'research',
     'payments',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'notifications',
     'contact',
-    'organisation',
     'dataset_requests',
 ]
 
@@ -226,6 +220,10 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'alacrity_backend.wsgi.application'
+IS_GITLAB_CI = os.getenv('CI', 'false').lower() == 'true'
+
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS')
 
 CHANNEL_LAYERS = {
     'default': {
@@ -234,10 +232,6 @@ CHANNEL_LAYERS = {
             'hosts': [(env('REDIS_HOST'), env('REDIS_PORT'))],
         },
     },
-} if ENV == 'production' else {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
-    },
 }
 
 DATABASES = {
@@ -245,11 +239,14 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': env('DJANGO_DATABASE_NAME'),
         'USER': env('DJANGO_DATABASE_USER'),
-        'PASSWORD': '' if IS_GITLAB_CI else env('DJANGO_DATABASE_PASSWORD'),
+        'PASSWORD': env('DJANGO_DATABASE_PASSWORD'),
         'HOST': env('DJANGO_DATABASE_HOST'),
         'PORT': env('DJANGO_DATABASE_PORT'),
         'TEST': {
             'NAME': 'alacrity_dbtes',
+        },
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
     }
 }
@@ -262,30 +259,49 @@ if 'test' in sys.argv:
         }
     }
 
-ENCRYPTION_KEY = env('ENCRYPTION_KEY', default="EHqnpsZeTQrwcmGfADez0GCRcJ_vQNCg5ch_pQg83Z0=")
+ENCRYPTION_KEY = env('ENCRYPTION_KEY', default='EHqnpsZeTQrwcmGfADez0GCRcJ_vQNCg5ch_pQg83Z0=')
 
 CORS_ALLOW_HEADERS = [
-    'content-type', 'authorization', 'accept', 'origin', 'x-requested-with', 'x-csrftoken',
-    'accept-encoding', 'accept-language', 'cache-control', 'connection', 'content-length', 'cookie', 'host',
+    'content-type',
+    'authorization',
+    'accept',
+    'origin',
+    'x-requested-with',
+    'x-csrftoken',
+    'accept-encoding',
+    'accept-language',
+    'cache-control',
+    'connection',
+    'content-length',
+    'cookie',
+    'host',
 ]
 
-CORS_ALLOW_METHODS = ['DELETE', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT']
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
 CORS_ALLOW_CREDENTIALS = True
 
-MINIO_URL = env('MINIO_URL', default="http://10.72.98.137:9000")
-MINIO_ACCESS_KEY = env('MINIO_ACCESS_KEY', default="admin")
-MINIO_SECRET_KEY = env('MINIO_SECRET_KEY', default="Notgood1")
-MINIO_BUCKET_NAME = env('MINIO_BUCKET_NAME', default="alacrity")
+MINIO_URL = env('MINIO_URL')
+MINIO_ACCESS_KEY = env('MINIO_ACCESS_KEY')
+MINIO_SECRET_KEY = env('MINIO_SECRET_KEY')
+MINIO_BUCKET_NAME = env('MINIO_BUCKET_NAME')
 
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-DATA_UPLOAD_MAX_MEMORY_SIZE = 524288000
-FILE_UPLOAD_MAX_MEMORY_SIZE = 524288000
+DATA_UPLOAD_MAX_MEMORY_SIZE = 524288000  # 500MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 524288000  # 500MB
 
 AWS_ACCESS_KEY_ID = MINIO_ACCESS_KEY
 AWS_SECRET_ACCESS_KEY = MINIO_SECRET_KEY
 AWS_STORAGE_BUCKET_NAME = MINIO_BUCKET_NAME
 AWS_S3_ENDPOINT_URL = MINIO_URL
-AWS_S3_CUSTOM_DOMAIN = f"{MINIO_URL}/{MINIO_BUCKET_NAME}"
+AWS_S3_CUSTOM_DOMAIN = f'{MINIO_URL}/{MINIO_BUCKET_NAME}'
 AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
 AWS_S3_REGION_NAME = 'us-east-1'
 
@@ -302,17 +318,31 @@ AUTH_PASSWORD_VALIDATORS = [
 AUTH_USER_MODEL = 'users.User'
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework_simplejwt.authentication.JWTAuthentication',),
-    'DEFAULT_RENDERER_CLASSES': ['rest_framework.renderers.JSONRenderer', 'rest_framework.renderers.TemplateHTMLRenderer', 'rest_framework.renderers.MultiPartRenderer'],
-    'DEFAULT_PARSER_CLASSES': ['rest_framework.parsers.JSONParser', 'rest_framework.parsers.MultiPartParser', 'rest_framework.parsers.FormParser'],
-    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.TemplateHTMLRenderer',
+        'rest_framework.renderers RezaMultiPartRenderer',
+    ],
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.MultiPartParser',
+        'rest_framework.parsers.FormParser',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
     'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
 }
 
 if DEBUG:
     REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'].append('rest_framework.renderers.BrowsableAPIRenderer')
 
-AUTHENTICATION_BACKENDS = ['django.contrib.auth.backends.ModelBackend']
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
 
 from datetime import timedelta
 
@@ -337,58 +367,103 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static') if ENV == 'production' else STATIC_URL
+STATIC_URL = '/static/'
+STATIC_ROOT = '/var/www/alacrity/alacrity_backend/static'  # Hardcoded for clarity
+print(f'Debug: STATIC_ROOT is {STATIC_ROOT}')  # Debug output
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = env('EMAIL_USER', default='')
-EMAIL_HOST_PASSWORD = env('EMAIL_PASSWORD', default='')
+EMAIL_HOST_USER = env('EMAIL_USER')
+EMAIL_HOST_PASSWORD = env('EMAIL_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
-MEDIA_URL = "/media/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-PAYPAL_CLIENT_ID = env('PAYPAL_CLIENT_ID', default='')
-PAYPAL_SECRET = env('PAYPAL_SECRET', default='')
-PAYPAL_MODE = env('PAYPAL_MODE', default='sandbox')
-PAYPAL_RETURN_URL = env('PAYPAL_RETURN_URL', default='http://10.72.102.171:8000/payments/paypal/success/')
-PAYPAL_CANCEL_URL = env('PAYPAL_CANCEL_URL', default='http://10.72.102.171:8000/payments/paypal/cancel/')
+if DEBUG:
+    import mimetypes
+    mimetypes.add_type('application/javascript', '.js', True)
+
+PAYPAL_CLIENT_ID = env('PAYPAL_CLIENT_ID')
+PAYPAL_SECRET = env('PAYPAL_SECRET')
+PAYPAL_MODE = env('PAYPAL_MODE')
+PAYPAL_RETURN_URL = env('PAYPAL_RETURN_URL')
+PAYPAL_CANCEL_URL = env('PAYPAL_CANCEL_URL')
+EOF"
+
+# Step 9: Database setup
+echo "Setting up database..."
+sudo mysql -uroot -pcomsc << EOF
+DROP DATABASE IF EXISTS alacrity_db;
+CREATE DATABASE alacrity_db;
+CREATE USER IF NOT EXISTS 'alacrity'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';
+GRANT ALL PRIVILEGES ON alacrity_db.* TO 'alacrity'@'localhost';
+FLUSH PRIVILEGES;
 EOF
 
-echo "Running Django migrations..."
-python3 manage.py makemigrations organisation --verbosity 3 > makemigrations_organisation.log 2>&1 || { echo "Failed to makemigrations for organisation"; exit 1; }
-python3 manage.py migrate organisation --verbosity 3 > migrate_organisation.log 2>&1 || { echo "Failed to migrate organisation"; exit 1; }
-python3 manage.py makemigrations users --name initial_user --verbosity 3 > makemigrations_users.log 2>&1 || { echo "Failed to makemigrations for users"; exit 1; }
-python3 manage.py migrate users --verbosity 3 > migrate_users.log 2>&1 || { echo "Failed to migrate users"; exit 1; }
-python3 manage.py makemigrations --verbosity 3 > makemigrations_all.log 2>&1 || { echo "Failed to makemigrations"; exit 1; }
-python3 manage.py migrate --verbosity 3 > migrate_all.log 2>&1 || { echo "Failed to migrate"; exit 1; }
+# Step 10: Django setup with explicit migration order
+echo "Configuring Django..."
+# Ensure static directory exists and is owned by alacrity
+echo "Creating and verifying static directory..."
+sudo mkdir -p /var/www/alacrity/alacrity_backend/static
+sudo chown alacrity:alacrity /var/www/alacrity/alacrity_backend/static
+sudo chmod 755 /var/www/alacrity/alacrity_backend/static
+sleep 1  # Ensure filesystem sync
+echo "Static directory status before collectstatic:"
+ls -ld /var/www/alacrity/alacrity_backend/static
+# Ensure migrations are created with correct dependencies
+sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && cd /var/www/alacrity/alacrity_backend && python manage.py makemigrations organisation users --noinput"
+sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && cd /var/www/alacrity/alacrity_backend && python manage.py makemigrations --noinput"
+# Apply migrations
+sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && cd /var/www/alacrity/alacrity_backend && python manage.py migrate --noinput"
+# Run collectstatic with verbose output
+echo "Running collectstatic..."
+sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && cd /var/www/alacrity/alacrity_backend && python manage.py collectstatic --noinput --verbosity 2"
+echo "Static directory status after collectstatic:"
+ls -ld /var/www/alacrity/alacrity_backend/static
 
-echo "Collecting static files..."
-python3 manage.py collectstatic --noinput || { echo "Failed to collect static files"; exit 1; }
-
-echo "Setting up Gunicorn service..."
-cat << EOF > /etc/systemd/system/gunicorn.service
+# Step 11: Setup Daphne service
+echo "Configuring Daphne service..."
+sudo bash -c "cat << EOF > /etc/systemd/system/alacrity.service
 [Unit]
-Description=Gunicorn instance for Alacrity Backend
-After=network.target mariadb.service redis.service
+Description=Alacrity Django Channels Backend
+After=network.target redis.service mariadb.service
 
 [Service]
-User=root
-Group=root
-WorkingDirectory=/root/alacrity/alacrity_backend
-Environment="PATH=/root/alacrity/alacrity_backend/venv/bin"
-ExecStart=/root/alacrity/alacrity_backend/venv/bin/gunicorn --workers 3 --bind 0.0.0.0:8000 --access-logfile /var/log/gunicorn_access.log --error-logfile /var/log/gunicorn_error.log alacrity_backend.wsgi:application
+User=alacrity
+Group=alacrity
+WorkingDirectory=/var/www/alacrity/alacrity_backend
+Environment=\"PATH=/var/www/alacrity/alacrity_backend/venv/bin\"
+ExecStart=/var/www/alacrity/alacrity_backend/venv/bin/daphne -b 0.0.0.0 -p 8080 alacrity_backend.asgi:application
 Restart=always
 
 [Install]
 WantedBy=multi-user.target
-EOF
+EOF"
 
+# Step 12: Configure firewall
+echo "Configuring firewall..."
+sudo firewall-cmd --permanent --add-port=8080/tcp
+sudo firewall-cmd --reload
+
+# Step 13: Finalize deployment
+echo "Finalizing deployment..."
 sudo systemctl daemon-reload
-sudo systemctl enable gunicorn
-sudo systemctl start gunicorn || { echo "Failed to start gunicorn"; exit 1; }
+sudo systemctl enable alacrity
+sudo systemctl start alacrity
 
-echo "Backend deployment complete!"
+# Step 14: Verify deployment
+echo "Verifying deployment..."
+sleep 5  # Give service time to start
+if curl http://${BACKEND_IP}:8080 &>/dev/null; then
+    echo "Backend deployed successfully! Running on http://${BACKEND_IP}:8080"
+else
+    echo "Backend deployment failed. Check logs with: journalctl -u alacrity"
+    exit 1
+fi
+
+echo "Backend deployment complete! Frontend should access it at http://${BACKEND_IP}:8080"

@@ -3,6 +3,10 @@
 # Exit on any error
 set -e
 
+# Define IPs
+BACKEND_IP="10.72.102.171"
+FRONTEND_IP="10.72.102.244"
+
 echo "Starting frontend deployment script..."
 cd /root || { echo "Failed to cd to /root"; exit 1; }
 
@@ -96,7 +100,7 @@ cd /root/alacrity/alacrity_frontend || { echo "Failed to cd to alacrity_frontend
 
 # Set environment for deployment
 echo "Setting deployment environment..."
-echo "NEXT_PUBLIC_BACKEND_URL=http://10.72.102.171:8000" > .env || { echo "Failed to create .env"; exit 1; }
+echo "NEXT_PUBLIC_BACKEND_URL=http://${BACKEND_IP}:8080" > .env || { echo "Failed to create .env"; exit 1; }
 
 echo "Installing Node.js dependencies..."
 npm install || { echo "Failed to install npm dependencies"; exit 1; }
@@ -104,30 +108,68 @@ npm install || { echo "Failed to install npm dependencies"; exit 1; }
 echo "Building Next.js application..."
 npm run build || { echo "Failed to build Next.js app"; exit 1; }
 
+echo "Deploying static files to /var/www/alacrity..."
+mkdir -p /var/www/alacrity || { echo "Failed to create /var/www/alacrity"; exit 1; }
+\cp -rf .next/static /var/www/alacrity/ || { echo "Failed to copy .next/static"; exit 1; }
+\cp -rf .next/server /var/www/alacrity/ || { echo "Failed to copy .next/server"; exit 1; }
+
+# Locate and copy index.html
+INDEX_PATH=$(find .next -name "index.html" | head -n 1)
+if [ -n "$INDEX_PATH" ]; then
+    \cp -f "$INDEX_PATH" /var/www/alacrity/index.html || { echo "Failed to copy index.html"; exit 1; }
+else
+    echo "No index.html found in .next/. Build may have failed."
+    exit 1
+fi
+
+echo "Setting permissions for Nginx..."
+chown -R nginx:nginx /var/www/alacrity || { echo "Failed to set ownership"; exit 1; }
+chmod -R 755 /var/www/alacrity || { echo "Failed to set permissions"; exit 1; }
+
+# Configure SELinux for Nginx
+if command -v getenforce > /dev/null 2>&1 && [ "$(getenforce)" = "Enforcing" ]; then
+    echo "Configuring SELinux for Nginx..."
+    chcon -R -t httpd_sys_content_t /var/www/alacrity || { echo "Failed to set SELinux context"; exit 1; }
+    setsebool -P httpd_can_network_connect 1 || { echo "Failed to set SELinux boolean"; exit 1; }
+fi
+
+# Write Nginx configuration with WebSocket support
 echo "Configuring Nginx..."
-sudo dnf install -y -q nginx || { echo "Failed to install Nginx"; exit 1; }
 cat << EOF > /etc/nginx/nginx.conf
 worker_processes  1;
+
 events {
     worker_connections  1024;
 }
+
 http {
     include       mime.types;
     default_type  application/octet-stream;
     sendfile        on;
     keepalive_timeout  65;
+
     server {
         listen       80;
-        server_name  10.72.102.244;
+        server_name  ${FRONTEND_IP};
 
         location / {
-            root   /root/alacrity/alacrity_frontend/.next;
-            index  index.html;
+            root /var/www/alacrity;
+            index index.html;
             try_files \$uri \$uri/ /index.html;
         }
 
         location /api/ {
-            proxy_pass http://10.72.102.171:8000;
+            proxy_pass http://${BACKEND_IP}:8080;
+            proxy_set_header Host \$host;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        }
+
+        location /ws/ {
+            proxy_pass http://${BACKEND_IP}:8080;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade \$http_upgrade;
+            proxy_set_header Connection "upgrade";
             proxy_set_header Host \$host;
             proxy_set_header X-Real-IP \$remote_addr;
             proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -136,7 +178,24 @@ http {
 }
 EOF
 
-sudo systemctl enable nginx
-sudo systemctl restart nginx || { echo "Failed to restart Nginx"; exit 1; }
+echo "Testing Nginx configuration..."
+nginx -t || { echo "Nginx configuration test failed"; exit 1; }
 
-echo "Frontend deployment complete!"
+echo "Starting and enabling Nginx..."
+systemctl enable nginx || { echo "Failed to enable Nginx"; exit 1; }
+systemctl restart nginx || { echo "Failed to restart Nginx"; exit 1; }
+
+echo "Verifying Nginx status..."
+systemctl status nginx | grep "Active: active" || { echo "Nginx failed to start"; exit 1; }
+
+echo "Testing deployment..."
+curl http://localhost > /tmp/frontend_test.html 2>/dev/null
+if grep -q "Alacrity" /tmp/frontend_test.html; then
+    echo "Frontend deployed successfully! Access at http://${FRONTEND_IP}"
+else
+    echo "Frontend deployment failed. Check /var/log/nginx/error.log"
+    cat /var/log/nginx/error.log
+    exit 1
+fi
+
+echo "Frontend deployment complete! Test with: curl http://${FRONTEND_IP} and curl http://${FRONTEND_IP}/api/"
