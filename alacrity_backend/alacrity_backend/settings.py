@@ -105,6 +105,7 @@ CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', '').split(',') if os.ge
     FRONTEND_URL,
     "http://127.0.0.1:3000",
     "http://localhost:3000",
+    "10.72.102.244:80",
 ]
 
 # ASGI and channel layers settings
