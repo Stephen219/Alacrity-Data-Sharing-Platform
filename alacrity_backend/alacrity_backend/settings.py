@@ -1,3 +1,5 @@
+
+
 """
 Django settings for alacrity_backend project.
 
@@ -14,45 +16,26 @@ from pathlib import Path
 from alacrity_backend.config import FRONTEND_URL, BACKEND_URL
 import os
 import sys
-
 from minio import Minio
-
 from dotenv import load_dotenv
-
-import environ
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Initialize environment variables with defaults
-env = environ.Env(
-    # Define defaults for critical variables
-    ENV=(str, 'development'),  # Default to 'development' if ENV is not set
-    DEBUG=(bool, True),        # Default to True for local dev
-    DJANGO_DATABASE_NAME=(str, 'alacrity_db'),
-    DJANGO_DATABASE_USER=(str, 'root'),
-    DJANGO_DATABASE_PASSWORD=(str, 'comsc'),
-    DJANGO_DATABASE_HOST=(str, 'localhost'),    
-    DJANGO_DATABASE_PORT=(str, '3306'),
-    REDIS_HOST=(str, '127.0.0.1'),
-    REDIS_PORT=(int, 6379),
-)
-
-# Load .env file if it exists (optional for local dev)
-environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
-
+# Load environment variables from .env file
+load_dotenv()
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env('SECRET_KEY', default='9cdf91842b864472c0570e917223afcc51a390b39a083a3f0de114cadf408f41')
+SECRET_KEY = os.getenv('SECRET_KEY', '9cdf91842b864472c0570e917223afcc51a390b39a083a3f0de114cadf408f41')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env('DEBUG')
+DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[]) if env('ENV') == 'production' else ['*']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') if os.getenv('ENV') == 'production' else ['*']
 
 # Application definition
 INSTALLED_APPS = [
@@ -117,20 +100,20 @@ WSGI_APPLICATION = 'alacrity_backend.wsgi.application'
 IS_GITLAB_CI = os.getenv('CI', 'false').lower() == 'true'
 
 # CORS settings
-CORS_ALLOW_ALL_ORIGINS = False if env('ENV') == 'production' else True
-CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
+CORS_ALLOW_ALL_ORIGINS = False if os.getenv('ENV') == 'production' else True
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', '').split(',') if os.getenv('ENV') == 'production' else [
     FRONTEND_URL,
     "http://127.0.0.1:3000",
     "http://localhost:3000",
-]) if env('ENV') == 'production' else []
+]
 
 # ASGI and channel layers settings
-if env('ENV') == 'production':
+if os.getenv('ENV') == 'production':
     CHANNEL_LAYERS = {
         'default': {
             'BACKEND': 'channels_redis.core.RedisChannelLayer',
             'CONFIG': {
-                'hosts': [(env('REDIS_HOST'), env('REDIS_PORT'))],
+                'hosts': [(os.getenv('REDIS_HOST', '127.0.0.1'), int(os.getenv('REDIS_PORT', 6379)))],
             },
         },
     }
@@ -146,11 +129,11 @@ else:
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': env('DJANGO_DATABASE_NAME'),
-        'USER': env('DJANGO_DATABASE_USER'),
-        'PASSWORD': '' if IS_GITLAB_CI else env('DJANGO_DATABASE_PASSWORD'),
-        'HOST': env('DJANGO_DATABASE_HOST'),
-        'PORT': env('DJANGO_DATABASE_PORT'),
+        'NAME': os.getenv('DJANGO_DATABASE_NAME', 'alacrity_db'),
+        'USER': os.getenv('DJANGO_DATABASE_USER', 'root'),
+        'PASSWORD': '' if IS_GITLAB_CI else os.getenv('DJANGO_DATABASE_PASSWORD', 'comsc'),
+        'HOST': os.getenv('DJANGO_DATABASE_HOST', 'mysql'),
+        'PORT': os.getenv('DJANGO_DATABASE_PORT', '3306'),
         'TEST': {
             'NAME': 'alacrity_dbtes',
         },
@@ -166,21 +149,8 @@ if 'test' in sys.argv:
         }
     }
 
+ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY', "EHqnpsZeTQrwcmGfADez0GCRcJ_vQNCg5ch_pQg83Z0=")
 
-ENCRYPTION_KEY = "EHqnpsZeTQrwcmGfADez0GCRcJ_vQNCg5ch_pQg83Z0="
-
-
-CORS_ALLOWED_ORIGINS = [
-    FRONTEND_URL, 
-    "http://127.0.0.1:3000",
-    "http://localhost:3000",
-]
-
-
-ENCRYPTION_KEY = env('ENCRYPTION_KEY', default="EHqnpsZeTQrwcmGfADez0GCRcJ_vQNCg5ch_pQg83Z0=")
-
-
-# CORS configuration
 CORS_ALLOW_HEADERS = [
     'content-type',
     'authorization',
@@ -207,18 +177,9 @@ CORS_ALLOW_METHODS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
-
 CORS_ORIGIN_ALLOW_ALL = False
 
-CORS_ALLOW_CREDENTIALS = True
-
-
-
-
-
-################################  file stosssrage config  ##############################################################
-
-# MINIO_URL = "http://localhost:9000" 
+# File storage configuration
 MINIO_URL = "10.72.98.50:9000"
 MINIO_ACCESS_KEY = "admin"
 MINIO_SECRET_KEY = "Notgood1"
@@ -230,11 +191,8 @@ minioClient = Minio(
     MINIO_URL,
     access_key=MINIO_ACCESS_KEY,
     secret_key=MINIO_SECRET_KEY,
-    secure=False
+    secure=MINIO_SECURE
 )
-
-
-
 
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 DATA_UPLOAD_MAX_MEMORY_SIZE = 524288000  # 500MB
@@ -324,9 +282,12 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = env('EMAIL_USER', default='')
-EMAIL_HOST_PASSWORD = env('EMAIL_PASSWORD', default='')
+EMAIL_HOST_USER = os.getenv('EMAIL_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_PASSWORD', '')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+print("EMAIL_HOST_USER", EMAIL_HOST_USER)
+print("EMAIL_HOST_PASSWORD", EMAIL_HOST_PASSWORD)
+print("DEFAULT_FROM_EMAIL", DEFAULT_FROM_EMAIL)
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
@@ -336,8 +297,8 @@ if DEBUG:
     mimetypes.add_type("application/javascript", ".js", True)
 
 # PayPal integration
-PAYPAL_CLIENT_ID = env('PAYPAL_CLIENT_ID', default='').strip()
-PAYPAL_SECRET = env('PAYPAL_SECRET', default='').strip()
-PAYPAL_MODE = env('PAYPAL_MODE', default='sandbox')  # Default to sandbox
-PAYPAL_RETURN_URL = env('PAYPAL_RETURN_URL', default='')
-PAYPAL_CANCEL_URL = env('PAYPAL_CANCEL_URL', default='')
+PAYPAL_CLIENT_ID = os.getenv('PAYPAL_CLIENT_ID', '').strip()
+PAYPAL_SECRET = os.getenv('PAYPAL_SECRET', '').strip()
+PAYPAL_MODE = os.getenv('PAYPAL_MODE', 'sandbox')  
+PAYPAL_RETURN_URL = os.getenv('PAYPAL_RETURN_URL', '')
+PAYPAL_CANCEL_URL = os.getenv('PAYPAL_CANCEL_URL', '')

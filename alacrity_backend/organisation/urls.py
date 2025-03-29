@@ -3,12 +3,15 @@ from .views import (AddContributors, ActivateContributorAccount,
                     FollowOrganizationView, OrganizationDatasetsView,
                     OrganizationProfileView, UnfollowOrganizationView,
                      RegisterOrganizationView, UsersWithDatasetAccessView
+                     , RequestsProcessedByContributorAndAdminView
                      )
 
 urlpatterns = [
     path('add_contributor/', AddContributors.as_view(), name='add_contributor'),
     path('activate_contributor/', ActivateContributorAccount.as_view(), name='activate_contributor'),
     path('register-org/', RegisterOrganizationView.as_view(), name='register_organization'),
+    path('requests-processed-by/<int:contributor_id>/', RequestsProcessedByContributorAndAdminView.as_view(), name='requests-processed-by-contributor-and-admin'),
+    # path('requests-processed-by-contributor-and-admin/', RequestsProcessedByContributorAndAdminView.as_view(), name='requests-processed-by-contributor-and-admin'),
 
 
 
