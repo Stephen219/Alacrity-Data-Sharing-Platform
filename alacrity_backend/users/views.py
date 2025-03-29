@@ -753,10 +753,15 @@ class MemberProfileView(APIView):
     This view is used to get, update, block or delete a member of the organization
     @param member_id: the id of the member
     @return: a json response of the member data
+    
+
+    TECHNICALLY THIS SHPULS BE IN THE ORGANIZATION VIEWS BUT I AM PUTTING IT HERE FOR NOW   I CAN MOOVE IT LATTER 
+    IN THE MEBERS PROFUILE THE REQUESTS PROCESSED IS ALSO ADDED BUTIT IS IN ORGANIZATION VIEWS SO I WILL NOT ADD IT HERE FOR NOW 
+    
         
     """
 
-    @role_required(["organization_admin"])
+    @role_required(["organization_admin","contributor"])
     def get(self, request, member_id):
         print(member_id)
         user = request.user
@@ -827,7 +832,7 @@ def get_datasets_user_has_access(user_id):
             "description": ds.description,
             "category": ds.category,
             "tags": ds.tags,
-            "entries": ds.entries,
+            "entries": ds.number_of_rows,
             "size": ds.size,
             "contributor_id__organization__name":
                 ds.contributor_id.organization.name if ds.contributor_id and ds.contributor_id.organization else None,

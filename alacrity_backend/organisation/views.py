@@ -25,6 +25,13 @@ from minio import Minio
 from alacrity_backend.settings import MINIO_ACCESS_KEY , MINIO_SECRET_KEY, MINIO_BUCKET_NAME, MINIO_URL, MINIO_SECURE
 import uuid
 
+
+
+from dataset_requests.models import DatasetRequest
+from users.models import User
+from users.serializers import UserSerializer
+from datasets.models import Dataset
+
 minio_client = Minio(
         endpoint=MINIO_URL,
         access_key=MINIO_ACCESS_KEY,
@@ -81,9 +88,9 @@ def send_activation_email(recipient_email, recipient_name, link):
         return True
     except Exception as e:
         
-        # import traceback
-        # traceback.print_exc()
-        # print(f"Failed to send email: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        print(f"Failed to send email: {str(e)}")
         return False
     
 
@@ -99,6 +106,7 @@ class AddContributors(APIView):
     def post(self, request):
         
         data = request.data.copy()
+        print (data)
         organization = request.user.organization
         data['organization_id'] = organization.Organization_id  
         data['username'] = generate_username(data.get('first_name'), data.get('sur_name'))
@@ -145,6 +153,9 @@ class AddContributors(APIView):
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
 
             except Exception as e:
+                import traceback
+                print(f"Error during save: {str(e)}")
+                traceback.print_exc()
                 return Response(
                     {
                         'error': f"Failed to add contributor: {str(e)}"
@@ -373,14 +384,7 @@ class OrganizationFollowersView(APIView):
             return Response({"error": "Organization not found"}, status=status.HTTP_404_NOT_FOUND)
         
 
-#from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
-from dataset_requests.models import DatasetRequest
-from users.models import User
-from users.serializers import UserSerializer
-from datasets.models import Dataset
+
 class UsersWithDatasetAccessView(APIView):
     permission_classes = [IsAuthenticated]
   
@@ -435,3 +439,45 @@ class UsersWithDatasetAccessView(APIView):
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+
+
+class RequestsProcessedByContributorAndAdminView(APIView):
+    permission_classes = [IsAuthenticated]  
+
+    def get(self, request, contributor_id):
+        """
+        Get all requests processed by a specific contributor.
+        This includes requests where the contributor is either the updated_by or the admin.
+        """
+        try:
+            contributor = User.objects.get(id=contributor_id)
+            dataset_requests = DatasetRequest.objects.filter(updated_by=contributor).select_related('dataset_id', 'researcher_id')
+            requests_data = [
+                {
+                    'dataset_id': request.dataset_id.dataset_id,
+                    'dataset_title': request.dataset_id.title,
+                    'request_status': request.request_status,
+                    'created_at': request.created_at.strftime('%B %d, %Y'),
+                    'updated_at': request.updated_at.strftime('%B %d, %Y'),
+                    'request_id': request.request_id,
+                    'researcher_id': request.researcher_id.id if request.researcher_id else None,
+                    'researcher_name': (
+                        f"{request.researcher_id.first_name} {request.researcher_id.sur_name}"
+                        if request.researcher_id and request.researcher_id.first_name and request.researcher_id.sur_name
+                        else "Unknown"
+                    ),
+                    'profile_picture': request.researcher_id.profile_picture if request.researcher_id and request.researcher_id.profile_picture else None,
+                }
+                for request in dataset_requests
+            ]
+            
+            return Response(requests_data, status=status.HTTP_200_OK)
+        
+        except User.DoesNotExist:
+            print(f"Contributor with ID {contributor_id} not found.")
+            return Response({"error": "Contributor not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(f"Error: {str(e)}")
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
