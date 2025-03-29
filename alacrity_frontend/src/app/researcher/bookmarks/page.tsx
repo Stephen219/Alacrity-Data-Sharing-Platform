@@ -25,7 +25,7 @@ const BookmarkList = () => {
   useEffect(() => {
     const fetchBookmarks = async () => {
       try {
-        const response = await fetchWithAuth("http://127.0.0.1:8000/research/bookmarks/");
+        const response = await fetchWithAuth(`${BACKEND_URL}/research/bookmarks/`);
         if (!response.ok) throw new Error("Failed to fetch bookmarks.");
         const data = await response.json();
         setBookmarks(data);
