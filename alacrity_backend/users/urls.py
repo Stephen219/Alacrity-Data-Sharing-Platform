@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, re_path
 from .views import  ForgotPasswordView, MonthlyUsersView, RegisterView, ResetPasswordView, WeeklyActivityView
 
 from .views import  RegisterView, LoginView, UserView, CSRFTokenView, LogoutView
@@ -8,10 +8,16 @@ from .views import  (RegisterView, LoginView, UserView,
                        LoggedInUser, 
                          DatasetWithAccessView, 
                        ProfilePictureUpdateView, FollowUserView, UnfollowUserView)
+from . import consumers
                        
 from rest_framework_simplejwt.views import TokenRefreshView
 
+from . import chat_view
 
+
+websocket_urlpatterns = [
+    re_path(r'ws/chat/(?P<conversation_id>\d+)/$', consumers.ChatConsumer.as_asgi()),
+]
  
 urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
@@ -20,7 +26,7 @@ urlpatterns = [
     path("profile/", LoggedInUser.as_view(), name="profile"),
     path('datasetsWithAccess/', DatasetWithAccessView.as_view(), name='dataset'),
     path('profile_pic_update/', ProfilePictureUpdateView.as_view(), name='profile-pic-update'),
-
+   # path('api/start-chat/<int:recipient_id>/', views.StartChatView.as_view(), name='start_chat'),
     path("follow/<str:user_id>/", FollowUserView.as_view(), name="follow-user"),
     path("unfollow/<str:user_id>/", UnfollowUserView.as_view(), name="unfollow-user"),
 
@@ -39,7 +45,6 @@ urlpatterns = [
     path('forgot-password/', ForgotPasswordView.as_view(), name='forgot-password'),
     path('reset-password/', ResetPasswordView.as_view(), name='reset-password'),
     
-
 
 
 ]
