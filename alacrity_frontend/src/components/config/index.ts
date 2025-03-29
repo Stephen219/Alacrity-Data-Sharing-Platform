@@ -62,7 +62,7 @@ export const NAV_ITEMS = [
         {
           name: "chats",
           href: "/chat",
-          imageSrc: "/datasets/image.png",
+          imageSrc: "/navbar/chats/admin_chats.png",
         },
       ],
     },
@@ -156,8 +156,13 @@ export const NAV_ITEMS = [
     {
       label: "My Hub",
       value: "my-account",
-      roles: ["researcher", "contributor"],
+      roles: ["researcher"],
       featured: [
+        {
+          name: "Chats",
+          href: "/researcher/chats",
+          imageSrc: "/navbar/chats/user_chats.png",
+        },
         {
           name: "Research Library",
           href: "/researcher/Submissions",

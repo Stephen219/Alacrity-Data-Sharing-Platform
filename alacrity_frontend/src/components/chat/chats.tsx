@@ -1,4 +1,3 @@
-// app/chats/page.tsx
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -80,7 +79,7 @@ export default function ChatListPage() {
                       ...chat,
                       last_message: data.message.last_message,
                       last_timestamp: data.message.last_timestamp,
-                      unread_count: data.message.unread_count, // Use backend-provided count
+                      unread_count: data.message.unread_count,
                     }
                   : chat
               );
@@ -122,7 +121,6 @@ export default function ChatListPage() {
 
     connectWebSocket();
 
-    // Refetch chats when the page regains focus
     const handleFocus = () => {
       console.log("Window regained focus, refetching chats...");
       fetchChats();
@@ -145,67 +143,69 @@ export default function ChatListPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      <header className="bg-white shadow-md p-4 flex items-center sticky top-0 z-10">
+      <header className="bg-white p-4 flex items-center sticky top-0 z-10">
         <h1 className="text-xl font-bold text-gray-800">Chats</h1>
       </header>
-      <main className="flex-1 p-6">
-        <div className="max-w-4xl mx-auto space-y-4">
+      <main className="flex-1">
+        <div className="max-w-5xl mx-auto bg-white rounded-lg">
           {chats.length === 0 ? (
-            <div className="bg-white p-6 rounded-lg shadow-sm text-center border border-gray-200">
-              <p className="text-gray-600">No chats available. Start a new conversation!</p>
+            <div className="text-center text-gray-500 py-4">
+              No chats available. Start a new conversation!
             </div>
           ) : (
-            chats.map((chat) => (
-              <div
-                key={chat.dataset_id}
-                onClick={() => router.push(`/chat/${chat.dataset_id}`)}
-                className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:bg-gray-50 cursor-pointer flex items-center space-x-4"
-              >
-                <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
-                  {chat.participant.profile_picture ? (
-                    <img
-                      src={chat.participant.profile_picture}
-                      alt={`${chat.participant.first_name} ${chat.participant.sur_name}`}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-300 flex items-center justify-center text-white font-semibold">
-                      {chat.participant.first_name[0]}
-                      {chat.participant.sur_name[0] || ""}
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-lg font-semibold text-gray-800 truncate">
-                    {chat.participant.first_name} {chat.participant.sur_name}
-                  </h2>
-                  <div className="flex items-center space-x-2">
-                    {typingStatus[chat.dataset_id] ? (
-                      <p className="text-sm text-gray-500 flex items-center">
-                        <span className="animate-pulse">...</span> Typing
-                      </p>
+            <div className="divide-y divide-gray-200">
+              {chats.map((chat) => (
+                <div
+                  key={chat.dataset_id}
+                  className="hover:bg-gray-100 cursor-pointer transition px-6 py-4 flex items-center space-x-4"
+                  onClick={() => router.push(`/chat/${chat.dataset_id}`)}
+                >
+                  <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                    {chat.participant.profile_picture ? (
+                      <img
+                        src={chat.participant.profile_picture}
+                        alt={`${chat.participant.first_name} ${chat.participant.sur_name}`}
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
-                      <p className="text-sm text-gray-500 truncate">
-                        {chat.last_message || "No messages yet"}
-                      </p>
-                    )}
-                    {chat.unread_count > 0 && !typingStatus[chat.dataset_id] && (
-                      <span className="bg-blue-500 text-white text-xs font-semibold px-2 py-1 rounded-full">
-                        {chat.unread_count}
-                      </span>
+                      <div className="w-full h-full bg-gray-300 flex items-center justify-center text-white font-semibold">
+                        {chat.participant.first_name[0]}
+                        {chat.participant.sur_name[0] || ""}
+                      </div>
                     )}
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-lg font-bold text-black">
+                      {chat.participant.first_name} {chat.participant.sur_name}
+                    </h2>
+                    <div className="flex items-center space-x-2">
+                      {typingStatus[chat.dataset_id] ? (
+                        <p className="text-sm text-gray-500 flex items-center">
+                          <span className="animate-pulse">...</span> Typing
+                        </p>
+                      ) : (
+                        <p className="text-sm text-gray-500">
+                          {chat.last_message || "No messages yet"}
+                        </p>
+                      )}
+                      {chat.unread_count > 0 && !typingStatus[chat.dataset_id] && (
+                        <span className="bg-blue-500 text-white text-xs font-semibold px-2 py-1 rounded-full">
+                          {chat.unread_count}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {chat.last_timestamp && !typingStatus[chat.dataset_id] && (
+                    <p className="text-xs text-gray-400 flex-shrink-0">
+                      {new Date(chat.last_timestamp).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  )}
                 </div>
-                {chat.last_timestamp && !typingStatus[chat.dataset_id] && (
-                  <p className="text-xs text-gray-400 flex-shrink-0">
-                    {new Date(chat.last_timestamp).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                )}
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
       </main>
