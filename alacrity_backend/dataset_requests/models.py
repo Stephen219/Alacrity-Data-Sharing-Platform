@@ -21,6 +21,7 @@ class DatasetRequest(models.Model):
     message = models.TextField(blank=True, null=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='updated_requests', null=True, blank=True)
     
 
 
