@@ -39,7 +39,7 @@ const FullPublicationPage: React.FC = () => {
     if (status === "pending") {
       return "cursor-default opacity-50"
     }
-    return "cursor-pointer hover:bg-gray-50"
+    return "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
   }
 
   return (

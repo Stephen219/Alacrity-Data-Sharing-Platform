@@ -146,7 +146,7 @@ const PendingSubmissionsTable: React.FC<PendingSubmissionsTableProps> = ({
               displayedSubmissions.map((submission) => (
                 <tr
                   key={submission.id}
-                  className="bg-white dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition"
+                  className="bg-white dark:bg-gray-900 cursor-pointer transition"
                   onClick={() => handleRowClick(submission.id)}
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-100">

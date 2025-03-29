@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BACKEND_URL } from "../../config";
 import { fetchWithAuth } from "@/libs/auth";
-import { Star, Loader2, ArrowLeft, Send, ChevronUp, ChevronDown } from "lucide-react";
+import { Star, Loader2, Send, ChevronUp, ChevronDown } from "lucide-react";
 import MaxWidthWrapper from "../MaxWidthWrapper";
 import { Button } from "../ui/button";
 
@@ -244,6 +244,8 @@ export default function DatasetDetail() {
             {/* Collapsible Details */}
             <div className="mt-6">
               <button
+              aria-label="Toggle Details"
+              data-testid="details-toggle"
                 className="flex items-center w-full justify-between text-base font-semibold text-gray-900 dark:text-white focus:outline-none"
                 onClick={() => setShowDetails((prev) => !prev)}
               >
@@ -256,23 +258,24 @@ export default function DatasetDetail() {
               </button>
               {showDetails && (
                 <ul className="mt-2 space-y-1 text-gray-600 dark:text-gray-300">
-                  <li>
-                    <span className="font-medium">Organization:</span>{" "}
-                    {dataset.organization_name}
-                  </li>
-                  <li>
-                    <span className="font-medium">Category:</span>{" "}
-                    {dataset.category}
-                  </li>
-                  <li>
-                    <span className="font-medium">Date Added:</span>{" "}
-                    {new Date(dataset.created_at).toLocaleDateString()}
-                  </li>
-                  <li>
-                    <span className="font-medium">Last Updated:</span>{" "}
-                    {new Date(dataset.updated_at).toLocaleDateString()}
-                  </li>
-                </ul>
+                <li>
+                  <span className="font-medium">Organization: </span>
+                  <span data-testid="organization-name">{dataset.organization_name}</span>
+                </li>
+                <li>
+                  <span className="font-medium">Category: </span>
+                  <span>{dataset.category}</span>
+                </li>
+                <li>
+                  <span className="font-medium">Date Added: </span>
+                  <span>{new Date(dataset.created_at).toLocaleDateString()}</span>
+                </li>
+                <li>
+                  <span className="font-medium">Last Updated: </span>
+                  <span>{new Date(dataset.updated_at).toLocaleDateString()}</span>
+                </li>
+              </ul>
+              
               )}
             </div>
 
@@ -282,6 +285,7 @@ export default function DatasetDetail() {
                 <button
                   className="flex items-center w-full justify-between text-base font-semibold text-gray-900 dark:text-white focus:outline-none"
                   onClick={() => setShowTags((prev) => !prev)}
+                  data-testid="tags-toggle"
                 >
                   <span>Tags</span>
                   {showTags ? (

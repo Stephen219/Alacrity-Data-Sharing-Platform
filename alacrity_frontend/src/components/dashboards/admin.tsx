@@ -230,7 +230,7 @@ const AdminDashboard: React.FC = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Dataset Requests:</h2>
-          <button className="px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f] transition-colors"
+          <button className="px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f] dark:hover:bg-gray-700 transition-colors"
             onClick={handleViewAllClick}>
             View All
           </button>

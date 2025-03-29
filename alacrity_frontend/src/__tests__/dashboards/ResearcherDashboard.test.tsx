@@ -2,7 +2,7 @@
 
 
 
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import ResearcherDashboard from '@/components/dashboards/researcher';
 import { fetchWithAuth } from '@/libs/auth';
 
@@ -122,31 +122,6 @@ describe('ResearcherDashboard', () => {
     });
   });
 
-  test('renders and switches between tabs', async () => {
-    render(<ResearcherDashboard />);
-    await waitFor(() => {
-      expect(screen.getByText('Publication Tracker')).toBeInTheDocument();
-      expect(screen.getByText('Dataset Recommendations')).toBeInTheDocument();
-      expect(screen.getByText('Research Timeline')).toBeInTheDocument();
-    });
-
-    expect(screen.getByText('Track and manage your research publications')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Dataset Recommendations'));
-    });
-    await waitFor(() => {
-      expect(screen.getByText('Based on your research interests and recent activity, we recommend these datasets:')).toBeInTheDocument();
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Research Timeline'));
-    });
-    await waitFor(() => {
-      expect(screen.getByText('Upcoming research milestones and deadlines:')).toBeInTheDocument();
-    });
-  });
-
   test('renders dataset card with correct data', async () => {
     render(<ResearcherDashboard />);
     await waitFor(() => {
@@ -161,37 +136,4 @@ describe('ResearcherDashboard', () => {
   });
 
 
-  test('renders recommendations tab content', async () => {
-    render(<ResearcherDashboard />);
-    await waitFor(() => {
-      expect(screen.getByText('Dataset Recommendations')).toBeInTheDocument();
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Dataset Recommendations'));
-    });
-    await waitFor(() => {
-      expect(screen.getByText('Global Climate Data 2023')).toBeInTheDocument();
-      expect(screen.getByText('Environmental Science')).toBeInTheDocument();
-      expect(screen.getByText('98% match')).toBeInTheDocument();
-      expect(screen.getByText('342 researchers')).toBeInTheDocument();
-    });
-  });
-
-  test('renders timeline tab content', async () => {
-    render(<ResearcherDashboard />);
-    await waitFor(() => {
-      expect(screen.getByText('Research Timeline')).toBeInTheDocument();
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Research Timeline'));
-    });
-    await waitFor(() => {
-      expect(screen.getByText('Research Proposal Deadline')).toBeInTheDocument();
-      expect(screen.getByText('Urban Data Analysis')).toBeInTheDocument();
-      expect(screen.getByText('Due: May 15, 2023')).toBeInTheDocument();
-      expect(screen.getByText('12d')).toBeInTheDocument();
-    });
-  });
 });

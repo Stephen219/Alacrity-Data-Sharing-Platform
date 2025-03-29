@@ -51,7 +51,7 @@ const ResearcherDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<unknown>(null)
   const [searchQuery, setSearchQuery] = useState("")
-  const [activeTab, setActiveTab] = useState("publications")
+  const [activeTab, ] = useState("publications")
   const [publications, setPublications] = useState<Publication[]>([])
   const router = useRouter()
 
@@ -91,9 +91,9 @@ const ResearcherDashboard: React.FC = () => {
     const getRowClass = (pub: Publication) => {
       const status = pub.status.toLowerCase()
       if (status === "pending") {
-        return "cursor-default opacity-50"
+        return "cursor-default"
       }
-      return "cursor-pointer hover:bg-gray-50 "
+      return "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
     }
 
   const getData = async () => {
@@ -353,7 +353,7 @@ const DatasetCard: React.FC<DatasetCardProps> = ({ dataset_id, title, descriptio
   };
 
   return (
-    <div className="p-4 border-b border-gray-200 hover:bg-gray-50">
+    <div className="p-4 border-b border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
       <div className="flex justify-between items-start mb-2">
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{title}</h3>
         <div className="text-right">

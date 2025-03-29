@@ -65,7 +65,7 @@ const PublicationTable: React.FC<PublicationTableProps> = ({
   }
 
   const TableContent = () => (
-    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 dark:hover:bg-gray-700">
       <thead className="bg-gray-50 dark:bg-gray-800">
         <tr>
           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-100">
@@ -84,7 +84,7 @@ const PublicationTable: React.FC<PublicationTableProps> = ({
           displayPublications.map((pub) => {
             const rowClass = getRowClass
               ? getRowClass(pub)
-              : "hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+              : "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
             return (
               <tr
                 key={pub.id}

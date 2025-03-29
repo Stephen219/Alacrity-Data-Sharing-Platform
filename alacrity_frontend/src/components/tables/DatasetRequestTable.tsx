@@ -133,7 +133,7 @@ const DatasetRequestTable: React.FC<DatasetRequestTableProps> = ({
             const rowClass = getRowClass
               ? getRowClass(req)
               : clickable
-              ? "hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+              ? "cursor-pointer"
               : "bg-gray-200 dark:bg-gray-700 cursor-not-allowed";
             return (
               <tr
