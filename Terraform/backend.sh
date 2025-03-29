@@ -93,7 +93,7 @@ sudo -u alacrity bash -c "chmod 400 ~alacrity/.ssh/project.key"
 # Step 5: Clone repo and setup
 echo "Cloning repository..."
 sudo -u alacrity bash -c "cd /var/www && ssh-agent bash -c 'ssh-add ~alacrity/.ssh/project.key && git clone git@git.cardiff.ac.uk:c2051028/alacrity.git alacrity'"
-sudo chown -R alacrity:alacrity /var/www/alacrity  # Ensure ownership after cloning
+sudo chown -R alacrity:alacrity /var/www/alacrity
 cd /var/www/alacrity/alacrity_backend || { echo "Failed to cd into /var/www/alacrity/alacrity_backend"; exit 1; }
 
 # Step 6: Setup Python environment and install requirements
@@ -134,266 +134,28 @@ PAYPAL_RETURN_URL=http://${FRONTEND_IP}/payments/paypal/success/
 PAYPAL_CANCEL_URL=http://${FRONTEND_IP}/payments/paypal/cancel/
 EOF"
 
-# Step 8: Override settings.py with production-ready version and hardcode STATIC_ROOT
+# Step 8: Override settings.py with production-ready version and validate
 echo "Overriding settings.py with production configuration..."
-sudo -u alacrity bash -c "cat << EOF > /var/www/alacrity/alacrity_backend/alacrity_backend/settings.py
-from pathlib import Path
-import os
-import sys
-import environ
+SETTINGS_FILE="/var/www/alacrity/alacrity_backend/alacrity_backend/settings.py"
+TEMP_FILE="/tmp/settings.py.tmp"
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-print(f'Debug: BASE_DIR is {BASE_DIR}')  # Debug output
+# Write settings.py using echo -e to avoid heredoc issues
+sudo -u alacrity bash -c "echo -e 'from pathlib import Path\nimport os\nimport sys\nimport environ\n\nBASE_DIR = Path(__file__).resolve().parent.parent\nprint(f\"Debug: BASE_DIR is {BASE_DIR}\")  # Debug output\n\nenv = environ.Env(\n    ENV=(str, \"development\"),\n    DEBUG=(bool, False),\n    DJANGO_DATABASE_NAME=(str, \"alacrity_db\"),\n    DJANGO_DATABASE_USER=(str, \"alacrity\"),\n    DJANGO_DATABASE_PASSWORD=(str, \"${DB_PASSWORD}\"),\n    DJANGO_DATABASE_HOST=(str, \"localhost\"),\n    DJANGO_DATABASE_PORT=(str, \"3306\"),\n    REDIS_HOST=(str, \"127.0.0.1\"),\n    REDIS_PORT=(int, 6379),\n)\n\nenviron.Env.read_env(os.path.join(BASE_DIR, \".env\"))\n\nSECRET_KEY = env(\"SECRET_KEY\")\nDEBUG = env(\"DEBUG\")\nALLOWED_HOSTS = env.list(\"ALLOWED_HOSTS\")\n\nINSTALLED_APPS = [\n    \"daphne\",\n    \"channels\",\n    \"channels_redis\",\n    \"corsheaders\",\n    \"django.contrib.admin\",\n    \"django.contrib.auth\",\n    \"django.contrib.contenttypes\",\n    \"django.contrib.sessions\",\n    \"django.contrib.messages\",\n    \"django.contrib.staticfiles\",\n    \"rest_framework\",\n    \"alacrity_backend\",\n    \"organisation\",  # Must come before \"users\" due to ForeignKey dependency\n    \"users\",\n    \"datasets\",\n    \"storages\",\n    \"research\",\n    \"payments\",\n    \"rest_framework_simplejwt\",\n    \"rest_framework_simplejwt.token_blacklist\",\n    \"notifications\",\n    \"contact\",\n    \"dataset_requests\",\n]\n\nMIDDLEWARE = [\n    \"corsheaders.middleware.CorsMiddleware\",\n    \"django.middleware.security.SecurityMiddleware\",\n    \"django.contrib.sessions.middleware.SessionMiddleware\",\n    \"django.middleware.common.CommonMiddleware\",\n    \"django.middleware.csrf.CsrfViewMiddleware\",\n    \"django.contrib.auth.middleware.AuthenticationMiddleware\",\n    \"django.contrib.messages.middleware.MessageMiddleware\",\n    \"django.middleware.clickjacking.XFrameOptionsMiddleware\",\n]\n\nROOT_URLCONF = \"alacrity_backend.urls\"\nASGI_APPLICATION = \"alacrity_backend.asgi.application\"\n\nTEMPLATES = [\n    {\n        \"BACKEND\": \"django.template.backends.django.DjangoTemplates\",\n        \"DIRS\": [],\n        \"APP_DIRS\": True,\n        \"OPTIONS\": {\n            \"context_processors\": [\n                \"django.template.context_processors.debug\",\n                \"django.template.context_processors.request\",\n                \"django.contrib.auth.context_processors.auth\",\n                \"django.contrib.messages.context_processors.messages\",\n            ],\n        },\n    },\n]\n\nWSGI_APPLICATION = \"alacrity_backend.wsgi.application\"\nIS_GITLAB_CI = os.getenv(\"CI\", \"false\").lower() == \"true\"\n\nCORS_ALLOW_ALL_ORIGINS = False\nCORS_ALLOWED_ORIGINS = env.list(\"CORS_ALLOWED_ORIGINS\")\n\nCHANNEL_LAYERS = {\n    \"default\": {\n        \"BACKEND\": \"channels_redis.core.RedisChannelLayer\",\n        \"CONFIG\": {\n            \"hosts\": [(env(\"REDIS_HOST\"), env(\"REDIS_PORT\"))],\n        },\n    },\n}\n\nDATABASES = {\n    \"default\": {\n        \"ENGINE\": \"django.db.backends.mysql\",\n        \"NAME\": env(\"DJANGO_DATABASE_NAME\"),\n        \"USER\": env(\"DJANGO_DATABASE_USER\"),\n        \"PASSWORD\": env(\"DJANGO_DATABASE_PASSWORD\"),\n        \"HOST\": env(\"DJANGO_DATABASE_HOST\"),\n        \"PORT\": env(\"DJANGO_DATABASE_PORT\"),\n        \"TEST\": {\n            \"NAME\": \"alacrity_dbtes\",\n        },\n        \"OPTIONS\": {\n            \"init_command\": \"SET sql_mode=\\\"STRICT_TRANS_TABLES\\\"\",\n        },\n    }\n}\n\nif \"test\" in sys.argv:\n    DATABASES = {\n        \"default\": {\n            \"ENGINE\": \"django.db.backends.sqlite3\",\n            \"NAME\": \":memory:\",\n        }\n    }\n\nENCRYPTION_KEY = env(\"ENCRYPTION_KEY\", default=\"EHqnpsZeTQrwcmGfADez0GCRcJ_vQNCg5ch_pQg83Z0=\")\n\nCORS_ALLOW_HEADERS = [\n    \"content-type\",\n    \"authorization\",\n    \"accept\",\n    \"origin\",\n    \"x-requested-with\",\n    \"x-csrftoken\",\n    \"accept-encoding\",\n    \"accept-language\",\n    \"cache-control\",\n    \"connection\",\n    \"content-length\",\n    \"cookie\",\n    \"host\",\n]\n\nCORS_ALLOW_METHODS = [\n    \"DELETE\",\n    \"GET\",\n    \"OPTIONS\",\n    \"PATCH\",\n    \"POST\",\n    \"PUT\",\n]\n\nCORS_ALLOW_CREDENTIALS = True\n\nMINIO_URL = env(\"MINIO_URL\")\nMINIO_ACCESS_KEY = env(\"MINIO_ACCESS_KEY\")\nMINIO_SECRET_KEY = env(\"MINIO_SECRET_KEY\")\nMINIO_BUCKET_NAME = env(\"MINIO_BUCKET_NAME\")\n\nDEFAULT_FILE_STORAGE = \"storages.backends.s3boto3.S3Boto3Storage\"\nDATA_UPLOAD_MAX_MEMORY_SIZE = 524288000  # 500MB\nFILE_UPLOAD_MAX_MEMORY_SIZE = 524288000  # 500MB\n\nAWS_ACCESS_KEY_ID = MINIO_ACCESS_KEY\nAWS_SECRET_ACCESS_KEY = MINIO_SECRET_KEY\nAWS_STORAGE_BUCKET_NAME = MINIO_BUCKET_NAME\nAWS_S3_ENDPOINT_URL = MINIO_URL\nAWS_S3_CUSTOM_DOMAIN = f\"{MINIO_URL}/{MINIO_BUCKET_NAME}\"\nAWS_S3_OBJECT_PARAMETERS = {\"CacheControl\": \"max-age=86400\"}\nAWS_S3_REGION_NAME = \"us-east-1\"\n\nimport pymysql\npymysql.install_as_MySQLdb()\n\nAUTH_PASSWORD_VALIDATORS = [\n    {\"NAME\": \"django.contrib.auth.password_validation.UserAttributeSimilarityValidator\"},\n    {\"NAME\": \"django.contrib.auth.password_validation.MinimumLengthValidator\"},\n    {\"NAME\": \"django.contrib.auth.password_validation.CommonPasswordValidator\"},\n    {\"NAME\": \"django.contrib.auth.password_validation.NumericPasswordValidator\"},\n]\n\nAUTH_USER_MODEL = \"users.User\"\n\nREST_FRAMEWORK = {\n    \"DEFAULT_AUTHENTICATION_CLASSES\": (\n        \"rest_framework_simplejwt.authentication.JWTAuthentication\",\n    ),\n    \"DEFAULT_RENDERER_CLASSES\": [\n        \"rest_framework.renderers.JSONRenderer\",\n        \"rest_framework.renderers.TemplateHTMLRenderer\",\n        \"rest_framework.renderers.MultiPartRenderer\",\n    ],\n    \"DEFAULT_PARSER_CLASSES\": [\n        \"rest_framework.parsers.JSONParser\",\n        \"rest_framework.parsers.MultiPartParser\",\n        \"rest_framework.parsers.FormParser\",\n    ],\n    \"DEFAULT_PERMISSION_CLASSES\": [\n        \"rest_framework.permissions.IsAuthenticated\",\n    ],\n    \"EXCEPTION_HANDLER\": \"rest_framework.views.exception_handler\",\n}\n\nif DEBUG:\n    REST_FRAMEWORK[\"DEFAULT_RENDERER_CLASSES\"].append(\"rest_framework.renderers.BrowsableAPIRenderer\")\n\nAUTHENTICATION_BACKENDS = [\n    \"django.contrib.auth.backends.ModelBackend\",\n]\n\nfrom datetime import timedelta\n\nSIMPLE_JWT = {\n    \"ACCESS_TOKEN_LIFETIME\": timedelta(minutes=300),\n    \"REFRESH_TOKEN_LIFETIME\": timedelta(days=1),\n    \"ROTATE_REFRESH_TOKENS\": False,\n    \"BLACKLIST_AFTER_ROTATION\": True,\n    \"ALGORITHM\": \"HS256\",\n    \"SIGNING_KEY\": SECRET_KEY,\n    \"BLACKLIST_ENABLED\": True,\n    \"VERIFYING_KEY\": None,\n    \"AUTH_HEADER_TYPES\": (\"Bearer\",),\n    \"USER_ID_FIELD\": \"id\",\n    \"USER_ID_CLAIM\": \"user_id\",\n    \"AUTH_TOKEN_CLASSES\": (\"rest_framework_simplejwt.tokens.AccessToken\",),\n    \"TOKEN_TYPE_CLAIM\": \"token_type\",\n}\n\nLANGUAGE_CODE = \"en-us\"\nTIME_ZONE = \"UTC\"\nUSE_I18N = True\nUSE_TZ = True\n\nSTATIC_URL = \"/static/\"\nSTATIC_ROOT = \"/var/www/alacrity/alacrity_backend/static\"  # Hardcoded for clarity\nprint(f\"Debug: STATIC_ROOT is {STATIC_ROOT}\")  # Debug output\n\nDEFAULT_AUTO_FIELD = \"django.db.models.BigAutoField\"\n\nEMAIL_BACKEND = \"django.core.mail.backends.smtp.EmailBackend\"\nEMAIL_HOST = \"smtp.gmail.com\"\nEMAIL_PORT = 587\nEMAIL_USE_TLS = True\nEMAIL_HOST_USER = env(\"EMAIL_USER\")\nEMAIL_HOST_PASSWORD = env(\"EMAIL_PASSWORD\")\nDEFAULT_FROM_EMAIL = EMAIL_HOST_USER\n\nMEDIA_URL = \"/media/\"\nMEDIA_ROOT = os.path.join(BASE_DIR, \"media\")\n\nif DEBUG:\n    import mimetypes\n    mimetypes.add_type(\"application/javascript\", \".js\", True)\n\nPAYPAL_CLIENT_ID = env(\"PAYPAL_CLIENT_ID\")\nPAYPAL_SECRET = env(\"PAYPAL_SECRET\")\nPAYPAL_MODE = env(\"PAYPAL_MODE\")\nPAYPAL_RETURN_URL = env(\"PAYPAL_RETURN_URL\")\nPAYPAL_CANCEL_URL = env(\"PAYPAL_CANCEL_URL\")\n' > ${TEMP_FILE}"
 
-env = environ.Env(
-    ENV=(str, 'development'),
-    DEBUG=(bool, False),
-    DJANGO_DATABASE_NAME=(str, 'alacrity_db'),
-    DJANGO_DATABASE_USER=(str, 'alacrity'),
-    DJANGO_DATABASE_PASSWORD=(str, '${DB_PASSWORD}'),
-    DJANGO_DATABASE_HOST=(str, 'localhost'),
-    DJANGO_DATABASE_PORT=(str, '3306'),
-    REDIS_HOST=(str, '127.0.0.1'),
-    REDIS_PORT=(int, 6379),
-)
-
-environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
-
-SECRET_KEY = env('SECRET_KEY')
-DEBUG = env('DEBUG')
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
-
-INSTALLED_APPS = [
-    'daphne',
-    'channels',
-    'channels_redis',
-    'corsheaders',
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'alacrity_backend',
-    'organisation',  # Must come before 'users' due to ForeignKey dependency
-    'users',
-    'datasets',
-    'storages',
-    'research',
-    'payments',
-    'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
-    'notifications',
-    'contact',
-    'dataset_requests',
-]
-
-MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
-
-ROOT_URLCONF = 'alacrity_backend.urls'
-ASGI_APPLICATION = 'alacrity_backend.asgi.application'
-
-TEMPLATES = [
-    {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
-        },
-    },
-]
-
-WSGI_APPLICATION = 'alacrity_backend.wsgi.application'
-IS_GITLAB_CI = os.getenv('CI', 'false').lower() == 'true'
-
-CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS')
-
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            'hosts': [(env('REDIS_HOST'), env('REDIS_PORT'))],
-        },
-    },
-}
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': env('DJANGO_DATABASE_NAME'),
-        'USER': env('DJANGO_DATABASE_USER'),
-        'PASSWORD': env('DJANGO_DATABASE_PASSWORD'),
-        'HOST': env('DJANGO_DATABASE_HOST'),
-        'PORT': env('DJANGO_DATABASE_PORT'),
-        'TEST': {
-            'NAME': 'alacrity_dbtes',
-        },
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
-    }
-}
-
-if 'test' in sys.argv:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': ':memory:',
-        }
-    }
-
-ENCRYPTION_KEY = env('ENCRYPTION_KEY', default='EHqnpsZeTQrwcmGfADez0GCRcJ_vQNCg5ch_pQg83Z0=')
-
-CORS_ALLOW_HEADERS = [
-    'content-type',
-    'authorization',
-    'accept',
-    'origin',
-    'x-requested-with',
-    'x-csrftoken',
-    'accept-encoding',
-    'accept-language',
-    'cache-control',
-    'connection',
-    'content-length',
-    'cookie',
-    'host',
-]
-
-CORS_ALLOW_METHODS = [
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
-]
-
-CORS_ALLOW_CREDENTIALS = True
-
-MINIO_URL = env('MINIO_URL')
-MINIO_ACCESS_KEY = env('MINIO_ACCESS_KEY')
-MINIO_SECRET_KEY = env('MINIO_SECRET_KEY')
-MINIO_BUCKET_NAME = env('MINIO_BUCKET_NAME')
-
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-DATA_UPLOAD_MAX_MEMORY_SIZE = 524288000  # 500MB
-FILE_UPLOAD_MAX_MEMORY_SIZE = 524288000  # 500MB
-
-AWS_ACCESS_KEY_ID = MINIO_ACCESS_KEY
-AWS_SECRET_ACCESS_KEY = MINIO_SECRET_KEY
-AWS_STORAGE_BUCKET_NAME = MINIO_BUCKET_NAME
-AWS_S3_ENDPOINT_URL = MINIO_URL
-AWS_S3_CUSTOM_DOMAIN = f'{MINIO_URL}/{MINIO_BUCKET_NAME}'
-AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
-AWS_S3_REGION_NAME = 'us-east-1'
-
-import pymysql
-pymysql.install_as_MySQLdb()
-
-AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
-]
-
-AUTH_USER_MODEL = 'users.User'
-
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-    'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.TemplateHTMLRenderer',
-        'rest_framework.renderers RezaMultiPartRenderer',
-    ],
-    'DEFAULT_PARSER_CLASSES': [
-        'rest_framework.parsers.JSONParser',
-        'rest_framework.parsers.MultiPartParser',
-        'rest_framework.parsers.FormParser',
-    ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ],
-    'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
-}
-
-if DEBUG:
-    REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'].append('rest_framework.renderers.BrowsableAPIRenderer')
-
-AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
-]
-
-from datetime import timedelta
-
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=300),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': False,
-    'BLACKLIST_AFTER_ROTATION': True,
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
-    'BLACKLIST_ENABLED': True,
-    'VERIFYING_KEY': None,
-    'AUTH_HEADER_TYPES': ('Bearer',),
-    'USER_ID_FIELD': 'id',
-    'USER_ID_CLAIM': 'user_id',
-    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
-    'TOKEN_TYPE_CLAIM': 'token_type',
-}
-
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
-USE_I18N = True
-USE_TZ = True
-
-STATIC_URL = '/static/'
-STATIC_ROOT = '/var/www/alacrity/alacrity_backend/static'  # Hardcoded for clarity
-print(f'Debug: STATIC_ROOT is {STATIC_ROOT}')  # Debug output
-
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = env('EMAIL_USER')
-EMAIL_HOST_PASSWORD = env('EMAIL_PASSWORD')
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-if DEBUG:
-    import mimetypes
-    mimetypes.add_type('application/javascript', '.js', True)
-
-PAYPAL_CLIENT_ID = env('PAYPAL_CLIENT_ID')
-PAYPAL_SECRET = env('PAYPAL_SECRET')
-PAYPAL_MODE = env('PAYPAL_MODE')
-PAYPAL_RETURN_URL = env('PAYPAL_RETURN_URL')
-PAYPAL_CANCEL_URL = env('PAYPAL_CANCEL_URL')
-EOF"
+# Validate settings.py syntax and line count
+echo "Validating settings.py syntax..."
+EXPECTED_LINES=238  # Approximate line count of the full settings.py
+ACTUAL_LINES=$(wc -l < "${TEMP_FILE}")
+echo "Expected lines: $EXPECTED_LINES, Actual lines: $ACTUAL_LINES"
+if [ "$ACTUAL_LINES" -lt "$EXPECTED_LINES" ]; then
+    echo "Error: settings.py is truncated. Check ${TEMP_FILE} contents:"
+    cat "${TEMP_FILE}"
+    exit 1
+fi
+python3.11 -m py_compile "${TEMP_FILE}" || { echo "Syntax error in settings.py; check ${TEMP_FILE}"; cat "${TEMP_FILE}"; exit 1; }
+sudo -u alacrity bash -c "mv ${TEMP_FILE} ${SETTINGS_FILE}"
+echo "Contents of settings.py after writing (first 10 and last 10 lines):"
+sudo -u alacrity bash -c "head -n 10 ${SETTINGS_FILE}; echo '...'; tail -n 10 ${SETTINGS_FILE}"
 
 # Step 9: Database setup
 echo "Setting up database..."
@@ -407,22 +169,18 @@ EOF
 
 # Step 10: Django setup with explicit migration order
 echo "Configuring Django..."
-# Ensure static directory exists and is owned by alacrity
 echo "Creating and verifying static directory..."
 sudo mkdir -p /var/www/alacrity/alacrity_backend/static
 sudo chown alacrity:alacrity /var/www/alacrity/alacrity_backend/static
 sudo chmod 755 /var/www/alacrity/alacrity_backend/static
-sleep 1  # Ensure filesystem sync
+sleep 1
 echo "Static directory status before collectstatic:"
 ls -ld /var/www/alacrity/alacrity_backend/static
-# Ensure migrations are created with correct dependencies
-sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && cd /var/www/alacrity/alacrity_backend && python manage.py makemigrations organisation users --noinput"
-sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && cd /var/www/alacrity/alacrity_backend && python manage.py makemigrations --noinput"
-# Apply migrations
-sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && cd /var/www/alacrity/alacrity_backend && python manage.py migrate --noinput"
-# Run collectstatic with verbose output
+sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && cd /var/www/alacrity/alacrity_backend && export DJANGO_SETTINGS_MODULE=alacrity_backend.settings && python manage.py makemigrations organisation users --noinput"
+sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && cd /var/www/alacrity/alacrity_backend && export DJANGO_SETTINGS_MODULE=alacrity_backend.settings && python manage.py makemigrations --noinput"
+sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && cd /var/www/alacrity/alacrity_backend && export DJANGO_SETTINGS_MODULE=alacrity_backend.settings && python manage.py migrate --noinput"
 echo "Running collectstatic..."
-sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && cd /var/www/alacrity/alacrity_backend && python manage.py collectstatic --noinput --verbosity 2"
+sudo -u alacrity bash -c "source /var/www/alacrity/alacrity_backend/venv/bin/activate && cd /var/www/alacrity/alacrity_backend && export DJANGO_SETTINGS_MODULE=alacrity_backend.settings && python manage.py collectstatic --noinput --verbosity 2"
 echo "Static directory status after collectstatic:"
 ls -ld /var/www/alacrity/alacrity_backend/static
 
@@ -438,6 +196,7 @@ User=alacrity
 Group=alacrity
 WorkingDirectory=/var/www/alacrity/alacrity_backend
 Environment=\"PATH=/var/www/alacrity/alacrity_backend/venv/bin\"
+Environment=\"DJANGO_SETTINGS_MODULE=alacrity_backend.settings\"
 ExecStart=/var/www/alacrity/alacrity_backend/venv/bin/daphne -b 0.0.0.0 -p 8080 alacrity_backend.asgi:application
 Restart=always
 
@@ -458,7 +217,7 @@ sudo systemctl start alacrity
 
 # Step 14: Verify deployment
 echo "Verifying deployment..."
-sleep 5  # Give service time to start
+sleep 5
 if curl http://${BACKEND_IP}:8080 &>/dev/null; then
     echo "Backend deployed successfully! Running on http://${BACKEND_IP}:8080"
 else
