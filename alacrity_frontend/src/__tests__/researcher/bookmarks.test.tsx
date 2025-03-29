@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import React from "react";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import BookmarkList from "@/app/researcher/bookmarks/page";
@@ -10,15 +9,6 @@ import { BACKEND_URL } from "@/config";
 // Mock Next.js router.
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
-=======
-import "@testing-library/jest-dom";
-import { render, screen, waitFor } from "@testing-library/react";
-import BookmarksPage from "@/app/datasets/bookmarks/page";
-import { fetchWithAuth } from "@/libs/auth";
-
-jest.mock("@/libs/auth", () => ({
-  fetchWithAuth: jest.fn(),
->>>>>>> origin/development
 }));
 
 // Mock fetchWithAuth.
