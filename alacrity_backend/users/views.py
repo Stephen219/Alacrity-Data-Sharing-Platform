@@ -449,29 +449,22 @@ class LoggedInUser(APIView):
 class UserView(APIView):
     def get(self, request, user_id):
         user = get_object_or_404(User, id=user_id)
-
+        
+        # i odont know why the phone number is not being returned in the serializer
+        # so i will add it manually to the data for now
         serializer = UserSerializer(user, context={"request": request})
         data = serializer.data
+        data['phone_number'] = user.phone_number
+       
         first_name = data['first_name']
         sur_name = data['sur_name']
         phone_number = data['phone_number']
-
-        print("first_name", first_name, sur_name, phone_number)
-
         data.pop('first_name', None)
         data.pop('sur_name', None)
         data.pop('phone_number', None)
-
-
         data['firstname'] = first_name
         data['lastname'] = sur_name
         data['phonenumber'] = phone_number
-
-        #remname the keys to match the frontend
-        # data['firstname'] = data.pop('first_name', None)
-        # data['surname'] = data.pop('sur_name', None)
-        # data['phonenumber'] = data.pop('phone_number', None)
-        print(data)
         return Response(data, status=status.HTTP_200_OK)
 
     def put(self, request, user_id):
@@ -492,16 +485,7 @@ class UserView(APIView):
         data['first_name'] = first_name
         data['sur_name'] = sur_name
         data['phone_number'] = phone_number
-
-        print ("data going to serializer", data)
-
-
-        
-        
-
         serializer = UserSerializer(user, data, partial=True, context={"request": request})
-        print(serializer.is_valid())
-        print(serializer.errors)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)

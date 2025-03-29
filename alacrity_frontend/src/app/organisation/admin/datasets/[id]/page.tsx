@@ -170,7 +170,8 @@ export default function DatasetDetailPage({ params: paramsPromise }: { params: P
     return (
       <div className="container mx-auto p-6">
         <div className="flex items-center mb-6">
-          <Button variant="ghost" onClick={() => router.push("/organisation/admin/datasets")} className="mr-4">
+          <Button variant="ghost" onClick={() => router.push("/organisation/admin/datasets")} className="mr-4 bg-orange-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-[#f97316] dark:hover:bg-gray-700">
+            
             <ArrowLeft className="mr-2" size={16} />
             Back to Datasets
           </Button>
@@ -187,7 +188,7 @@ export default function DatasetDetailPage({ params: paramsPromise }: { params: P
     <div className="container mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
-          <Button variant="ghost" onClick={() => router.push("/organisation/admin/datasets")} className="mr-4">
+          <Button variant="ghost" onClick={() => router.push("/organisation/admin/datasets")} className="mr-4 bg-orange-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-[#f97316] dark:hover:bg-gray-700">
             <ArrowLeft className="mr-2" size={16} />
             Back to Datasets
           </Button>
@@ -196,7 +197,7 @@ export default function DatasetDetailPage({ params: paramsPromise }: { params: P
         <Button
   variant="outline"
   onClick={() => router.push(`/organisation/admin/datasets/${id}/users_accessing`)}
-  className="ml-auto"
+  className="ml-auto bg-orange-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-[#f97316] dark:hover:bg-gray-700"
 >
   View users with access to this dataset
 </Button>

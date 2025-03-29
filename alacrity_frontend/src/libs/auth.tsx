@@ -215,7 +215,7 @@ export function useAuth(): AuthContextType {
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     if (!token) {
-      console.log("No token found, redirecting to sign-in");
+
       router.push("/auth/sign-in");
     } else {
       scheduleTokenRefresh();
@@ -241,7 +241,7 @@ export function useAuth(): AuthContextType {
 export async function fetchUserData(): Promise<User | null> {
   const token = localStorage.getItem("access_token");
   if (!token) {
-    console.error("No token for fetching user data");
+   
     return null;
   }
 
@@ -249,14 +249,15 @@ export async function fetchUserData(): Promise<User | null> {
     const response = await fetchWithAuth(`${API_BASE_URL}/users/profile/`);
     if (response.ok) {
       const userData: User = await response.json();
-      console.log("Fetched user data:", userData.email);
+     
       return userData;
     } else {
-      console.error("Failed to fetch user data, status:", response.status);
+      
       return null;
     }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
-    console.error("Network error fetching user data:", error);
+   
     return null;
   }
 }
