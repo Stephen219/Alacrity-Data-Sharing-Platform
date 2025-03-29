@@ -34,13 +34,15 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-
-from alacrity_backend.settings import MINIO_ACCESS_KEY, MINIO_BUCKET_NAME, MINIO_SECRET_KEY, MINIO_URL
+from alacrity_backend.settings import MINIO_ACCESS_KEY, MINIO_BUCKET_NAME, MINIO_SECRET_KEY, MINIO_URL, MINIO_SECURE
 from users.decorators import role_required
 from .models import Dataset , Feedback
 from .serializer import DatasetSerializer
-# from .tasks import compute_correlation, fetch_json_from_minio
+
+from rest_framework.parsers import JSONParser
+# from django.http import JsonResponse
+
+
 
 default_storage = S3Boto3Storage()
 
@@ -54,11 +56,13 @@ def is_valid_url(url):
         return False
 
 minio_client = Minio(
-    endpoint="10.72.98.137:9000",
-    access_key="admin",
-    secret_key="Notgood1",
-    secure=False  
-)
+    endpoint= MINIO_URL,
+    access_key=MINIO_ACCESS_KEY,
+    secret_key= MINIO_SECRET_KEY,
+    secure= MINIO_SECURE
+    )
+
+
 BUCKET = MINIO_BUCKET_NAME
 
 
@@ -70,7 +74,7 @@ def generate_id():
 @method_decorator(csrf_exempt, name='dispatch')
 class CreateDatasetView(APIView):
     renderer_classes = [JSONRenderer]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     @role_required(['organization_admin', 'contributor'])
     def post(self, request, *args, **kwargs):
@@ -252,6 +256,33 @@ class CreateDatasetView(APIView):
         except requests.RequestException as e:
             logger.error(f"Dropbox download failed: {str(e)}")
             raise Exception(f"Failed to download from Dropbox: {str(e)}")
+        
+
+    @role_required(['organization_admin', 'contributor'])
+    def put(self, request, *args, **kwargs):
+        dataset_id = request.data.get('dataset_id')
+        print(f"Dataset ID:" , request.data.get('dataset_id'))
+        print(f"Request data:", request.data)
+           
+
+        dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
+        print(f"Dataset ", dataset)
+        print (dataset.contributor_id.organization.Organization_id)
+    
+        if (request.user.role not in ['organization_admin', 'contributor'] or 
+            str(request.user.organization.Organization_id) != str(dataset.contributor_id.organization.Organization_id)):
+            return Response({"error": "You are not authorized to edit this dataset"}, status=403)
+        
+        print("Request data:")
+
+        serializer = DatasetSerializer(dataset, data=request.data, partial=True)
+        print("serializer", serializer)
+
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
 
 @api_view(['GET'])
 @role_required(['organization_admin', 'contributor', 'researcher'])
@@ -276,14 +307,7 @@ def get_datasets(request):
         })
     return Response(data, status=200)
 
-#analysis
 
-minio_client = Minio(
-    endpoint="10.72.98.137:9000",
-    access_key="admin",
-    secret_key="Notgood1",
-    secure=False  
-)
 
 def fetch_dataset_from_minio(dataset_url):
     """Fetch dataset in chunks from MinIO and return a generator (iterator)."""
@@ -536,7 +560,7 @@ class ToggleBookmarkDatasetView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
-    @role_required(['contributor', 'researcher'])
+    @role_required(['contributor', 'researcher', 'organization_admin'])
     def post(self, request, dataset_id):
 
         user = request.user
@@ -557,7 +581,7 @@ class ToggleBookmarkDatasetView(APIView):
 
 class UserBookmarkedDatasetsView(APIView):
     permission_classes = [IsAuthenticated]
-    @role_required(['contributor', 'researcher'])
+    @role_required(['contributor', 'researcher', 'organization_admin'])
 
     def get(self, request):
         """
@@ -574,6 +598,60 @@ class UserBookmarkedDatasetsView(APIView):
         print("Bookmarked datasets:", list(bookmarked_datasets))
 
         return Response(list(bookmarked_datasets))
+    
+
+class DatasetListView(APIView):
+    def get(self, request):
+        # Get org query parameter
+        org_id = request.query_params.get("org", None)
+        
+        # Base queryset with select_related for optimization
+        datasets = Dataset.objects.select_related("contributor_id__organization").all()
+
+        # Filter by organization if org_id is provided
+        if org_id:
+            datasets = datasets.filter(contributor_id__organization__Organization_id=org_id)
+            if not datasets.exists():
+                return Response(
+                    {"detail": f"No datasets found for organization ID {org_id}"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+        serializer = DatasetSerializer(datasets, many=True, context={"request": request})
+        return Response({"datasets": serializer.data}, status=status.HTTP_200_OK)
+
+    def put(self, request):
+        # Restrict to organization admins
+        if not request.user.is_authenticated or request.user.role != "organization_admin":
+            return Response(
+                {"detail": "Only organization admins can edit datasets"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        dataset_id = request.data.get("dataset_id")
+        if not dataset_id:
+            return Response(
+                {"detail": "Dataset ID is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
+
+        # Check if admin belongs to the dataset's contributor's organization
+        if (
+            dataset.contributor_id.organization
+            and request.user.organization != dataset.contributor_id.organization
+        ):
+            return Response(
+                {"detail": "You can only edit datasets from your organization"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = DatasetSerializer(dataset, data=request.data, partial=True, context={"request": request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # feedback will be taking in the dataset_id and the feedback from the user

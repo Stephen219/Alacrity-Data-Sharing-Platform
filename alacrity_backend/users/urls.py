@@ -1,9 +1,14 @@
 from django.urls import path
 from .views import  ForgotPasswordView, MonthlyUsersView, RegisterView, ResetPasswordView, WeeklyActivityView
-# from rest_framfework_simplejwt.views import TokenRefreshView
-# add login vhiejw
+
 from .views import  RegisterView, LoginView, UserView, CSRFTokenView, LogoutView
-from .views import  RegisterView, LoginView, UserView, CSRFTokenView ,UserDashboardView, AllOrganizationMembersViews, MemberProfileView, LoggedInUser,  DatasetWithAccessView
+from .views import  (RegisterView, LoginView, UserView, 
+                     CSRFTokenView ,UserDashboardView, 
+                     AllOrganizationMembersViews, MemberProfileView,
+                       LoggedInUser, 
+                         DatasetWithAccessView, 
+                       ProfilePictureUpdateView, FollowUserView, UnfollowUserView)
+                       
 from rest_framework_simplejwt.views import TokenRefreshView
 
 
@@ -14,6 +19,10 @@ urlpatterns = [
     path("login/", LoginView.as_view(), name="login"),
     path("profile/", LoggedInUser.as_view(), name="profile"),
     path('datasetsWithAccess/', DatasetWithAccessView.as_view(), name='dataset'),
+    path('profile_pic_update/', ProfilePictureUpdateView.as_view(), name='profile-pic-update'),
+
+    path("follow/<str:user_id>/", FollowUserView.as_view(), name="follow-user"),
+    path("unfollow/<str:user_id>/", UnfollowUserView.as_view(), name="unfollow-user"),
 
     path('profile/<int:user_id>/', UserView.as_view(), name='user-profile'),
     path("logout/", LogoutView.as_view(), name="logout"),

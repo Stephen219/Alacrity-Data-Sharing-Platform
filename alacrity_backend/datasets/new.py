@@ -32,12 +32,18 @@ import time
 from typing import List, Dict
 from django.http import HttpResponse
 from .pre_analysis import pre_analysis
+from alacrity_backend.settings import MINIO_ACCESS_KEY, MINIO_BUCKET_NAME, MINIO_SECRET_KEY, MINIO_URL, MINIO_SECURE
 
 
 logger = logging.getLogger(__name__)
 
-MINIO_URL = "10.72.98.137:9000"
-minio_client = Minio(endpoint=MINIO_URL, access_key="admin", secret_key="Notgood1", secure=False)
+
+minio_client = Minio(
+    endpoint=MINIO_URL, 
+    access_key=MINIO_ACCESS_KEY,
+    secret_key=MINIO_SECRET_KEY, 
+    secure=MINIO_SECURE
+    )
 BUCKET = "alacrity"
 DATASET_CACHE = OrderedDict()
 CACHE_LOCK = Lock()
@@ -432,12 +438,23 @@ def analyze_dataset(request, dataset_id):
     except Exception as e:
         logger.error(f"Error in analyze_dataset: {e}", exc_info=True)
         return Response({"error": "Something went wrong"}, status=500)
+    
+
+
+
+
+    
 
 @api_view(['GET'])
 def all_datasets_view(request):
     datasets = Dataset.objects.select_related('contributor_id__organization').all()
     serializer = DatasetSerializer(datasets, many=True, context={"request": request})
     return Response({"datasets": serializer.data}, status=status.HTTP_200_OK)
+
+
+
+
+
 
 @api_view(['GET'])
 def dataset_view(request, dataset_id):

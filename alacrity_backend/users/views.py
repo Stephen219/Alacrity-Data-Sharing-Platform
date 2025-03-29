@@ -13,7 +13,7 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from rest_framework.permissions import AllowAny
 from rest_framework import status
-from .serializers import RegisterSerializer
+from .serializers import UserSerializer
 from django.utils import timezone
 from dataset_requests.models import DatasetRequest
 from research.models import AnalysisSubmission
@@ -40,8 +40,19 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth import get_user_model
 User = get_user_model()
+from alacrity_backend.settings import MINIO_URL, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, MINIO_BUCKET_NAME
+from minio import Minio, S3Error
+
+from rest_framework import status
 
 
+
+minioClient = Minio(
+    MINIO_URL,
+    access_key=MINIO_ACCESS_KEY,
+    secret_key=MINIO_SECRET_KEY,
+    secure=False
+)
 class ForgotPasswordView(APIView):
     """
     If user exists, generate a token and email them the reset password link.
@@ -54,19 +65,18 @@ class ForgotPasswordView(APIView):
             if not email:
                 return Response({'error': 'Email field is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Check if this email belongs to a registered user
+           
             try:
                 user = User.objects.get(email=email)
             except User.DoesNotExist:
-                # Security best-practice: do NOT reveal that user does not exist
+                
                 return Response({"message": "If that email is recognised, a reset link will be sent."},
                                 status=status.HTTP_200_OK)
 
-            # Generate token
+           
             token_generator = PasswordResetTokenGenerator()
             token = token_generator.make_token(user)
 
-            # Encode user’s primary key in base64
             uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
 
             # Builds a link 
@@ -215,11 +225,11 @@ class MonthlyUsersView(APIView):
                 .order_by("month")
             )
 
-            # retrieves the last 6 months 
+         
             months_list = [(now() - timedelta(days=30 * i)).strftime("%b") for i in range(6)]
             months_list.reverse()  
 
-            # Converts query results into dictionaries
+          
             def get_data(users):
                 return {entry["month"].strftime("%b"): entry["count"] for entry in users}
 
@@ -252,7 +262,9 @@ class LoginView(APIView):
         try:
             email = request.data.get('email')
             password = request.data.get('password')
-            print(email, password)
+            remember_me = request.data.get('remember_me', False)
+
+            print(email, password, remember_me)
 
             if not email or not password:
                 return Response({
@@ -279,8 +291,17 @@ class LoginView(APIView):
                 user.last_login = timezone.now()
                 user.save()
                 refresh = RefreshToken.for_user(user)
+                if remember_me == True:
+                    refresh.lifetime=timedelta(days=7)
+                else:
+                    refresh.set_exp(lifetime=timedelta(days=1))
 
-                print(refresh)
+                print(refresh.check_exp)
+                print(refresh.check_exp)
+                print(refresh.access_token.current_time)
+                print(refresh.lifetime)
+               
+                
                 return Response({
                     'status': 'success',
                     'message': 'Login successful',
@@ -289,7 +310,7 @@ class LoginView(APIView):
                         'email': user.email,
                         'username': user.username,
                         'role': user.role,
-                        'organization': user.organization.name if user.organization else None, # gets the organization name from the database
+                        'organization': user.organization.name if user.organization else None,
                         'phone_number': user.phone_number,
                     },
                     'access_token': str(refresh.access_token),
@@ -329,26 +350,31 @@ def generate_username(first_name: str, last_name: str) -> str:
 
 def clean_data(request_data):
     cleaned_data = request_data.copy()
-    cleaned_data['first_name'] = cleaned_data.get('firstname', cleaned_data.get('first_name'))
-    cleaned_data['sur_name'] = cleaned_data.get('surname', cleaned_data.get('sur_name'))
-    cleaned_data['phone_number'] = cleaned_data.get('phonenumber', cleaned_data.get('phone_number'))
+    cleaned_data['first_name'] = cleaned_data.get('firstname', cleaned_data.get('first_name', ''))
+    cleaned_data['sur_name'] = cleaned_data.get('surname', cleaned_data.get('sur_name', ''))
+    cleaned_data['phone_number'] = cleaned_data.get('phonenumber', cleaned_data.get('phone_number', ''))
     cleaned_data.pop('firstname', None)
     cleaned_data.pop('surname', None)
     cleaned_data.pop('phonenumber', None)
-    cleaned_data['role'] = 'researcher'  
-
-    cleaned_data['password2'] = cleaned_data.get('password', cleaned_data.get('password2'))
-   
-    cleaned_data['username'] = generate_username(cleaned_data.get('first_name'), cleaned_data.get('sur_name'))
-
+    cleaned_data['role'] = 'researcher'
+    cleaned_data['password2'] = cleaned_data.get('password', cleaned_data.get('password2', ''))
+    cleaned_data['username'] = generate_username(cleaned_data['first_name'], cleaned_data['sur_name'])
     return cleaned_data
+
+
+
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        print(f"Received data: {request.data}")
         mapped_data = clean_data(request.data)
-        serializer = RegisterSerializer(data=mapped_data)
+        print("#############################################3")
+        print(f"Mapped data: {mapped_data}")
+        serializer = UserSerializer(data=mapped_data)
+        print("serializer")
+        print(serializer)
         try:
             if serializer.is_valid():
                 user = serializer.save()
@@ -357,24 +383,31 @@ class RegisterView(APIView):
                     "user": {
                         "id": user.id,
                         "email": user.email,
-                        "firstname": user.first_name,
-                        "surname": user.last_name,
-                        "phonenumber": user.phone_number,
+                        "firstname": user.first_name,  
+                        "surname": user.sur_name,     
+                        "phonenumber": user.phone_number, 
                         "role": user.role,
                         "organization": user.organization.name if user.organization else None,
                         "field": user.field,
                     }
                 }
                 return Response(response_data, status=status.HTTP_201_CREATED)
-            print(serializer.errors)
+            print(f"Serializer errors: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            print(e)
+            print(f"Exception: {e}")
+            import traceback
+            traceback.print_exc()
             return Response(
                 {"error": "Registration failed", "details": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        
+
+
+
+
+
+
 
 class LoggedInUser(APIView):
     def get(self, request):
@@ -394,13 +427,14 @@ class LoggedInUser(APIView):
             "date_joined": user.date_joined,
             "date_of_birth": user.date_of_birth,
             "bio": user.bio,
-            # to do 
-            # folowers and following
 
 
             "phonenumber": user.phone_number,
             "role": user.role,
+
             "organization": user.organization.name if user.organization else None,
+            # here we have to use fkey to get the organization id
+            "organization_id":  user.organization.Organization_id if user.organization else None,
             "field": user.field,
             "researches": researchers,
             "bookmarked_researches": bookmarked_researches
@@ -409,84 +443,144 @@ class LoggedInUser(APIView):
 
 
 
+
+
+
 class UserView(APIView):
     def get(self, request, user_id):
-        # Fetch the user by the provided user_id
         user = get_object_or_404(User, id=user_id)
-        current_user = request.user  # Authenticated user
 
-        # Fetch researches for this user
-        researchers = list(AnalysisSubmission.objects.filter(researcher=user, status="published",
-        is_private=False)
-                          .values('id', 'title', 'description', 'status', 'submitted_at'))
-        bookmarked_researches = []  
+        serializer = UserSerializer(user, context={"request": request})
+        data = serializer.data
+        first_name = data['first_name']
+        sur_name = data['sur_name']
+        phone_number = data['phone_number']
 
-       
-        response_data = {
-            "id": user.id,
-            "username": user.username,
-            "firstname": user.first_name,
-            "lastname": user.sur_name,
-            "profile_picture": user.profile_picture.url if user.profile_picture else None,
-            "date_joined": user.date_joined.isoformat(),
-            "bio": user.bio,
-            "phone_number": user.phone_number,
-            "role": user.role,
-            "organization": user.organization.name if user.organization else None,
-            "field": user.field,
-            "researches": researchers,
-            "bookmarked_researches": bookmarked_researches,
-            # TODO: followers and following
-        }
+        print("first_name", first_name, sur_name, phone_number)
 
-        # If the requester is authenticated and is the profile owner, include sensitive data
-        if request.user.is_authenticated and current_user.id == user.id:
-            response_data["email"] = user.email
-            response_data["date_of_birth"] = user.date_of_birth.isoformat() if user.date_of_birth else None
-        else:
-            # For non-owners, exclude sensitive fields
-            response_data["email"] = None
-            response_data["date_of_birth"] = None
-            response_data["phone_number"] = None
+        data.pop('first_name', None)
+        data.pop('sur_name', None)
+        data.pop('phone_number', None)
 
-        return Response(response_data, status=status.HTTP_200_OK)
+
+        data['firstname'] = first_name
+        data['lastname'] = sur_name
+        data['phonenumber'] = phone_number
+
+        #remname the keys to match the frontend
+        # data['firstname'] = data.pop('first_name', None)
+        # data['surname'] = data.pop('sur_name', None)
+        # data['phonenumber'] = data.pop('phone_number', None)
+        print(data)
+        return Response(data, status=status.HTTP_200_OK)
 
     def put(self, request, user_id):
-        # Update profile for the authenticated user only
         user = get_object_or_404(User, id=user_id)
+        print(request.data)
+        print(request.data)
+
         if not request.user.is_authenticated or request.user.id != user.id:
             return Response({"detail": "Not authorized to update this profile"}, status=status.HTTP_403_FORBIDDEN)
+        first_name = request.data.get('firstname', None)
+        sur_name = request.data.get('lastname', None)
+        phone_number = request.data.get('phonenumber', None)
+        data = request.data.copy()
+        data.pop('firstname', None)
+        data.pop('surname', None)
+        data.pop('phonenumber', None)
 
-        # Update fields from request data
-        data = request.data
-        user.first_name = data.get('first_name', user.first_name)
-        user.sur_name = data.get('sur_name', user.sur_name)
-        user.bio = data.get('bio', user.bio)
-        user.phone_number = data.get('phone_number', user.phone_number)
-        user.field = data.get('field', user.field)
-        user.organization = data.get('organization', user.organization)  # Assuming this is a string or FK reference
-        user.save()
+        data['first_name'] = first_name
+        data['sur_name'] = sur_name
+        data['phone_number'] = phone_number
 
-        # Return updated profile
-        response_data = {
-            "id": user.id,
-            "username": user.username,
-            "first_name": user.first_name,
-            "sur_name": user.sur_name,
-            "profile_picture": user.profile_picture.url if user.profile_picture else None,
-            "date_joined": user.date_joined.isoformat(),
-            "bio": user.bio,
-            "phone_number": user.phone_number,
-            "role": user.role,
-            "organization": user.organization.name if user.organization else None,
-            "field": user.field,
-            "email": user.email,
-            "date_of_birth": user.date_of_birth.isoformat() if user.date_of_birth else None,
-            "researches": list(AnalysisSubmission.objects.filter(researcher=user)
-                              .values('id', 'title', 'description', 'status', 'submitted_at')),
-            "bookmarked_researches": [],  # Placeholder
-        }
-        return Response(response_data, status=status.HTTP_200_OK)
+        print ("data going to serializer", data)
+
+
+        
+        
+
+        serializer = UserSerializer(user, data, partial=True, context={"request": request})
+        print(serializer.is_valid())
+        print(serializer.errors)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def delete(self, request, user_id):
+        pass
+
+class FollowUserView(APIView):
+    def post(self, request, user_id):
+        if not request.user.is_authenticated:
+            return Response({"detail": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        target_user = get_object_or_404(User, id=user_id)
+        if target_user == request.user:
+            return Response({"detail": "You cannot follow yourself"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if request.user.following.filter(id=target_user.id).exists():
+            return Response({"detail": "You already follow this user"}, status=status.HTTP_400_BAD_REQUEST)
+
+        request.user.following.add(target_user)
+        print(request.user.following.all())
+        print(target_user.followers.all())
+        return Response({"detail": "Now following user"}, status=status.HTTP_200_OK)
+
+class UnfollowUserView(APIView):
+    def post(self, request, user_id):
+        if not request.user.is_authenticated:
+            return Response({"detail": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        target_user = get_object_or_404(User, id=user_id)
+        if not request.user.following.filter(id=target_user.id).exists():
+            return Response({"detail": "You do not follow this user"}, status=status.HTTP_400_BAD_REQUEST)
+
+        request.user.following.remove(target_user)
+        return Response({"detail": "Unfollowed user"}, status=status.HTTP_200_OK)
+        
+    
+    
+
+
+
+
+
+class ProfilePictureUpdateView(APIView):
+    def post(self, request):
+        if not request.user.is_authenticated:
+            return Response({"detail": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        user = request.user
+        profile_picture = request.FILES.get('profile_picture')
+
+        if not profile_picture:
+            return Response({"detail": "No profile picture provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not profile_picture.content_type.startswith('image/'):
+            return Response({"detail": "Only image files are allowed"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            file_extension = profile_picture.name.split('.')[-1] if '.' in profile_picture.name else 'png'
+            object_name = f"profile_pictures/{user.id}/profile_picture.{file_extension}"
+
+            minioClient.put_object(
+                settings.MINIO_BUCKET_NAME,
+                object_name,
+                profile_picture.file,
+                length=profile_picture.size,
+                content_type=profile_picture.content_type
+            )
+
+            
+            user.profile_picture = f"http://{MINIO_URL}/{MINIO_BUCKET_NAME}/{object_name}"
+            user.save()
+
+            return Response({"profile_picture": user.profile_picture}, status=status.HTTP_200_OK)
+
+        except S3Error as e:
+            return Response({"error": f"MinIO error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            return Response({"error": f"Error uploading profile picture: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 
 
@@ -812,6 +906,9 @@ class DatasetWithAccessView(APIView):
         response = accessible_datasets_view.get(request)
 
         return JsonResponse(response.data, safe=False)
+    
+
+
     
 
 

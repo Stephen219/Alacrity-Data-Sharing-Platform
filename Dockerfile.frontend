@@ -1,18 +1,17 @@
 
 FROM node:18
-
-# Set the working directory
 WORKDIR /app
-
-
 COPY alacrity_frontend/package.json alacrity_frontend/package-lock.json ./
 RUN npm install
-
-
 COPY alacrity_frontend /app
-
-
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 EXPOSE 3000
+# RUN npm run build
+# Uncomment the following line to build the production version of the app
+CMD ["npm", "run", "build"]
+CMD ["npm", "run", "start"]
+# Uncomment the following line to run the development server instead of the production build
 
-# Start the Next.js development server
-CMD ["npm", "run", "dev"]
+
+# CMD ["npm", "run", "dev"]

@@ -14,7 +14,13 @@ from pathlib import Path
 from alacrity_backend.config import FRONTEND_URL, BACKEND_URL
 import os
 import sys
+
+from minio import Minio
+
+from dotenv import load_dotenv
+
 import environ
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,7 +33,7 @@ env = environ.Env(
     DJANGO_DATABASE_NAME=(str, 'alacrity_db'),
     DJANGO_DATABASE_USER=(str, 'root'),
     DJANGO_DATABASE_PASSWORD=(str, 'comsc'),
-    DJANGO_DATABASE_HOST=(str, 'mysql'),
+    DJANGO_DATABASE_HOST=(str, 'localhost'),    
     DJANGO_DATABASE_PORT=(str, '3306'),
     REDIS_HOST=(str, '127.0.0.1'),
     REDIS_PORT=(int, 6379),
@@ -35,6 +41,7 @@ env = environ.Env(
 
 # Load .env file if it exists (optional for local dev)
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -155,11 +162,23 @@ if 'test' in sys.argv:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': ':memory:',  # Use in-memory database for faster tests
+            'NAME': ':memory:', 
         }
     }
 
+
+ENCRYPTION_KEY = "EHqnpsZeTQrwcmGfADez0GCRcJ_vQNCg5ch_pQg83Z0="
+
+
+CORS_ALLOWED_ORIGINS = [
+    FRONTEND_URL, 
+    "http://127.0.0.1:3000",
+    "http://localhost:3000",
+]
+
+
 ENCRYPTION_KEY = env('ENCRYPTION_KEY', default="EHqnpsZeTQrwcmGfADez0GCRcJ_vQNCg5ch_pQg83Z0=")
+
 
 # CORS configuration
 CORS_ALLOW_HEADERS = [
@@ -189,11 +208,33 @@ CORS_ALLOW_METHODS = [
 
 CORS_ALLOW_CREDENTIALS = True
 
-# File storage configuration (MinIO/S3)
-MINIO_URL = env('MINIO_URL', default="http://10.72.98.137:9000")
-MINIO_ACCESS_KEY = env('MINIO_ACCESS_KEY', default="admin")
-MINIO_SECRET_KEY = env('MINIO_SECRET_KEY', default="Notgood1")
-MINIO_BUCKET_NAME = env('MINIO_BUCKET_NAME', default="alacrity")
+CORS_ORIGIN_ALLOW_ALL = False
+
+CORS_ALLOW_CREDENTIALS = True
+
+
+
+
+
+################################  file stosssrage config  ##############################################################
+
+# MINIO_URL = "http://localhost:9000" 
+MINIO_URL = "10.72.98.50:9000"
+MINIO_ACCESS_KEY = "admin"
+MINIO_SECRET_KEY = "Notgood1"
+MINIO_BUCKET_NAME = "alacrity"
+MINIO_SECURE = False
+
+# MINIO CLIENT
+minioClient = Minio(
+    MINIO_URL,
+    access_key=MINIO_ACCESS_KEY,
+    secret_key=MINIO_SECRET_KEY,
+    secure=False
+)
+
+
+
 
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 DATA_UPLOAD_MAX_MEMORY_SIZE = 524288000  # 500MB
@@ -251,7 +292,7 @@ AUTHENTICATION_BACKENDS = [
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=300),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=9000),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,

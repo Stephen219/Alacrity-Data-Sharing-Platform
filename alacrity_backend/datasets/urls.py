@@ -3,7 +3,7 @@ from django.urls import include
 from rest_framework.routers import DefaultRouter
 from .views import ( ToggleBookmarkDatasetView, UserBookmarkedDatasetsView, descriptive_statistics, FeedbackView,
 filter_and_clean_dataset, 
-get_datasets, get_filter_options, CreateDatasetView, 
+get_datasets, get_filter_options, CreateDatasetView, DatasetListView, get_datasets,  get_datasets,
 
  pre_analysis)
 
@@ -25,7 +25,8 @@ urlpatterns = [
     path('datasets/<str:dataset_id>/', dataset_detail, name='dataset_detail'),
     path('datasets/analyze/<str:dataset_id>/', analyze_dataset, name='analyze_dataset'),
     path('datasets/', all_datasets_view, name='all_datasets'),
-    path('all/', all_datasets_view, name='dataset-list'),
+    # path('all/', all_datasets_view, name='dataset-list'),
+    path('all/', DatasetListView.as_view(), name='dataset-list'),
     path('perform/<str:dataset_id>/', analyze_dataset, name='analyze_dataset'),
     path("", get_datasets, name="get_datasets"),
     path("analysis/pre-analysis/<str:dataset_id>/", pre_analysis, name="pre-analysis"),
