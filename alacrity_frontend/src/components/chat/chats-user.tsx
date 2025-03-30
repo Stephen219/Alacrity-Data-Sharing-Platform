@@ -19,6 +19,13 @@ interface ChatSummary {
   unread_count: number;
 }
 
+interface SearchUser {
+  id: number;
+  first_name: string;
+  last_name: string;
+  username: string;
+}
+
 export default function UserChatListPage() {
   const router = useRouter();
   const [chats, setChats] = useState<ChatSummary[]>([]);
@@ -27,7 +34,7 @@ export default function UserChatListPage() {
   const [typingStatus, setTypingStatus] = useState<{ [key: string]: boolean }>({});
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showSearchModal, setShowSearchModal] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
   const [socketStatus, setSocketStatus] = useState<string>("Connecting...");
   const socketRef = useRef<WebSocket | null>(null);
 
