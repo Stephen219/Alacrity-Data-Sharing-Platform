@@ -70,6 +70,14 @@ BUCKET = MINIO_BUCKET_NAME
 def generate_id():
     """Generate a unique ID for the dataset."""
     return str(uuid.uuid4())
+def convert_to_mbs(size_in_bytes):
+    """Convert bytes to megabytes. 
+    Args:
+        size_in_bytes (int): Size in bytes.
+    Returns:
+        float: Size in megabytes. to the nearest 2 decimal places
+    """
+    return round(size_in_bytes / (1024 * 1024), 2)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class CreateDatasetView(APIView):
@@ -78,23 +86,27 @@ class CreateDatasetView(APIView):
 
     @role_required(['organization_admin', 'contributor'])
     def post(self, request, *args, **kwargs):
+
+        """Handle the dataset upload and processing."""
+        
+        file_size = 0
+        number_of_rows = 0
+        
         start_time = datetime.now()
         logger.info(f"Processing upload request at {start_time}")
         local_file = request.FILES.get('file')
         file_url = request.POST.get('fileUrl')
         file_name = request.POST.get('fileName', 'uploaded_file')
         access_token = request.POST.get('accessToken')
-
-        print("Request POST:", request.POST)
-        print("Request FILES:", request.FILES)
-        print("File URL:", file_url)
-        print("Access Token:", access_token if access_token else "No access token provided")
-
         try:
             if local_file:
                 logger.info(f"Processing local file: {local_file.name}")
                 file_buffer = io.BytesIO(local_file.read())
                 base_name = local_file.name.split('.')[0]
+                file_size = convert_to_mbs(local_file.size)
+                
+                
+                logger.info(f"Local file size: {file_size} bytes")
             elif file_url:
                 logger.info(f"Processing cloud URL: {file_url}")
                 if "drive.google.com" in file_url:
@@ -103,9 +115,14 @@ class CreateDatasetView(APIView):
                         logger.error("Google Drive access token is missing")
                         return Response({"error": "Google Drive access token required"}, status=400)
                     file_buffer = self._download_from_google_drive(file_url, access_token)
+                    file_size = convert_to_mbs(file_buffer.getbuffer().nbytes)
+
+                    logger.info(f"Google Drive file size: {file_size} bytes")
                 elif "dropbox.com" in file_url or "dl.dropboxusercontent.com" in file_url:
                     logger.info("Downloading from Dropbox")
                     file_buffer = self._download_from_dropbox(file_url)
+                    file_size = convert_to_mbs(file_buffer.getbuffer().nbytes)
+                    logger.info(f"Dropbox file size: {file_size} bytes")
                 else:
                     logger.error("Unsupported cloud provider")
                     return Response({"error": "Unsupported cloud provider"}, status=400)
@@ -135,6 +152,8 @@ class CreateDatasetView(APIView):
                     logger.info(f"Attempting to read CSV with encoding: {encoding}")
                     file_buffer.seek(0)
                     df = pd.read_csv(file_buffer, encoding=encoding)
+                    number_of_rows = len(df)
+                    logger.info(f"Number of rows in CSV: {number_of_rows}")
                     logger.info(f"Successfully read CSV with encoding: {encoding}")
                     break
                 except UnicodeDecodeError as e:
@@ -162,7 +181,13 @@ class CreateDatasetView(APIView):
                 data=io.BytesIO(encrypted_data),
                 length=len(encrypted_data)
             )
-            stored_url = f"{MINIO_URL}/{BUCKET}/{minio_key}"
+            #store the url and add http:// or https:// to the url depending on the minio secure value
+            if MINIO_SECURE:
+                stored_url = f"https://{MINIO_URL}/{BUCKET}/{minio_key}"
+            else:
+                stored_url = f"http://{MINIO_URL}/{BUCKET}/{minio_key}"
+
+            # stored_url = f"{MINIO_URL}/{BUCKET}/{minio_key}"
             title = request.POST.get('title')
             category = request.POST.get('category')
             tags = request.POST.get('tags', '')
@@ -197,7 +222,14 @@ class CreateDatasetView(APIView):
                 encryption_key=encryption_key.decode(),
                 schema=schema,
                 price=price
+
             )
+
+       
+            dataset.number_of_rows = number_of_rows
+            dataset.size = file_size
+           
+
             dataset.save()
 
             end_time = datetime.now()

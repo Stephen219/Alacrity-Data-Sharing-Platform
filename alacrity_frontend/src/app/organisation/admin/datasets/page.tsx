@@ -67,18 +67,17 @@ export default function DatasetsPage() {
       try {
         
         const userData = await fetchUSER()
-        console.log("User data:", userData)
         setUser(userData)
 
     
         if (userData?.organization_id) {
           const datasetsData = await fetchDatasets(userData.organization_id)
-          console.log("Datasets data:", datasetsData)        
+            
           setDatasets(datasetsData.datasets || [])
           setFilteredDatasets(datasetsData.datasets || [])
         }
       } catch (error) {
-        console.error("Error fetching data:", error)
+      
       } finally {
         setLoading(false)
       }
@@ -127,7 +126,6 @@ export default function DatasetsPage() {
   const handleToggleBookmark = (e: React.MouseEvent<HTMLButtonElement>, datasetId: string) => {
       e.preventDefault()
       e.stopPropagation()
-      console.log("Toggle bookmark for dataset:", datasetId)
     }
 
   const handleSearch = (e: { target: { value: SetStateAction<string> } }) => {

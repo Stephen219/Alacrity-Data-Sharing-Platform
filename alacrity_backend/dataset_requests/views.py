@@ -20,6 +20,7 @@ from django.http import JsonResponse
 from rest_framework.permissions import IsAuthenticated
 from users.decorators import role_required
 from users.models import User
+from django.utils import timezone
 
 def send_email_to_contributor(dataset_request):
     try:
@@ -211,8 +212,10 @@ def send_email(dataset_request):
 class request_actions(APIView):
     @role_required(['organization_admin', 'contributor'])
     def get(self, request, id):
+
+        print (request.data)
         try:
-            print(f"Received request for ID: {id}")  # Debugging
+            print(f"Received request for ID: {id}") 
             dataset_request = get_object_or_404(
                 DatasetRequest, 
                 request_id=id,  
@@ -240,6 +243,9 @@ class request_actions(APIView):
 
         if action == 'accept':
             dataset_request.request_status = 'approved'
+            dataset_request.updated_by = request.user  
+            dataset_request.updated_at = timezone.now()
+            dataset_request.save()
             print(f"Dataset ID: {dataset_request.dataset_id.dataset_id}")
 
             try:
@@ -267,19 +273,29 @@ class request_actions(APIView):
 
         elif action == 'reject':
             dataset_request.request_status = 'denied'
+            dataset_request.request_status = 'approved'
+            dataset_request.updated_by = request.user  
+            dataset_request.updated_at = timezone.now()
+            dataset_request.save()
 
             if send_email(dataset_request):
                 print("Email sent")
             else:
+                #Todo: add a retry mechanism to send email or a fallback to notify the user in the app
+                
                 print("Email not sent")
 
             Notification.objects.create(
                 user=dataset_request.researcher_id,
                 message=f"Your dataset request for '{dataset_request.dataset_id.title}' has been denied."
             )
+            
 
         elif action == 'revoke':
             dataset_request.request_status = 'revoked'
+            dataset_request.updated_by = request.user  
+            dataset_request.updated_at = timezone.now()
+            dataset_request.save()
 
             if send_email(dataset_request):
                 print("Email sent")

@@ -21,7 +21,7 @@ function PurchaseHistoryTable() {
   const [filterYear, setFilterYear] = React.useState<string>("");
 
   React.useEffect(() => {
-    let url = `${BACKEND_URL}payments/purchase-history/?order=${order}`;
+    let url = `${BACKEND_URL}/payments/purchase-history/?order=${order}`;
     if (filterMonth) url += `&filter_month=${filterMonth}`;
     if (filterYear && Number(filterYear) > 0) url += `&filter_year=${filterYear}`;
 

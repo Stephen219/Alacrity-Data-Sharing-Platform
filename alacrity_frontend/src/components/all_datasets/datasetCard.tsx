@@ -22,7 +22,7 @@ interface DatasetCardProps {
   price: number;
   hasPaid?: boolean;
   onToggleBookmark: (event: React.MouseEvent<HTMLButtonElement>) => void;
-  averageRating?: number; // Add average rating prop
+  averageRating?: number; 
 }
 
 export const DatasetCard: React.FC<DatasetCardProps> = ({
@@ -40,7 +40,7 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
   isBookmarked,
   price,
   onToggleBookmark,
-  averageRating = 0, // Default to 0 if not provided
+  averageRating = 0,
 }) => {
   const isListView = viewMode === "list";
   const truncatedDescription = description.length > 200 ? description.substring(0, 200) + "..." : description;
@@ -52,7 +52,7 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
         <Star
           key={i}
           size={16}
-          className={i <= Math.round(rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}
+          className={i <= Math.round(rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300 dark:text-gray-100"}
         />
       );
     }
@@ -62,7 +62,7 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
   return (
     <div
       className={`
-        bg-white dark:bg-gray-200 text-gray-900
+        bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
         rounded-lg shadow-md overflow-hidden transition-all duration-300
         hover:shadow-lg hover:-translate-y-1
         ${isListView ? "flex" : "flex flex-col"}
@@ -84,13 +84,13 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
       <div className={`p-6 flex flex-col justify-between ${isListView ? "w-2/3" : "w-full"}`}>
         <div>
           <h3 className="text-xl font-semibold mb-2 line-clamp-2">{title}</h3>
-          <p className="text-gray-600 mb-4 line-clamp-3">{truncatedDescription}</p>
+          <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">{truncatedDescription}</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
           <div className="flex items-center gap-2">
             <Building2 size={16} className="text-[#ff6b2c]" />
-            <span className="text-gray-500">{organization}</span>
+            <span className="text-gray-500 dark:text-gray-100">{organization}</span>
           </div>
           <div className="flex items-center gap-2">
             <svg
@@ -105,22 +105,22 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
                 clipRule="evenodd"
               />
             </svg>
-            <span className="text-gray-500">{dateUploaded}</span>
+            <span className="text-gray-500 dark:text-gray-100">{dateUploaded}</span>
           </div>
           <div className="flex items-center gap-2">
             <Database size={16} className="text-[#ff6b2c]" />
-            <span className="text-gray-500">{entries.toLocaleString()} entries</span>
+            <span className="text-gray-500 dark:text-gray-100">{entries.toLocaleString()} rows</span>
           </div>
           <div className="flex items-center gap-2">
             <HardDrive size={16} className="text-[#ff6b2c]" />
-            <span className="text-gray-500">{size}</span>
+            <span className="text-gray-500 dark:text-gray-100">{size} MBs</span>
           </div>
         </div>
 
         {/* Rating Stars */}
         <div className="flex items-center gap-1 mb-4">
           {renderStars(averageRating)}
-          <span className="text-gray-500 text-sm ml-2">
+          <span className="text-gray-500 dark:text-gray-100 text-sm ml-2">
             ({averageRating.toFixed(1)} / 5)
           </span>
         </div>
@@ -143,7 +143,7 @@ export const DatasetCard: React.FC<DatasetCardProps> = ({
           {isNaN(Number(price)) || price === null || price === undefined || Number(price) === 0 ? (
             <span className="text-green-600 font-medium">Free</span>
           ) : (
-            <span className="text-gray-700">Price: £{Number(price).toFixed(2)}</span>
+            <span className="text-gray-700 dark:text-gray-100">Price: £{Number(price).toFixed(2)}</span>
           )}
         </div>
 

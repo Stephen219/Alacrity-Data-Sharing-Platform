@@ -6,4 +6,4 @@ const MINIO_URL = "http:10.72.98.50:9000";
 
 export { BACKEND_URL, MINIO_URL };
 
-// export { BACKEND_URL };
+

@@ -34,7 +34,7 @@ const PublicSubmissions = () => {
   useEffect(() => {
     const fetchSubmissions = async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}research/submissions/view/`);
+        const response = await fetch(`${BACKEND_URL}/research/submissions/view/`);
         if (!response.ok) throw new Error(`Failed to fetch submissions. Status: ${response.status}`);
   
         const data = await response.json();
@@ -60,7 +60,7 @@ const PublicSubmissions = () => {
       if (!token) return; // Stop execution if general user
   
       try {
-        const response = await fetchWithAuth(`${BACKEND_URL}research/bookmarks/`);
+        const response = await fetchWithAuth(`${BACKEND_URL}/research/bookmarks/`);
         if (!response.ok) throw new Error("Failed to fetch bookmarks.");
   
         const data = await response.json();
@@ -141,7 +141,7 @@ if (sortBy === "recent") {
 
   const toggleBookmark = async (submissionId: number) => {
     try {
-      const response = await fetchWithAuth(`${BACKEND_URL}research/bookmark/${submissionId}/`, {
+      const response = await fetchWithAuth(`${BACKEND_URL}/research/bookmark/${submissionId}/`, {
         method: "POST",
       });
   
@@ -341,7 +341,7 @@ if (sortBy === "recent") {
                 />
               </button>
               {submission.bookmark_count && submission.bookmark_count > 0 && (
-                  <span className="text-sm text-gray-600 ml-1">
+                  <span className="text-sm text-gray-600 dark:text-gray-100 ml-1">
                     {submission.bookmark_count}
                   </span>
                 )}
@@ -403,7 +403,7 @@ if (sortBy === "recent") {
                 />
               </button>
               {submission.bookmark_count && submission.bookmark_count > 0 && (
-  <span className="text-sm text-gray-600 ml-1">
+  <span className="text-sm text-gray-600 dark:text-gray-100 ml-1">
     {submission.bookmark_count}
   </span>
 )}

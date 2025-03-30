@@ -140,7 +140,7 @@ export default function BookmarksPage() {
 
   return (
     <div
-      className="min-h-screen bg-gray-50 transition-colors duration-200"
+      className="min-h-screen bg-card transition-colors duration-200"
     >
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
@@ -160,7 +160,7 @@ export default function BookmarksPage() {
           <input
             type="search"
             placeholder="Search bookmarks..."
-            className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF6B1A] focus:border-transparent"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />

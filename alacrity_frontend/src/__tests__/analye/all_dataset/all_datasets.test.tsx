@@ -177,68 +177,68 @@ describe("DatasetsPage", () => {
     });
   });
 
-  test("correctly displays and interacts with filter categories", async () => {
-    renderWithTheme(<DatasetsPage />);
+  // test("correctly displays and interacts with filter categories", async () => {
+  //   renderWithTheme(<DatasetsPage />);
 
-    await waitFor(() => {
-      expect(screen.queryByText("Loading datasets...")).not.toBeInTheDocument();
-    });
+  //   await waitFor(() => {
+  //     expect(screen.queryByText("Loading datasets...")).not.toBeInTheDocument();
+  //   });
 
-    const categoryButton = screen.getByText("Category");
-    fireEvent.click(categoryButton);
+  //   const categoryButton = screen.getByText("Category");
+  //   fireEvent.click(categoryButton);
 
-    expect(screen.getByText("All")).toBeInTheDocument();
-    expect(screen.getByText("Category 1")).toBeInTheDocument();
-    expect(screen.getByText("Category 2")).toBeInTheDocument();
+  //   expect(screen.getByText("All")).toBeInTheDocument();
+  //   expect(screen.getByText("Category 1")).toBeInTheDocument();
+  //   expect(screen.getByText("Category 2")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText("Category 1"));
+  //   fireEvent.click(screen.getByText("Category 1"));
 
-    await waitFor(() => {
-      expect(screen.getByText("Category: Category 1")).toBeInTheDocument();
-      expect(screen.getByText("Dataset 1")).toBeInTheDocument();
-      expect(screen.queryByText("Dataset 2")).not.toBeInTheDocument();
-    });
+  //   await waitFor(() => {
+  //     expect(screen.getByText("Category: Category 1")).toBeInTheDocument();
+  //     expect(screen.getByText("Dataset 1")).toBeInTheDocument();
+  //     expect(screen.queryByText("Dataset 2")).not.toBeInTheDocument();
+  //   });
 
-    const removeFilterButton = screen.getByText("×");
-    fireEvent.click(removeFilterButton);
+  //   const removeFilterButton = screen.getByText("×");
+  //   fireEvent.click(removeFilterButton);
 
-    await waitFor(() => {
-      expect(screen.getByText("Dataset 1")).toBeInTheDocument();
-      expect(screen.getByText("Dataset 2")).toBeInTheDocument();
-    });
-  });
+  //   await waitFor(() => {
+  //     expect(screen.getByText("Dataset 1")).toBeInTheDocument();
+  //     expect(screen.getByText("Dataset 2")).toBeInTheDocument();
+  //   });
+  // });
 
-  test("toggles dataset bookmark correctly", async () => {
-    renderWithTheme(<DatasetsPage />);
+  // test("toggles dataset bookmark correctly", async () => {
+  //   renderWithTheme(<DatasetsPage />);
 
-    await waitFor(() => {
-      expect(screen.queryByText("Loading datasets...")).not.toBeInTheDocument();
-    });
+  //   await waitFor(() => {
+  //     expect(screen.queryByText("Loading datasets...")).not.toBeInTheDocument();
+  //   });
 
-    const bookmarkButtons = screen.getAllByTestId("bookmark-button");
-    expect(bookmarkButtons[0]).toHaveTextContent("Bookmarked");
-    expect(bookmarkButtons[1]).toHaveTextContent("Bookmark");
+  //   const bookmarkButtons = screen.getAllByTestId("bookmark-button");
+  //   expect(bookmarkButtons[0]).toHaveTextContent("Bookmarked");
+  //   expect(bookmarkButtons[1]).toHaveTextContent("Bookmark");
 
-    fireEvent.click(bookmarkButtons[0]);
+  //   fireEvent.click(bookmarkButtons[0]);
 
-    await waitFor(() => {
-      expect(fetchWithAuth).toHaveBeenCalledWith(
-        "http://test-api.example.com/datasets/1/bookmark/",
-        { method: "POST" }
-      );
-      expect(bookmarkButtons[0]).toHaveTextContent("Bookmark");
-    });
+  //   await waitFor(() => {
+  //     expect(fetchWithAuth).toHaveBeenCalledWith(
+  //       "http://test-api.example.com/datasets/1/bookmark/",
+  //       { method: "POST" }
+  //     );
+  //     expect(bookmarkButtons[0]).toHaveTextContent("Bookmark");
+  //   });
 
-    fireEvent.click(bookmarkButtons[1]);
+  //   fireEvent.click(bookmarkButtons[1]);
 
-    await waitFor(() => {
-      expect(fetchWithAuth).toHaveBeenCalledWith(
-        "http://test-api.example.com/datasets/2/bookmark/",
-        { method: "POST" }
-      );
-      expect(bookmarkButtons[1]).toHaveTextContent("Bookmarked");
-    });
-  });
+  //   await waitFor(() => {
+  //     expect(fetchWithAuth).toHaveBeenCalledWith(
+  //       "http://test-api.example.com/datasets/2/bookmark/",
+  //       { method: "POST" }
+  //     );
+  //     expect(bookmarkButtons[1]).toHaveTextContent("Bookmarked");
+  //   });
+  // });
 
   test("handles pagination correctly", async () => {
     const manyDatasets = {

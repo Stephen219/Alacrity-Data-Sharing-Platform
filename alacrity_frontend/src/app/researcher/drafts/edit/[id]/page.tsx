@@ -31,7 +31,7 @@ const EditDraft = () => {
   
     const fetchDraft = async () => {
       try {
-        const response = await fetchWithAuth(`${BACKEND_URL}research/drafts/${id}/`);
+        const response = await fetchWithAuth(`${BACKEND_URL}/research/drafts/${id}/`);
         if (!response.ok) throw new Error("Failed to fetch draft.");
         const data = await response.json();
   
