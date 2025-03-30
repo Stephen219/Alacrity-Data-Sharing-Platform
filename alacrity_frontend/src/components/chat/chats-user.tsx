@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -29,6 +28,7 @@ export default function UserChatListPage() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [socketStatus, setSocketStatus] = useState<string>("Connecting...");
   const socketRef = useRef<WebSocket | null>(null);
 
   const fetchChats = async () => {
@@ -67,51 +67,117 @@ export default function UserChatListPage() {
 
   const startChat = async (recipientId: number) => {
     try {
-        const response = await fetchWithAuth(`${BACKEND_URL}/users/api/start-chat/${recipientId}/`);
-        if (response.ok) {
-            const { conversation_id } = await response.json();
-            router.push(`/chat/users/messages/${conversation_id}`);
-        }
+      const response = await fetchWithAuth(`${BACKEND_URL}/users/api/start-chat/${recipientId}/`);
+      if (response.ok) {
+        const { conversation_id } = await response.json();
+        router.push(`/chat/users/message/${conversation_id}`);
+      }
     } catch (error) {
-        console.error("Error starting chat:", error);
+      console.error("Error starting chat:", error);
     }
-};
+  };
 
   useEffect(() => {
     fetchChats();
 
     const connectWebSocket = () => {
       const token = localStorage.getItem("access_token");
-      if (!token) return;
-    
+      if (!token) {
+        console.error("No access token found, skipping WebSocket connection");
+        setSocketStatus("Authentication failed");
+        router.push("/login");
+        return;
+      }
+
       const wsScheme = BACKEND_URL.startsWith("https") ? "wss" : "ws";
       const wsHost = BACKEND_URL.replace(/^https?:\/\//, "");
-      socketRef.current = new WebSocket(`${wsScheme}://${wsHost}/ws/users/chats/?token=${token}`);
-    
-      socketRef.current.onopen = () => console.log("User Chat List WebSocket connected");
-      socketRef.current.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.message) {
-          setChats((prev) => {
-            const updated = prev.map((chat) =>
-              chat.conversation_id === data.message.conversation_id
-                ? { ...chat, last_message: data.message.message, last_timestamp: data.message.timestamp, unread_count: chat.unread_count + 1 }
-                : chat
-            );
-            setFilteredChats(updated);
-            return updated;
-          });
-        } else if (data.is_typing !== undefined) {
-          setTypingStatus((prev) => ({ ...prev, [data.conversation_id]: data.is_typing }));
-        }
+      const wsUrl = `${wsScheme}://${wsHost}/ws/users/chats/?token=${token}`;
+      console.log("Connecting to User Chat List WebSocket at:", wsUrl);
+
+      let retryCount = 0;
+      const maxRetries = 5;
+      let retryTimeout: NodeJS.Timeout;
+
+      const attemptConnection = () => {
+        socketRef.current = new WebSocket(wsUrl);
+
+        socketRef.current.onopen = () => {
+          console.log("User Chat List WebSocket connected");
+          setSocketStatus("Connected");
+          retryCount = 0;
+          if (retryTimeout) clearTimeout(retryTimeout);
+        };
+
+        socketRef.current.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log("WebSocket message received:", data);
+            if (data.error) {
+              console.error("WebSocket error from server:", data.error);
+              return;
+            }
+            if (data.message) {
+              setChats((prev) => {
+                const updated = prev.map((chat) =>
+                  chat.conversation_id === data.message.conversation_id
+                    ? {
+                        ...chat,
+                        last_message: data.message.message,
+                        last_timestamp: data.message.timestamp,
+                        unread_count: chat.unread_count + 1,
+                      }
+                    : chat
+                );
+                setFilteredChats(updated);
+                return updated;
+              });
+            } else if (data.is_typing !== undefined) {
+              setTypingStatus((prev) => ({ ...prev, [data.conversation_id]: data.is_typing }));
+            } else if (data.read_conversation) {
+              setChats((prev) => {
+                const updated = prev.map((chat) =>
+                  chat.conversation_id === data.read_conversation
+                    ? { ...chat, unread_count: 0 }
+                    : chat
+                );
+                setFilteredChats(updated);
+                return updated;
+              });
+            }
+          } catch (error) {
+            console.error("Error parsing WebSocket message:", error);
+          }
+        };
+
+        socketRef.current.onerror = (error) => {
+          console.error("WebSocket error occurred:", error);
+          setSocketStatus("Error");
+        };
+
+        socketRef.current.onclose = (event) => {
+          console.log("WebSocket closed with code:", event.code, "reason:", event.reason);
+          setSocketStatus("Disconnected");
+          if (retryCount < maxRetries && event.code !== 1000) {
+            retryCount++;
+            const delayMs = 3000 * retryCount;
+            setSocketStatus(`Reconnecting... (${retryCount}/${maxRetries})`);
+            retryTimeout = setTimeout(attemptConnection, delayMs);
+          } else {
+            setSocketStatus("Failed to connect after retries");
+          }
+        };
       };
-      socketRef.current.onerror = (error) => console.error("WebSocket error details:", error);
-      socketRef.current.onclose = (event) => console.log("WebSocket closed:", event.code, event.reason);
+
+      attemptConnection();
     };
 
     connectWebSocket();
-    return () => socketRef.current?.close();
-  }, []);
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.close(1000, "Component unmounting");
+      }
+    };
+  }, [router]);
 
   useEffect(() => {
     if (searchQuery.trim() === "") {
@@ -140,7 +206,7 @@ export default function UserChatListPage() {
         <div className="max-w-5xl mx-auto bg-white rounded-lg p-4">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold">User Chats</h1>
-            <div className="flex gap-4">
+            <div className="flex gap-4 items-center">
               <input
                 type="text"
                 placeholder="Search chats..."
@@ -154,6 +220,17 @@ export default function UserChatListPage() {
               >
                 <Plus className="w-5 h-5" />
               </button>
+              <span
+                className={`text-xs font-medium px-3 py-1 rounded-full ${
+                  socketStatus === "Connected"
+                    ? "bg-green-100 text-green-800"
+                    : socketStatus.includes("Reconnecting")
+                    ? "bg-yellow-100 text-yellow-800"
+                    : "bg-red-100 text-red-800"
+                }`}
+              >
+                {socketStatus}
+              </span>
             </div>
           </div>
           {filteredChats.length === 0 ? (

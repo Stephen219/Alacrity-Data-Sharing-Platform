@@ -76,6 +76,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         try:
             data = json.loads(text_data)
+            
+            # Handle typing events
             if "typing" in data:
                 await self.channel_layer.group_send(
                     self.conversation_group_name,
@@ -85,7 +87,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     }
                 )
                 return
+            
+            # Handle mark_read events
+            if "mark_read" in data and data["mark_read"]:
+                # Mark messages as read in the database
+                await self.mark_messages_as_read()
+                # Broadcast read event to UserChatListConsumer
+                await self.channel_layer.group_send(
+                    f"user_{self.user.id}_chats",
+                    {
+                        "type": "read_event",
+                        "read_conversation": self.conversation_id,
+                    }
+                )
+                return
 
+            # Handle message sending
             message = data.get('message', '').strip()
             if not message or len(message) > 1000:
                 await self.send(text_data=json.dumps({"error": "Invalid message"}))
@@ -93,6 +110,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             message = await sync_to_async(self.sanitize_message)(message)
             msg = await self.save_message(message)
+            # Send to conversation group (chat participants)
             await self.channel_layer.group_send(
                 self.conversation_group_name,
                 {
@@ -110,9 +128,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     }
                 }
             )
-        except json.JSONDecodeError:
-            await self.send(text_data=json.dumps({"error": "Invalid JSON"}))
-        await self.channel_layer.group_send(
+            # Send to user chats group (for chat list updates)
+            await self.channel_layer.group_send(
                 f"user_{self.user.id}_chats",
                 {
                     "type": "chat_message",
@@ -121,12 +138,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "timestamp": msg.created_at.isoformat(),
                 }
             )
+        except json.JSONDecodeError:
+            await self.send(text_data=json.dumps({"error": "Invalid JSON"}))
 
     async def chat_message(self, event):
-        await self.send(text_data=json.dumps(event['message']))
+        await self.send(text_data=json.dumps({"message": event['message']}))
 
     async def typing_event(self, event):
         await self.send(text_data=json.dumps({"is_typing": event["is_typing"]}))
+
+    async def read_event(self, event):
+        await self.send(text_data=json.dumps({"read_conversation": event["read_conversation"]}))
 
     @database_sync_to_async
     def authenticate_user(self, token):
@@ -153,11 +175,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
         conversation = Conversation.objects.get(id=self.conversation_id)
         return Message.objects.create(conversation=conversation, sender=self.user, message=message)
 
+    @database_sync_to_async
+    def mark_messages_as_read(self):
+        """Mark all unread messages from the other participant as read."""
+        conversation = Conversation.objects.get(id=self.conversation_id)
+        other_participant = conversation.participant2 if conversation.participant1 == self.user else conversation.participant1
+        Message.objects.filter(
+            conversation=conversation,
+            sender=other_participant,
+            is_read=False
+        ).update(is_read=True)
+
     def sanitize_message(self, message):
         message = re.sub(r'<[^>]+>', '', message)
         return ' '.join(message.split())
-    
-    
     
 
 class UserChatListConsumer(AsyncWebsocketConsumer):

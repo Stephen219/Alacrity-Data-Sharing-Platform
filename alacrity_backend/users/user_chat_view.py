@@ -1,10 +1,12 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from channels.layers import get_channel_layer
+from asgiref.sync import sync_to_async  # Added missing import
 from users.decorators import role_required
 from .models import Conversation, User, Message
 from django.shortcuts import get_object_or_404
-from django.db.models import Q  # Added missing import
+from django.db.models import Q
 
 class SearchUsersView(APIView):
     @role_required('researcher')
@@ -62,7 +64,7 @@ class ConversationDetailView(APIView):
 
 class MessageListView(APIView):
     permission_classes = [IsAuthenticated]
-
+    @role_required('researcher')
     def get(self, request, conversation_id):
         conversation = get_object_or_404(Conversation, id=conversation_id)
         if request.user not in (conversation.participant1, conversation.participant2):
@@ -107,7 +109,8 @@ class UserConversationsView(APIView):
                 "last_timestamp": conv.messages.last().created_at.isoformat() if conv.messages.exists() else None,
                 "unread_count": conv.messages.filter(
                     sender=conv.participant2 if conv.participant1 == request.user else conv.participant1,
-                    is_read=False  # Changed read to is_read to match your model
+                    is_read=False
                 ).count(),
             } for conv in conversations
         ])
+    

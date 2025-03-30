@@ -55,7 +55,6 @@ export default function ChatPage({ params }: ChatPageProps) {
   }, [messages]);
 
   useEffect(() => {
-    // Validate params.id
     if (!params.id || params.id === "undefined") {
       console.error("Invalid conversation ID:", params.id);
       router.push("/chat/users/chats");
@@ -83,9 +82,7 @@ export default function ChatPage({ params }: ChatPageProps) {
         const conversationResponse = await fetchWithAuth(
           `${BACKEND_URL}/users/api/conversations/${params.id}/`
         );
-        if (!conversationResponse.ok) {
-          throw new Error(`Conversation fetch failed: ${conversationResponse.status}`);
-        }
+        if (!conversationResponse.ok) throw new Error(`Conversation fetch failed: ${conversationResponse.status}`);
         const conversationData = await conversationResponse.json();
         const recipientUser =
           conversationData.participant1.id === currentUserId
@@ -101,13 +98,11 @@ export default function ChatPage({ params }: ChatPageProps) {
         const messagesResponse = await fetchWithAuth(
           `${BACKEND_URL}/users/api/conversations/${params.id}/messages/`
         );
-        if (!messagesResponse.ok) {
-          throw new Error(`Messages fetch failed: ${messagesResponse.status}`);
-        }
+        if (!messagesResponse.ok) throw new Error(`Messages fetch failed: ${messagesResponse.status}`);
         const messagesData = await messagesResponse.json();
         const initialMessages = Array.isArray(messagesData)
           ? messagesData.map((msg) => ({
-              message_id: msg.message_id,
+              message_id: msg.message_id || `fallback-${Date.now()}-${Math.random()}`,
               sender_id: msg.sender_id,
               content: msg.message || msg.content,
               timestamp: new Date(msg.timestamp || msg.created_at),
@@ -147,6 +142,8 @@ export default function ChatPage({ params }: ChatPageProps) {
           setSocketStatus("Connected");
           retryCount = 0;
           if (retryTimeout) clearTimeout(retryTimeout);
+          // Mark conversation as read on connect
+          socketRef.current?.send(JSON.stringify({ mark_read: true }));
         };
 
         socketRef.current.onmessage = (event) => {
@@ -159,15 +156,24 @@ export default function ChatPage({ params }: ChatPageProps) {
             }
             if (data.message) {
               const newMessage = {
-                message_id: data.message.message_id,
+                message_id: data.message.message_id || `fallback-${Date.now()}-${Math.random()}`,
                 sender_id: data.message.sender_id,
-                content: data.message.message || data.message.content,
+                content: data.message.content || data.message.message,
                 timestamp: new Date(data.message.timestamp),
                 sender_first_name: data.message.sender_first_name,
                 sender_last_name: data.message.sender_last_name,
                 sender_profile_picture: data.message.sender_profile_picture,
               };
               setMessages((prev) => {
+                const optimisticIndex = prev.findIndex(
+                  (m) => typeof m.message_id === "string" && m.message_id.startsWith("temp-") && m.content === newMessage.content
+                );
+                if (optimisticIndex !== -1) {
+                  const updated = [...prev];
+                  updated[optimisticIndex] = newMessage;
+                  console.log("Replaced optimistic message with server response:", newMessage);
+                  return updated;
+                }
                 if (!prev.some((m) => m.message_id === newMessage.message_id)) {
                   console.log("Adding new message to state:", newMessage);
                   return [...prev, newMessage];
@@ -193,7 +199,7 @@ export default function ChatPage({ params }: ChatPageProps) {
           setSocketStatus("Disconnected");
           if (retryCount < maxRetries && event.code !== 1000) {
             retryCount++;
-            const delayMs = 3000;
+            const delayMs = 3000 * retryCount;
             setSocketStatus(`Reconnecting... (${retryCount}/${maxRetries})`);
             retryTimeout = setTimeout(attemptConnection, delayMs);
           } else {
@@ -202,7 +208,7 @@ export default function ChatPage({ params }: ChatPageProps) {
         };
       };
 
-      attemptConnection(); // Remove delay for faster testing
+      attemptConnection();
     };
 
     connectWebSocket();
@@ -234,13 +240,12 @@ export default function ChatPage({ params }: ChatPageProps) {
       const messageData = { message: newMessage };
       console.log("Sending message:", messageData);
       socketRef.current.send(JSON.stringify(messageData));
-      // Optimistically add the message to the UI
       const optimisticMessage: Message = {
-        message_id: `temp-${Date.now()}`, // Temporary ID until server responds
+        message_id: `temp-${Date.now()}`,
         sender_id: currentUserId!,
         content: newMessage,
         timestamp: new Date(),
-        sender_first_name: "You", // Adjust based on your user data
+        sender_first_name: "You",
         sender_last_name: "",
       };
       setMessages((prev) => [...prev, optimisticMessage]);

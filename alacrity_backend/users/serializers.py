@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from organisation.models import Organization
 from research.models import AnalysisSubmission
+from .models import User, Message
 
 User = get_user_model()
 
@@ -177,3 +178,17 @@ class UserSerializer(serializers.ModelSerializer):
             ret["organization"] = None
         ret.pop("organization_name", None)
         return ret
+    
+
+class MessageSerializer(serializers.ModelSerializer):
+    message_id = serializers.CharField(source='id')
+    sender_id = serializers.IntegerField(source='sender.id')
+    content = serializers.CharField(source='message')
+    timestamp = serializers.DateTimeField(source='created_at')
+    sender_first_name = serializers.CharField(source='sender.first_name')
+    sender_last_name = serializers.CharField(source='sender.last_name')
+    sender_profile_picture = serializers.ImageField(source='sender.profile_picture', allow_null=True)
+
+    class Meta:
+        model = Message
+        fields = ['message_id', 'sender_id', 'content', 'timestamp', 'sender_first_name', 'sender_last_name', 'sender_profile_picture']
