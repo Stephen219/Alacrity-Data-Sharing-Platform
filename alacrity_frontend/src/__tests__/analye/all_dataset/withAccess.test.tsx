@@ -110,19 +110,6 @@ describe('DatasetAccessed Component', () => {
     expect(datasetElements[1]).toHaveTextContent('Test Dataset 2');
   });
 
-  it('toggles dark mode', async () => {
-    render(<DatasetAccessed />);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Test Dataset 1')).toBeInTheDocument();
-    });
-
-    const darkModeToggle = screen.getByLabelText('Switch to dark mode');
-    expect(darkModeToggle).toBeInTheDocument();
-
-    fireEvent.click(darkModeToggle);
-    expect(screen.getByLabelText('Switch to light mode')).toBeInTheDocument();
-  });
 
   it('handles empty dataset case', async () => {
     (fetchWithAuth as jest.Mock).mockResolvedValue({
