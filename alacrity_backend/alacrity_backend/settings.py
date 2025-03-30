@@ -174,6 +174,7 @@ CORS_ALLOWED_ORIGINS = [
     FRONTEND_URL, 
     "http://127.0.0.1:3000",
     "http://localhost:3000",
+    "https://10.72.102.244:80",
 ]
 
 
