@@ -33,7 +33,7 @@ export default function UserChatListPage() {
 
   const fetchChats = async () => {
     try {
-      const response = await fetchWithAuth(`${BACKEND_URL}/users/api/user/conversations/`, { cache: "no-store" });
+      const response = await fetchWithAuth(`${BACKEND_URL}/users/api/conversations/`, { cache: "no-store" });
       if (response.ok) {
         const chatData = await response.json();
         setChats(chatData);
@@ -67,16 +67,15 @@ export default function UserChatListPage() {
 
   const startChat = async (recipientId: number) => {
     try {
-      const response = await fetchWithAuth(`${BACKEND_URL}/users/api/start-chat/${recipientId}/`);
-      if (response.ok) {
-        const { conversation_id } = await response.json();
-        setShowSearchModal(false);
-        router.push(`/chat/${conversation_id}`);
-      }
+        const response = await fetchWithAuth(`${BACKEND_URL}/users/api/start-chat/${recipientId}/`);
+        if (response.ok) {
+            const { conversation_id } = await response.json();
+            router.push(`/chat/users/messages/${conversation_id}`);
+        }
     } catch (error) {
-      console.error("Error starting chat:", error);
+        console.error("Error starting chat:", error);
     }
-  };
+};
 
   useEffect(() => {
     fetchChats();
@@ -84,12 +83,12 @@ export default function UserChatListPage() {
     const connectWebSocket = () => {
       const token = localStorage.getItem("access_token");
       if (!token) return;
-
+    
       const wsScheme = BACKEND_URL.startsWith("https") ? "wss" : "ws";
       const wsHost = BACKEND_URL.replace(/^https?:\/\//, "");
-      socketRef.current = new WebSocket(`${wsScheme}://${wsHost}/ws/user/?token=${token}`);
-
-      socketRef.current.onopen = () => console.log("User WebSocket connected");
+      socketRef.current = new WebSocket(`${wsScheme}://${wsHost}/ws/users/chats/?token=${token}`);
+    
+      socketRef.current.onopen = () => console.log("User Chat List WebSocket connected");
       socketRef.current.onmessage = (event) => {
         const data = JSON.parse(event.data);
         if (data.message) {
@@ -106,8 +105,8 @@ export default function UserChatListPage() {
           setTypingStatus((prev) => ({ ...prev, [data.conversation_id]: data.is_typing }));
         }
       };
-      socketRef.current.onerror = (error) => console.error("WebSocket error:", error);
-      socketRef.current.onclose = () => console.log("WebSocket closed");
+      socketRef.current.onerror = (error) => console.error("WebSocket error details:", error);
+      socketRef.current.onclose = (event) => console.log("WebSocket closed:", event.code, event.reason);
     };
 
     connectWebSocket();
@@ -165,7 +164,7 @@ export default function UserChatListPage() {
                 <div
                   key={chat.conversation_id}
                   className="hover:bg-gray-100 cursor-pointer transition px-6 py-4 flex items-center space-x-4"
-                  onClick={() => router.push(`/chat/${chat.conversation_id}`)}
+                  onClick={() => router.push(`/chat/users/message/${chat.conversation_id}`)}
                 >
                   <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
                     {chat.participant.profile_picture ? (

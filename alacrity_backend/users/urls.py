@@ -5,7 +5,7 @@ from .views import (
     AllOrganizationMembersViews, MemberProfileView, LoggedInUser, DatasetWithAccessView,
     ProfilePictureUpdateView, FollowUserView, UnfollowUserView
 )
-from .user_chat_view import SearchUsersView, StartChatView, ConversationDetailView, MessageListView  # Relative import from users.user_chat_view
+from .user_chat_view import SearchUsersView, StartChatView, ConversationDetailView, MessageListView, UserConversationsView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
@@ -32,4 +32,5 @@ urlpatterns = [
     path("reset-password/", ResetPasswordView.as_view(), name="reset-password"),
     path("api/conversations/<int:conversation_id>/", ConversationDetailView.as_view(), name="conversation_detail"),
     path("api/conversations/<int:conversation_id>/messages/", MessageListView.as_view(), name="message_list"),
+    path("api/conversations/", UserConversationsView.as_view(), name="user_conversations"),
 ]

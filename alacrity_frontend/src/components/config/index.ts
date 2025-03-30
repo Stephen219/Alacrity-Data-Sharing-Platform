@@ -160,7 +160,7 @@ export const NAV_ITEMS = [
       featured: [
         {
           name: "Chats",
-          href: "/researcher/chats",
+          href: "/chat/users/chats",
           imageSrc: "/navbar/chats/user_chats.png",
         },
         {

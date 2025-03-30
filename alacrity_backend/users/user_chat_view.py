@@ -81,3 +81,33 @@ class MessageListView(APIView):
             }
             for msg in messages
         ])
+    
+class UserConversationsView(APIView):
+    @role_required('researcher')
+    def get(self, request):
+        conversations = Conversation.objects.filter(
+            Q(participant1=request.user) | Q(participant2=request.user)
+        ).order_by('-id')
+        return Response([
+            {
+                "conversation_id": conv.id,
+                "participant": {
+                    "id": conv.participant2.id if conv.participant1 == request.user else conv.participant1.id,
+                    "first_name": conv.participant2.first_name if conv.participant1 == request.user else conv.participant1.first_name,
+                    "last_name": conv.participant2.last_name if conv.participant1 == request.user else conv.participant1.last_name,
+                    "profile_picture": (
+                        conv.participant2.profile_picture.url if conv.participant2.profile_picture 
+                        else None
+                    ) if conv.participant1 == request.user else (
+                        conv.participant1.profile_picture.url if conv.participant1.profile_picture 
+                        else None
+                    ),
+                },
+                "last_message": conv.messages.last().message if conv.messages.exists() else "No messages yet",
+                "last_timestamp": conv.messages.last().created_at.isoformat() if conv.messages.exists() else None,
+                "unread_count": conv.messages.filter(
+                    sender=conv.participant2 if conv.participant1 == request.user else conv.participant1,
+                    is_read=False  # Changed read to is_read to match your model
+                ).count(),
+            } for conv in conversations
+        ])

@@ -1,3 +1,4 @@
+// pages/datasets/[dataset_id].tsx (or wherever it’s routed)
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -13,7 +14,7 @@ interface Message {
   content: string;
   timestamp: Date;
   sender_first_name?: string;
-  sender_sur_name?: string;
+  sender_surname?: string; // Fixed typo
   sender_profile_picture?: string | null;
   sender_email?: string;
 }
@@ -29,7 +30,7 @@ interface DecodedToken {
   user_id: number;
 }
 
-export default function ChatPage({ params }: { params: { dataset_id: string } }) {
+export default function DatasetChatPage({ params }: { params: { dataset_id: string } }) {
   const router = useRouter();
   const [dataset, setDataset] = useState<Dataset | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -52,7 +53,6 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
   }, [messages]);
 
   useEffect(() => {
-    // Decode the JWT to get the current user's email
     const token = localStorage.getItem("access_token");
     if (token) {
       try {
@@ -64,12 +64,12 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
     } else {
       console.error("No access token found in localStorage");
       router.push("/login");
+      return;
     }
 
     const fetchDatasetAndMessages = async () => {
       try {
         console.log("Fetching for dataset_id:", params.dataset_id);
-        const token = localStorage.getItem("access_token");
         if (!token) throw new Error("No access token found");
 
         const datasetResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/${params.dataset_id}/`);
@@ -94,14 +94,15 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
                 content: msg.content,
                 timestamp: new Date(msg.timestamp || msg.created_at),
                 sender_first_name: msg.sender_first_name,
-                sender_sur_name: msg.sender_sur_name,
+                sender_surname: msg.sender_surname, // Fixed typo
                 sender_profile_picture: msg.sender_profile_picture,
-                sender_email: msg.sender_email || `${msg.sender_first_name}.${msg.sender_sur_name}@example.com`,
+                sender_email: msg.sender_email || `${msg.sender_first_name}.${msg.sender_surname}@example.com`,
               }))
             : []
         );
       } catch (error) {
         console.error("Fetch error:", error);
+        router.push("/chat"); // Redirect to dataset chat list
       } finally {
         setLoading(false);
       }
@@ -124,17 +125,15 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
         return;
       }
 
-      console.log("Access token:", token);
-
       const attemptConnection = () => {
         const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
         const wsHost = BACKEND_URL.replace(/^https?:\/\//, "");
         const wsUrl = `${wsScheme}://${wsHost}/ws/datasets/chats/${params.dataset_id}/messages/?token=${token}`;
-        console.log("Connecting to WebSocket at:", wsUrl);
+        console.log("Connecting to Dataset WebSocket at:", wsUrl);
         socketRef.current = new WebSocket(wsUrl);
 
         socketRef.current.onopen = () => {
-          console.log("WebSocket connection established");
+          console.log("WebSocket connection established for dataset:", params.dataset_id);
           setSocketStatus("Connected");
           retryCount = 0;
           if (retryTimeout) clearTimeout(retryTimeout);
@@ -155,9 +154,9 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
                   content: data.message.content,
                   timestamp: new Date(data.message.timestamp),
                   sender_first_name: data.message.sender_first_name,
-                  sender_sur_name: data.message.sender_sur_name,
+                  sender_surname: data.message.sender_surname, // Fixed typo
                   sender_profile_picture: data.message.sender_profile_picture,
-                  sender_email: `${data.message.sender_first_name}.${data.message.sender_sur_name}@example.com`,
+                  sender_email: `${data.message.sender_first_name}.${data.message.sender_surname}@example.com`,
                 };
                 if (prev.some((m) => m.message_id === newMessage.message_id)) {
                   return prev;
@@ -165,7 +164,7 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
                 return [...prev, newMessage];
               });
             } else if (data.typing !== undefined) {
-              setIsTyping(data.is_typing);
+              setIsTyping(data.typing); // Fixed key from is_typing to typing
             } else if (data.type === "connection_established") {
               console.log("Connection confirmation:", data.message);
             }
@@ -176,9 +175,6 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
 
         socketRef.current.onerror = (error) => {
           console.error("WebSocket error occurred:", error);
-          if (error instanceof Event) {
-            console.error("Error event details:", error);
-          }
           setSocketStatus("Error");
         };
 
@@ -196,7 +192,6 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
         };
       };
 
-      // Delay WebSocket connection by 1 second to ensure token availability
       setTimeout(() => attemptConnection(), 1000);
     };
 
@@ -257,7 +252,7 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <header className="bg-white p-4 flex items-center sticky top-0 z-10">
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push("/chat")}
           className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           aria-label="Go back"
         >
@@ -306,7 +301,7 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
                       {message.sender_profile_picture ? (
                         <img
                           src={message.sender_profile_picture}
-                          alt={`${message.sender_first_name} ${message.sender_sur_name}`}
+                          alt={`${message.sender_first_name} ${message.sender_surname}`}
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -316,7 +311,7 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
                           }`}
                         >
                           {message.sender_first_name?.[0] || "U"}
-                          {message.sender_sur_name?.[0] || ""}
+                          {message.sender_surname?.[0] || ""}
                         </div>
                       )}
                     </div>
@@ -343,10 +338,7 @@ export default function ChatPage({ params }: { params: { dataset_id: string } })
                 </div>
               ))}
               {isTyping && (
-                <div
-                  key="typing-indicator"
-                  className="flex justify-start px-6 py-2"
-                >
+                <div className="flex justify-start px-6 py-2">
                   <div className="flex items-end space-x-2 max-w-[70%]">
                     <div className="w-8 h-8 rounded-full bg-gray-500" />
                     <div className="p-3 rounded-lg bg-white text-gray-800 rounded-bl-none border border-gray-200">

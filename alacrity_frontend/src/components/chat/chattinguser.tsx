@@ -1,8 +1,9 @@
+
 "use client";
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
-import { fetchWithAuth } from "@/libs/auth"; // Your auth utility
+import { fetchWithAuth } from "@/libs/auth";
 import { BACKEND_URL } from "@/config";
 import { Send, ArrowLeft, Loader2 } from "lucide-react";
 import { jwtDecode } from "jwt-decode";
@@ -29,12 +30,12 @@ interface DecodedToken {
 }
 
 interface ChatPageProps {
-  params: { conversation_id: string }; // Changed from dataset_id to conversation_id
+  params: { id: string }; // Changed from conversation_id to id
 }
 
 export default function ChatPage({ params }: ChatPageProps) {
   const router = useRouter();
-  const [recipient, setRecipient] = useState<User | null>(null); // The other user in the chat
+  const [recipient, setRecipient] = useState<User | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -55,7 +56,6 @@ export default function ChatPage({ params }: ChatPageProps) {
   }, [messages]);
 
   useEffect(() => {
-    // Decode JWT to get the current user's ID
     const token = localStorage.getItem("access_token");
     if (token) {
       try {
@@ -72,12 +72,10 @@ export default function ChatPage({ params }: ChatPageProps) {
 
     const fetchConversationData = async () => {
       try {
-        const token = localStorage.getItem("access_token");
         if (!token) throw new Error("No access token found");
 
-        // Fetch conversation details to get the recipient
         const conversationResponse = await fetchWithAuth(
-          `${BACKEND_URL}/users/api/conversations/${params.conversation_id}/`
+          `${BACKEND_URL}/users/api/conversations/${params.id}/`
         );
         if (!conversationResponse.ok) {
           throw new Error(`Conversation fetch failed: ${conversationResponse.status}`);
@@ -94,9 +92,8 @@ export default function ChatPage({ params }: ChatPageProps) {
           profile_picture: recipientUser.profile_picture,
         });
 
-        // Fetch message history
         const messagesResponse = await fetchWithAuth(
-          `${BACKEND_URL}/users/api/conversations/${params.conversation_id}/messages/`
+          `${BACKEND_URL}/users/api/conversations/${params.id}/messages/`
         );
         if (!messagesResponse.ok) {
           throw new Error(`Messages fetch failed: ${messagesResponse.status}`);
@@ -117,6 +114,7 @@ export default function ChatPage({ params }: ChatPageProps) {
         );
       } catch (error) {
         console.error("Fetch error:", error);
+        router.push("/chat/users/chats"); // Redirect to the chat list
       } finally {
         setLoading(false);
       }
@@ -141,11 +139,12 @@ export default function ChatPage({ params }: ChatPageProps) {
       const attemptConnection = () => {
         const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
         const wsHost = BACKEND_URL.replace(/^https?:\/\//, "");
-        const wsUrl = `${wsScheme}://${wsHost}/ws/chat/${params.conversation_id}/?token=${token}`;
+        const wsUrl = `${wsScheme}://${wsHost}/ws/chat/${params.id}/?token=${token}`;
+        console.log("Connecting to User Chat WebSocket at:", wsUrl);
         socketRef.current = new WebSocket(wsUrl);
 
         socketRef.current.onopen = () => {
-          console.log("WebSocket connection established");
+          console.log("WebSocket connection established for conversation:", params.id);
           setSocketStatus("Connected");
           retryCount = 0;
           if (retryTimeout) clearTimeout(retryTimeout);
@@ -183,7 +182,7 @@ export default function ChatPage({ params }: ChatPageProps) {
         };
 
         socketRef.current.onerror = (error) => {
-          console.error("WebSocket error:", error);
+          console.error("WebSocket error occurred:", error);
           setSocketStatus("Error");
         };
 
@@ -224,13 +223,13 @@ export default function ChatPage({ params }: ChatPageProps) {
       textarea?.removeEventListener("input", handleTyping);
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
-  }, [params.conversation_id, router, currentUserId]);
+  }, [params.id, router, currentUserId]);
 
   const sendMessage = () => {
     if (!newMessage.trim() || !socketRef.current) return;
 
     if (socketRef.current.readyState === WebSocket.OPEN) {
-      const messageData = { message: newMessage }; // Match backend expectation
+      const messageData = { message: newMessage };
       socketRef.current.send(JSON.stringify(messageData));
       setNewMessage("");
     } else {
@@ -261,7 +260,7 @@ export default function ChatPage({ params }: ChatPageProps) {
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <header className="bg-white p-4 flex items-center sticky top-0 z-10">
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push("/chat/users/chats")}
           className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           aria-label="Go back"
         >

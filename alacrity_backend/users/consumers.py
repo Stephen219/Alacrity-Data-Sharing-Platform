@@ -112,6 +112,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
             )
         except json.JSONDecodeError:
             await self.send(text_data=json.dumps({"error": "Invalid JSON"}))
+        await self.channel_layer.group_send(
+                f"user_{self.user.id}_chats",
+                {
+                    "type": "chat_message",
+                    "message": message,
+                    "conversation_id": self.conversation_id,
+                    "timestamp": msg.created_at.isoformat(),
+                }
+            )
 
     async def chat_message(self, event):
         await self.send(text_data=json.dumps(event['message']))
@@ -147,3 +156,30 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def sanitize_message(self, message):
         message = re.sub(r'<[^>]+>', '', message)
         return ' '.join(message.split())
+    
+    
+    
+
+class UserChatListConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        user = self.scope["user"]
+        if user.is_anonymous:
+            await self.close()
+        else:
+            self.group_name = f"user_{user.id}_chats"
+            await self.channel_layer.group_add(self.group_name, self.channel_name)
+            await self.accept()
+
+    async def disconnect(self, close_code):
+        if hasattr(self, 'group_name'):
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def receive(self, text_data):
+        pass  # Handle incoming messages if needed
+
+    async def chat_message(self, event):
+        await self.send(text_data=json.dumps({
+            "message": event["message"],
+            "conversation_id": event["conversation_id"],
+            "timestamp": event["timestamp"],
+        }))
