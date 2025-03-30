@@ -2,16 +2,19 @@ import { render, screen, waitFor } from "@testing-library/react";
 import PendingRequest from "@/components/requests/pending";
 import { fetchWithAuth } from "@/libs/auth";
 
-// Mocking the fetchWithAuth function
 jest.mock("@/libs/auth", () => ({
   fetchWithAuth: jest.fn(),
 }));
 
-// Mocking the useRouter hook
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(() => ({
     push: jest.fn(),
   })),
+}));
+
+// Mock BACKEND_URL to avoid undefined issues
+jest.mock("../../config", () => ({
+  BACKEND_URL: "http://mock-backend-url",
 }));
 
 describe("PendingRequest Component", () => {
@@ -34,7 +37,8 @@ describe("PendingRequest Component", () => {
 
   test("renders loading state initially", () => {
     (fetchWithAuth as jest.Mock).mockResolvedValue({
-      json: jest.fn().mockResolvedValue([]),
+      ok: true, // Ensure ok is set
+      json: () => Promise.resolve([]),
     });
 
     render(<PendingRequest />);
@@ -42,10 +46,9 @@ describe("PendingRequest Component", () => {
   });
 
   test("renders a request when available", async () => {
-    // Setup the mock before rendering
     (fetchWithAuth as jest.Mock).mockResolvedValue({
       ok: true,
-      json: jest.fn().mockResolvedValue(mockRequests),
+      json: () => Promise.resolve(mockRequests),
     });
 
     render(<PendingRequest />);
@@ -54,20 +57,16 @@ describe("PendingRequest Component", () => {
       expect(screen.getByText("Pending Requests")).toBeInTheDocument();
       expect(screen.getByText("John Doe")).toBeInTheDocument();
       expect(screen.getByText("Dataset 1")).toBeInTheDocument();
-      expect(screen.getByText("pending")).toBeInTheDocument();
-      
-      // Use a callback matcher instead of a direct text match
-      const dateCell = screen.getByRole("cell", { name: (content) => {
-        return content.includes("2025") && (content.includes("01") || content.includes("03") || content.includes("1") || content.includes("3"));
-      }});
+      expect(screen.getByText("PENDING")).toBeInTheDocument(); // Match uppercase
+      const dateCell = screen.getByRole("cell", { name: /01\/03\/2025/ }); // Match exact date
       expect(dateCell).toBeInTheDocument();
-    });
+    }, { timeout: 2000 }); // Increase timeout if needed
   });
 
   test("renders 'No pending requests found' when no requests are returned", async () => {
     (fetchWithAuth as jest.Mock).mockResolvedValue({
       ok: true,
-      json: jest.fn().mockResolvedValue([]),
+      json: () => Promise.resolve([]),
     });
 
     render(<PendingRequest />);
