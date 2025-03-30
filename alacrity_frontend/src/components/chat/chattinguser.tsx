@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -30,7 +29,7 @@ interface DecodedToken {
 }
 
 interface ChatPageProps {
-  params: { id: string }; // Changed from conversation_id to id
+  params: { id: string };
 }
 
 export default function ChatPage({ params }: ChatPageProps) {
@@ -56,24 +55,31 @@ export default function ChatPage({ params }: ChatPageProps) {
   }, [messages]);
 
   useEffect(() => {
+    // Validate params.id
+    if (!params.id || params.id === "undefined") {
+      console.error("Invalid conversation ID:", params.id);
+      router.push("/chat/users/chats");
+      return;
+    }
+
     const token = localStorage.getItem("access_token");
-    if (token) {
-      try {
-        const decoded = jwtDecode<DecodedToken>(token);
-        setCurrentUserId(decoded.user_id);
-      } catch (error) {
-        console.error("Error decoding token:", error);
-      }
-    } else {
+    if (!token) {
       console.error("No access token found");
+      router.push("/login");
+      return;
+    }
+
+    try {
+      const decoded = jwtDecode<DecodedToken>(token);
+      setCurrentUserId(decoded.user_id);
+    } catch (error) {
+      console.error("Error decoding token:", error);
       router.push("/login");
       return;
     }
 
     const fetchConversationData = async () => {
       try {
-        if (!token) throw new Error("No access token found");
-
         const conversationResponse = await fetchWithAuth(
           `${BACKEND_URL}/users/api/conversations/${params.id}/`
         );
@@ -99,22 +105,22 @@ export default function ChatPage({ params }: ChatPageProps) {
           throw new Error(`Messages fetch failed: ${messagesResponse.status}`);
         }
         const messagesData = await messagesResponse.json();
-        setMessages(
-          Array.isArray(messagesData)
-            ? messagesData.map((msg) => ({
-                message_id: msg.message_id,
-                sender_id: msg.sender_id,
-                content: msg.message || msg.content,
-                timestamp: new Date(msg.timestamp || msg.created_at),
-                sender_first_name: msg.sender_first_name,
-                sender_last_name: msg.sender_last_name,
-                sender_profile_picture: msg.sender_profile_picture,
-              }))
-            : []
-        );
+        const initialMessages = Array.isArray(messagesData)
+          ? messagesData.map((msg) => ({
+              message_id: msg.message_id,
+              sender_id: msg.sender_id,
+              content: msg.message || msg.content,
+              timestamp: new Date(msg.timestamp || msg.created_at),
+              sender_first_name: msg.sender_first_name,
+              sender_last_name: msg.sender_last_name,
+              sender_profile_picture: msg.sender_profile_picture,
+            }))
+          : [];
+        setMessages(initialMessages);
+        console.log("Initial messages fetched:", initialMessages);
       } catch (error) {
         console.error("Fetch error:", error);
-        router.push("/chat/users/chats"); // Redirect to the chat list
+        router.push("/chat/users/chats");
       } finally {
         setLoading(false);
       }
@@ -129,18 +135,11 @@ export default function ChatPage({ params }: ChatPageProps) {
       const maxRetries = 5;
       let retryTimeout: NodeJS.Timeout;
 
-      const token = localStorage.getItem("access_token");
-      if (!token) {
-        setSocketStatus("Authentication failed");
-        router.push("/login");
-        return;
-      }
-
       const attemptConnection = () => {
         const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
         const wsHost = BACKEND_URL.replace(/^https?:\/\//, "");
         const wsUrl = `${wsScheme}://${wsHost}/ws/chat/${params.id}/?token=${token}`;
-        console.log("Connecting to User Chat WebSocket at:", wsUrl);
+        console.log("Connecting to WebSocket at:", wsUrl);
         socketRef.current = new WebSocket(wsUrl);
 
         socketRef.current.onopen = () => {
@@ -153,25 +152,28 @@ export default function ChatPage({ params }: ChatPageProps) {
         socketRef.current.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
+            console.log("WebSocket message received:", data);
             if (data.error) {
               console.error("WebSocket error:", data.error);
               return;
             }
             if (data.message) {
+              const newMessage = {
+                message_id: data.message.message_id,
+                sender_id: data.message.sender_id,
+                content: data.message.message || data.message.content,
+                timestamp: new Date(data.message.timestamp),
+                sender_first_name: data.message.sender_first_name,
+                sender_last_name: data.message.sender_last_name,
+                sender_profile_picture: data.message.sender_profile_picture,
+              };
               setMessages((prev) => {
-                const newMessage = {
-                  message_id: data.message.message_id,
-                  sender_id: data.message.sender_id,
-                  content: data.message.message || data.message.content,
-                  timestamp: new Date(data.message.timestamp),
-                  sender_first_name: data.message.sender_first_name,
-                  sender_last_name: data.message.sender_last_name,
-                  sender_profile_picture: data.message.sender_profile_picture,
-                };
-                if (prev.some((m) => m.message_id === newMessage.message_id)) {
-                  return prev;
+                if (!prev.some((m) => m.message_id === newMessage.message_id)) {
+                  console.log("Adding new message to state:", newMessage);
+                  return [...prev, newMessage];
                 }
-                return [...prev, newMessage];
+                console.log("Message already exists, skipping:", newMessage);
+                return prev;
               });
             } else if (data.is_typing !== undefined) {
               setIsTyping(data.is_typing);
@@ -189,7 +191,7 @@ export default function ChatPage({ params }: ChatPageProps) {
         socketRef.current.onclose = (event) => {
           console.log("WebSocket closed:", event.code, event.reason);
           setSocketStatus("Disconnected");
-          if (retryCount < maxRetries) {
+          if (retryCount < maxRetries && event.code !== 1000) {
             retryCount++;
             const delayMs = 3000;
             setSocketStatus(`Reconnecting... (${retryCount}/${maxRetries})`);
@@ -200,7 +202,7 @@ export default function ChatPage({ params }: ChatPageProps) {
         };
       };
 
-      setTimeout(() => attemptConnection(), 1000);
+      attemptConnection(); // Remove delay for faster testing
     };
 
     connectWebSocket();
@@ -230,9 +232,21 @@ export default function ChatPage({ params }: ChatPageProps) {
 
     if (socketRef.current.readyState === WebSocket.OPEN) {
       const messageData = { message: newMessage };
+      console.log("Sending message:", messageData);
       socketRef.current.send(JSON.stringify(messageData));
+      // Optimistically add the message to the UI
+      const optimisticMessage: Message = {
+        message_id: `temp-${Date.now()}`, // Temporary ID until server responds
+        sender_id: currentUserId!,
+        content: newMessage,
+        timestamp: new Date(),
+        sender_first_name: "You", // Adjust based on your user data
+        sender_last_name: "",
+      };
+      setMessages((prev) => [...prev, optimisticMessage]);
       setNewMessage("");
     } else {
+      console.error("WebSocket not open. Current state:", socketRef.current?.readyState);
       alert("Connection lost. Please wait while we reconnect...");
     }
   };
@@ -308,9 +322,9 @@ export default function ChatPage({ params }: ChatPageProps) {
             </div>
           ) : (
             <div className="space-y-4">
-              {messages.map((message) => (
+              {messages.map((message, index) => (
                 <div
-                  key={message.message_id}
+                  key={message.message_id || `message-${index}`}
                   className={`flex ${
                     isCurrentUserMessage(message) ? "justify-end" : "justify-start"
                   } px-6 py-2`}
@@ -361,7 +375,7 @@ export default function ChatPage({ params }: ChatPageProps) {
                 </div>
               ))}
               {isTyping && (
-                <div className="flex justify-start px-6 py-2">
+                <div key="typing-indicator" className="flex justify-start px-6 py-2">
                   <div className="flex items-end space-x-2 max-w-[70%]">
                     <div className="w-8 h-8 rounded-full bg-gray-500" />
                     <div className="p-3 rounded-lg bg-white text-gray-800 rounded-bl-none border border-gray-200">
