@@ -1,5 +1,6 @@
-# users/consumers.py
+
 import json
+import re
 from channels.generic.websocket import AsyncWebsocketConsumer
 from rest_framework_simplejwt.tokens import AccessToken
 from channels.db import database_sync_to_async
@@ -43,6 +44,7 @@ class UserConsumer(AsyncWebsocketConsumer):
             return None
         
 class ChatConsumer(AsyncWebsocketConsumer):
+    """Handles user-to-user chat for a specific conversation."""
     async def connect(self):
         query_string = self.scope['query_string'].decode()
         token = dict(q.split('=') for q in query_string.split('&') if '=' in q).get('token')
@@ -58,8 +60,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return
 
         self.conversation_group_name = f"conversation_{self.conversation_id}"
-
-        # Add user to the conversation group
         await self.channel_layer.group_add(self.conversation_group_name, self.channel_name)
         await self.accept()
 
@@ -67,36 +67,46 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_discard(self.conversation_group_name, self.channel_name)
 
     async def receive(self, text_data):
-        # Rate limiting: max 10 messages per minute per user
         rate_key = f"chat_rate_{self.user.id}"
         message_count = cache.get(rate_key, 0)
         if message_count >= 10:
             await self.send(text_data=json.dumps({"error": "Rate limit exceeded"}))
             return
-        cache.set(rate_key, message_count + 1, 60)  # Reset after 60 seconds
+        cache.set(rate_key, message_count + 1, 60)
 
         try:
             data = json.loads(text_data)
+            if "typing" in data:
+                await self.channel_layer.group_send(
+                    self.conversation_group_name,
+                    {
+                        "type": "typing_event",
+                        "is_typing": data["typing"],
+                    }
+                )
+                return
+
             message = data.get('message', '').strip()
-            if not message or len(message) > 1000:  # Basic length check
+            if not message or len(message) > 1000:
                 await self.send(text_data=json.dumps({"error": "Invalid message"}))
                 return
 
-            # Sanitize message (remove potentially harmful content)
             message = await sync_to_async(self.sanitize_message)(message)
-
-            # Save and broadcast
             msg = await self.save_message(message)
             await self.channel_layer.group_send(
                 self.conversation_group_name,
                 {
                     'type': 'chat_message',
                     'message': {
+                        'message_id': str(msg.id),
                         'sender_id': self.user.id,
-                        'sender_email': self.user.email,
                         'message': message,
-                        'timestamp': str(msg.created_at),
-                        'message_id': msg.id,
+                        'timestamp': msg.created_at.isoformat(),
+                        'sender_first_name': self.user.first_name,
+                        'sender_last_name': self.user.last_name,
+                        'sender_profile_picture': (
+                            self.user.profile_picture.url if hasattr(self.user, 'profile_picture') and self.user.profile_picture else None
+                        ),
                     }
                 }
             )
@@ -105,6 +115,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def chat_message(self, event):
         await self.send(text_data=json.dumps(event['message']))
+
+    async def typing_event(self, event):
+        await self.send(text_data=json.dumps({"is_typing": event["is_typing"]}))
 
     @database_sync_to_async
     def authenticate_user(self, token):
@@ -129,14 +142,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def save_message(self, message):
         conversation = Conversation.objects.get(id=self.conversation_id)
-        return Message.objects.create(
-            conversation=conversation,
-            sender=self.user,
-            message=message
-        )
+        return Message.objects.create(conversation=conversation, sender=self.user, message=message)
 
     def sanitize_message(self, message):
-        # Remove HTML tags and excessive whitespace
         message = re.sub(r'<[^>]+>', '', message)
-        message = ' '.join(message.split())
-        return message
+        return ' '.join(message.split())

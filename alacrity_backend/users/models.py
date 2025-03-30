@@ -106,7 +106,7 @@ class Conversation(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Conversation between {self.participant1.email} and {self.participant2.email}"
+        return f"Conversation {self.id}"
 
     class Meta:
         unique_together = ['participant1', 'participant2']
@@ -116,9 +116,9 @@ class Message(models.Model):
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='messages')
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
     message = models.TextField()
-    is_read = models.BooleanField(default=False)  # Track if the message has been read
+    is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Message from {self.sender.email}"
+        return f"Message {self.id}"

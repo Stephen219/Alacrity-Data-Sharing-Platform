@@ -1,0 +1,83 @@
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from users.decorators import role_required
+from .models import Conversation, User, Message
+from django.shortcuts import get_object_or_404
+from django.db.models import Q  # Added missing import
+
+class SearchUsersView(APIView):
+    @role_required('researcher')
+    def get(self, request):
+        query = request.GET.get('q', '').strip()
+        if not query:
+            return Response({"error": "Search query required"}, status=400)
+
+        users = User.objects.filter(
+            Q(username__icontains=query) | Q(first_name__icontains=query) | Q(last_name__icontains=query)
+        ).exclude(id=request.user.id)[:10]
+        return Response([
+            {"id": user.id, "username": user.username, "display_name": f"{user.first_name} {user.last_name}".strip()}
+            for user in users
+        ])
+
+class StartChatView(APIView):
+    @role_required('researcher')
+    def get(self, request, recipient_id):
+        recipient = get_object_or_404(User, id=recipient_id)
+        if recipient == request.user:
+            return Response({"error": "Cannot chat with yourself"}, status=400)
+
+        conversation, created = Conversation.objects.get_or_create(
+            participant1=request.user,
+            participant2=recipient
+        )
+        return Response({"conversation_id": conversation.id})
+
+class ConversationDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, conversation_id):
+        conversation = get_object_or_404(Conversation, id=conversation_id)
+        if request.user not in (conversation.participant1, conversation.participant2):
+            return Response({"error": "Unauthorized"}, status=403)
+        
+        participant1 = {
+            "id": conversation.participant1.id,
+            "first_name": conversation.participant1.first_name,
+            "last_name": conversation.participant1.last_name,
+            "profile_picture": conversation.participant1.profile_picture.url if conversation.participant1.profile_picture else None,
+        }
+        participant2 = {
+            "id": conversation.participant2.id,
+            "first_name": conversation.participant2.first_name,
+            "last_name": conversation.participant2.last_name,
+            "profile_picture": conversation.participant2.profile_picture.url if conversation.participant2.profile_picture else None,
+        }
+        return Response({
+            "conversation_id": conversation.id,
+            "participant1": participant1,
+            "participant2": participant2,
+        })
+
+class MessageListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, conversation_id):
+        conversation = get_object_or_404(Conversation, id=conversation_id)
+        if request.user not in (conversation.participant1, conversation.participant2):
+            return Response({"error": "Unauthorized"}, status=403)
+        
+        messages = Message.objects.filter(conversation=conversation).order_by("created_at")
+        return Response([
+            {
+                "message_id": str(msg.id),
+                "sender_id": msg.sender.id,
+                "message": msg.message,
+                "timestamp": msg.created_at.isoformat(),
+                "sender_first_name": msg.sender.first_name,
+                "sender_last_name": msg.sender.last_name,
+                "sender_profile_picture": msg.sender.profile_picture.url if msg.sender.profile_picture else None,
+            }
+            for msg in messages
+        ])
