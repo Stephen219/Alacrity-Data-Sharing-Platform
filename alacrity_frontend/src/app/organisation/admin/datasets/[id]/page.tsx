@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+
 
 "use client"
 
@@ -15,21 +15,22 @@ import { BACKEND_URL } from "@/config"
 import { use } from "react"
 
 export default function DatasetDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
-  const params = use(paramsPromise) 
+  const params = use(paramsPromise)
   const router = useRouter()
-  const id = params.id 
+  const id = params.id
   const [loading, setLoading] = useState(true)
   const [is_active, setis_active] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [user, setUser] = useState(null)
   const [dataset, setDataset] = useState(null)
   const [error, setError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState<{
-    title: string;
-    description: string;
-    price: string;
-    category: string;
-    tags: string[];
+    title: string
+    description: string
+    price: string
+    category: string
+    tags: string[]
   }>({
     title: "",
     description: "",
@@ -41,7 +42,7 @@ export default function DatasetDetailPage({ params: paramsPromise }: { params: P
   const [newTag, setNewTag] = useState("")
 
   useEffect(() => {
-    if (!id) return;
+    if (!id) return
 
     const fetchData = async () => {
       try {
@@ -59,34 +60,18 @@ export default function DatasetDetailPage({ params: paramsPromise }: { params: P
         })
         if (!datasetResponse.ok) throw new Error("Failed to fetch dataset")
         const datasetData = await datasetResponse.json()
-        
+
         if (!datasetData) throw new Error("Dataset not found")
-        
+
         setDataset(datasetData)
 
         const validRoles = ["contributor", "organization_admin"]
         const isValidRole = validRoles.includes(userData.role)
         const orgMatch = String(userData.organisation) === String(datasetData.organization)
-        console.log("Userdrtyuiop Role:", orgMatch)
-        console.log("User Role:", userData.organization)
-        console.log("User Organisation ID:", userData.organisation_id)
-        console.log("Dataset Organisation ID:", datasetData.organization_id)
-        console.log("User Organisation Name:", userData.organisation
+       
 
-        )
-        console.log(userData)
-        console.log("datasetet Organisation Name:", datasetData.organization_name)
-
-        
         if (!isValidRole && !orgMatch) {
-          console.log("User is not authorized to edit this dataset")
-          console.log("User Role:", userData.role)
-          console.log("User Organisation ID:", userData.organisation_id)
-          console.log("Dataset Organisation ID:", datasetData.organization_id)
-          console.log("User Organisation Name:", userData.organisation_name)
-          console.log("Dataset Organisation Name:", datasetData.organization_name)
-          console.log("Role Valid:", isValidRole)
-          console.log("Org Match:", orgMatch)
+        
           setError("You are not authorized to edit this dataset")
           return
         }
@@ -99,7 +84,6 @@ export default function DatasetDetailPage({ params: paramsPromise }: { params: P
           tags: datasetData.tags || [],
         })
         setis_active(datasetData.is_active || false)
-
       } catch (err) {
         setError(err instanceof Error ? err.message : "An unknown error occurred")
       } finally {
@@ -159,7 +143,7 @@ export default function DatasetDetailPage({ params: paramsPromise }: { params: P
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          dataset_id: id,  
+          dataset_id: id,
           title: formData.title,
           description: formData.description,
           price: formData.price,
@@ -186,7 +170,8 @@ export default function DatasetDetailPage({ params: paramsPromise }: { params: P
     return (
       <div className="container mx-auto p-6">
         <div className="flex items-center mb-6">
-          <Button variant="ghost" onClick={() => router.push("/organisation/admin/datasets")} className="mr-4">
+          <Button variant="ghost" onClick={() => router.push("/organisation/admin/datasets")} className="mr-4 bg-orange-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-[#f97316] dark:hover:bg-gray-700">
+            
             <ArrowLeft className="mr-2" size={16} />
             Back to Datasets
           </Button>
@@ -201,12 +186,21 @@ export default function DatasetDetailPage({ params: paramsPromise }: { params: P
 
   return (
     <div className="container mx-auto p-6">
-      <div className="flex items-center mb-6">
-        <Button variant="ghost" onClick={() => router.push("/organisation/admin/datasets")} className="mr-4">
-          <ArrowLeft className="mr-2" size={16} />
-          Back to Datasets
-        </Button>
-        <h1 className="text-2xl font-bold">Edit Dataset</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <Button variant="ghost" onClick={() => router.push("/organisation/admin/datasets")} className="mr-4 bg-orange-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-[#f97316] dark:hover:bg-gray-700">
+            <ArrowLeft className="mr-2" size={16} />
+            Back to Datasets
+          </Button>
+          <h1 className="text-2xl font-bold">Edit Dataset</h1>
+        </div>
+        <Button
+  variant="outline"
+  onClick={() => router.push(`/organisation/admin/datasets/${id}/users_accessing`)}
+  className="ml-auto bg-orange-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-[#f97316] dark:hover:bg-gray-700"
+>
+  View users with access to this dataset
+</Button>
       </div>
 
       <div className="bg-white dark:bg-gray-200 rounded-lg shadow-md p-6">
@@ -310,3 +304,4 @@ export default function DatasetDetailPage({ params: paramsPromise }: { params: P
     </div>
   )
 }
+

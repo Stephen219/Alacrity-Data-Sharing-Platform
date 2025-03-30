@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import Submission from "@/components/ViewSubmission";
+import { BACKEND_URL } from "@/config";
 
 const ViewSubmission = () => {
   const { id } = useParams();
@@ -12,7 +13,7 @@ const ViewSubmission = () => {
   return (
     <Submission
       submissionId={id as string}
-      fetchUrl={`http://127.0.0.1:8000/research/submissions/${id}/`}
+      fetchUrl={`${BACKEND_URL}/research/submissions/${id}/`}
       backUrl="#" 
       onBack={() => router.back()} 
     />
