@@ -40,7 +40,7 @@ pipeline {
             steps {
                 git branch: 'main',
                     credentialsId: 'ssh-cred',
-                    url: 'git@git.cardiff.ac.uk:c22067364/alacrity-3-deploytest.git'
+                    url: 'git@git.cardiff.ac.uk:c2051028/alacrity.git'
             }
         }
 

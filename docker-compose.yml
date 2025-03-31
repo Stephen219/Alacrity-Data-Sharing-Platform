@@ -167,6 +167,14 @@ services:
       - app-network
 
 
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
 
   mysql:
     build:
@@ -209,9 +217,9 @@ services:
 
 volumes:
   db_data:
-  
+  redis_data:
 
-# i have no idea if it works or not   
+# i have no idea if it
 
 
 
