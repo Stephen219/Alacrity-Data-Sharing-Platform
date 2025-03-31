@@ -10,7 +10,9 @@ pipeline {
             triggerOnPush: true,
             branchFilterType: 'NameBasedFilter',
             sourceBranchRegex: 'main',
-            secretToken: '5tSVKGBSYUGBcJcAVUvt'
+            secretToken: '5tSVKGBSYUGBcJcAVUvt'       
+            // ideally this should be a secret token, but for testing purposes, it's hardcoded here. 
+            // i mean we can easily upload it to jenkins as a secret and use it here.
           
 
         )
