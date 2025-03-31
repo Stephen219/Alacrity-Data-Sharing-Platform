@@ -1,9 +1,4 @@
 
-
-
-
-
-
 version: '3.8'
 
 services:
@@ -17,14 +12,16 @@ services:
       - DJANGO_DATABASE_USER=alacrity
       - DJANGO_DATABASE_PASSWORD=alacrity_password
       - DJANGO_DATABASE_NAME=alacrity_db
-    command: ["sh", "-c", "python manage.py makemigrations users organisation payments research datasets dataset_requests && python manage.py migrate users && python manage.py migrate"]
+    command: ["sh", "-c", "python manage.py makemigrations users organisation payments research notifications datasets dataset_requests && python manage.py migrate users && python manage.py migrate"]
     depends_on:
       mysql:
         condition: service_healthy
+    volumes:
+      - /storage1:/storage1  # technically open stack has 10 gb of space and hence i added 40 gb of as the volume size
     networks:
       - app-network
 
-  frontend-1:
+  frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
@@ -39,42 +36,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - app-network
-
-  frontend-2:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-      args:
-        - NEXT_PUBLIC_API_URL=http://10.72.98.30/api
-    ports:
-      - "3001:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://10.72.98.30/api
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - app-network
-
-  frontend-3:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-      args:
-        - NEXT_PUBLIC_API_URL=http://10.72.98.30/api
-    ports:
-      - "3002:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://10.72.98.30/api
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    volumes:
+      - /storage1:/storage1  
     networks:
       - app-network
 
@@ -94,12 +57,34 @@ services:
       - MINIO_ACCESS_KEY=admin
       - MINIO_SECRET_KEY=Notgood1
       - MINIO_BUCKET_NAME=alacrity
-    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
+    # command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    
+
+    # command: ["gunicorn", "--workers", "3", "--bind", "0.0.0.0:8000", "alacrity_backend.wsgi:application"]
+    # command: ["daphne", "-b", "0.0.0.0", "-p", "8000", "-w", "4", "alacrity_backend.asgi:application"]
+    # command: ["sh", "-c", "python manage.py collectstatic --noinput && daphne -b 0.0.0.0 -p 8000 alacrity_backend.asgi:application"]
+    command: ["sh", "-c", "daphne -b 0.0.0.0 -p 8000 alacrity_backend.asgi:application"]
+
+
+    # use gunicorn for production here
+
+
+
+    
     depends_on:
       mysql:
         condition: service_healthy
       migration:
         condition: service_completed_successfully
+
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+        
+    volumes:
+      - /storage1:/storage1  # Mount /storage1 as a volume to the container
     networks:
       - app-network
 
@@ -119,12 +104,28 @@ services:
       - MINIO_ACCESS_KEY=admin
       - MINIO_SECRET_KEY=Notgood1
       - MINIO_BUCKET_NAME=alacrity
-    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    # command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    # command: ["gunicorn", "--workers", "3", "--bind", "0.0.0.0:8000", "alacrity_backend.wsgi:application"]
+    # command: ["daphne", "-b", "0.0.0.0", "-p", "8000", "-w", "4", "alacrity_backend.asgi:application"]
+    # command: ["sh", "-c", "python manage.py collectstatic --noinput && daphne -b 0.0.0.0 -p 8000 alacrity_backend.asgi:application"]
+    command: ["sh", "-c", "daphne -b 0.0.0.0 -p 8000 alacrity_backend.asgi:application"]
+
+
     depends_on:
       mysql:
         condition: service_healthy
       migration:
         condition: service_completed_successfully
+
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+
+    
+
+    volumes:
+      - /storage1:/storage1  
     networks:
       - app-network
 
@@ -144,12 +145,34 @@ services:
       - MINIO_ACCESS_KEY=admin
       - MINIO_SECRET_KEY=Notgood1
       - MINIO_BUCKET_NAME=alacrity
-    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    # command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    # command: ["gunicorn", "--workers", "3", "--bind", "0.0.0.0:8000", "alacrity_backend.wsgi:application"]
+    # command: ["daphne", "-b", "0.0.0.0", "-p", "8000", "-w", "4", "alacrity_backend.asgi:application"]
+    # command: ["sh", "-c", "python manage.py collectstatic --noinput && daphne -b 0.0.0.0 -p 8000 alacrity_backend.asgi:application"]
+    command: ["sh", "-c", "daphne -b 0.0.0.0 -p 8000 alacrity_backend.asgi:application"]
+
+
     depends_on:
       mysql:
         condition: service_healthy
       migration:
         condition: service_completed_successfully
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+    volumes:
+      - /storage1:/storage1
+    networks:
+      - app-network
+
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
     networks:
       - app-network
 
@@ -181,11 +204,7 @@ services:
     ports:
       - "80:80"
     depends_on:
-      frontend-1:
-        condition: service_healthy
-      frontend-2:
-        condition: service_healthy
-      frontend-3:
+      frontend:
         condition: service_healthy
       backend-1:
         condition: service_started
