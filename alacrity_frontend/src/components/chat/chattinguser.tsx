@@ -1,4 +1,3 @@
-// pages/datasets/[dataset_id].tsx (or wherever it’s routed)
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -10,35 +9,38 @@ import { jwtDecode } from "jwt-decode";
 
 interface Message {
   message_id: string;
-  sender: "user" | "admin";
+  sender_id: number;
   content: string;
   timestamp: Date;
   sender_first_name?: string;
-  sender_surname?: string; // Fixed typo
+  sender_last_name?: string;
   sender_profile_picture?: string | null;
-  sender_email?: string;
 }
 
-interface Dataset {
-  dataset_id: string;
-  title: string;
-  organization: string;
+interface User {
+  id: number;
+  first_name: string;
+  last_name: string;
+  profile_picture?: string | null;
 }
 
 interface DecodedToken {
-  email: string;
   user_id: number;
 }
 
-export default function DatasetChatPage({ params }: { params: { dataset_id: string } }) {
+interface ChatPageProps {
+  params: { id: string };
+}
+
+export default function ChatPage({ params }: ChatPageProps) {
   const router = useRouter();
-  const [dataset, setDataset] = useState<Dataset | null>(null);
+  const [recipient, setRecipient] = useState<User | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [socketStatus, setSocketStatus] = useState<string>("Connecting...");
   const [isTyping, setIsTyping] = useState(false);
-  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
   const socketRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -53,62 +55,73 @@ export default function DatasetChatPage({ params }: { params: { dataset_id: stri
   }, [messages]);
 
   useEffect(() => {
+    if (!params.id || params.id === "undefined") {
+      console.error("Invalid conversation ID:", params.id);
+      router.push("/chat/users/chats");
+      return;
+    }
+
     const token = localStorage.getItem("access_token");
-    if (token) {
-      try {
-        const decoded = jwtDecode<DecodedToken>(token);
-        setCurrentUserEmail(decoded.email);
-      } catch (error) {
-        console.error("Error decoding token:", error);
-      }
-    } else {
-      console.error("No access token found in localStorage");
+    if (!token) {
+      console.error("No access token found");
       router.push("/login");
       return;
     }
 
-    const fetchDatasetAndMessages = async () => {
+    try {
+      const decoded = jwtDecode<DecodedToken>(token);
+      setCurrentUserId(decoded.user_id);
+    } catch (error) {
+      console.error("Error decoding token:", error);
+      router.push("/login");
+      return;
+    }
+
+    const fetchConversationData = async () => {
       try {
-        console.log("Fetching for dataset_id:", params.dataset_id);
-        if (!token) throw new Error("No access token found");
-
-        const datasetResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/${params.dataset_id}/`);
-        if (!datasetResponse.ok) {
-          throw new Error(`Dataset fetch failed: ${datasetResponse.status}`);
-        }
-        const datasetData = await datasetResponse.json();
-        console.log("Dataset data:", datasetData);
-        setDataset(datasetData);
-
-        const messagesResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/messages/${params.dataset_id}/`);
-        if (!messagesResponse.ok) {
-          throw new Error(`Messages fetch failed: ${messagesResponse.status}`);
-        }
-        const messagesData = await messagesResponse.json();
-        console.log("Messages data:", messagesData);
-        setMessages(
-          Array.isArray(messagesData)
-            ? messagesData.map((msg) => ({
-                message_id: msg.message_id,
-                sender: msg.sender,
-                content: msg.content,
-                timestamp: new Date(msg.timestamp || msg.created_at),
-                sender_first_name: msg.sender_first_name,
-                sender_surname: msg.sender_surname, // Fixed typo
-                sender_profile_picture: msg.sender_profile_picture,
-                sender_email: msg.sender_email || `${msg.sender_first_name}.${msg.sender_surname}@example.com`,
-              }))
-            : []
+        const conversationResponse = await fetchWithAuth(
+          `${BACKEND_URL}/users/api/conversations/${params.id}/`
         );
+        if (!conversationResponse.ok) throw new Error(`Conversation fetch failed: ${conversationResponse.status}`);
+        const conversationData = await conversationResponse.json();
+        const recipientUser =
+          conversationData.participant1.id === currentUserId
+            ? conversationData.participant2
+            : conversationData.participant1;
+        setRecipient({
+          id: recipientUser.id,
+          first_name: recipientUser.first_name,
+          last_name: recipientUser.last_name,
+          profile_picture: recipientUser.profile_picture,
+        });
+
+        const messagesResponse = await fetchWithAuth(
+          `${BACKEND_URL}/users/api/conversations/${params.id}/messages/`
+        );
+        if (!messagesResponse.ok) throw new Error(`Messages fetch failed: ${messagesResponse.status}`);
+        const messagesData = await messagesResponse.json();
+        const initialMessages = Array.isArray(messagesData)
+          ? messagesData.map((msg) => ({
+              message_id: msg.message_id || `fallback-${Date.now()}-${Math.random()}`,
+              sender_id: msg.sender_id,
+              content: msg.message || msg.content,
+              timestamp: new Date(msg.timestamp || msg.created_at),
+              sender_first_name: msg.sender_first_name,
+              sender_last_name: msg.sender_last_name,
+              sender_profile_picture: msg.sender_profile_picture,
+            }))
+          : [];
+        setMessages(initialMessages);
+        console.log("Initial messages fetched:", initialMessages);
       } catch (error) {
         console.error("Fetch error:", error);
-        router.push("/chat"); // Redirect to dataset chat list
+        router.push("/chat/users/chats");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDatasetAndMessages();
+    fetchConversationData();
 
     const connectWebSocket = () => {
       if (socketRef.current) socketRef.current.close();
@@ -117,56 +130,59 @@ export default function DatasetChatPage({ params }: { params: { dataset_id: stri
       const maxRetries = 5;
       let retryTimeout: NodeJS.Timeout;
 
-      const token = localStorage.getItem("access_token");
-      if (!token) {
-        console.error("No token for WebSocket");
-        setSocketStatus("Authentication failed");
-        router.push("/login");
-        return;
-      }
-
       const attemptConnection = () => {
         const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
         const wsHost = BACKEND_URL.replace(/^https?:\/\//, "");
-        const wsUrl = `${wsScheme}://${wsHost}/ws/datasets/chats/${params.dataset_id}/messages/?token=${token}`;
-        console.log("Connecting to Dataset WebSocket at:", wsUrl);
+        const wsUrl = `${wsScheme}://${wsHost}/ws/chat/${params.id}/?token=${token}`;
+        console.log("Connecting to WebSocket at:", wsUrl);
         socketRef.current = new WebSocket(wsUrl);
 
         socketRef.current.onopen = () => {
-          console.log("WebSocket connection established for dataset:", params.dataset_id);
+          console.log("WebSocket connection established for conversation:", params.id);
           setSocketStatus("Connected");
           retryCount = 0;
           if (retryTimeout) clearTimeout(retryTimeout);
+          // Mark conversation as read on connect
+          socketRef.current?.send(JSON.stringify({ mark_read: true }));
         };
 
         socketRef.current.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
+            console.log("WebSocket message received:", data);
             if (data.error) {
               console.error("WebSocket error:", data.error);
               return;
             }
             if (data.message) {
+              const newMessage = {
+                message_id: data.message.message_id || `fallback-${Date.now()}-${Math.random()}`,
+                sender_id: data.message.sender_id,
+                content: data.message.content || data.message.message,
+                timestamp: new Date(data.message.timestamp),
+                sender_first_name: data.message.sender_first_name,
+                sender_last_name: data.message.sender_last_name,
+                sender_profile_picture: data.message.sender_profile_picture,
+              };
               setMessages((prev) => {
-                const newMessage = {
-                  message_id: data.message.message_id,
-                  sender: data.message.sender,
-                  content: data.message.content,
-                  timestamp: new Date(data.message.timestamp),
-                  sender_first_name: data.message.sender_first_name,
-                  sender_surname: data.message.sender_surname, // Fixed typo
-                  sender_profile_picture: data.message.sender_profile_picture,
-                  sender_email: `${data.message.sender_first_name}.${data.message.sender_surname}@example.com`,
-                };
-                if (prev.some((m) => m.message_id === newMessage.message_id)) {
-                  return prev;
+                const optimisticIndex = prev.findIndex(
+                  (m) => typeof m.message_id === "string" && m.message_id.startsWith("temp-") && m.content === newMessage.content
+                );
+                if (optimisticIndex !== -1) {
+                  const updated = [...prev];
+                  updated[optimisticIndex] = newMessage;
+                  console.log("Replaced optimistic message with server response:", newMessage);
+                  return updated;
                 }
-                return [...prev, newMessage];
+                if (!prev.some((m) => m.message_id === newMessage.message_id)) {
+                  console.log("Adding new message to state:", newMessage);
+                  return [...prev, newMessage];
+                }
+                console.log("Message already exists, skipping:", newMessage);
+                return prev;
               });
-            } else if (data.typing !== undefined) {
-              setIsTyping(data.typing); // Fixed key from is_typing to typing
-            } else if (data.type === "connection_established") {
-              console.log("Connection confirmation:", data.message);
+            } else if (data.is_typing !== undefined) {
+              setIsTyping(data.is_typing);
             }
           } catch (error) {
             console.error("Error parsing WebSocket message:", error);
@@ -179,11 +195,11 @@ export default function DatasetChatPage({ params }: { params: { dataset_id: stri
         };
 
         socketRef.current.onclose = (event) => {
-          console.log("WebSocket closed. Code:", event.code, "Reason:", event.reason);
+          console.log("WebSocket closed:", event.code, event.reason);
           setSocketStatus("Disconnected");
-          if (retryCount < maxRetries) {
+          if (retryCount < maxRetries && event.code !== 1000) {
             retryCount++;
-            const delayMs = 3000;
+            const delayMs = 3000 * retryCount;
             setSocketStatus(`Reconnecting... (${retryCount}/${maxRetries})`);
             retryTimeout = setTimeout(attemptConnection, delayMs);
           } else {
@@ -192,7 +208,7 @@ export default function DatasetChatPage({ params }: { params: { dataset_id: stri
         };
       };
 
-      setTimeout(() => attemptConnection(), 1000);
+      attemptConnection();
     };
 
     connectWebSocket();
@@ -215,16 +231,27 @@ export default function DatasetChatPage({ params }: { params: { dataset_id: stri
       textarea?.removeEventListener("input", handleTyping);
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
-  }, [params.dataset_id, router]);
+  }, [params.id, router, currentUserId]);
 
   const sendMessage = () => {
     if (!newMessage.trim() || !socketRef.current) return;
 
     if (socketRef.current.readyState === WebSocket.OPEN) {
-      const messageData = { content: newMessage };
+      const messageData = { message: newMessage };
+      console.log("Sending message:", messageData);
       socketRef.current.send(JSON.stringify(messageData));
+      const optimisticMessage: Message = {
+        message_id: `temp-${Date.now()}`,
+        sender_id: currentUserId!,
+        content: newMessage,
+        timestamp: new Date(),
+        sender_first_name: "You",
+        sender_last_name: "",
+      };
+      setMessages((prev) => [...prev, optimisticMessage]);
       setNewMessage("");
     } else {
+      console.error("WebSocket not open. Current state:", socketRef.current?.readyState);
       alert("Connection lost. Please wait while we reconnect...");
     }
   };
@@ -237,7 +264,7 @@ export default function DatasetChatPage({ params }: { params: { dataset_id: stri
   };
 
   const isCurrentUserMessage = (message: Message) => {
-    return currentUserEmail === message.sender_email;
+    return currentUserId === message.sender_id;
   };
 
   if (loading) {
@@ -252,17 +279,32 @@ export default function DatasetChatPage({ params }: { params: { dataset_id: stri
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <header className="bg-white p-4 flex items-center sticky top-0 z-10">
         <button
-          onClick={() => router.push("/chat")}
+          onClick={() => router.push("/chat/users/chats")}
           className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           aria-label="Go back"
         >
           <ArrowLeft className="w-6 h-6 text-gray-700" />
         </button>
-        <div className="flex-1 ml-3">
-          <h1 className="text-xl font-bold text-gray-800">{dataset?.title || "Chat"}</h1>
-          <p className="text-sm text-gray-600">
-            Support for {dataset?.organization || "Unknown Organization"}
-          </p>
+        <div className="flex items-center ml-3">
+          <div className="w-10 h-10 rounded-full overflow-hidden mr-3">
+            {recipient?.profile_picture ? (
+              <img
+                src={recipient.profile_picture}
+                alt={`${recipient.first_name} ${recipient.last_name}`}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gray-500 text-white font-semibold">
+                {recipient?.first_name?.[0] || "U"}
+                {recipient?.last_name?.[0] || ""}
+              </div>
+            )}
+          </div>
+          <div className="flex-1">
+            <h1 className="text-xl font-bold text-gray-800">
+              {recipient ? `${recipient.first_name} ${recipient.last_name}` : "Chat"}
+            </h1>
+          </div>
         </div>
         <span
           className={`text-xs font-medium px-3 py-1 rounded-full ${
@@ -281,13 +323,13 @@ export default function DatasetChatPage({ params }: { params: { dataset_id: stri
         <div className="max-w-4xl mx-auto space-y-4">
           {messages.length === 0 ? (
             <div className="text-center text-gray-500 py-4">
-              Start a conversation with the dataset administrators. Ask questions or report issues.
+              Start a conversation with {recipient?.first_name || "this user"}.
             </div>
           ) : (
             <div className="space-y-4">
-              {messages.map((message) => (
+              {messages.map((message, index) => (
                 <div
-                  key={message.message_id}
+                  key={message.message_id || `message-${index}`}
                   className={`flex ${
                     isCurrentUserMessage(message) ? "justify-end" : "justify-start"
                   } px-6 py-2`}
@@ -301,7 +343,7 @@ export default function DatasetChatPage({ params }: { params: { dataset_id: stri
                       {message.sender_profile_picture ? (
                         <img
                           src={message.sender_profile_picture}
-                          alt={`${message.sender_first_name} ${message.sender_surname}`}
+                          alt={`${message.sender_first_name} ${message.sender_last_name}`}
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -311,7 +353,7 @@ export default function DatasetChatPage({ params }: { params: { dataset_id: stri
                           }`}
                         >
                           {message.sender_first_name?.[0] || "U"}
-                          {message.sender_surname?.[0] || ""}
+                          {message.sender_last_name?.[0] || ""}
                         </div>
                       )}
                     </div>
@@ -338,7 +380,7 @@ export default function DatasetChatPage({ params }: { params: { dataset_id: stri
                 </div>
               ))}
               {isTyping && (
-                <div className="flex justify-start px-6 py-2">
+                <div key="typing-indicator" className="flex justify-start px-6 py-2">
                   <div className="flex items-end space-x-2 max-w-[70%]">
                     <div className="w-8 h-8 rounded-full bg-gray-500" />
                     <div className="p-3 rounded-lg bg-white text-gray-800 rounded-bl-none border border-gray-200">

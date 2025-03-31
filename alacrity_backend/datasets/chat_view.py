@@ -34,7 +34,6 @@ class ChatListView(APIView):
         print(f"DEBUG: chat_summaries: {chat_summaries}")
         return Response(chat_summaries)
     
-# datasets/views.py
 class ChatListView(APIView):
     serializer_class = ChatSerializer
 
