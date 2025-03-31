@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 from users.decorators import role_required
 import random
 import string
+from django.db.models import Count
 from alacrity_backend.config import FRONTEND_URL
 from django.core.mail import send_mail
 from alacrity_backend.settings import DEFAULT_FROM_EMAIL
@@ -17,7 +18,7 @@ from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from django.db import transaction
 from .models import Organization
-from .serializer import OrganizationSerializer
+from .serializer import OrganizationSerializer , TopOrganizationSerializer
 from datasets.models import Dataset
 from datasets.serializer import DatasetSerializer
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -482,3 +483,15 @@ class RequestsProcessedByContributorAndAdminView(APIView):
         except Exception as e:
             print(f"Error: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class TopOrganizationsView(APIView):
+    permission_classes = [AllowAny]  # No authentication required for now
+
+    def get(self, request):
+        # Get top 3 organizations by follower count
+        top_organizations = Organization.objects.annotate(
+            follower_count=Count('following')  # Use 'following', not 'followed_organizations'
+        ).order_by('-follower_count')[:3]
+        
+        serializer = TopOrganizationSerializer(top_organizations, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

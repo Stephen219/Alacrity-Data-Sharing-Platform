@@ -35,6 +35,7 @@ class Organization(models.Model):
     )
     date_joined = models.DateTimeField(auto_now_add=True, editable=False, null=True)
     social_links = models.JSONField(blank=True, null=True)
+    field = models.CharField(max_length=100,blank=True, null=True)
     following = models.ManyToManyField(
         get_user_model(),
         symmetrical=False,

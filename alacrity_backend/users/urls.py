@@ -3,7 +3,7 @@ from .views import (
     ForgotPasswordView, MonthlyUsersView, RegisterView, ResetPasswordView, WeeklyActivityView,
     LoginView, UserView, CSRFTokenView, LogoutView, UserDashboardView,
     AllOrganizationMembersViews, MemberProfileView, LoggedInUser, DatasetWithAccessView,
-    ProfilePictureUpdateView, FollowUserView, UnfollowUserView
+    ProfilePictureUpdateView, FollowUserView, UnfollowUserView , most_followed_users
 )
 from .user_chat_view import SearchUsersView, StartChatView, ConversationDetailView, MessageListView, UserConversationsView 
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -33,5 +33,5 @@ urlpatterns = [
     path("api/conversations/<int:conversation_id>/", ConversationDetailView.as_view(), name="conversation_detail"),
     path("api/conversations/<int:conversation_id>/messages/", MessageListView.as_view(), name="message_list"),
     path("api/conversations/", UserConversationsView.as_view(), name="user_conversations"),
-    
+    path("top-researchers/", most_followed_users.as_view(), name="most-followed-users")
 ]

@@ -13,7 +13,7 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from rest_framework.permissions import AllowAny
 from rest_framework import status
-from .serializers import UserSerializer
+from .serializers import UserSerializer , TopResearcherSerializer
 from django.utils import timezone
 from dataset_requests.models import DatasetRequest
 from research.models import AnalysisSubmission
@@ -914,9 +914,32 @@ class DatasetWithAccessView(APIView):
         return JsonResponse(response.data, safe=False)
     
 
-
+class UserSearchView(APIView):
+    permission_classes = [IsAuthenticated]
+    @role_required(["organization_admin" , "contributor", "researcher"])
+    def get(self, request):
+        user = request.user
+        query = request.GET.get('query', '')
+        if not query:
+            return JsonResponse([], safe=False)
+        users = User.objects.filter(
+            Q(first_name__icontains=query) | Q(sur_name__icontains=query),
+            organization=user.organization
+        ).values(
+            'id', 'email', 'first_name', 'sur_name', 'phone_number', 'role', 'date_joined', 'date_of_birth', 'profile_picture'
+        )
+        return JsonResponse(list(users), safe=False)
     
 
+class most_followed_users(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request):
+        user = request.user
+        users = User.objects.filter(role='researcher').annotate(
+            followers_count=Count('followers')
+        ).order_by('-followers_count')[:3]
+        serializer = TopResearcherSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 

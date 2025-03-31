@@ -178,7 +178,11 @@ class UserSerializer(serializers.ModelSerializer):
             ret["organization"] = None
         ret.pop("organization_name", None)
         return ret
-    
+
+class TopResearcherSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['first_name', 'sur_name', 'username', 'profile_picture']
 
 class MessageSerializer(serializers.ModelSerializer):
     message_id = serializers.CharField(source='id')

@@ -212,3 +212,8 @@ class OrganizationSerializer(serializers.ModelSerializer):
         if admin:
             ret['admin'] = UserSerializer(admin).data
         return ret
+
+class TopOrganizationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Organization
+        fields = ['name', 'email', 'profile_picture']  # Only these fields are needed for top organizations
