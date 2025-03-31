@@ -25,7 +25,7 @@ export default function LandingPage() {
           </p>
           <div className="flex gap-4 mt-6">
             <Link href="#" className={buttonVariants()}>About Us</Link>
-            <Button variant="ghost" onClick={() => router.push("/researcher/allSubmissions")}>
+            <Button variant="ghost" onClick={() => router.push("/feed")}>
       Explore Research &rarr;
     </Button>
           </div>

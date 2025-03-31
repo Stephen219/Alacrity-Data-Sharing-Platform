@@ -133,9 +133,7 @@ export default function SignUp() {
             ALACRITY
           </h1>
           <p className="text-gray-600 text-lg">Join us today and get access to quick data</p>
-          <div className="flex flex-col space-y-2"><Link href="/auth/sign-up/org-sign-up" className="text-[#f97316] text-sm text-center">
-            Sign up as an organization
-          </Link>
+          <div className="flex flex-col space-y-2">
           <Link href="/auth/sign-in/" className="text-[#f97316] text-sm text-center">
            Have an account? Sign in
           </Link> </div>
