@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { BACKEND_URL } from "@/config";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-
+ 
 export default function SignUp() {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -16,56 +16,56 @@ export default function SignUp() {
     field: "",
     confirmPassword: ""
   });
-
+ 
   const [serverError, setServerError] = useState("");
   const [serverMessage, setServerMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [phoneError, setPhoneError] = useState("");
   const [nameError, setNameError] = useState("");
-
+ 
   const validateForm = () => {
     const { email, password, firstname, surname, phonenumber, field, confirmPassword } = formData;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
-
+ 
     if (!email || !password || !firstname || !surname || !phonenumber || !field || !confirmPassword) {
       setServerError("All fields must be filled.");
       return false;
     }
-
+ 
     if (!emailRegex.test(email)) {
       setServerError("Please enter a valid email address.");
       return false;
     }
-
+ 
     if (!passwordRegex.test(password)) {
       setServerError(
         "Password must be at least 8 characters, contain uppercase, lowercase, a number, and a special character."
       );
       return false;
     }
-
+ 
     const phoneRegex = /^[0-9]{11}$/;
     if (!phoneRegex.test(phonenumber)) {
       setServerError("Phone number must be numeric and 11 characters long.");
       return false;
     }
-
+ 
     if (password !== formData.confirmPassword) {
       setServerError("Passwords do not match.");
       return false;
     }
-
+ 
     setServerError("");
     setServerMessage("Form is valid!");
     return true;
   };
-
+ 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-
+ 
     const payload = {
       email: formData.email,
       password: formData.password,
@@ -74,9 +74,9 @@ export default function SignUp() {
       phonenumber: formData.phonenumber,
       field: formData.field
     };
-
+ 
     setLoading(true);
-
+ 
     try {
       const response = await fetch(`${BACKEND_URL}/users/register/`, {
         method: "POST",
@@ -85,25 +85,25 @@ export default function SignUp() {
         },
         body: JSON.stringify(payload),
       });
-
+ 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         setEmailError(errorData?.email?.[0] || "");
         setPhoneError(errorData?.phone_number?.[0] || "");
         setNameError(errorData?.name?.[0] || "");
-    
+   
         if (!errorData || Object.keys(errorData).length === 0) {
             setServerError("An error occurred. Please try again.");
         } else {
             setServerError("");
         }
-    
+   
         console.log("Full API Error Response:", errorData);
-    
+   
         throw new Error(errorData?.message || "Something went wrong. Please check your input and try again.");
-
+ 
     }
-
+ 
       const data = await response.json();
       setServerMessage(data.message || "Signup successful!");
       setServerError("");
@@ -116,7 +116,7 @@ export default function SignUp() {
       setLoading(false);
     }
   };
-
+ 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -124,7 +124,7 @@ export default function SignUp() {
     if (serverError) setServerError("");
     if (serverMessage) setServerMessage("");
   };
-
+ 
   return (
     <div className="min-h-screen bg-card py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8">
@@ -133,9 +133,7 @@ export default function SignUp() {
             ALACRITY
           </h1>
           <p className="text-gray-600 text-lg">Join us today and get access to quick data</p>
-          <div className="flex flex-col space-y-2"><Link href="/auth/sign-up/org-sign-up" className="text-[#f97316] text-sm text-center">
-            Sign up as an organization
-          </Link>
+          <div className="flex flex-col space-y-2">
           <Link href="/auth/sign-in/" className="text-[#f97316] text-sm text-center">
            Have an account? Sign in
           </Link> </div>
@@ -158,7 +156,7 @@ export default function SignUp() {
                 aria-describedby={serverError ? "error-message" : undefined}
                 required
               />
-
+ 
             </div>
             <div className="relative">
               <label htmlFor="surname" className="text-sm font-medium text-gray-700 mb-1 block">
@@ -178,7 +176,7 @@ export default function SignUp() {
               />
             </div>
           </div>
-
+ 
           <div className="space-y-4">
             <div className="relative">
               <label htmlFor="phonenumber" className="text-sm font-medium text-gray-700 mb-1 block">
@@ -202,7 +200,7 @@ export default function SignUp() {
                 </div>
               )}
           </div>
-
+ 
             <div className="relative">
               <label htmlFor="email" className="text-sm font-medium text-gray-700 mb-1 block">
                 Email
@@ -216,9 +214,9 @@ export default function SignUp() {
                 onChange={handleInputChange}
                 placeholder="john.doe@example.com"
               />
-
+ 
               {emailError && (
-                <p 
+                <p
                   role="alert"
                   data-testid="error-message"
                   id="title-error"
@@ -227,11 +225,11 @@ export default function SignUp() {
                   {emailError}
                 </p>
               )}
-
-
-
+ 
+ 
+ 
             </div>
-
+ 
             <div className="relative">
               <label htmlFor="password" className="text-sm font-medium text-gray-700 mb-1 block">
                 Password
@@ -249,7 +247,7 @@ export default function SignUp() {
                 required
               />
             </div>
-
+ 
             <div className="relative">
               <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700 mb-1 block">
                 Confirm Password
@@ -267,7 +265,7 @@ export default function SignUp() {
                 required
               />
             </div>
-
+ 
             <div className="relative">
               <label htmlFor="field" className="text-sm font-medium text-gray-700 mb-1 block">
                 Field
@@ -286,7 +284,7 @@ export default function SignUp() {
               />
             </div>
           </div>
-
+ 
           <div className="pt-4">
             <Button
               type="submit"
@@ -298,7 +296,7 @@ export default function SignUp() {
             </Button>
           </div>
          
-
+ 
           <div
               role="alert"
               data-testid="error-message"
@@ -309,7 +307,7 @@ export default function SignUp() {
             >
               {serverError || ""}
           </div>
-
+ 
           <div
             role="alert"
             data-testid="success-message"
@@ -320,12 +318,12 @@ export default function SignUp() {
           >
             {serverMessage || ""}
           </div>
-    
-
+   
+ 
           {nameError && (
             <p className="text-red-500 text-xs">{nameError}</p>
           )}
-
+ 
         </form>
       </div>
     </div>
