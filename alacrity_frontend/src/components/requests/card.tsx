@@ -84,7 +84,7 @@ export default function ApproveRequest({ requestId }: ApproveRequestProps) {
       if (status === "revoke") {
         router.push("/requests/all"); // Redirect to /requests/all after revoke
       } else {
-        router.push("/requests/pending"); // For other actions, redirect to /requests/pending
+        router.push("/requests/all"); // For other actions, redirect to /requests/pending
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -176,7 +176,7 @@ export default function ApproveRequest({ requestId }: ApproveRequestProps) {
                 <button
                   onClick={() =>
                     request.request_status === "pending"
-                      ? router.push("/requests/pending")
+                      ? router.push("/requests/all")
                       : router.push("/requests/all")
                   }
                   className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-md"
