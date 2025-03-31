@@ -4,8 +4,6 @@ import logging
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 from django.core.asgi import get_asgi_application
-import datasets.routing
-import users.routing
 
 # Define a log directory and ensure it exists
 log_dir = 'C:/Users/c22077065/final/alacrity/alacrity_backend/logs'
@@ -25,6 +23,10 @@ django.setup()
 logger.debug('django.setup() completed.')
 
 logger.debug('Importing datasets.routing...')
+import datasets.routing
+import users.routing
+logger.debug('Importing users.routing...')
+
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
     "websocket": AuthMiddlewareStack(
