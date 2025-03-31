@@ -29,14 +29,14 @@ interface NotificationItem {
 type NavbarProps = {
   toggleSidebar: () => void;
 };
- 
+
 const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
   const pathname = usePathname();
   const [isSignUpPage, setIsSignUpPage] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [notificationCount, setNotificationCount] = useState<number>(0);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
- 
+
   // Fetch user data and notification count on mount
   useEffect(() => {
     const getUserData = async () => {
@@ -51,12 +51,12 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
     };
     getUserData();
   }, []);
- 
+
   // Update sign-up page check
   useEffect(() => {
     setIsSignUpPage(pathname === "/auth/sign-up");
   }, [pathname]);
- 
+
   // Fetch unread notification count
   const fetchNotificationCount = async (): Promise<number> => {
     try {
@@ -72,7 +72,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
       return 0;
     }
   };
- 
+
   // Fetch full notification list
   const fetchNotificationList = async () => {
     try {
@@ -87,7 +87,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
       console.error("Error fetching notifications:", error);
     }
   };
- 
+
   // Mark all notifications as read
   const markAllRead = async () => {
     try {
@@ -102,7 +102,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
       console.error("Error marking all read:", error);
     }
   };
- 
+
   // Delete a single notification
   const deleteNotification = async (notifId: string) => {
     try {
@@ -119,7 +119,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
       console.error("Error deleting notification:", error);
     }
   };
- 
+
   const getUserRole = (): "organization_admin" | "researcher" | "contributor" | null => {
     if (user && ["organization_admin", "researcher", "contributor"].includes(user.role)) {
       return user.role as "organization_admin" | "researcher" | "contributor";
@@ -128,7 +128,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
   };
  
   const userRole = getUserRole();
- 
+
   return (
     <nav className="fixed top-0 left-0 w-full bg-white border-b border-gray-200 z-50 h-14 dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-md transition-colors">
       <div className="px-5 py-2 flex items-center justify-between">
@@ -142,7 +142,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
           </Link>
           <ModeToggle />
         </div>
- 
+
         {/* Right Section */}
         <div className="flex items-center space-x-4">
           {/* Conditional Home or Organisation Sign Up */}
@@ -155,11 +155,11 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
               Organisation Sign Up
             </Link>
           )}
- 
+
           <Link href="/feed" className={buttonVariants({ variant: "ghost" })}>
             Feed
           </Link>
- 
+
           {userRole ? (
             <div className="flex items-center space-x-4">
               {/* Notification Bell */}
@@ -214,7 +214,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
- 
+
               {/* Profile */}
               {user && <TopBarProfile User={user} />}
             </div>

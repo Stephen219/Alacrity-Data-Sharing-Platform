@@ -50,11 +50,6 @@ export const NAV_ITEMS = [
           imageSrc: "/navbar/review/all.png",
         },
         {
-          name: "Pending Requests",
-          href: "/requests/pending",
-          imageSrc: "/navbar/review/accessRequests.png",
-        },
-        {
           name: "Review Research",
           href: "/requests/pendingSubmissions",
           imageSrc: "/navbar/review/reviewResearch.png",
@@ -62,7 +57,7 @@ export const NAV_ITEMS = [
         {
           name: "chats",
           href: "/chat",
-          imageSrc: "/navbar/review/chat.png",
+          imageSrc: "/navbar/chats/admin_chats.png",
         },
       ],
     },
@@ -156,8 +151,13 @@ export const NAV_ITEMS = [
     {
       label: "My Hub",
       value: "my-account",
-      roles: ["researcher", "contributor"],
+      roles: ["researcher"],
       featured: [
+        {
+          name: "Chats",
+          href: "/chat/users/chats",
+          imageSrc: "/navbar/chats/user_chats.png",
+        },
         {
           name: "Research Library",
           href: "/researcher/Submissions",

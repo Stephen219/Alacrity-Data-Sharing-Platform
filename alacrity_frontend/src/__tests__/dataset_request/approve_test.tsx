@@ -119,7 +119,7 @@ describe('ApproveRequest Component', () => {
           body: JSON.stringify({ request_id: 'REQ-123', action: 'accept' })
         })
       );
-      expect(mockPush).toHaveBeenCalledWith('/requests/pending');
+      expect(mockPush).toHaveBeenCalledWith('/requests/all');
     });
   });
 
@@ -156,7 +156,7 @@ describe('ApproveRequest Component', () => {
           body: JSON.stringify({ request_id: 'REQ-123', action: 'reject' })
         })
       );
-      expect(mockPush).toHaveBeenCalledWith('/requests/pending');
+      expect(mockPush).toHaveBeenCalledWith('/requests/all');
     });
   });
 
@@ -178,7 +178,7 @@ describe('ApproveRequest Component', () => {
     const backButton = screen.getByText('Back');
     fireEvent.click(backButton);
     
-    expect(mockPush).toHaveBeenCalledWith('/requests/pending');
+    expect(mockPush).toHaveBeenCalledWith('/requests/all');
   });
 
   test('should handle error during action', async () => {

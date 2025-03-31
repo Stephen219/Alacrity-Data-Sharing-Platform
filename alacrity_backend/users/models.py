@@ -99,5 +99,26 @@ class ActivationToken(models.Model):
         return f"Token for {self.user.email} - {self.token}"
     
 
+class Conversation(models.Model):
+    participant1 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='conversations_as_p1')
+    participant2 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='conversations_as_p2')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return f"Conversation {self.id}"
 
+    class Meta:
+        unique_together = ['participant1', 'participant2']
+        ordering = ['-updated_at']
+
+class Message(models.Model):
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Message {self.id}"
