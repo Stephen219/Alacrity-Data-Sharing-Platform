@@ -71,7 +71,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
     }
   }
 
-  // Marks all as read
+ 
   async function markAllRead() {
     try {
       const res = await fetchWithAuth(

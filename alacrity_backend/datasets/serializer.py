@@ -8,6 +8,7 @@ class DatasetSerializer(serializers.ModelSerializer):
     organization_name = serializers.CharField()
     price = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=True)
     hasPaid = serializers.SerializerMethodField()
+    is_active = serializers.BooleanField()
 
 # this is the data that will be returned when a dataset is queried
     class Meta:
@@ -27,12 +28,18 @@ class DatasetSerializer(serializers.ModelSerializer):
             'updated_at',
             'price',
             'hasPaid',
+            'is_active',
+            'is_deleted',
+            'number_of_downloads',
+            'number_of_rows',
+            'size',
+
         ]
 
     def validate_price(self, value):
         """Ensure price is always a valid non-negative number"""
         if value is None:
-            return 0.00  # Default to Free (0.00)
+            return 0.00  
         if value < 0:
             raise serializers.ValidationError("Price cannot be negative.")
         return round(value, 2)
@@ -42,6 +49,16 @@ class DatasetSerializer(serializers.ModelSerializer):
         if not request or not request.user.is_authenticated:
             return False
         return DatasetPurchase.objects.filter(dataset=obj, buyer=request.user).exists()
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['tags'] = [tag.strip() for tag in instance.tags] if isinstance(instance.tags, list) else \
+               [tag.strip() for tag in instance.tags.split(',')] if instance.tags else []
+
+
+
+
+    
+        return data
 
 
 class MessageSerializer(serializers.ModelSerializer):
@@ -56,7 +73,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
 class ChatSerializer(serializers.ModelSerializer):
     messages = MessageSerializer(many=True, read_only=True)
-    participants = serializers.StringRelatedField(many=True)  # Show participant usernames
+    participants = serializers.StringRelatedField(many=True)  
 
     class Meta:
         model = Chat

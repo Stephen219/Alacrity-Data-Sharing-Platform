@@ -9,12 +9,12 @@ class DatasetRequestSerializer(serializers.ModelSerializer):
     dataset_title = serializers.SerializerMethodField(read_only=True)
     dataset_description = serializers.SerializerMethodField(read_only=True)
     researcher_field = serializers.SerializerMethodField()  
-    researcher_description = serializers.SerializerMethodField()  # Fixed typo
+    researcher_description = serializers.SerializerMethodField()  
     request_status = serializers.CharField()
     message = serializers.CharField()
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()
-
+    updated_by = serializers.PrimaryKeyRelatedField(read_only=True)  
     class Meta:
         model = DatasetRequest
         fields = [
@@ -23,11 +23,12 @@ class DatasetRequestSerializer(serializers.ModelSerializer):
             'dataset_description',
             'researcher_name',
             'researcher_field',
-            'researcher_description',  # Fixed typo
+            'researcher_description',  
             'request_status',
             'message',
             'created_at',
-            'updated_at'
+            'updated_at',
+            'updated_by',  
         ]
 
     def get_researcher_name(self, obj):
@@ -45,7 +46,7 @@ class DatasetRequestSerializer(serializers.ModelSerializer):
         """
         researcher = obj.researcher_id
         if isinstance(researcher, User):
-            return researcher.field  # Assuming this is a field in the User model
+            return researcher.field  
         return "Unknown Field"
 
     def get_researcher_description(self, obj):
@@ -54,7 +55,7 @@ class DatasetRequestSerializer(serializers.ModelSerializer):
         """
         researcher = obj.researcher_id
         if isinstance(researcher, User):
-            return researcher.bio  # Assuming this is a field in the User model
+            return researcher.bio 
         return "No description currently available"
 
     def get_dataset_title(self, obj):

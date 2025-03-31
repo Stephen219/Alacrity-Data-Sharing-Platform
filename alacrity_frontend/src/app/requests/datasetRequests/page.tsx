@@ -23,7 +23,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const fetchDatasetRequests = async () => {
       try {
-        const response = await fetchWithAuth(`${BACKEND_URL}requests/userrequests/`);
+        const response = await fetchWithAuth(`${BACKEND_URL}/requests/userrequests/`);
         if (response.ok) {
           const data: RawDatasetRequest[] = await response.json();
           const mappedData = data.map((req: RawDatasetRequest) => {

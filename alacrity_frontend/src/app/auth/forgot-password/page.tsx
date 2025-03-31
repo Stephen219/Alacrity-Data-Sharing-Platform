@@ -16,7 +16,7 @@ export default function ForgotPasswordForm() {
     setStatusMessage("");
 
     try {
-      const response = await fetch(`${BACKEND_URL}users/forgot-password/`, {
+      const response = await fetch(`${BACKEND_URL}/users/forgot-password/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -1,9 +1,14 @@
+
+
+
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import type React from "react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { DatasetCard } from "./datasetCard";
 import { BACKEND_URL } from "@/config";
 import { fetchWithAuth } from "@/libs/auth";
@@ -20,17 +25,21 @@ interface Dataset {
   analysis_link: string | null;
   updated_at: string;
   size?: string;
-  entries?: number;
+  number_of_rows?: number;
   imageUrl?: string;
   price: number;
   view_count: number;
   darkMode: boolean;
-  averageRating?: number; // Add average rating
+  averageRating?: number;
+  number_of_downloads?: number;
+  
+
 }
 
 const ITEMS_PER_PAGE = 6;
 
 const DatasetsPage: React.FC = () => {
+  const searchParams = useSearchParams();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<Record<string, string[]>>({});
@@ -43,111 +52,133 @@ const DatasetsPage: React.FC = () => {
     { id: string; label: string; options: string[] }[]
   >([]);
   const [bookmarkedDatasets, setBookmarkedDatasets] = useState<string[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [userRole, setUserRole] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchDatasetsAndFeedback = async () => {
-      try {
-        // Fetch datasets
-        const datasetsResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/all`);
-        if (!datasetsResponse.ok) throw new Error(`HTTP Error: ${datasetsResponse.status}`);
-        const data = await datasetsResponse.json();
+  const fetchDatasetsAndFeedback = useCallback(async (): Promise<void> => {
+    try {
+      setIsLoading(true);
+      const datasetsResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/all`);
+      if (!datasetsResponse.ok) throw new Error(`HTTP Error: ${datasetsResponse.status}`);
+      const data = await datasetsResponse.json();
 
-        const mappedDatasets: Dataset[] = data.datasets.map((item: any) => ({
-          ...item,
-          size: item.size || "N/A",
-          entries: item.entries || 0,
-          imageUrl: item.imageUrl || `https://picsum.photos/300/200?random=${item.dataset_id}`,
-          tags:
-            typeof item.tags === "string"
-              ? item.tags
-                  .split(",")
-                  .map((tag: string) => tag.trim())
-                  .filter((tag: string) => tag.trim() !== "")
-              : item.tags || [],
-          price: item.price ? Number(parseFloat(item.price).toFixed(2)) : 0,
-          hasPaid: item.hasPaid || false,
-        }));
+      const mappedDatasets: Dataset[] = data.datasets.map((item: any) => ({
+        ...item,
+        size: item.size || "N/A",
+        entries: item.number_of_rows || 0,
+        imageUrl: item.imageUrl || `https://picsum.photos/300/200?random=${item.dataset_id}`,
+        tags:
+          typeof item.tags === "string"
+            ? item.tags
+                .split(",")
+                .map((tag: string) => tag.trim())
+                .filter((tag: string) => tag.trim() !== "")
+            : item.tags || [],
+        price: item.price ? Number(parseFloat(item.price).toFixed(2)) : 0,
+        hasPaid: item.hasPaid || false,
+        darkMode: false,
+      }));
 
-        // Fetch feedback for each dataset
-        const datasetsWithRatings = await Promise.all(
-          mappedDatasets.map(async (dataset) => {
-            try {
-              const feedbackResponse = await fetchWithAuth(
-                `${BACKEND_URL}/datasets/feedback/${dataset.dataset_id}/`
-              );
-              if (!feedbackResponse.ok) {
-                if (feedbackResponse.status === 404) return { ...dataset, averageRating: 0 }; // No feedback yet
-                throw new Error(`Feedback fetch failed: ${feedbackResponse.status}`);
-              }
-              const feedbackData = await feedbackResponse.json();
-              const ratings = feedbackData.map((fb: any) => fb.rating);
-              const averageRating =
-                ratings.length > 0 ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length : 0;
-              return { ...dataset, averageRating };
-            } catch (err) {
-              console.warn(`No rating for ${dataset.dataset_id}: ${err}`);
-              return { ...dataset, averageRating: 0 }; // Default to 0 if fetch fails
+      const datasetsWithRatings = await Promise.all(
+        mappedDatasets.map(async (dataset) => {
+          try {
+            const feedbackResponse = await fetchWithAuth(
+              `${BACKEND_URL}/datasets/feedback/${dataset.dataset_id}/`
+            );
+            if (!feedbackResponse.ok) {
+              if (feedbackResponse.status === 404) return { ...dataset, averageRating: 0 };
+              throw new Error(`Feedback fetch failed: ${feedbackResponse.status}`);
             }
-          })
-        );
+            const feedbackData = await feedbackResponse.json();
+            const ratings = feedbackData.map((fb: any) => fb.rating);
+            const averageRating =
+              ratings.length > 0 ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length : 0;
+            return { ...dataset, averageRating };
+          } catch (err) {
+            console.warn(`No rating for ${dataset.dataset_id}: ${err}`);
+            return { ...dataset, averageRating: 0 };
+          }
+        })
+      );
 
-        setDatasets(datasetsWithRatings);
+      setDatasets(datasetsWithRatings);
 
-        // Set filter categories
-        const uniqueCategories = ["All", ...new Set(datasetsWithRatings.map((d) => d.category))];
-        const uniqueOrgs = ["All", ...new Set(datasetsWithRatings.map((d) => d.organization_name || "No organization"))];
-        const uniqueTags = ["All", ...new Set(datasetsWithRatings.flatMap((d) => d.tags))];
-        const staticDateOptions = ["All Time", "Today", "This Week", "This Month", "This Year"];
+      const uniqueCategories = ["All", ...new Set(datasetsWithRatings.map((d) => d.category))];
+      const uniqueOrgs = ["All", ...new Set(datasetsWithRatings.map((d) => d.organization_name || "No organization"))];
+      const uniqueTags = ["All", ...new Set(datasetsWithRatings.flatMap((d) => d.tags))];
+      const staticDateOptions = ["All Time", "Today", "This Week", "This Month", "This Year"];
 
-        setFilterCategories([
-          { id: "category", label: "Category", options: uniqueCategories },
-          { id: "organization_name", label: "Organization", options: uniqueOrgs },
-          { id: "tags", label: "Tags", options: uniqueTags },
-          { id: "dateAdded", label: "Date Added", options: staticDateOptions },
-        ]);
-      } catch (err) {
-        console.error("Fetch error:", err);
-        setError(`Error fetching datasets: ${err instanceof Error ? err.message : String(err)}`);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      setFilterCategories([
+        { id: "category", label: "Category", options: uniqueCategories },
+        { id: "organization_name", label: "Organization", options: uniqueOrgs },
+        { id: "tags", label: "Tags", options: uniqueTags },
+        { id: "dateAdded", label: "Date Added", options: staticDateOptions },
+      ]);
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setError(`Error fetching datasets: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []); // Empty deps since no external state is used
 
-    fetchDatasetsAndFeedback();
+  const fetchUserRole = useCallback(async (): Promise<void> => {
+    try {
+      const response = await fetchWithAuth(`${BACKEND_URL}/users/profile/`);
+      if (!response.ok) throw new Error("Failed to fetch user data");
+      const userData = await response.json();
+      setUserRole(userData.role);
+    } catch (err) {
+      console.error("Error fetching user role:", err);
+    }
   }, []);
 
-  const fetchBookmarkedDatasets = async () => {
+  const fetchBookmarkedDatasets = useCallback(async (): Promise<void> => {
     try {
       console.log("Fetching bookmarked datasets...");
-      const response = await fetchWithAuth(`${BACKEND_URL}/datasets/bookmarks/`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch bookmarked datasets: ${response.status}`);
+      const bookmarksResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/bookmarks/`);
+      if (!bookmarksResponse.ok) {
+        throw new Error(`Failed to fetch bookmarked datasets: ${bookmarksResponse.status}`);
       }
-      const data = await response.json();
+      const data = await bookmarksResponse.json();
       setBookmarkedDatasets(data.map((ds: { dataset_id: string }) => ds.dataset_id));
     } catch (err) {
       console.error("Error fetching bookmarks:", err);
       setError("Error fetching bookmarks.");
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchDatasetsAndFeedback();
+    fetchUserRole();
+  }, [searchParams, fetchDatasetsAndFeedback, fetchUserRole]);
 
   useEffect(() => {
     fetchBookmarkedDatasets();
-  }, []);
+  }, [fetchBookmarkedDatasets]);
 
-  const toggleDatasetBookmark = async (datasetId: string) => {
-    try {
-      setBookmarkedDatasets((prev) =>
-        prev.includes(datasetId) ? prev.filter((id) => id !== datasetId) : [...prev, datasetId]
-      );
-      const response = await fetchWithAuth(`${BACKEND_URL}/datasets/${datasetId}/bookmark/`, {
-        method: "POST",
-      });
-      if (!response.ok) throw new Error("Failed to toggle bookmark");
-    } catch (error) {
-      console.error("Dataset bookmark error:", error);
-    }
-  };
+  const toggleDatasetBookmark = useCallback(
+    async (datasetId: string): Promise<void> => {
+      const wasBookmarked = bookmarkedDatasets.includes(datasetId);
+      const optimisticBookmarks = wasBookmarked
+        ? bookmarkedDatasets.filter((id) => id !== datasetId)
+        : [...bookmarkedDatasets, datasetId];
+
+      setBookmarkedDatasets(optimisticBookmarks); // Optimistic update
+
+      try {
+        const bookmarkResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/${datasetId}/bookmark/`, {
+          method: "POST",
+        });
+        if (!bookmarkResponse.ok) throw new Error(`Failed to toggle bookmark: ${bookmarkResponse.status}`);
+      } catch (error) {
+        console.error("Dataset bookmark error:", error);
+        setBookmarkedDatasets(bookmarkedDatasets); // Revert on failure
+        setError("Failed to update bookmark. Please try again.");
+      }
+    },
+    [bookmarkedDatasets]
+  );
 
   const filteredDatasets = useMemo(() => {
     return datasets.filter((dataset) => {
@@ -188,7 +219,7 @@ const DatasetsPage: React.FC = () => {
 
   const totalPages = Math.ceil(filteredDatasets.length / ITEMS_PER_PAGE);
 
-  const handleFilterChange = (categoryId: string, value: string) => {
+  const handleFilterChange = useCallback((categoryId: string, value: string): void => {
     setFilters((prev) => {
       const currentValues = prev[categoryId] || [];
       if (value === "All" || value === "All Time") {
@@ -201,20 +232,20 @@ const DatasetsPage: React.FC = () => {
       return { ...prev, [categoryId]: [...currentValues.filter((v) => v !== "All" && v !== "All Time"), value] };
     });
     setCurrentPage(1);
-  };
+  }, []);
 
-  const removeFilter = (categoryId: string, value: string) => {
+  const removeFilter = useCallback((categoryId: string, value: string): void => {
     setFilters((prev) => {
       const currentValues = prev[categoryId] || [];
       const newValues = currentValues.filter((v) => v !== value);
       return { ...prev, [categoryId]: newValues.length > 0 ? newValues : [] };
     });
     setCurrentPage(1);
-  };
+  }, []);
 
-  const toggleFilterCategory = (categoryId: string) => {
+  const toggleFilterCategory = useCallback((categoryId: string): void => {
     setActiveFilterCategory((prev) => (prev === categoryId ? null : categoryId));
-  };
+  }, []);
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-screen">Loading datasets...</div>;
@@ -263,7 +294,6 @@ const DatasetsPage: React.FC = () => {
                     <button
                       onClick={() => removeFilter(categoryId, value)}
                       className="ml-2 text-red-500 hover:text-red-700"
-                      aria-label={`Remove ${value} from ${categoryId} filter`}
                     >
                       ×
                     </button>
@@ -325,7 +355,6 @@ const DatasetsPage: React.FC = () => {
                   ? "bg-orange-500 text-white"
                   : "text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
               }`}
-              aria-label="Grid view"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
@@ -343,7 +372,6 @@ const DatasetsPage: React.FC = () => {
                   ? "bg-orange-500 text-white"
                   : "text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
               }`}
-              aria-label="List view"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -355,44 +383,58 @@ const DatasetsPage: React.FC = () => {
         <div
           className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"}`}
         >
-          {paginatedDatasets.map((dataset) => (
-            <Link
-              key={dataset.dataset_id}
-              href={`/datasets/description?id=${dataset.dataset_id}`}
-              className="block"
-            >
-              <DatasetCard
-                dataset_id={dataset.dataset_id}
-                title={dataset.title}
-                description={dataset.description}
-                organization={dataset.organization_name}
-                dateUploaded={new Date(dataset.created_at).toLocaleDateString()}
-                imageUrl={dataset.imageUrl || ""}
-                tags={dataset.tags}
-                category={dataset.category}
-                entries={dataset.entries || 0}
-                size={dataset.size || "N/A"}
-                view_count={dataset.view_count}
-                extraActions={() => toggleDatasetBookmark(dataset.dataset_id)}
-                isBookmarked={bookmarkedDatasets.includes(dataset.dataset_id)}
-                onToggleBookmark={() => toggleDatasetBookmark(dataset.dataset_id)}
-                viewMode={viewMode}
-                darkMode={false}
-                price={dataset.price}
-                averageRating={dataset.averageRating || 0} // Pass average rating
-              />
-            </Link>
-          ))}
+          {paginatedDatasets.length > 0 ? (
+            paginatedDatasets.map((dataset) => (
+              <div key={dataset.dataset_id} className="relative">
+                <Link href={`/datasets/description?id=${dataset.dataset_id}`} className="block">
+                  <DatasetCard
+                    dataset_id={dataset.dataset_id}
+                    title={dataset.title}
+                    description={dataset.description}
+                    organization={dataset.organization_name}
+                    dateUploaded={new Date(dataset.created_at).toLocaleDateString()}
+                    imageUrl={dataset.imageUrl || ""}
+                    tags={dataset.tags}
+                    category={dataset.category}
+                    entries={dataset.number_of_rows || 0}
+                    size={dataset.size || "N/A"}
+                    view_count={dataset.view_count}
+                    extraActions={() => toggleDatasetBookmark(dataset.dataset_id)}
+                    isBookmarked={bookmarkedDatasets.includes(dataset.dataset_id)}
+                    onToggleBookmark={() => toggleDatasetBookmark(dataset.dataset_id)}
+                    viewMode={viewMode}
+                    darkMode={dataset.darkMode}
+                    price={dataset.price}
+                    averageRating={dataset.averageRating}
+                  />
+                </Link>
+              </div>
+            ))
+          ) : searchParams.get("org") ? (
+            <div className="col-span-full text-center py-8">
+              <p className="text-lg text-gray-600 dark:text-gray-300">
+                This organization has absolutely zero datasets.
+              </p>
+              <Link href="/datasets/all">
+                <button className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600">
+                  Explore All Datasets
+                </button>
+              </Link>
+            </div>
+          ) : (
+            <div className="col-span-full text-center py-8">
+              <p className="text-lg text-gray-600 dark:text-gray-300">No datasets match your filters.</p>
+            </div>
+          )}
         </div>
 
-        {totalPages > 1 && (
+        {totalPages > 1 && paginatedDatasets.length > 0 && (
           <div className="mt-8 flex justify-center">
             <nav className="flex items-center gap-1" aria-label="Pagination">
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
                 className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                aria-label="Previous page"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -413,7 +455,6 @@ const DatasetsPage: React.FC = () => {
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
                 className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                aria-label="Next page"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
