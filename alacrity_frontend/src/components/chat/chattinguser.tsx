@@ -132,7 +132,11 @@ export default function ChatPage({ params }: ChatPageProps) {
 
       const attemptConnection = () => {
         const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-        const wsHost = BACKEND_URL.replace(/^https?:\/\//, "");
+        // const wsHost = BACKEND_URL.replace(/^https?:\/\//, "");
+
+        // you kow why   the backend on prod has a /api/ at the end of the url
+        // so we need to remove it from the url before we connect to the websocket
+        const wsHost = BACKEND_URL.replace(/^https?:\/\//, "").replace(/\/api\/?$/, "");
         const wsUrl = `${wsScheme}://${wsHost}/ws/chat/${params.id}/?token=${token}`;
         console.log("Connecting to WebSocket at:", wsUrl);
         socketRef.current = new WebSocket(wsUrl);

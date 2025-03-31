@@ -127,7 +127,8 @@ export default function DatasetChatPage({ params }: { params: { dataset_id: stri
 
       const attemptConnection = () => {
         const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-        const wsHost = BACKEND_URL.replace(/^https?:\/\//, "");
+        // const wsHost = BACKEND_URL.replace(/^https?:\/\//, "");
+        const wsHost = BACKEND_URL.replace(/^https?:\/\//, "").replace(/\/api\/?$/, "");
         const wsUrl = `${wsScheme}://${wsHost}/ws/datasets/chats/${params.dataset_id}/messages/?token=${token}`;
         console.log("Connecting to Dataset WebSocket at:", wsUrl);
         socketRef.current = new WebSocket(wsUrl);

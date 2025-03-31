@@ -20,7 +20,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 
-urlpatterns = [
+url = [
     path('admin/', admin.site.urls),
     path('datasets/', include('datasets.urls')),
     path('organisation/', include('organisation.urls')),
@@ -32,8 +32,17 @@ urlpatterns = [
     path("notifications/", include("notifications.urls")),
 ]
 
+
+urlpatterns = [
+    path("api/", include(url)),
+]
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+
+
+
 
 
 

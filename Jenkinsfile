@@ -10,7 +10,9 @@ pipeline {
             triggerOnPush: true,
             branchFilterType: 'NameBasedFilter',
             sourceBranchRegex: 'main',
-            secretToken: 'HXC2nKoRL3QhifqdKumN'
+            secretToken: '5tSVKGBSYUGBcJcAVUvt'
+          
+
         )
     }
 
@@ -45,7 +47,7 @@ pipeline {
         stage('Retrieve Secrets & Create .env') {
             steps {
 
-                // permissions
+                
                 sh '''
                     echo "Setting directory permissions..."
                     chmod -R 777 alacrity_backend/alacrity_backend/

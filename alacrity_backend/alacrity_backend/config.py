@@ -1,2 +1,5 @@
-FRONTEND_URL = "http://localhost:3000"
-BACKEND_URL = "http://127.0.0.1:8000"
+FRONTEND_URL = "http://10.72.98.30"
+BACKEND_URL = "http://10.72.98.30/api"
+
+
+
