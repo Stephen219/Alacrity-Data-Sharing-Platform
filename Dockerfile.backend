@@ -43,8 +43,8 @@ COPY --from=build /usr/local/bin/ /usr/local/bin/
 COPY alacrity_backend/ .
 
 
-COPY wait-for-mysql.sh .
-RUN chmod +x wait-for-mysql.sh
+# COPY wait-for-mysql.sh .
+# RUN chmod +x wait-for-mysql.sh
 
 
 RUN useradd -m appuser

@@ -218,7 +218,9 @@ services:
 volumes:
   db_data:
   redis_data:
-  
+
+# i have no idea if it works or not   
+
 
 
 networks:
