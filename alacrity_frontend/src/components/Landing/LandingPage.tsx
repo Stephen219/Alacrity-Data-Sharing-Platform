@@ -24,7 +24,7 @@ export default function LandingPage() {
             on-platform analysis.
           </p>
           <div className="flex gap-4 mt-6">
-            <Link href="#" className={buttonVariants()}>About Us</Link>
+            <Link href="/about" className={buttonVariants()}>About Us</Link>
             <Button variant="ghost" onClick={() => router.push("/feed")}>
       Explore Research &rarr;
     </Button>
