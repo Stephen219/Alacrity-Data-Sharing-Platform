@@ -2,13 +2,13 @@ import { Award } from "lucide-react";
 import BarChart from "../ui/BarChart";
 import Link from "next/link";
 import { buttonVariants } from "../ui/button";
+import Chatbot from "@/components/chatbot";
 
 export default function LandingPage2() {
   return (
     <div className="relative w-full">
       {/* Main Content */}
       <div className="relative z-10 flex flex-col items-center justify-between px-6 py-16 sm:flex-row sm:px-12 sm:py-32 gap-12">
-        
         {/* Left Section */}
         <div className="w-full sm:w-1/2 flex justify-center">
           <div className="w-full max-w-md outline rounded-lg shadow-lg p-4 bg-white">
@@ -59,6 +59,9 @@ export default function LandingPage2() {
           </div>
         </div>
       </div>
+
+      {/* Chatbot */}
+      <Chatbot />
     </div>
   );
 }
