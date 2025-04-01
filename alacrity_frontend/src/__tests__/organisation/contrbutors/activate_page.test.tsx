@@ -139,7 +139,7 @@ describe('ActivateAccount Component', () => {
         })
       );
       expect(mockAlert).toHaveBeenCalledWith('Account activated! You can now log in.');
-      expect(mockLocation.href).toBe('/login');
+      expect(mockLocation.href).toBe('/auth/sign-in'); 
     });
 
     // Cleanup
