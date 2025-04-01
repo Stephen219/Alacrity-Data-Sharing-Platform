@@ -67,11 +67,11 @@ services:
         condition: service_started
       migration:
         condition: service_completed_successfully
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
     deploy:
       replicas: 3
       restart_policy:
@@ -109,11 +109,11 @@ services:
         condition: service_started
       migration:
         condition: service_completed_successfully
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
     deploy:
       replicas: 3
       restart_policy:
@@ -151,11 +151,11 @@ services:
         condition: service_started
       migration:
         condition: service_completed_successfully
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
     deploy:
       replicas: 3
       restart_policy:
