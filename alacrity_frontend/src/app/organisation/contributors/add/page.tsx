@@ -114,7 +114,7 @@ const AddContributorForm: React.FC = () => {
   return (
     <div className="w-full max-w-xl mx-auto px-4 sm:px-6 md:px-8">
       <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Add New Contributor</h1>
+        <h1 className="text-3xl font-bold tracking-tight mb-2">Add New Contributor/ Employee</h1>
         <p className="text-gray-600 dark:text-gray-400">Invite a team member to collaborate on your organization</p>
       </div>
 
