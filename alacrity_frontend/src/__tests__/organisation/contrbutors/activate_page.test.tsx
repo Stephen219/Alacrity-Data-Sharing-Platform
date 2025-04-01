@@ -137,6 +137,9 @@ describe('ActivateAccount Component', () => {
             confirm_password: 'SecurePass123!',
           }),
         })
+
+        // hjkl
+        
       );
       expect(mockAlert).toHaveBeenCalledWith('Account activated! You can now log in.');
       expect(mockLocation.href).toBe('/auth/sign-in'); 
