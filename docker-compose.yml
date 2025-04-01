@@ -1,5 +1,7 @@
 
 version: '3.8'
+# todo    add some workers for the backend and frontend and also add a load balancer for the backend and frontend
+# todo    add a redis cache for the backend and frontend and also add a load balancer for the backend and frontend
 
 services:
   migration:
