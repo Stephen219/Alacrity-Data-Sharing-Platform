@@ -142,7 +142,7 @@ describe('ActivateAccount Component', () => {
       expect(mockLocation.href).toBe('/auth/sign-in'); 
     });
 
-    // Cleanup
+   
     mockAlert.mockRestore();
   });
 
