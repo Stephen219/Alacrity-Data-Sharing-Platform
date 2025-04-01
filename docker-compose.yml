@@ -78,10 +78,10 @@ services:
       migration:
         condition: service_completed_successfully
 
-    deploy:
-      replicas: 3
-      restart_policy:
-        condition: on-failure
+    # deploy:
+    #   replicas: 3
+    #   restart_policy:
+    #     condition: on-failure
         
     volumes:
       - /storage1:/storage1  # Mount /storage1 as a volume to the container
@@ -117,10 +117,10 @@ services:
       migration:
         condition: service_completed_successfully
 
-    deploy:
-      replicas: 3
-      restart_policy:
-        condition: on-failure
+    # deploy:
+    #   replicas: 3
+    #   restart_policy:
+    #     condition: on-failure
 
     
 
@@ -157,10 +157,10 @@ services:
         condition: service_healthy
       migration:
         condition: service_completed_successfully
-    deploy:
-      replicas: 3
-      restart_policy:
-        condition: on-failure
+    # deploy:
+    #   replicas: 3
+    #   restart_policy:
+    #     condition: on-failure
     volumes:
       - /storage1:/storage1
     networks:
