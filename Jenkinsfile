@@ -34,6 +34,12 @@ pipeline {
                             kill -9 $PID || true
                         fi
                     '''
+                    sh '''
+                        if netstat -tulnp | grep :3000; then
+                            PID=$(netstat -tulnp | grep :3000 | awk '{print $7}' | cut -d'/' -f1)
+                            kill -9 $PID || true
+                        fi
+                    '''
                 }
             }
         }
