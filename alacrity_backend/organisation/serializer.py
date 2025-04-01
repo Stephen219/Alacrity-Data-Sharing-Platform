@@ -118,4 +118,4 @@ class OrganizationSerializer(serializers.ModelSerializer):
 class TopOrganizationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Organization
-        fields = ['name', 'email', 'profile_picture']  # Only these fields are needed for top organizations
+        fields = ['Organization_id','name', 'email', 'profile_picture']  # Only these fields are needed for top organizations

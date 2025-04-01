@@ -183,7 +183,7 @@ class TopResearcherSerializer(serializers.ModelSerializer):
     followers_count = serializers.IntegerField(read_only=True)
     class Meta:
         model = User
-        fields = ['first_name', 'sur_name', 'username', 'profile_picture' , 'field', 'followers_count']
+        fields = ['id','first_name', 'sur_name', 'username', 'profile_picture' , 'field', 'followers_count']
 
 class MessageSerializer(serializers.ModelSerializer):
     message_id = serializers.CharField(source='id')

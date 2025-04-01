@@ -1,14 +1,16 @@
 "use client";
 
-import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
+import React, { useState, ChangeEvent, useEffect, useCallback } from "react";
 import { Search } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { BACKEND_URL } from "@/config";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { fetchUserData } from "@/libs/auth";
+import debounce from "lodash/debounce";
 
 interface Researcher {
+  id: string; // Verify this matches your backend response
   first_name: string;
   sur_name: string;
   username: string;
@@ -18,6 +20,7 @@ interface Researcher {
 }
 
 interface Organization {
+  Organization_id: string;
   name: string;
   email: string;
   profile_picture: string;
@@ -34,14 +37,6 @@ interface Dataset {
   image?: string;
 }
 
-interface User {
-  first_name: string;
-  sur_name: string;
-  username: string;
-  field: string;
-  role: string;
-}
-
 interface SearchResults {
   datasets: Dataset[];
   users: Researcher[];
@@ -53,7 +48,9 @@ export default function SearchPage() {
   const [researchers, setResearchers] = useState<Researcher[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
-  const [searchResults, setSearchResults] = useState<SearchResults | null>(null); // New state for search results
+  const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
+  const [suggestions, setSuggestions] = useState<SearchResults | null>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -66,39 +63,74 @@ export default function SearchPage() {
   };
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
+    const value = e.target.value;
+    setSearchQuery(value);
+    if (value.trim() && isAuthenticated) {
+      setIsDropdownOpen(true);
+    } else {
+      setIsDropdownOpen(false);
+      setSuggestions(null);
+    }
   };
 
-  const handleSearch = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!isAuthenticated) {
-      alert("Please sign in to search.");
-      router.push("/auth/sign-in");
-      return;
-    }
-
-    console.log("Search query:", searchQuery);
-    try {
-      const token = localStorage.getItem("access_token");
-      const response = await fetch(`${BACKEND_URL}/users/search/?q=${encodeURIComponent(searchQuery)}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        console.error(`Search failed with status: ${response.status}`);
-        const errorText = await response.text();
-        console.error("Response body:", errorText);
-        throw new Error(`HTTP error! status: ${response.status}`);
+  const fetchSuggestions = useCallback(
+    debounce(async (query: string) => {
+      if (!isAuthenticated || !query.trim()) {
+        setSuggestions(null);
+        return;
       }
-      const data: SearchResults = await response.json();
-      console.log("Search results:", data);
-      setSearchResults(data);
-    } catch (error) {
-      console.error("Error fetching search results:", error);
-      setSearchResults({ datasets: [], users: [], organizations: [] });
+
+      try {
+        const token = localStorage.getItem("access_token");
+        if (!token) {
+          alert("No access token found. Please sign in again.");
+          router.push("/auth/sign-in");
+          return;
+        }
+
+        const response = await fetch(`${BACKEND_URL}/users/search/?q=${encodeURIComponent(query)}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Search failed with status: ${response.status}`, errorText);
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data: SearchResults = await response.json();
+        console.log("Suggestions:", data);
+        setSuggestions(data);
+        setSearchResults(data);
+      } catch (error) {
+        console.error("Error fetching suggestions:", error);
+        setSuggestions({ datasets: [], users: [], organizations: [] });
+        setSearchResults({ datasets: [], users: [], organizations: [] });
+      }
+    }, 300),
+    [isAuthenticated, router]
+  );
+
+  useEffect(() => {
+    fetchSuggestions(searchQuery);
+  }, [searchQuery, fetchSuggestions]);
+
+  const handleSuggestionClick = (item: Dataset | Researcher | Organization) => {
+    setSearchQuery(
+      "title" in item ? item.title :
+      "username" in item ? `${item.first_name} ${item.sur_name}` :
+      item.name
+    );
+    if ("dataset_id" in item) {
+      router.push(`/datasets/description?id=${item.dataset_id}`);
+    } else if ("username" in item) {
+      router.push(`/researcher/profile/${item.id}`);
+    } else if ("email" in item) {
+      router.push(`/organisation/profile/${item.Organization_id}`);
     }
   };
 
@@ -107,13 +139,14 @@ export default function SearchPage() {
       alert("Please sign in to view the dataset.");
       router.push("/auth/sign-in");
     } else {
-      router.push(`/dataset/${datasetId}`);
+      router.push(`/datasets/description?id=${datasetId}`);
     }
   };
 
   useEffect(() => {
     const getAuthData = async () => {
       const userData = await fetchUserData();
+      console.log("User data:", userData); // Debug auth
       if (userData) {
         setIsAuthenticated(true);
         setUserField(userData.field || "Diseases");
@@ -128,39 +161,48 @@ export default function SearchPage() {
     const fetchResearchers = async () => {
       try {
         const token = localStorage.getItem("access_token");
-        const url = isAuthenticated
-          ? `${BACKEND_URL}/users/top-fielders/`
-          : `${BACKEND_URL}/users/top-researchers/`;
-        const response = await fetch(url, { /* unchanged */ });
+        const url = isAuthenticated ? `${BACKEND_URL}/users/top-fielders/` : `${BACKEND_URL}/users/top-researchers/`;
+        const response = await fetch(url, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            ...(isAuthenticated && token && { Authorization: `Bearer ${token}` }),
+          },
+        });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data: Researcher[] = await response.json();
-        setResearchers(data.length ? data : [/* fallback */]);
+        console.log("Researchers data:", data); // Debug researchers
+        setResearchers(data);
       } catch (error) {
-        setResearchers([/* fallback */]);
+        console.error("Error fetching researchers:", error);
+        setResearchers([]);
       }
     };
 
     const fetchOrganizations = async () => {
       try {
         const token = localStorage.getItem("access_token");
-        const url = isAuthenticated
-          ? `${BACKEND_URL}/organisation/top-organization/`
-          : `${BACKEND_URL}/organisation/top-organizations/`;
-        const response = await fetch(url, { /* unchanged */ });
+        const url = isAuthenticated ? `${BACKEND_URL}/organisation/top-organization/` : `${BACKEND_URL}/organisation/top-organizations/`;
+        const response = await fetch(url, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            ...(isAuthenticated && token && { Authorization: `Bearer ${token}` }),
+          },
+        });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data: Organization[] = await response.json();
-        setOrganizations(data.length ? data : [/* fallback */]);
+        setOrganizations(data);
       } catch (error) {
-        setOrganizations([/* fallback */]);
+        console.error("Error fetching organizations:", error);
+        setOrganizations([]);
       }
     };
 
     const fetchDatasets = async () => {
       try {
         const token = localStorage.getItem("access_token");
-        const url = isAuthenticated
-          ? `${BACKEND_URL}/datasets/suggested/`
-          : `${BACKEND_URL}/datasets/random/`;
+        const url = isAuthenticated ? `${BACKEND_URL}/datasets/suggested/` : `${BACKEND_URL}/datasets/random/`;
         console.log("Fetching from:", url);
         const response = await fetch(url, {
           method: "GET",
@@ -211,7 +253,7 @@ export default function SearchPage() {
 
   const UserCard = ({ user }: { user: Researcher }) => (
     <div className="border border-gray-200 rounded-lg p-4 mb-4 cursor-pointer hover:shadow-md transition-shadow">
-      <Link href={`/profile/${user.username}`}>
+      <Link href={`/researcher/profile/${user.id}`}>
         <div className="flex items-center gap-3">
           {user.profile_picture ? (
             <img src={user.profile_picture} alt={user.username} className="w-12 h-12 rounded-full object-cover" />
@@ -231,7 +273,7 @@ export default function SearchPage() {
 
   const OrgCard = ({ org }: { org: Organization }) => (
     <div className="border border-gray-200 rounded-lg p-4 mb-4 cursor-pointer hover:shadow-md transition-shadow">
-      <Link href={`/organization/${org.name}`}>
+      <Link href={`/organisation/profile/${org.Organization_id}`}>
         <div className="flex items-center gap-3">
           {org.profile_picture ? (
             <img src={org.profile_picture} alt={org.name} className="w-12 h-12 rounded-full object-cover" />
@@ -254,27 +296,52 @@ export default function SearchPage() {
       <div className="flex flex-1">
         <main className="flex-1 max-w-2xl bg-white shadow-md rounded-lg">
           <header className="w-full bg-white shadow-md flex justify-center p-4">
-            <form onSubmit={handleSearch} className="flex items-center gap-4 max-w-2xl w-full">
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={handleInputChange}
-                  placeholder="Search datasets, users, or more..."
-                  className="w-full p-3 pl-10 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-600 text-gray-900"
-                />
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              </div>
-              <button
-                type="submit"
-                className={buttonVariants({
-                  size: "lg",
-                  className: "bg-orange-600 text-white hover:bg-orange-700 rounded-full",
-                })}
-              >
-                Search
-              </button>
-            </form>
+            <div className="relative flex-1 max-w-2xl w-full">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={handleInputChange}
+                placeholder="Search datasets, users, or more..."
+                className="w-full p-3 pl-10 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-600 text-gray-900"
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              {isDropdownOpen && suggestions && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {suggestions.datasets.map((dataset) => (
+                    <div
+                      key={dataset.dataset_id}
+                      className="p-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => handleSuggestionClick(dataset)}
+                    >
+                      <span className="font-semibold">{dataset.title}</span> (Dataset)
+                    </div>
+                  ))}
+                  {suggestions.users.map((user) => (
+                    <div
+                      key={user.username}
+                      className="p-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => handleSuggestionClick(user)}
+                    >
+                      <span className="font-semibold">{`${capitalize(user.first_name)} ${capitalize(user.sur_name)}`}</span> (@{user.username})
+                    </div>
+                  ))}
+                  {suggestions.organizations.map((org) => (
+                    <div
+                      key={org.email}
+                      className="p-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => handleSuggestionClick(org)}
+                    >
+                      <span className="font-semibold">{capitalize(org.name)}</span> (Org)
+                    </div>
+                  ))}
+                  {suggestions.datasets.length === 0 &&
+                    suggestions.users.length === 0 &&
+                    suggestions.organizations.length === 0 && (
+                      <div className="p-2 text-gray-500">No suggestions found</div>
+                    )}
+                </div>
+              )}
+            </div>
           </header>
           <nav className="flex gap-6 px-4 py-2 bg-white">
             <Link href="/search" className={`text-gray-700 hover:text-orange-600 font-medium ${!isTrending ? "text-orange-600" : ""}`}>
@@ -324,8 +391,127 @@ export default function SearchPage() {
             )}
           </div>
         </main>
+        <aside className="w-80 bg-white shadow-md rounded-lg p-6">
+          {!isAuthenticated ? (
+            <div className="text-center">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Join Us</h2>
+              <p className="text-gray-600 mb-4">Sign in to follow researchers and organizations!</p>
+              <Link href="/auth/sign-in" className={buttonVariants({ size: "lg", className: "bg-orange-600 text-white hover:bg-orange-700 w-full" })}>
+                Sign In
+              </Link>
+              <div className="mt-8">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Top Researchers</h2>
+                {researchers.length ? (
+                  <ul className="space-y-4">
+                    {researchers.map((researcher) => (
+                      <li key={researcher.username} className="flex items-center gap-3 text-gray-700">
+                        {researcher.profile_picture ? (
+                          <img src={researcher.profile_picture} alt={`${researcher.first_name} ${researcher.sur_name}`} className="w-12 h-12 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-xl">
+                            {capitalize(researcher.first_name)[0]}
+                          </div>
+                        )}
+                        <div className="flex-1 flex flex-col">
+                          <span className="font-bold text-base">{`${capitalize(researcher.first_name)} ${capitalize(researcher.sur_name)}`}</span>
+                          <span className="text-sm text-gray-500">@{researcher.username}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-600">No researchers available.</p>
+                )}
+                <h2 className="text-lg font-semibold text-gray-900 mt-6 mb-4">Top Organizations</h2>
+                {organizations.length ? (
+                  <ul className="space-y-4">
+                    {organizations.map((organization) => (
+                      <li key={organization.email} className="flex items-center gap-3 text-gray-700">
+                        {organization.profile_picture ? (
+                          <img src={organization.profile_picture} alt={organization.name} className="w-12 h-12 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-xl">
+                            {capitalize(organization.name)[0]}
+                          </div>
+                        )}
+                        <div className="flex-1 flex flex-col">
+                          <span className="font-bold text-base">{capitalize(organization.name)}</span>
+                          <span className="text-sm text-gray-500">{organization.email}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-600">No organizations available.</p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="mb-8">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Who to Follow (Researchers)</h2>
+                {researchers.length ? (
+                  <ul className="space-y-4">
+                    {researchers.map((researcher) => (
+                      <Link href={`/researcher/profile/${researcher.id}`} key={researcher.username}>
+                        <li className="flex items-center gap-3 text-gray-700 hover:text-orange-600 cursor-pointer">
+                          {researcher.profile_picture ? (
+                            <img src={researcher.profile_picture} alt={`${researcher.first_name} ${researcher.sur_name}`} className="w-12 h-12 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-xl">
+                              {capitalize(researcher.first_name)[0]}
+                            </div>
+                          )}
+                          <div className="flex-1 flex flex-col">
+                            <span className="font-bold text-base">{`${capitalize(researcher.first_name)} ${capitalize(researcher.sur_name)}`}</span>
+                            <span className="text-sm text-gray-500">@{researcher.username}</span>
+                          </div>
+                        </li>
+                      </Link>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-600">No researchers available.</p>
+                )}
+              </div>
+              <div className="mb-8">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Who to Follow (Organizations)</h2>
+                {organizations.length ? (
+                  <ul className="space-y-4">
+                    {organizations.map((organization) => (
+                      <Link href={`/organisation/profile/${organization.Organization_id}`} key={organization.email}>
+                        <li className="flex items-center gap-3 text-gray-700 hover:text-orange-600 cursor-pointer">
+                          {organization.profile_picture ? (
+                            <img src={organization.profile_picture} alt={organization.name} className="w-12 h-12 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-xl">
+                              {capitalize(organization.name)[0]}
+                            </div>
+                          )}
+                          <div className="flex-1 flex flex-col">
+                            <span className="font-bold text-base">{capitalize(organization.name)}</span>
+                            <span className="text-sm text-gray-500">{organization.email}</span>
+                          </div>
+                        </li>
+                      </Link>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-600">No organizations available.</p>
+                )}
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Trending</h2>
+                <ul className="space-y-3">
+                  <li className="text-gray-700 hover:text-orange-600 cursor-pointer">Dr. Emily Brown</li>
+                  <li className="text-gray-700 hover:text-orange-600 cursor-pointer">BioResearch Inc.</li>
+                  <li className="text-gray-700 hover:text-orange-600 cursor-pointer">Prof. Mark Lee</li>
+                </ul>
+              </div>
+            </>
+          )}
+        </aside>
       </div>
-      {/* Aside unchanged */}
     </div>
   );
 }
