@@ -169,6 +169,20 @@ services:
     networks:
       - app-network
 
+
+  redis:
+    image: redis:latest
+
+    ports:
+      - "6379:6379"
+
+    volumes:
+      - redis_data:/data
+
+    networks:
+      - app-network
+
+
   nginx:
     image: nginx:latest
     volumes:
@@ -189,6 +203,7 @@ services:
 
 volumes:
   db_data:
+  redis_data:
 
 networks:
   app-network:
