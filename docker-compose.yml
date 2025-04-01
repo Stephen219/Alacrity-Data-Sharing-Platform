@@ -244,7 +244,7 @@ services:
       - DJANGO_DATABASE_PASSWORD=alacrity_password
       - DJANGO_DATABASE_NAME=alacrity_db
       - DJANGO_SETTINGS_MODULE=alacrity_backend.settings
-    command: ["sh", "-c", "python manage.py makemigrations users organisation payments research notifications datasets dataset_requests && python manage.py migrate users && python manage.py migrate && python manage.py collectstatic --noinput"]
+    command: ["sh", "-c", "python manage.py makemigrations users organisation payments research notifications datasets dataset_requests && python manage.py migrate users && python manage.py migrate"]
     depends_on:
       mysql:
         condition: service_healthy
