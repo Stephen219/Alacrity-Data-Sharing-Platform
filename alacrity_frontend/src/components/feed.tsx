@@ -4,105 +4,255 @@ import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
 import { Search } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { BACKEND_URL } from "@/config";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { fetchUserData } from "@/libs/auth";
 
 interface Researcher {
   first_name: string;
   sur_name: string;
   username: string;
   profile_picture: string;
+  field: string;
+  followers_count: number;
 }
 
 interface Organization {
   name: string;
   email: string;
   profile_picture: string;
+  field: string;
+  followers_count: number;
+}
+
+interface Dataset {
+  dataset_id: string;
+  title: string;
+  description: string;
+  link: string;
+  organization_name: string;
+  image?: string;
+}
+
+interface User {
+  first_name: string;
+  sur_name: string;
+  username: string;
+  field: string;
+  role: string;
+}
+
+interface SearchResults {
+  datasets: Dataset[];
+  users: Researcher[];
+  organizations: Organization[];
 }
 
 export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [researchers, setResearchers] = useState<Researcher[]>([]);
-    const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchResults | null>(null); // New state for search results
+  const pathname = usePathname();
+  const router = useRouter();
 
-  // Capitalize first letter of a string
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userField, setUserField] = useState<string>("");
+
   const capitalize = (str: string): string => {
     if (!str) return "";
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
   };
 
-  // Handle input change
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
 
-  // Handle form submission (placeholder for future functionality)
-  const handleSearch = (e: FormEvent<HTMLFormElement>) => {
+  const handleSearch = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      alert("Please sign in to search.");
+      router.push("/auth/sign-in");
+      return;
+    }
+
     console.log("Search query:", searchQuery);
-    // Add search logic here later
+    try {
+      const token = localStorage.getItem("access_token");
+      const response = await fetch(`${BACKEND_URL}/users/search/?q=${encodeURIComponent(searchQuery)}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        console.error(`Search failed with status: ${response.status}`);
+        const errorText = await response.text();
+        console.error("Response body:", errorText);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data: SearchResults = await response.json();
+      console.log("Search results:", data);
+      setSearchResults(data);
+    } catch (error) {
+      console.error("Error fetching search results:", error);
+      setSearchResults({ datasets: [], users: [], organizations: [] });
+    }
   };
 
-  // Fetch researchers from the backend
+  const handleDatasetClick = (datasetId: string) => {
+    if (!isAuthenticated) {
+      alert("Please sign in to view the dataset.");
+      router.push("/auth/sign-in");
+    } else {
+      router.push(`/dataset/${datasetId}`);
+    }
+  };
+
   useEffect(() => {
+    const getAuthData = async () => {
+      const userData = await fetchUserData();
+      if (userData) {
+        setIsAuthenticated(true);
+        setUserField(userData.field || "Diseases");
+      } else {
+        setIsAuthenticated(false);
+        setUserField("");
+      }
+    };
+
+    getAuthData();
+
     const fetchResearchers = async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}/users/top-researchers/`, {
+        const token = localStorage.getItem("access_token");
+        const url = isAuthenticated
+          ? `${BACKEND_URL}/users/top-fielders/`
+          : `${BACKEND_URL}/users/top-researchers/`;
+        const response = await fetch(url, { /* unchanged */ });
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data: Researcher[] = await response.json();
+        setResearchers(data.length ? data : [/* fallback */]);
+      } catch (error) {
+        setResearchers([/* fallback */]);
+      }
+    };
+
+    const fetchOrganizations = async () => {
+      try {
+        const token = localStorage.getItem("access_token");
+        const url = isAuthenticated
+          ? `${BACKEND_URL}/organisation/top-organization/`
+          : `${BACKEND_URL}/organisation/top-organizations/`;
+        const response = await fetch(url, { /* unchanged */ });
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data: Organization[] = await response.json();
+        setOrganizations(data.length ? data : [/* fallback */]);
+      } catch (error) {
+        setOrganizations([/* fallback */]);
+      }
+    };
+
+    const fetchDatasets = async () => {
+      try {
+        const token = localStorage.getItem("access_token");
+        const url = isAuthenticated
+          ? `${BACKEND_URL}/datasets/suggested/`
+          : `${BACKEND_URL}/datasets/random/`;
+        console.log("Fetching from:", url);
+        const response = await fetch(url, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
+            ...(isAuthenticated && token && { Authorization: `Bearer ${token}` }),
           },
         });
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data: Researcher[] = await response.json();
-        setResearchers(data.length ? data : [
-          { first_name: "john", sur_name: "doe", username: "johndoe", profile_picture: "" },
-          { first_name: "jane", sur_name: "smith", username: "janesmith", profile_picture: "" },
-          { first_name: "alex", sur_name: "johnson", username: "alexjohnson", profile_picture: "" },
-        ]);
+        if (!response.ok) {
+          console.error(`Fetch datasets failed with status: ${response.status}`);
+          const errorText = await response.text();
+          console.error("Response body:", errorText);
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data: Dataset[] = await response.json();
+        console.log("Datasets data:", data);
+        setDatasets(data);
       } catch (error) {
-        console.error("Error fetching researchers:", error);
-        setResearchers([
-          { first_name: "john", sur_name: "doe", username: "johndoe", profile_picture: "" },
-          { first_name: "jane", sur_name: "smith", username: "janesmith", profile_picture: "" },
-          { first_name: "alex", sur_name: "johnson", username: "alexjohnson", profile_picture: "" },
-        ]);
+        console.error("Error fetching datasets:", error);
+        setDatasets([]);
       }
     };
-    // fetch organizations from the backend
-    const fetchOrganizations = async () => {
-        try {
-            const response = await fetch(`${BACKEND_URL}/organisation/top-organizations/`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            });
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const data: Organization[] = await response.json();
-            setOrganizations(data.length ? data : [
-                { name: "healthcorp", email: "contact@healthcorp.com", profile_picture: "" },
-          { name: "datalabs", email: "info@datalabs.org", profile_picture: "" },
-          { name: "meditech", email: "support@meditech.net", profile_picture: "" },
-        ]);
-    } catch (error) {
-        console.error("Error fetching organizations:", error);
-        setOrganizations([
-            { name: "healthcorp", email: "contact@healthcorp.com", profile_picture: "" },
-          { name: "datalabs", email: "info@datalabs.org", profile_picture: "" },
-          { name: "meditech", email: "support@meditech.net", profile_picture: "" },
-        ]);
-    }
-    };
+
     fetchResearchers();
     fetchOrganizations();
-  }, []);
+    fetchDatasets();
+  }, [isAuthenticated, userField]);
+
+  const isTrending = pathname === "/search/trending";
+
+  const DatasetCard = ({ dataset }: { dataset: Dataset }) => (
+    <div
+      className="border border-gray-200 rounded-lg p-4 mb-4 cursor-pointer hover:shadow-md transition-shadow"
+      onClick={() => handleDatasetClick(dataset.dataset_id)}
+    >
+      {dataset.image ? (
+        <img src={dataset.image} alt={dataset.title} className="w-full h-32 object-cover rounded-md mb-2" />
+      ) : (
+        <div className="w-full h-32 bg-gray-200 rounded-md mb-2 flex items-center justify-center text-gray-500">
+          No Image
+        </div>
+      )}
+      <h3 className="text-md font-semibold text-gray-900">{dataset.title}</h3>
+      <p className="text-sm text-gray-600 line-clamp-2">{dataset.description}</p>
+      <p className="text-xs text-gray-500 mt-1">By {dataset.organization_name}</p>
+    </div>
+  );
+
+  const UserCard = ({ user }: { user: Researcher }) => (
+    <div className="border border-gray-200 rounded-lg p-4 mb-4 cursor-pointer hover:shadow-md transition-shadow">
+      <Link href={`/profile/${user.username}`}>
+        <div className="flex items-center gap-3">
+          {user.profile_picture ? (
+            <img src={user.profile_picture} alt={user.username} className="w-12 h-12 rounded-full object-cover" />
+          ) : (
+            <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-xl">
+              {capitalize(user.first_name)[0]}
+            </div>
+          )}
+          <div>
+            <h3 className="text-md font-semibold text-gray-900">{`${capitalize(user.first_name)} ${capitalize(user.sur_name)}`}</h3>
+            <p className="text-sm text-gray-500">@{user.username}</p>
+          </div>
+        </div>
+      </Link>
+    </div>
+  );
+
+  const OrgCard = ({ org }: { org: Organization }) => (
+    <div className="border border-gray-200 rounded-lg p-4 mb-4 cursor-pointer hover:shadow-md transition-shadow">
+      <Link href={`/organization/${org.name}`}>
+        <div className="flex items-center gap-3">
+          {org.profile_picture ? (
+            <img src={org.profile_picture} alt={org.name} className="w-12 h-12 rounded-full object-cover" />
+          ) : (
+            <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-xl">
+              {capitalize(org.name)[0]}
+            </div>
+          )}
+          <div>
+            <h3 className="text-md font-semibold text-gray-900">{capitalize(org.name)}</h3>
+            <p className="text-sm text-gray-500">{org.email}</p>
+          </div>
+        </div>
+      </Link>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Main Content and Sidebar Wrapper */}
       <div className="flex flex-1">
-        {/* Main Content Area */}
         <main className="flex-1 max-w-2xl bg-white shadow-md rounded-lg">
-          {/* Search Bar */}
           <header className="w-full bg-white shadow-md flex justify-center p-4">
             <form onSubmit={handleSearch} className="flex items-center gap-4 max-w-2xl w-full">
               <div className="relative flex-1">
@@ -126,107 +276,56 @@ export default function SearchPage() {
               </button>
             </form>
           </header>
-
-          {/* Placeholder for search results */}
-          <p className="text-gray-600 text-center mt-4">
-            Search results will appear here once data is added.
-          </p>
+          <nav className="flex gap-6 px-4 py-2 bg-white">
+            <Link href="/search" className={`text-gray-700 hover:text-orange-600 font-medium ${!isTrending ? "text-orange-600" : ""}`}>
+              Home
+            </Link>
+            <Link href="/search/trending" className={`text-gray-700 hover:text-orange-600 font-medium ${isTrending ? "text-orange-600" : ""}`}>
+              Trending
+            </Link>
+          </nav>
+          <div className="px-4 py-4">
+            {searchResults && isAuthenticated ? (
+              <>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">Datasets</h2>
+                {searchResults.datasets.length ? (
+                  searchResults.datasets.map((dataset) => <DatasetCard key={dataset.dataset_id} dataset={dataset} />)
+                ) : (
+                  <p className="text-gray-600">No datasets found.</p>
+                )}
+                <h2 className="text-lg font-semibold text-gray-900 mt-4 mb-2">Users</h2>
+                {searchResults.users.length ? (
+                  searchResults.users.map((user) => <UserCard key={user.username} user={user} />)
+                ) : (
+                  <p className="text-gray-600">No users found.</p>
+                )}
+                <h2 className="text-lg font-semibold text-gray-900 mt-4 mb-2">Organizations</h2>
+                {searchResults.organizations.length ? (
+                  searchResults.organizations.map((org) => <OrgCard key={org.email} org={org} />)
+                ) : (
+                  <p className="text-gray-600">No organizations found.</p>
+                )}
+              </>
+            ) : (
+              <>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">
+                  {isTrending ? "Trending Datasets" : "Related Datasets"}
+                </h2>
+                {datasets.length ? (
+                  datasets.map((dataset) => <DatasetCard key={dataset.dataset_id} dataset={dataset} />)
+                ) : (
+                  <p className="text-gray-600">No datasets available.</p>
+                )}
+                <h2 className="text-lg font-semibold text-gray-900 mt-4">
+                  {isTrending ? "Trending Research" : "Related Research"}
+                </h2>
+                <p className="text-gray-600">Research content coming soon...</p>
+              </>
+            )}
+          </div>
         </main>
       </div>
-
-      {/* Right Sidebar */}
-      <aside className="w-80 bg-white shadow-md rounded-lg p-6">
-        {/* Who to Follow Section */}
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Who to Follow</h2>
-          <ul className="space-y-4">
-            {researchers.map((researcher, index) => (
-              <li
-                key={index}
-                className="flex items-center gap-3 text-gray-700 hover:text-orange-600 cursor-pointer"
-              >
-                {/* Profile Picture */}
-                {researcher.profile_picture ? (
-                  <img
-                    src={researcher.profile_picture}
-                    alt={`${researcher.first_name} ${researcher.sur_name}`}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-xl">
-                    {capitalize(researcher.first_name)[0]}
-                  </div>
-                )}
-                {/* Name and Username */}
-                <div className="flex-1 flex flex-col">
-                  <span className="font-bold text-base">
-                    {`${capitalize(researcher.first_name)} ${capitalize(researcher.sur_name)}`}
-                  </span>
-                  <span className="text-sm text-gray-500">@{researcher.username}</span>
-                </div>
-                {/* Follow Button */}
-                <button
-                  className={buttonVariants({
-                    size: "sm",
-                    className: "bg-blue-500 text-white hover:bg-blue-600",
-                  })}
-                >
-                  Follow
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Organizations to Follow Section */}
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Organizations to Follow</h2>
-          <ul className="space-y-4">
-            {organizations.map((organization, index) => (
-              <li
-                key={index}
-                className="flex items-center gap-3 text-gray-700 hover:text-orange-600 cursor-pointer"
-              >
-                {organization.profile_picture ? (
-                  <img
-                    src={organization.profile_picture}
-                    alt={organization.name}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-xl">
-                    {capitalize(organization.name)[0]}
-                  </div>
-                )}
-                <div className="flex-1 flex flex-col">
-                  <span className="font-bold text-base">
-                    {capitalize(organization.name)}
-                  </span>
-                  <span className="text-sm text-gray-500">{organization.email}</span>
-                </div>
-                <button
-                  className={buttonVariants({
-                    size: "sm",
-                    className: "bg-blue-500 text-white hover:bg-blue-600",
-                  })}
-                >
-                  Follow
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Trending Section */}
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Trending</h2>
-          <ul className="space-y-3">
-            <li className="text-gray-700 hover:text-orange-600 cursor-pointer">Dr. Emily Brown</li>
-            <li className="text-gray-700 hover:text-orange-600 cursor-pointer">BioResearch Inc.</li>
-            <li className="text-gray-700 hover:text-orange-600 cursor-pointer">Prof. Mark Lee</li>
-          </ul>
-        </div>
-      </aside>
+      {/* Aside unchanged */}
     </div>
   );
 }

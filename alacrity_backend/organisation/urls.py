@@ -3,7 +3,7 @@ from .views import (AddContributors, ActivateContributorAccount,
                     FollowOrganizationView, OrganizationDatasetsView,
                     OrganizationProfileView, UnfollowOrganizationView,
                      RegisterOrganizationView, UsersWithDatasetAccessView
-                     , RequestsProcessedByContributorAndAdminView , TopOrganizationsView
+                     , RequestsProcessedByContributorAndAdminView , TopOrganizationsView , TopOrganization
                      )
 
 urlpatterns = [
@@ -14,6 +14,7 @@ urlpatterns = [
     # path('requests-processed-by-contributor-and-admin/', RequestsProcessedByContributorAndAdminView.as_view(), name='requests-processed-by-contributor-and-admin'),
 
     path('top-organizations/', TopOrganizationsView.as_view(), name='top-organizations'),
+    path('top-organization/', TopOrganization.as_view(), name='top-organization'),
     path('<str:org_id>/', OrganizationProfileView.as_view(), name='organization-profile'),
     path('<str:org_id>/datasets/', OrganizationDatasetsView.as_view(), name='organization-datasets'),
     path('follow/<str:org_id>/', FollowOrganizationView.as_view(), name='follow-organization'),

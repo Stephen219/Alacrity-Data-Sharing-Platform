@@ -268,7 +268,7 @@ export default function SignUp() {
  
             <div className="relative">
               <label htmlFor="field" className="text-sm font-medium text-gray-700 mb-1 block">
-                Field
+                Field of Research
               </label>
               <input
                 id="field"

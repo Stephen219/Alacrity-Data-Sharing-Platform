@@ -25,9 +25,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from minio import Minio
 from alacrity_backend.settings import MINIO_ACCESS_KEY , MINIO_SECRET_KEY, MINIO_BUCKET_NAME, MINIO_URL, MINIO_SECURE
 import uuid
-
-
-
+from django.db.models import Q
 from dataset_requests.models import DatasetRequest
 from users.models import User
 from users.serializers import UserSerializer
@@ -231,16 +229,6 @@ class RegisterOrganizationView(APIView):
         print(f"Serializer errors: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-
-
-
-
-
-
-
-        
-
-
 
 class OrganizationProfileView(APIView):
     permission_classes = [AllowAny]
@@ -495,3 +483,22 @@ class TopOrganizationsView(APIView):
         
         serializer = TopOrganizationSerializer(top_organizations, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class TopOrganization(APIView):
+    permission_classes = [IsAuthenticated] # ensures the user is authentiacted
+    @role_required(["organization_admin" , "contributor", "researcher"])
+
+    def get(self, request):
+        user = request.user
+        field = user.field
+        if field:
+            top_organizations = Organization.objects.filter(field=field).annotate(
+                follower_count=Count('following')
+            ).order_by('-follower_count')[:3]
+        else:
+            top_organizations = Organization.objects.annotate(
+                follower_count=Count('following')
+            ).order_by('-follower_count')[:3]
+        serializer = TopOrganizationSerializer(top_organizations, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    

@@ -37,7 +37,9 @@ from rest_framework.views import APIView
 from alacrity_backend.settings import MINIO_ACCESS_KEY, MINIO_BUCKET_NAME, MINIO_SECRET_KEY, MINIO_URL, MINIO_SECURE
 from users.decorators import role_required
 from .models import Dataset , Feedback
-from .serializer import DatasetSerializer
+from .serializer import DatasetSerializer , randomSerializer
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from random import choice
 
 from rest_framework.parsers import JSONParser
 # from django.http import JsonResponse
@@ -733,4 +735,4 @@ class FeedbackView(APIView):
         # takes back the comments and the rating of the dataset to a given dataset_id
         # this will be used to give feedback to the dataset
 
-   
+

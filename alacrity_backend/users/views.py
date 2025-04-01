@@ -46,6 +46,9 @@ from minio import Minio, S3Error
 from rest_framework import status
 from  notifications.models import Notification
 
+from datasets.serializer import DatasetSerializer
+from organisation.serializer import OrganizationSerializer
+from organisation.models import Organization
 
 
 
@@ -941,6 +944,58 @@ class most_followed_users(APIView):
         serializer = TopResearcherSerializer(users, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+class top_researchers(APIView):
+    permission_classes = [IsAuthenticated]
+    @role_required(["organization_admin" , "contributor", "researcher"])
+    def get(self, request):
+        user = request.user
+        field = user.field  # Assuming 'field' is a field on your User model
+        if not field:
+            return Response({"error": "User has no field specified"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Fetch top researchers in the same field
+        users = User.objects.filter(role='researcher', field=field).annotate(
+            followers_count=Count('followers')
+        ).order_by('-followers_count')[:3]
+        
+        serializer = TopResearcherSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+class SearchView(APIView):
+    permission_classes = [IsAuthenticated] # ensures the user is authentiacted
+
+    @role_required(["organization_admin" , "contributor", "researcher"])
+    def get(self, request):
+        query = request.query_params.get('q' , '').strip()
+        if not query:
+            return Response({"error": "Search query is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+        # searching for datasets 
+        datasets = Dataset.objects.filter(
+            Q(title__icontains=query) | Q(description__icontains=query) | Q(tags__icontains=query))
+        dataset_serializer = DatasetSerializer(datasets, many=True, context={'request': request})
+
+        # searching for organizations
+        organizations = Organization.objects.filter(
+            Q(name__icontains=query) | Q(description__icontains=query)) 
+        organization_serializer = OrganizationSerializer(organizations, many=True, context={'request': request})
+
+        # searching for users
+        users = User.objects.filter(
+            Q(first_name__icontains=query) | Q(sur_name__icontains=query) | Q(email__icontains=query))
+        user_serializer = UserSerializer(users, many=True, context={'request': request})
+
+        return Response({
+            "datasets": dataset_serializer.data,
+            "organizations": organization_serializer.data,
+            "users": user_serializer.data
+        }, status=status.HTTP_200_OK)
+
+       
+
+    
 
 
 

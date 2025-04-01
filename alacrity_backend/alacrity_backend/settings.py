@@ -235,9 +235,7 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.MultiPartParser',
         'rest_framework.parsers.FormParser',
     ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ],
+    'DEFAULT_PERMISSION_CLASSES': [],  # Empty to respect view-level permissions
     'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
 }
 

@@ -7,7 +7,7 @@ get_datasets, get_filter_options, CreateDatasetView, DatasetListView, get_datase
 
  pre_analysis)
 
-from .new import analyze_dataset , dataset_detail, all_datasets_view, clear_dataset_cache, dataset_view, download_dataset
+from .new import analyze_dataset , dataset_detail, all_datasets_view, clear_dataset_cache, dataset_view, download_dataset, RandomDatasets , SuggestedDatasets
 from .chat_view import ChatListView, SendMessageView, MessageListView,DatasetDetailView
 
 urlpatterns = [
@@ -37,5 +37,7 @@ urlpatterns = [
     path('<str:dataset_id>/', dataset_view, name='dataset_detail'),
     path("<str:dataset_id>/bookmark/", ToggleBookmarkDatasetView.as_view(), name="toggle-bookmark-dataset"),
     path('feedback/<str:dataset_id>/', FeedbackView.as_view(), name='feedback'),
+    path('random/', RandomDatasets.as_view(), name='random-datasets'),
+    path('suggested/', SuggestedDatasets.as_view(), name='suggested-datasets'),
 ]
 
