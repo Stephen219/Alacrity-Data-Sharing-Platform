@@ -205,13 +205,13 @@ services:
       - "80:80"
     depends_on:
       frontend:
-        condition: service_healthy
+    
       backend-1:
-        condition: service_healthy
+   
       backend-2:
-        condition: service_healthy
+    
       backend-3:
-        condition: service_healthy
+
     networks:
       - app-network
 
