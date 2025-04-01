@@ -1,235 +1,4 @@
 
-# version: '3.8'
-
-# services:
-#   migration:
-#     build:
-#       context: .
-#       dockerfile: Dockerfile.backend
-#     environment:
-#       - DJANGO_DATABASE_HOST=mysql
-#       - DJANGO_DATABASE_PORT=3306
-#       - DJANGO_DATABASE_USER=alacrity
-#       - DJANGO_DATABASE_PASSWORD=alacrity_password
-#       - DJANGO_DATABASE_NAME=alacrity_db
-#     command: ["sh", "-c", "python manage.py makemigrations users organisation payments research notifications datasets dataset_requests && python manage.py migrate users && python manage.py migrate"]
-#     depends_on:
-#       mysql:
-#         condition: service_healthy
-#     volumes:
-#       - /storage1:/storage1  # technically open stack has 10 gb of space and hence i added 40 gb of as the volume size
-#     networks:
-#       - app-network
-
-#   frontend:
-#     build:
-#       context: .
-#       dockerfile: Dockerfile.frontend
-#       args:
-#         - NEXT_PUBLIC_API_URL=http://10.72.98.30/api
-#     ports:
-#       - "3000:3000"
-#     environment:
-#       - NEXT_PUBLIC_API_URL=http://10.72.98.30/api
-#     healthcheck:
-#       test: ["CMD", "curl", "-f", "http://localhost:3000"]
-#       interval: 10s
-#       timeout: 5s
-#       retries: 5
-#     volumes:
-#       - /storage1:/storage1  
-#     networks:
-#       - app-network
-
-#   backend-1:
-#     build:
-#       context: .
-#       dockerfile: Dockerfile.backend
-#     ports:
-#       - "8000:8000"
-#     environment:
-#       - DJANGO_DATABASE_HOST=mysql
-#       - DJANGO_DATABASE_PORT=3306
-#       - DJANGO_DATABASE_USER=alacrity
-#       - DJANGO_DATABASE_PASSWORD=alacrity_password
-#       - DJANGO_DATABASE_NAME=alacrity_db
-#       - MINIO_URL=http://10.72.98.137:9000
-#       - MINIO_ACCESS_KEY=admin
-#       - MINIO_SECRET_KEY=Notgood1
-#       - MINIO_BUCKET_NAME=alacrity
-
-#     # command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-    
-
-#     # command: ["gunicorn", "--workers", "3", "--bind", "0.0.0.0:8000", "alacrity_backend.wsgi:application"]
-#     # command: ["daphne", "-b", "0.0.0.0", "-p", "8000", "-w", "4", "alacrity_backend.asgi:application"]
-#     # command: ["sh", "-c", "python manage.py collectstatic --noinput && daphne -b 0.0.0.0 -p 8000 alacrity_backend.asgi:application"]
-#     command: ["sh", "-c", "daphne -b 0.0.0.0 -p 8000 alacrity_backend.asgi:application"]
-
-
-#     # use gunicorn for production here
-
-
-
-    
-#     depends_on:
-#       mysql:
-#         condition: service_healthy
-#       migration:
-#         condition: service_completed_successfully
-
-#     deploy:
-#       replicas: 3
-#       restart_policy:
-#         condition: on-failure
-        
-#     volumes:
-#       - /storage1:/storage1  # Mount /storage1 as a volume to the container
-#     networks:
-#       - app-network
-
-#   backend-2:
-#     build:
-#       context: .
-#       dockerfile: Dockerfile.backend
-#     ports:
-#       - "8001:8000"
-#     environment:
-#       - DJANGO_DATABASE_HOST=mysql
-#       - DJANGO_DATABASE_PORT=3306
-#       - DJANGO_DATABASE_USER=alacrity
-#       - DJANGO_DATABASE_PASSWORD=alacrity_password
-#       - DJANGO_DATABASE_NAME=alacrity_db
-#       - MINIO_URL=http://10.72.98.137:9000
-#       - MINIO_ACCESS_KEY=admin
-#       - MINIO_SECRET_KEY=Notgood1
-#       - MINIO_BUCKET_NAME=alacrity
-#     # command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-#     # command: ["gunicorn", "--workers", "3", "--bind", "0.0.0.0:8000", "alacrity_backend.wsgi:application"]
-#     # command: ["daphne", "-b", "0.0.0.0", "-p", "8000", "-w", "4", "alacrity_backend.asgi:application"]
-#     # command: ["sh", "-c", "python manage.py collectstatic --noinput && daphne -b 0.0.0.0 -p 8000 alacrity_backend.asgi:application"]
-#     command: ["sh", "-c", "daphne -b 0.0.0.0 -p 8000 alacrity_backend.asgi:application"]
-
-
-#     depends_on:
-#       mysql:
-#         condition: service_healthy
-#       migration:
-#         condition: service_completed_successfully
-
-#     deploy:
-#       replicas: 3
-#       restart_policy:
-#         condition: on-failure
-
-    
-
-#     volumes:
-#       - /storage1:/storage1  
-#     networks:
-#       - app-network
-
-#   backend-3:
-#     build:
-#       context: .
-#       dockerfile: Dockerfile.backend
-#     ports:
-#       - "8002:8000"
-#     environment:
-#       - DJANGO_DATABASE_HOST=mysql
-#       - DJANGO_DATABASE_PORT=3306
-#       - DJANGO_DATABASE_USER=alacrity
-#       - DJANGO_DATABASE_PASSWORD=alacrity_password
-#       - DJANGO_DATABASE_NAME=alacrity_db
-#       - MINIO_URL=http://10.72.98.137:9000
-#       - MINIO_ACCESS_KEY=admin
-#       - MINIO_SECRET_KEY=Notgood1
-#       - MINIO_BUCKET_NAME=alacrity
-#     # command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-#     # command: ["gunicorn", "--workers", "3", "--bind", "0.0.0.0:8000", "alacrity_backend.wsgi:application"]
-#     # command: ["daphne", "-b", "0.0.0.0", "-p", "8000", "-w", "4", "alacrity_backend.asgi:application"]
-#     # command: ["sh", "-c", "python manage.py collectstatic --noinput && daphne -b 0.0.0.0 -p 8000 alacrity_backend.asgi:application"]
-#     command: ["sh", "-c", "daphne -b 0.0.0.0 -p 8000 alacrity_backend.asgi:application"]
-
-
-#     depends_on:
-#       mysql:
-#         condition: service_healthy
-#       migration:
-#         condition: service_completed_successfully
-#     deploy:
-#       replicas: 3
-#       restart_policy:
-#         condition: on-failure
-#     volumes:
-#       - /storage1:/storage1
-#     networks:
-#       - app-network
-
-
-#   redis:
-#     image: redis:latest
-#     ports:
-#       - "6379:6379"
-#     volumes:
-#       - redis_data:/data
-#     networks:
-#       - app-network
-
-#   mysql:
-#     build:
-#       context: .
-#       dockerfile: Dockerfile.database
-#     ports:
-#       - "3307:3306"
-#     environment:
-#       - MYSQL_ROOT_PASSWORD=comsc
-#       - MYSQL_DATABASE=alacrity_db
-#     expose:
-#       - "3306"
-#     volumes:
-#       - db_data:/var/lib/mysql
-#     healthcheck:
-#       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pcomsc"]
-#       interval: 10s
-#       timeout: 5s
-#       retries: 5
-#     networks:
-#       - app-network
-
-#   nginx:
-#     image: nginx:latest
-#     volumes:
-#       - ./nginx.conf:/etc/nginx/nginx.conf
-#     ports:
-#       - "80:80"
-#     depends_on:
-#       frontend:
-#         condition: service_healthy
-#       backend-1:
-#         condition: service_started
-#       backend-2:
-#         condition: service_started
-#       backend-3:
-#         condition: service_started
-#     networks:
-#       - app-network
-
-# volumes:
-#   db_data:
-#   redis_data:
-
-# # i have no idea if it
-
-
-
-# networks:
-#   app-network:
-#     driver: bridge
-
-
-
-
 version: '3.8'
 
 services:
@@ -243,13 +12,12 @@ services:
       - DJANGO_DATABASE_USER=alacrity
       - DJANGO_DATABASE_PASSWORD=alacrity_password
       - DJANGO_DATABASE_NAME=alacrity_db
-      - DJANGO_SETTINGS_MODULE=alacrity_backend.settings
     command: ["sh", "-c", "python manage.py makemigrations users organisation payments research notifications datasets dataset_requests && python manage.py migrate users && python manage.py migrate"]
     depends_on:
       mysql:
         condition: service_healthy
     volumes:
-      - /storage1:/storage1
+      - /storage1:/storage1  # technically open stack has 10 gb of space and hence i added 40 gb of as the volume size
     networks:
       - app-network
 
@@ -269,7 +37,7 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - /storage1:/storage1
+      - /storage1:/storage1  
     networks:
       - app-network
 
@@ -277,6 +45,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
+    ports:
+      - "8000:8000"
     environment:
       - DJANGO_DATABASE_HOST=mysql
       - DJANGO_DATABASE_PORT=3306
@@ -287,29 +57,28 @@ services:
       - MINIO_ACCESS_KEY=admin
       - MINIO_SECRET_KEY=Notgood1
       - MINIO_BUCKET_NAME=alacrity
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - DJANGO_SETTINGS_MODULE=alacrity_backend.settings
-      - DEBUG=False
+
+    # command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    
+
+    # command: ["gunicorn", "--workers", "3", "--bind", "0.0.0.0:8000", "alacrity_backend.wsgi:application"]
+    # command: ["daphne", "-b", "0.0.0.0", "-p", "8000", "-w", "4", "alacrity_backend.asgi:application"]
+    # command: ["sh", "-c", "python manage.py collectstatic --noinput && daphne -b 0.0.0.0 -p 8000 alacrity_backend.asgi:application"]
     command: ["sh", "-c", "daphne -b 0.0.0.0 -p 8000 alacrity_backend.asgi:application"]
+
+
+    # use gunicorn for production here
+
+
+
+    
     depends_on:
       mysql:
         condition: service_healthy
-      redis:
-        condition: service_started
       migration:
         condition: service_completed_successfully
-    # healthcheck:
-    #   test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
-    #   interval: 10s
-    #   timeout: 5s
-    #   retries: 5
-    # deploy:
-      # replicas: 3
-      # restart_policy:
-      #   condition: on-failure
     volumes:
-      - /storage1:/storage1
+      - /storage1:/storage1  # Mount /storage1 as a volume to the container
     networks:
       - app-network
 
@@ -317,6 +86,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
+    ports:
+      - "8001:8000"
     environment:
       - DJANGO_DATABASE_HOST=mysql
       - DJANGO_DATABASE_PORT=3306
@@ -327,29 +98,20 @@ services:
       - MINIO_ACCESS_KEY=admin
       - MINIO_SECRET_KEY=Notgood1
       - MINIO_BUCKET_NAME=alacrity
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - DJANGO_SETTINGS_MODULE=alacrity_backend.settings
-      - DEBUG=False
+    # command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    # command: ["gunicorn", "--workers", "3", "--bind", "0.0.0.0:8000", "alacrity_backend.wsgi:application"]
+    # command: ["daphne", "-b", "0.0.0.0", "-p", "8000", "-w", "4", "alacrity_backend.asgi:application"]
+    # command: ["sh", "-c", "python manage.py collectstatic --noinput && daphne -b 0.0.0.0 -p 8000 alacrity_backend.asgi:application"]
     command: ["sh", "-c", "daphne -b 0.0.0.0 -p 8000 alacrity_backend.asgi:application"]
+
+
     depends_on:
       mysql:
         condition: service_healthy
-      redis:
-        condition: service_started
       migration:
         condition: service_completed_successfully
-    # healthcheck:
-    #   test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
-    #   interval: 10s
-    #   timeout: 5s
-    #   retries: 5
-    # deploy:
-    #   replicas: 3
-    #   restart_policy:
-    #     condition: on-failure
     volumes:
-      - /storage1:/storage1
+      - /storage1:/storage1  # Mount /storage1 as a volume to the container
     networks:
       - app-network
 
@@ -357,6 +119,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
+    ports:
+      - "8002:8000"
     environment:
       - DJANGO_DATABASE_HOST=mysql
       - DJANGO_DATABASE_PORT=3306
@@ -367,38 +131,20 @@ services:
       - MINIO_ACCESS_KEY=admin
       - MINIO_SECRET_KEY=Notgood1
       - MINIO_BUCKET_NAME=alacrity
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - DJANGO_SETTINGS_MODULE=alacrity_backend.settings
-      - DEBUG=False
+    # command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    # command: ["gunicorn", "--workers", "3", "--bind", "0.0.0.0:8000", "alacrity_backend.wsgi:application"]
+    # command: ["daphne", "-b", "0.0.0.0", "-p", "8000", "-w", "4", "alacrity_backend.asgi:application"]
+    # command: ["sh", "-c", "python manage.py collectstatic --noinput && daphne -b 0.0.0.0 -p 8000 alacrity_backend.asgi:application"]
     command: ["sh", "-c", "daphne -b 0.0.0.0 -p 8000 alacrity_backend.asgi:application"]
+
+
     depends_on:
       mysql:
         condition: service_healthy
-      redis:
-        condition: service_started
       migration:
         condition: service_completed_successfully
-    # healthcheck:
-    #   test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
-    #   interval: 10s
-    #   timeout: 5s
-    #   retries: 5
-    # deploy:
-    #   replicas: 3
-    #   restart_policy:
-    #     condition: on-failure
     volumes:
       - /storage1:/storage1
-    networks:
-      - app-network
-
-  redis:
-    image: redis:latest
-    expose:
-      - "6379"
-    volumes:
-      - redis_data:/data
     networks:
       - app-network
 
@@ -433,17 +179,16 @@ services:
       frontend:
         condition: service_healthy
       backend-1:
-        
+        condition: service_started
       backend-2:
-        
+        condition: service_started
       backend-3:
-       
+        condition: service_started
     networks:
       - app-network
 
 volumes:
   db_data:
-  redis_data:
 
 networks:
   app-network:
