@@ -1,5 +1,7 @@
 
 
+
+
 """
 Django settings for alacrity_backend project.
 
@@ -33,7 +35,10 @@ load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY', '9cdf91842b864472c0570e917223afcc51a390b39a083a3f0de114cadf408f41')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
+DEBUG = True
+
+ASGI_APPLICATION = "alacrity_backend.asgi.application"
+
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') if os.getenv('ENV') == 'production' else ['*']
 
@@ -105,7 +110,6 @@ CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', '').split(',') if os.ge
     FRONTEND_URL,
     "http://127.0.0.1:3000",
     "http://localhost:3000",
-    "https://10.72.102.244:80",
 ]
 
 # ASGI and channel layers settings

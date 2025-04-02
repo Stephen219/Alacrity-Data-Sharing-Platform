@@ -1,33 +1,63 @@
 
-FROM python:3.10
+
+
+
+#
+FROM python:3.10-slim AS build
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install build dependencies (including pkg-config)
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libmariadb-dev \
     default-mysql-client \
+    pkg-config \
     iputils-ping \
     net-tools \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
-COPY alacrity_backend/requirements.txt .
-COPY wait-for-mysql.sh .
-RUN chmod +x wait-for-mysql.sh
-RUN pip install --no-cache-dir -r requirements.txt \
-    && pip install gunicorn
 
+COPY alacrity_backend/requirements.txt .
+
+
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+
+FROM python:3.10-slim
+
+WORKDIR /app
+
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libmariadb-dev \
+    pkg-config \
+    iputils-ping \
+    net-tools \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+
+COPY --from=build /usr/local/lib/python3.10/site-packages/ /usr/local/lib/python3.10/site-packages/
+COPY --from=build /usr/local/bin/ /usr/local/bin/
 COPY alacrity_backend/ .
 
-RUN ls -la
+
+# COPY wait-for-mysql.sh .
+# RUN chmod +x wait-for-mysql.sh
+
+
+RUN useradd -m appuser
+
+
+RUN chown -R appuser:appuser /app
+
+# Switch to appuser
+USER appuser
+
 
 EXPOSE 8000
-#toDO RUN THE SERVER WITH GUNICORN AS 
 
 
-
-
-
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# CMD ["gunicorn", "--workers", "3", "--bind", "0.0.0.0:8000", "alacrity_backend.wsgi:application"]
+CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "-w", "4", "alacrity_backend.asgi:application"]

@@ -115,7 +115,9 @@ export default function UserChatListPage() {
       }
 
       const wsScheme = BACKEND_URL.startsWith("https") ? "wss" : "ws";
-      const wsHost = BACKEND_URL.replace(/^https?:\/\//, "");
+      // const wsHost = BACKEND_URL.replace(/^https?:\/\//, "");
+      
+      const wsHost = BACKEND_URL.replace(/^https?:\/\//, "").replace(/\/api$/, "");
       const wsUrl = `${wsScheme}://${wsHost}/ws/users/chats/?token=${token}`;
       console.log("Connecting to User Chat List WebSocket at:", wsUrl);
 

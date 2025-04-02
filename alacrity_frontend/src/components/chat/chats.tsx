@@ -66,7 +66,9 @@ export default function ChatListPage() {
       // Delay WebSocket connection by 1 second to ensure token availability
       setTimeout(() => {
         const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-        const wsHost = BACKEND_URL.replace(/^https?:\/\//, "");
+        // const wsHost = BACKEND_URL.replace(/^https?:\/\//, "");
+        const wsHost = BACKEND_URL.replace(/^https?:\/\//, "").replace(/\/api\/?$/, "");
+
         const wsUrl = `${wsScheme}://${wsHost}/ws/user/?token=${token}`;
         console.log("Connecting to user WebSocket:", wsUrl);
         socketRef.current = new WebSocket(wsUrl);

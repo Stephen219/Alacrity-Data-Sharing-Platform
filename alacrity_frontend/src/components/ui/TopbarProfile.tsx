@@ -70,7 +70,12 @@ function TopBarProfile({ User }: { User: User }) {
                       </svg>
                       Your Profile
                     </Link>
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <Link
+            href={
+              User.role === "organization_admin" || User.role === "contributor"
+                ? `/organisation/members/${User.id}/password`
+                : `/researcher/profile/${User.id}/password`
+            } className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                       <svg
                         className="inline-block w-5 h-5 mr-2 -mt-1"
                         fill="none"
@@ -91,8 +96,8 @@ function TopBarProfile({ User }: { User: User }) {
                           d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                         />
                       </svg>
-                      Settings
-                    </a>
+                      Change Password
+                    </Link>
                     <button className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={handleLogout}>
                       <svg
                         className="inline-block w-5 h-5 mr-2 -mt-1"

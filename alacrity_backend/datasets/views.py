@@ -1,4 +1,3 @@
-
 import io
 import json
 import logging
@@ -7,9 +6,15 @@ import re
 import tempfile
 import threading
 import uuid
+
 from datetime import datetime
 from django.utils import timezone
+
+from datetime import datetime, timedelta
+from typing import Any, Dict, List
+
 from urllib.parse import urlparse
+
 import boto3
 import pandas as pd
 import requests
@@ -19,24 +24,41 @@ from minio import Minio
 from nanoid import generate
 from scipy.stats import mode
 from storages.backends.s3boto3 import S3Boto3Storage
+
 from django.core.cache import cache
 from django.core.files.storage import default_storage
+from django.db.models import Avg, Count, F, Q, Sum
+from django.db.models.functions import TruncDate, TruncMonth
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.views.decorators.http import require_http_methods
+
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.negotiation import DefaultContentNegotiation
-from rest_framework.parsers import FormParser, MultiPartParser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from alacrity_backend.settings import MINIO_ACCESS_KEY, MINIO_BUCKET_NAME, MINIO_SECRET_KEY, MINIO_URL, MINIO_SECURE
+
+from alacrity_backend.settings import (
+    MINIO_ACCESS_KEY,
+    MINIO_BUCKET_NAME,
+    MINIO_SECRET_KEY,
+    MINIO_URL,
+    MINIO_SECURE,
+)
+from dataset_requests.models import DatasetRequest
+from payments.models import DatasetPurchase
+from research.models import AnalysisSubmission, PublishedResearch
 from users.decorators import role_required
+<<<<<<< alacrity_backend/datasets/views.py
 from .models import Dataset , Feedback ,  ViewHistory
 from organisation.models import FollowerHistory
 from .serializer import DatasetSerializer , randomSerializer
@@ -45,7 +67,11 @@ from random import choice
 from datetime import timedelta
 from django.db.models import F, ExpressionWrapper, DurationField, Sum
 
-from rest_framework.parsers import JSONParser
+
+from .models import Dataset, DatasetAccessMetrics, Feedback, Chat, Message
+from .serializer import DatasetSerializer
+
+
 # from django.http import JsonResponse
 
 
@@ -739,6 +765,7 @@ class FeedbackView(APIView):
         # takes back the comments and the rating of the dataset to a given dataset_id
         # this will be used to give feedback to the dataset
 
+<<<<<<< alacrity_backend/datasets/views.py
 
 class TrendingDatasetsView(APIView):
     permission_classes = [AllowAny]
@@ -754,3 +781,5 @@ class TrendingDatasetsView(APIView):
         
         serializer = DatasetSerializer(trending_datasets, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+=======
+>>>>>>> alacrity_backend/datasets/views.py

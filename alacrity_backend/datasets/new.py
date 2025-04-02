@@ -37,6 +37,8 @@ from typing import List, Dict
 from django.http import HttpResponse
 from .pre_analysis import pre_analysis
 from alacrity_backend.settings import MINIO_ACCESS_KEY, MINIO_BUCKET_NAME, MINIO_SECRET_KEY, MINIO_URL, MINIO_SECURE
+from .models import DatasetAccessMetrics
+from django.utils import timezone
 
 
 logger = logging.getLogger(__name__)
@@ -167,13 +169,20 @@ def dataset_detail(request, dataset_id):
         con = load_dataset_into_cache(request, dataset_id, normalize=normalize)
         df = con.execute("SELECT * FROM temp").fetchdf()
         overview = pre_analysis(df)
-        print (overview)
+      
         
         serializer = DatasetSerializer(dataset)
         data = serializer.data
         data['is_loaded'] = cache_key in DATASET_CACHE
         data['overview'] = overview
         data['normalized'] = DATASET_CACHE[cache_key]["normalized"]
+        # update metrics
+        DatasetAccessMetrics.objects.update_or_create(
+            dataset=dataset,
+            user =request.user,
+            defaults={"access_time": timezone.now()}
+        )
+        
         return Response(data, status=200)
     except Dataset.DoesNotExist:
         return Response({"error": "Dataset not found"}, status=404)
@@ -488,6 +497,10 @@ def dataset_view(request, dataset_id):
 
 import numpy as np
 import concurrent.futures
+import base64
+import json
+# threading
+import threading
 
 
 def encode_column(values: List, col_type: str) -> List[float]:
@@ -664,6 +677,13 @@ def download_dataset(request, dataset_id):
         response['Content-Length'] = len(compressed_data)
         response['X-Processing-Time'] = f"{elapsed_time:.2f}s"
         response['X-Compression-Ratio'] = f"{size_ratio:.2f}x"
+        DatasetAccessMetrics.objects.update_or_create(
+            dataset=dataset,
+            user=request.user,
+            action="download",
+            defaults={"download_time": timezone.now()}
+        )
+        logger.info(f"Dataset {dataset_id} download response prepared")
         
         return response
 

@@ -61,6 +61,68 @@ minioClient = Minio(
     secret_key=MINIO_SECRET_KEY,
     secure=False
 )
+
+class ChangePasswordView(APIView):
+    """
+    Logged in user can change their password and receive a confirmation email.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        # Retrieve password fields from request data
+        old_password = request.data.get('old_password')
+        new_password = request.data.get('new_password')
+        confirm_password = request.data.get('confirm_password')
+
+        # Ensure all fields are provided
+        if not old_password or not new_password or not confirm_password:
+            return Response(
+                {"error": "Old password, new password, and confirm password are all required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Verify the old password is correct
+        if not request.user.check_password(old_password):
+            return Response(
+                {"error": "Old password is incorrect."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Ensure the new password and confirmation match
+        if new_password != confirm_password:
+            return Response(
+                {"error": "New password and confirm password do not match."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Update the password with proper hashing
+        request.user.set_password(new_password)
+        request.user.save()
+
+        # Prepare and send confirmation email
+        subject = "Your password has been changed"
+        email_message = (
+            f"Hi {request.user.first_name},\n\n"
+            "Your password has been successfully changed.\n"
+            "If you did not initiate this change, please contact our support team immediately.\n\n"
+            "Best regards,\n"
+            "The Support Team"
+        )
+        send_mail(
+            subject,
+            email_message,
+            settings.DEFAULT_FROM_EMAIL,
+            [request.user.email],
+            fail_silently=False,
+        )
+
+        # Return a success response with an extra note about the email
+        return Response(
+            {"message": "Password updated successfully. A confirmation email has been sent."},
+            status=status.HTTP_200_OK
+        )
+
+    
 class ForgotPasswordView(APIView):
     """
     If user exists, generate a token and email them the reset password link.

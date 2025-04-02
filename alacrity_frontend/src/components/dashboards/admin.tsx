@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 /**
  * @fileoverview Admin dashboard page
  * @package @alacrity/frontend
@@ -41,6 +42,9 @@
  * @property {string} changeColor - The color of the change indicator.
  */
 
+
+
+
 "use client";
 
 import type React from "react";
@@ -52,6 +56,11 @@ import { User } from "@/types/types";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PendingSubmissionsTable from "../tables/PendingSubmissionsTable";
+import { Line } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
+
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 interface PendingSubmission {
   id: number;
@@ -74,29 +83,33 @@ interface DashboardData {
     dataset_id__title: string;
     researcher_id_id: number;
     researcher_id__first_name: string;
-    researcher_id__sur_name: string
+    researcher_id__sur_name: string;
     researcher_id__profile_picture: string;
     request_status: string;
-    created_at: string; 
+    created_at: string;
   }>;
+}
+
+interface AnalyticsData {
+  daily_trends: Array<{ day: string; views: number; downloads: number; bookmarks: number }>;
+  time_range: string;
 }
 
 const AdminDashboard: React.FC = () => {
   const [pendingSubmissions, setPendingSubmissions] = useState<PendingSubmission[]>([]);
   const [data, setData] = useState<DashboardData | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  // const [userData, setUserData] = useState(null);
   const [user, setUser] = useState<User | null>(null);
+  const [timeRange, setTimeRange] = useState('Last 30 Days');
   const router = useRouter();
- 
-
 
   const getUserdata = async () => {
     const userData = await fetchUserData();
     setUser(userData);
-  console.log(userData);
-  }
+    console.log(userData);
+  };
 
   const getDashboardData = async () => {
     try {
@@ -122,39 +135,83 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const getAnalyticsData = async () => {
+    try {
+      const response = await fetchWithAuth(`${BACKEND_URL}/datasets/dataset-analytics-card/dash/?time_range=${encodeURIComponent(timeRange)}`);
+      const result: AnalyticsData = await response.json();
+      setAnalyticsData(result);
+    } catch (error) {
+      console.error("Error fetching analytics data:", error);
+    }
+  };
+
   const handleViewAllClick = () => {
     router.push("/requests/all");
   };
-
 
   useEffect(() => {
     getUserdata();
     getDashboardData();
     getPendingSubmissions();
-  }, []);
+    getAnalyticsData();
+  }, [timeRange]);
 
   if (loading) return <div className="p-6 bg-gray-50">Loading...</div>;
   if (error) return <div className="p-6 bg-gray-50 text-red-500">Error: {error.message}</div>;
   if (!data) return <div className="p-6 bg-gray-50">No data available</div>;
 
-  
   const truncateTitle = (title: string, maxLength: number = 30) => {
     return title.length > maxLength ? `${title.substring(0, maxLength)}...` : title;
   };
 
-  
   const formatDate = (dateString: string) => {
     const date = new Date(dateString || Date.now());
-    return date.toLocaleString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
+    return date.toLocaleString("en-US", { month: "long", day: "numeric", year: "numeric" });
   };
 
-  
-  const limitedPendingDatasets = data.pending_datasets.slice(0, 5);
-  // 
+  const limitedPendingDatasets = data.pending_datasets
+    .filter((request) => request.request_status === "pending")
+    .slice(0, 5);
+
+  const chartData = {
+    labels: analyticsData?.daily_trends.map(t => t.day) || [],
+    datasets: [
+      {
+        label: 'Views',
+        data: analyticsData?.daily_trends.map(t => t.views) || [],
+        borderColor: '#FF6B1A',
+        backgroundColor: 'rgba(255, 107, 26, 0.2)',
+        fill: false,
+      },
+      {
+        label: 'Downloads',
+        data: analyticsData?.daily_trends.map(t => t.downloads) || [],
+        borderColor: '#00cc00',
+        backgroundColor: 'rgba(0, 204, 0, 0.2)',
+        fill: false,
+      },
+      {
+        label: 'Bookmarks',
+        data: analyticsData?.daily_trends.map(t => t.bookmarks) || [],
+        borderColor: '#3366ff',
+        backgroundColor: 'rgba(51, 102, 255, 0.2)',
+        fill: false,
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top' as const },
+      title: { display: true, text: `Dataset Usage (${timeRange})` },
+    },
+    scales: {
+      x: { title: { display: true, text: 'Date' } },
+      y: { title: { display: true, text: 'Count' }, beginAtZero: true },
+    },
+  };
 
   return (
     <div className="p-6 bg-gray-card">
@@ -166,16 +223,12 @@ const AdminDashboard: React.FC = () => {
         <MetricCard
           title="Total Datasets"
           value={data.total_datasets.toString()}
-          icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-          </svg>
-          }
+          icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>}
           change="+12% from last month"
           changeColor="text-green-500"
         />
-         <MetricCard
-          title="Total researches"
+        <MetricCard
+          title="Total Researches"
           value={data.total_researches.toString()}
           icon="📑"
           change="+12% from last month"
@@ -185,135 +238,103 @@ const AdminDashboard: React.FC = () => {
           title="Pending Access Requests"
           value={data.pending_requests.toString()}
           icon="📝"
-          change= {
-            <Link href="/requests/pending" className="px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f] transition-colors">
-              View All
-            </Link>
-          }
-          changeColor="text-[#FF6B1A] "
-        />
-      
-      { user?.role === "organization_admin" && (
-        <MetricCard
-          title="Active Employees"
-          value={data.total_users.toString()}
-          icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-            </svg>
-          }
-          
-          change= {
-            <Link href="/organisation/members" className="px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f] transition-colors  ">
-               
-              View All
-            </Link>
-           
-          }
+          change={<Link href="/requests/pending" className="px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f] transition-colors">View All</Link>}
           changeColor="text-[#FF6B1A]"
-        />)}
+        />
+        {user?.role === "organization_admin" && (
+          <MetricCard
+            title="Active Employees"
+            value={data.total_users.toString()}
+            icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9" viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" /></svg>}
+            change={<Link href="/organisation/members" className="px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f] transition-colors">View All</Link>}
+            changeColor="text-[#FF6B1A]"
+          />
+        )}
       </div>
-      
 
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Dataset Requests:</h2>
-          <button className="px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f] dark:hover:bg-gray-700 transition-colors"
-            onClick={handleViewAllClick}>
+          <button className="px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f] dark:hover:bg-gray-700 transition-colors" onClick={handleViewAllClick}>
             View All
           </button>
         </div>
         <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-          <div className="max-h-[400px] overflow-y-auto"> 
+          <div className="max-h-[400px] overflow-y-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50 sticky top-0 dark:bg-gray-900">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-100 uppercase tracking-wider">
-                    Requester
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-100 uppercase tracking-wider">
-                    Dataset
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-100 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-100 uppercase tracking-wider">
-                    Status
-                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-100 uppercase tracking-wider">Requester</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-100 uppercase tracking-wider">Dataset</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-100 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-100 uppercase tracking-wider">Status</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-700">
-                {limitedPendingDatasets
-                .filter((request) => request.request_status === "pending") /// Filter pending requests
-                .map((request) => (
-                  <tr key={request.request_id} 
-                  className="hover:bg-gray-50"
-                  onClick={() => router.push(`/requests/approval/${request.request_id}`)} // Navigate to the approval page
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <img
-                            src={request.researcher_id__profile_picture || `https://picsum.photos/300/200?random=${request.researcher_id_id}`}
-                            alt={`${request.researcher_id__first_name}'s profile`}
-                            className="h-10 w-10 rounded-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "https://via.placeholder.com/50";
-                            }}
-                          />
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                            {request.researcher_id__first_name  + " " + request.researcher_id__sur_name
-                            || "Unknown"}
+                {limitedPendingDatasets.length > 0 ? (
+                  limitedPendingDatasets.map((request) => (
+                    <tr key={request.request_id} className="hover:bg-gray-50" onClick={() => router.push(`/requests/approval/${request.request_id}`)}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            <img
+                              src={request.researcher_id__profile_picture || `https://picsum.photos/300/200?random=${request.researcher_id_id}`}
+                              alt={`${request.researcher_id__first_name}'s profile`}
+                              className="h-10 w-10 rounded-full object-cover"
+                              onError={(e) => { (e.target as HTMLImageElement).src = "https://via.placeholder.com/50"; }}
+                            />
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {request.researcher_id__first_name + " " + request.researcher_id__sur_name || "Unknown"}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-100">
-                      {truncateTitle(request.dataset_id__title)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-100">
-                      {formatDate(request.created_at)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          request.request_status === "pending"
-                            ? "bg-[#FF6B1A] bg-opacity-10 text-[#FF6B1A]"
-                            : "bg-green-100 text-green-800"
-                        }`}
-                      >
-                        {request.request_status || "Pending"}
-                      </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-100">{truncateTitle(request.dataset_id__title)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-100">{formatDate(request.created_at)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${request.request_status === "pending" ? "bg-[#FF6B1A] bg-opacity-10 text-[#FF6B1A]" : "bg-green-100 text-green-800"}`}>
+                          {request.request_status || "Pending"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-100">
+                      No pending dataset requests found.
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
         </div>
       </div>
 
-    {/* Pending Research Submissions table component */}
-    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Submission Requests:</h2>
-  <PendingSubmissionsTable
-    submissions={pendingSubmissions}
-    enablePagination={false} 
-    pageSize={5}                 
-    enableVerticalScroll={true} 
-    verticalScrollHeight="400px"
-    showSortDropdown={false}
-    showSearchBar={false}
-  />
-      
+      <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Submission Requests:</h2>
+      <PendingSubmissionsTable
+        submissions={pendingSubmissions}
+        enablePagination={false}
+        pageSize={5}
+        enableVerticalScroll={true}
+        verticalScrollHeight="400px"
+        showSortDropdown={false}
+        showSearchBar={false}
+      />
+
       <div>
         <div className="flex items-center justify-between mb-4 mt-8">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 ">Dataset Analytics</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Dataset Analytics</h2>
           <div className="relative">
-            <select className="block appearance-none w-full bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-[#FF6B1A] transition-colors">
-              <option>Last 30 Days</option>
+            <select
+              className="block appearance-none w-full bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-[#FF6B1A] transition-colors"
+              value={timeRange}
+              onChange={(e) => setTimeRange(e.target.value)}
+            >
               <option>Last 7 Days</option>
+              <option>Last 30 Days</option>
               <option>Last 90 Days</option>
               <option>This Year</option>
             </select>
@@ -326,9 +347,15 @@ const AdminDashboard: React.FC = () => {
         </div>
         <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg dark:bg-gray-700">
           <div className="p-6">
-            <div className="h-64 flex items-center justify-center bg-gray-50 dark:bg-gray-600 rounded-lg border-2 border-dashed border-gray-200">
-              <span className="text-4xl">📊</span>
-              <span className="ml-4 text-lg text-gray-500 dark:text-gray-100">Dataset Usage Analytics Chart</span>
+            <div className="h-64">
+              {analyticsData ? (
+                <Line data={chartData} options={chartOptions} />
+              ) : (
+                <div className="h-64 flex items-center justify-center bg-gray-50 dark:bg-gray-600 rounded-lg border-2 border-dashed border-gray-200">
+                  <span className="text-4xl">📊</span>
+                  <span className="ml-4 text-lg text-gray-500 dark:text-gray-100">Loading Analytics...</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -350,7 +377,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon, change, cha
     <div className="p-6">
       <div className="flex items-center">
         <div className="flex-shrink-0 bg-[#FF6B1A] bg-opacity-10 rounded-md p-3">
-          <span className="text-3xl ">{icon}</span>
+          <span className="text-3xl">{icon}</span>
         </div>
         <div className="ml-5 w-0 flex-1">
           <dl>

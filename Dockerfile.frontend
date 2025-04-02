@@ -1,39 +1,4 @@
 
-# FROM node:18
-
-# # Set the working directory
-# WORKDIR /app
-
-
-# COPY alacrity_frontend/package.json alacrity_frontend/package-lock.json ./
-# RUN npm install
-
-
-# COPY alacrity_frontend /app
-
-
-# EXPOSE 3000
-
-# # Start the Next.js development server
-# CMD ["npm", "run", "dev"]
-
-
-
-
-# FROM node:18
-# WORKDIR /app
-# COPY alacrity_frontend/package.json alacrity_frontend/package-lock.json ./
-# RUN npm install
-# COPY alacrity_frontend /app
-# ARG NEXT_PUBLIC_API_URL
-# ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-# EXPOSE 3000
-# # build
-# CMD ["npm", "run", "build"]
-# # start
-# CMD ["npm", "run", "start"]
-# # CMD ["npm", "run", "dev"]
-
 
 
 
@@ -53,7 +18,7 @@ COPY alacrity_frontend /app
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
-# Expose the port that the application will run on
+
 EXPOSE 3000
 
 # Build the app
