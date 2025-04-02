@@ -11,15 +11,16 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import permission_classes
 from django.core.mail import send_mail
 from alacrity_backend.config import FRONTEND_URL
-from research.serializers import AnalysisSubmissionSerializer
+from research.serializers import AnalysisSubmissionSerializer , PublishedResearchSerializer
 from users.decorators import role_required
-from .models import AnalysisSubmission
+from .models import AnalysisSubmission , PublishedResearch
 from rest_framework.generics import ListAPIView
 from datasets.models import Dataset
 from django.conf import settings
 from html.parser import HTMLParser
 from notifications.models import Notification
 from users.models import User
+from rest_framework import status
 from django.utils.html import strip_tags
 
 
@@ -685,3 +686,26 @@ class SubmittedSubmissionsView(APIView):
         return Response(data)
 
 
+class FollowedReportsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        followed_users = user.following.all()
+        
+        reports = PublishedResearch.objects.filter(
+            research_submission__researcher__in=followed_users,
+            research_submission__status='published',
+            is_private=False
+        ).select_related('research_submission__researcher')
+
+        serializer = PublishedResearchSerializer(reports, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class Random_repotsInDB(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        reports = PublishedResearch.objects.all().order_by('?')[:5]
+        serializer = PublishedResearchSerializer(reports, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

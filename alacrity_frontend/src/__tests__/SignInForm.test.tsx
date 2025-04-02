@@ -81,7 +81,7 @@ describe("SignInForm Component", () => {
     await screen.findByRole("button", { name: /sign in/i }); // Wait for async submission
 
     expect(login).toHaveBeenCalledWith("test@example.com", "password123", false);
-    expect(window.location.href).toBe("/dashboard");
+    expect(window.location.href).toBe("/feed");
     Object.defineProperty(window, "location", {
       writable: true,
       value: originalLocation,

@@ -38,10 +38,31 @@ interface Dataset {
   organization_name: string;
 }
 
+interface AnalysisSubmission {
+  id: string;
+  title: string;
+  description: string;
+  raw_results: string;
+  summary: string;
+  status: string;
+  researcher_email: string;
+  submitted_at: string;
+}
+
+interface PublishedResearch {
+  research_submission: AnalysisSubmission;
+  visibility: string;
+  tags: string[];
+  likes_count: number;
+  bookmarks_count: number;
+  is_private: boolean;
+}
+
 interface SearchResults {
   datasets: Dataset[];
   users: Researcher[];
   organizations: Organization[];
+  reports?: PublishedResearch[];
 }
 
 export default function SearchPage() {
@@ -49,8 +70,10 @@ export default function SearchPage() {
   const [researchers, setResearchers] = useState<Researcher[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [reports, setReports] = useState<PublishedResearch[]>([]);
   const [trendingDatasets, setTrendingDatasets] = useState<Dataset[]>([]);
   const [randomDatasets, setRandomDatasets] = useState<Dataset[]>([]);
+  const [randomReports, setRandomReports] = useState<PublishedResearch[]>([]);
   const [trendingResearcher, setTrendingResearcher] = useState<Researcher | null>(null);
   const [trendingOrganization, setTrendingOrganization] = useState<Organization | null>(null);
   const [trendingDataset, setTrendingDataset] = useState<Dataset | null>(null);
@@ -64,6 +87,7 @@ export default function SearchPage() {
   const router = useRouter();
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState<string>("");
   const [userField, setUserField] = useState<string>("");
 
   const capitalize = (str: string): string => {
@@ -76,6 +100,7 @@ export default function SearchPage() {
     setSearchQuery(value);
     if (value.trim() && isAuthenticated) {
       setIsDropdownOpen(true);
+      fetchSuggestions(value);
     } else {
       setIsDropdownOpen(false);
       setSuggestions(null);
@@ -114,21 +139,18 @@ export default function SearchPage() {
         setSearchResults(data);
       } catch (error) {
         console.error("Error fetching suggestions:", error);
-        setSuggestions({ datasets: [], users: [], organizations: [] });
-        setSearchResults({ datasets: [], users: [], organizations: [] });
+        setSuggestions({ datasets: [], users: [], organizations: [], reports: [] });
+        setSearchResults({ datasets: [], users: [], organizations: [], reports: [] });
       }
     }, 300),
     [isAuthenticated, router]
   );
 
-  useEffect(() => {
-    fetchSuggestions(searchQuery);
-  }, [searchQuery, fetchSuggestions]);
-
-  const handleSuggestionClick = (item: Dataset | Researcher | Organization) => {
+  const handleSuggestionClick = (item: Dataset | Researcher | Organization | PublishedResearch) => {
     setSearchQuery(
       "title" in item ? item.title :
       "username" in item ? `${item.first_name} ${item.sur_name}` :
+      "research_submission" in item ? item.research_submission.title :
       item.name
     );
     if ("dataset_id" in item) {
@@ -137,6 +159,8 @@ export default function SearchPage() {
       router.push(`/researcher/profile/${item.id}`);
     } else if ("email" in item) {
       router.push(`/organisation/profile/${item.Organization_id}`);
+    } else if ("research_submission" in item) {
+      router.push(`/researcher/allsubmissions/view/${item.research_submission.id}`);
     }
     setIsDropdownOpen(false);
   };
@@ -150,6 +174,15 @@ export default function SearchPage() {
     }
   };
 
+  const handleReportClick = (reportId: string) => {
+    if (!isAuthenticated) {
+      alert("Please sign in to view the report.");
+      router.push("/auth/sign-in");
+    } else {
+      router.push(`/researcher/allsubmissions/view/${reportId}`);
+    }
+  };
+
   const fetchData = async () => {
     setIsLoading(true);
     setError(null);
@@ -160,14 +193,12 @@ export default function SearchPage() {
         ...(isAuthenticated && token && { Authorization: `Bearer ${token}` }),
       };
 
-      // Fetch trending datasets (all users)
       const trendingRes = await fetch(`${BACKEND_URL}/datasets/trending/datasets/`, { headers });
       if (!trendingRes.ok) throw new Error("Failed to fetch trending datasets");
       const trendingData: Dataset[] = await trendingRes.json();
       setTrendingDatasets(trendingData);
       setTrendingDataset(trendingData[0] || null);
 
-      // Fetch researchers and organizations (assuming existing endpoints)
       const usersRes = await fetch(`${BACKEND_URL}/users/trending/`, { headers });
       if (!usersRes.ok) throw new Error("Failed to fetch trending users");
       const usersData: Researcher[] = await usersRes.json();
@@ -180,25 +211,46 @@ export default function SearchPage() {
       setOrganizations(orgsData);
       setTrendingOrganization(orgsData[0] || null);
 
-      // Fetch datasets based on authentication
       if (isAuthenticated) {
-        const datasetsRes = await fetch(`${BACKEND_URL}/datasets/get_datasets/all`, { headers });
-        if (!datasetsRes.ok) throw new Error("Failed to fetch followed datasets");
-        const datasetsData: Dataset[] = await datasetsRes.json();
-        setDatasets(datasetsData);
+        if (userRole === "researcher") {
+          const datasetsRes = await fetch(`${BACKEND_URL}/datasets/get_datasets/all`, { headers });
+          if (!datasetsRes.ok) throw new Error("Failed to fetch followed datasets");
+          const datasetsData: Dataset[] = await datasetsRes.json();
+          setDatasets(datasetsData);
+
+          const reportsRes = await fetch(`${BACKEND_URL}/research/followed-reports/`, { headers });
+          if (!reportsRes.ok) throw new Error("Failed to fetch followed reports");
+          const reportsData: PublishedResearch[] = await reportsRes.json();
+          setReports(reportsData);
+        } else {
+          const randomDatasetsRes = await fetch(`${BACKEND_URL}/datasets/random/datasets/`, { headers });
+          if (!randomDatasetsRes.ok) throw new Error("Failed to fetch random datasets");
+          const randomDatasetsData: Dataset[] = await randomDatasetsRes.json();
+          setRandomDatasets(randomDatasetsData);
+          setDatasets(randomDatasetsData);
+
+          const randomReportsRes = await fetch(`${BACKEND_URL}/research/random-reports/`, { headers });
+          if (!randomReportsRes.ok) throw new Error("Failed to fetch random reports");
+          const randomReportsData: PublishedResearch[] = await randomReportsRes.json();
+          setRandomReports(randomReportsData);
+          setReports(randomReportsData);
+        }
       } else {
         const randomRes = await fetch(`${BACKEND_URL}/datasets/random/datasets/`, { headers });
         if (!randomRes.ok) throw new Error("Failed to fetch random datasets");
         const randomData: Dataset[] = await randomRes.json();
         setRandomDatasets(randomData);
-        setDatasets(randomData); // Use random datasets as default for non-authenticated
+        setDatasets(randomData);
+        setReports([]);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
       setError("Failed to load data. Please try again later.");
       setDatasets([]);
+      setReports([]);
       setTrendingDatasets([]);
       setRandomDatasets([]);
+      setRandomReports([]);
       setResearchers([]);
       setOrganizations([]);
       setTrendingResearcher(null);
@@ -214,17 +266,18 @@ export default function SearchPage() {
       const userData = await fetchUserData();
       if (userData) {
         setIsAuthenticated(true);
+        setUserRole(userData.role || "");
         setUserField(userData.field || "Diseases");
       } else {
         setIsAuthenticated(false);
+        setUserRole("");
         setUserField("");
       }
+      fetchData();
     };
     getAuthData();
-    fetchData();
-  }, [isAuthenticated]);
+  }, []);
 
-  // Extract unique categories
   const getCategories = (datasetList: Dataset[]) => {
     const categories = Array.from(new Set(datasetList.map((d) => d.category)));
     return categories.sort();
@@ -254,6 +307,22 @@ export default function SearchPage() {
       <h3 className="text-sm sm:text-md font-semibold text-gray-900 truncate">{dataset.title}</h3>
       <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{dataset.description}</p>
       <p className="text-xs text-gray-500 mt-1">By {dataset.organization_name}</p>
+    </div>
+  );
+
+  const ReportCard = ({ report }: { report: PublishedResearch }) => (
+    <div
+      className="border border-gray-200 rounded-lg p-4 flex-shrink-0 w-full sm:w-72 md:w-64 cursor-pointer hover:shadow-md transition-shadow"
+      onClick={() => handleReportClick(report.research_submission.id)}
+    >
+      <img
+        src={`https://picsum.photos/300/200?random=${report.research_submission.id}`}
+        alt={report.research_submission.title}
+        className="w-full h-32 object-cover rounded-md mb-2"
+      />
+      <h3 className="text-sm sm:text-md font-semibold text-gray-900 truncate">{report.research_submission.title}</h3>
+      <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{report.research_submission.description}</p>
+      <p className="text-xs text-gray-500 mt-1">By {report.research_submission.researcher_email}</p>
     </div>
   );
 
@@ -307,7 +376,7 @@ export default function SearchPage() {
                 type="text"
                 value={searchQuery}
                 onChange={handleInputChange}
-                placeholder="Search datasets, users, or more..."
+                placeholder="Search datasets, reports, users, or more..."
                 className="w-full p-2 sm:p-3 pl-8 sm:pl-10 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-600 text-gray-900 text-sm sm:text-base"
               />
               <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
@@ -320,6 +389,15 @@ export default function SearchPage() {
                       onClick={() => handleSuggestionClick(dataset)}
                     >
                       <span className="font-semibold">{dataset.title}</span> (Dataset)
+                    </div>
+                  ))}
+                  {suggestions.reports?.map((report) => (
+                    <div
+                      key={report.research_submission.id}
+                      className="p-2 hover:bg-gray-100 cursor-pointer text-sm sm:text-base"
+                      onClick={() => handleSuggestionClick(report)}
+                    >
+                      <span className="font-semibold">{report.research_submission.title}</span> (Report)
                     </div>
                   ))}
                   {suggestions.users.map((user) => (
@@ -341,6 +419,7 @@ export default function SearchPage() {
                     </div>
                   ))}
                   {suggestions.datasets.length === 0 &&
+                    (!suggestions.reports || suggestions.reports.length === 0) &&
                     suggestions.users.length === 0 &&
                     suggestions.organizations.length === 0 && (
                       <div className="p-2 text-gray-500 text-sm sm:text-base">No suggestions found</div>
@@ -404,7 +483,6 @@ export default function SearchPage() {
             </div>
           </nav>
           <div className="px-4 sm:px-6 py-4">
-            {/* Categories Section */}
             <div className="mb-6">
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Categories</h2>
               <div className="flex overflow-x-auto gap-2 pb-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
@@ -470,7 +548,9 @@ export default function SearchPage() {
                   </>
                 ) : (
                   <>
-                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Related Datasets</h2>
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+                      {isAuthenticated && userRole !== "researcher" ? "Random Datasets" : "Related Datasets"}
+                    </h2>
                     {filteredDatasets.length ? (
                       <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                         {filteredDatasets.map((dataset) => <DatasetCard key={dataset.dataset_id} dataset={dataset} />)}
@@ -478,8 +558,22 @@ export default function SearchPage() {
                     ) : (
                       <p className="text-gray-600 text-sm sm:text-base">No datasets available.</p>
                     )}
-                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mt-6">Related Research</h2>
-                    <p className="text-gray-600 text-sm sm:text-base">Research content coming soon...</p>
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mt-6 mb-2">
+                      {isAuthenticated && userRole !== "researcher" ? "Random Reports" : "Reports from Followed Researchers"}
+                    </h2>
+                    {isAuthenticated && reports.length ? (
+                      <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                        {reports.map((report) => <ReportCard key={report.research_submission.id} report={report} />)}
+                      </div>
+                    ) : (
+                      <p className="text-gray-600 text-sm sm:text-base">
+                        {isAuthenticated && userRole === "researcher"
+                          ? "No reports from followed researchers yet."
+                          : isAuthenticated
+                          ? "No random reports available."
+                          : "Sign in to see reports from researchers you follow or random reports."}
+                      </p>
+                    )}
                   </>
                 )}
               </>
@@ -490,7 +584,7 @@ export default function SearchPage() {
           {!isAuthenticated ? (
             <div className="text-center">
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Join Us</h2>
-              <p className="text-gray-600 mb-4 text-sm sm:text-base">Sign in to follow researchers and organizations!</p>
+              <p className="text-gray-600 mb-4 text-sm sm:text-base">Sign in to follow researchers and see their reports!</p>
               <Link href="/auth/sign-in" className={buttonVariants({ size: "lg", className: "bg-orange-600 text-white hover:bg-orange-700 w-full text-sm sm:text-base" })}>
                 Sign In
               </Link>

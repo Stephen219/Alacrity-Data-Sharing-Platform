@@ -32,15 +32,19 @@ jest.mock("@/libs/auth", () => ({
 describe("Navbar Component", () => {
   const mockToggleSidebar = jest.fn();
 
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   test("renders logo correctly", async () => {
     render(<Navbar toggleSidebar={mockToggleSidebar} />);
     expect(await screen.findByText("ALACRITY")).toBeInTheDocument();
   });
 
-  test("renders Home and About links", async () => {
+  test("renders Home and Feed links when user is logged in", async () => {
     render(<Navbar toggleSidebar={mockToggleSidebar} />);
     expect(await screen.findByText("Home")).toBeInTheDocument();
-    expect(await screen.findByText("About")).toBeInTheDocument();
+    expect(await screen.findByText("Feed")).toBeInTheDocument();
   });
 
   test("renders sidebar toggle button", async () => {
@@ -52,7 +56,21 @@ describe("Navbar Component", () => {
     await act(async () => {
       render(<Navbar toggleSidebar={mockToggleSidebar} />);
     });
-
     expect(await screen.findByTestId("bell-icon")).toBeInTheDocument();
+  });
+
+  test("renders Sign In and Sign Up links when user is not logged in", async () => {
+    // Override the mock for this specific test using jest.spyOn
+    const authModule = require("@/libs/auth");
+    jest.spyOn(authModule, "fetchUserData").mockResolvedValueOnce(null);
+
+    await act(async () => {
+      render(<Navbar toggleSidebar={mockToggleSidebar} />);
+    });
+
+    expect(await screen.findByText("Organisation Sign Up")).toBeInTheDocument();
+    expect(await screen.findByText("Feed")).toBeInTheDocument();
+    expect(await screen.findByText("Sign In")).toBeInTheDocument();
+    expect(await screen.findByText("Sign Up")).toBeInTheDocument();
   });
 });
