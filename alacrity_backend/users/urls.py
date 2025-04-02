@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    ForgotPasswordView, MonthlyUsersView, RegisterView, ResetPasswordView, WeeklyActivityView,
+    ChangePasswordView, ForgotPasswordView, MonthlyUsersView, RegisterView, ResetPasswordView, WeeklyActivityView,
     LoginView, UserView, CSRFTokenView, LogoutView, UserDashboardView,
     AllOrganizationMembersViews, MemberProfileView, LoggedInUser, DatasetWithAccessView,
     ProfilePictureUpdateView, FollowUserView, UnfollowUserView
@@ -33,5 +33,6 @@ urlpatterns = [
     path("api/conversations/<int:conversation_id>/", ConversationDetailView.as_view(), name="conversation_detail"),
     path("api/conversations/<int:conversation_id>/messages/", MessageListView.as_view(), name="message_list"),
     path("api/conversations/", UserConversationsView.as_view(), name="user_conversations"),
+    path('change-password/', ChangePasswordView.as_view(), name='change-password'),
     
 ]

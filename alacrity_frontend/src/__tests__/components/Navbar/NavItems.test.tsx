@@ -1,6 +1,6 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
-import NavItems from "../components/NavItems";
+import NavItems from "../../../components/Navbar/NavItems";
 
 jest.mock("@/components/config", () => ({
   NAV_ITEMS: [
@@ -35,7 +35,7 @@ jest.mock("@/hooks/use-on-click-outside", () => ({
   useOnClickOutside: jest.fn(),
 }));
 
-jest.mock("../components/NavItem", () => {
+jest.mock("@/components/Navbar/NavItem", () => {
   return function MockNavItem(props: { tools: { value: string; label: string } }) {
     return <div data-testid={`nav-item-${props.tools.value}`}>{props.tools.label}</div>;
   };
