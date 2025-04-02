@@ -14,13 +14,13 @@ jest.mock('@/libs/auth', () => ({
   fetchUserData: jest.fn().mockResolvedValue({ id: '1', name: 'Test User' }),
 }));
 
-jest.mock('@/components/Navbar', () => {
+jest.mock('@/components/Navbar/Navbar', () => {
   return function MockNavbar() {
     return <div data-testid="mock-navbar">Mock Navbar</div>;
   };
 });
 
-jest.mock('@/components/Sidebar', () => {
+jest.mock('@/components/Navbar/Sidebar', () => {
   return function MockSidebar({ isOpen }) {
     return <div data-testid="mock-sidebar">Mock Sidebar: {isOpen ? 'open' : 'closed'}</div>;
   };
