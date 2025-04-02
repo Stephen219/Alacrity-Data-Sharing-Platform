@@ -53,7 +53,7 @@ describe("ViewBookmarkedSubmission Page", () => {
     // Verify that the correct props are passed
     expect(screen.getByText(`Submission ID: ${testId}`)).toBeInTheDocument();
     expect(
-      screen.getByText(`Fetch URL: ${BACKEND_URL}/research/bookmarks/${testId}/`)
+      screen.getByText(`Fetch URL: ${BACKEND_URL}/research/submissions/${testId}/`)
     ).toBeInTheDocument();
     expect(
       screen.getByText("Back URL: /researcher/bookmarks")

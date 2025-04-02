@@ -6,7 +6,7 @@ from channels.auth import AuthMiddlewareStack
 from django.core.asgi import get_asgi_application
 
 # Define a log directory and ensure it exists
-log_dir = 'C:/Users/c22077065/final/alacrity/alacrity_backend/logs'
+log_dir = os.path.join(os.path.dirname(__file__), 'logs')
 log_file = os.path.join(log_dir, 'asgi_debug.log')
 os.makedirs(log_dir, exist_ok=True)
 
