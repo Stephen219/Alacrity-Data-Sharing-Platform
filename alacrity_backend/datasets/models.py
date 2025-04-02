@@ -89,3 +89,10 @@ class Feedback(models.Model):
 
     def __str__(self):
         return f"Feedback for {self.dataset.title} from {self.user}"
+    
+
+
+class ViewHistory(models.Model):
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
+    view_count = models.IntegerField(default=1)
+    timestamp = models.DateTimeField(auto_now_add=True)

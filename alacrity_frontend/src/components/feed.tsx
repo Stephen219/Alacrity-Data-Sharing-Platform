@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, ChangeEvent, useEffect, useCallback } from "react";
-import { Search } from "lucide-react";
+import { Search, TrendingUp } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { BACKEND_URL } from "@/config";
 import Link from "next/link";
@@ -10,7 +10,7 @@ import { fetchUserData } from "@/libs/auth";
 import debounce from "lodash/debounce";
 
 interface Researcher {
-  id: string; // Verify this matches your backend response
+  id: string;
   first_name: string;
   sur_name: string;
   username: string;
@@ -34,7 +34,6 @@ interface Dataset {
   description: string;
   link: string;
   organization_name: string;
-  image?: string;
 }
 
 interface SearchResults {
@@ -48,6 +47,9 @@ export default function SearchPage() {
   const [researchers, setResearchers] = useState<Researcher[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [trendingResearcher, setTrendingResearcher] = useState<Researcher | null>(null);
+  const [trendingOrganization, setTrendingOrganization] = useState<Organization | null>(null);
+  const [trendingDataset, setTrendingDataset] = useState<Dataset | null>(null);
   const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
   const [suggestions, setSuggestions] = useState<SearchResults | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -106,7 +108,8 @@ export default function SearchPage() {
         console.log("Suggestions:", data);
         setSuggestions(data);
         setSearchResults(data);
-      } catch (error) {
+      } 
+      catch (error) {
         console.error("Error fetching suggestions:", error);
         setSuggestions({ datasets: [], users: [], organizations: [] });
         setSearchResults({ datasets: [], users: [], organizations: [] });
@@ -146,7 +149,7 @@ export default function SearchPage() {
   useEffect(() => {
     const getAuthData = async () => {
       const userData = await fetchUserData();
-      console.log("User data:", userData); // Debug auth
+      console.log("User data:", userData);
       if (userData) {
         setIsAuthenticated(true);
         setUserField(userData.field || "Diseases");
@@ -156,80 +159,48 @@ export default function SearchPage() {
       }
     };
 
-    getAuthData();
-
-    const fetchResearchers = async () => {
+    const fetchTrendingData = async () => {
       try {
         const token = localStorage.getItem("access_token");
-        const url = isAuthenticated ? `${BACKEND_URL}/users/top-fielders/` : `${BACKEND_URL}/users/top-researchers/`;
-        const response = await fetch(url, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            ...(isAuthenticated && token && { Authorization: `Bearer ${token}` }),
-          },
-        });
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data: Researcher[] = await response.json();
-        console.log("Researchers data:", data); // Debug researchers
-        setResearchers(data);
+        const headers = {
+          "Content-Type": "application/json",
+          ...(isAuthenticated && token && { Authorization: `Bearer ${token}` }),
+        };
+
+        // Fetch trending researchers
+        const usersRes = await fetch(`${BACKEND_URL}/users/trending/`, { headers });
+        if (!usersRes.ok) throw new Error("Failed to fetch trending users");
+        const usersData: Researcher[] = await usersRes.json();
+        setResearchers(usersData);
+        setTrendingResearcher(usersData[0] || null);
+
+        // Fetch trending organizations
+        const orgsRes = await fetch(`${BACKEND_URL}/organisation/trending/organizations/`, { headers });
+        if (!orgsRes.ok) throw new Error("Failed to fetch trending organizations");
+        const orgsData: Organization[] = await orgsRes.json();
+        setOrganizations(orgsData);
+        setTrendingOrganization(orgsData[0] || null);
+
+        // Fetch trending datasets
+        const datasetsRes = await fetch(`${BACKEND_URL}/datasets/trending/datasets/`, { headers });
+        if (!datasetsRes.ok) throw new Error("Failed to fetch trending datasets");
+        const datasetsData: Dataset[] = await datasetsRes.json(); // Fixed: Use datasetsRes instead of datasetsData
+        setDatasets(datasetsData);
+        setTrendingDataset(datasetsData[0] || null);
       } catch (error) {
-        console.error("Error fetching researchers:", error);
+        console.error("Error fetching trending data:", error);
         setResearchers([]);
-      }
-    };
-
-    const fetchOrganizations = async () => {
-      try {
-        const token = localStorage.getItem("access_token");
-        const url = isAuthenticated ? `${BACKEND_URL}/organisation/top-organization/` : `${BACKEND_URL}/organisation/top-organizations/`;
-        const response = await fetch(url, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            ...(isAuthenticated && token && { Authorization: `Bearer ${token}` }),
-          },
-        });
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data: Organization[] = await response.json();
-        setOrganizations(data);
-      } catch (error) {
-        console.error("Error fetching organizations:", error);
         setOrganizations([]);
-      }
-    };
-
-    const fetchDatasets = async () => {
-      try {
-        const token = localStorage.getItem("access_token");
-        const url = isAuthenticated ? `${BACKEND_URL}/datasets/suggested/datasets/` : `${BACKEND_URL}/datasets/random/datasets/`;
-        console.log("Fetching from:", url);
-        const response = await fetch(url, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            ...(isAuthenticated && token && { Authorization: `Bearer ${token}` }),
-          },
-        });
-        if (!response.ok) {
-          console.error(`Fetch datasets failed with status: ${response.status}`);
-          const errorText = await response.text();
-          console.error("Response body:", errorText);
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data: Dataset[] = await response.json();
-        console.log("Datasets data:", data);
-        setDatasets(data);
-      } catch (error) {
-        console.error("Error fetching datasets:", error);
         setDatasets([]);
+        setTrendingResearcher(null);
+        setTrendingOrganization(null);
+        setTrendingDataset(null);
       }
     };
 
-    fetchResearchers();
-    fetchOrganizations();
-    fetchDatasets();
-  }, [isAuthenticated, userField]);
+    getAuthData();
+    fetchTrendingData();
+  }, [isAuthenticated]);
 
   const isTrending = pathname === "/search/trending";
 
@@ -238,13 +209,11 @@ export default function SearchPage() {
       className="border border-gray-200 rounded-lg p-4 mb-4 cursor-pointer hover:shadow-md transition-shadow"
       onClick={() => handleDatasetClick(dataset.dataset_id)}
     >
-      {dataset.image ? (
-        <img src={dataset.image} alt={dataset.title} className="w-full h-32 object-cover rounded-md mb-2" />
-      ) : (
-        <div className="w-full h-32 bg-gray-200 rounded-md mb-2 flex items-center justify-center text-gray-500">
-          No Image
-        </div>
-      )}
+      <img
+        src={`https://picsum.photos/300/200?random=${dataset.dataset_id}`}
+        alt={dataset.title}
+        className="w-full h-32 object-cover rounded-md mb-2"
+      />
       <h3 className="text-md font-semibold text-gray-900">{dataset.title}</h3>
       <p className="text-sm text-gray-600 line-clamp-2">{dataset.description}</p>
       <p className="text-xs text-gray-500 mt-1">By {dataset.organization_name}</p>
@@ -343,16 +312,92 @@ export default function SearchPage() {
               )}
             </div>
           </header>
-          <nav className="flex gap-6 px-4 py-2 bg-white">
-            <Link href="/search" className={`text-gray-700 hover:text-orange-600 font-medium ${!isTrending ? "text-orange-600" : ""}`}>
-              Home
-            </Link>
-            <Link href="/search/trending" className={`text-gray-700 hover:text-orange-600 font-medium ${isTrending ? "text-orange-600" : ""}`}>
-              Trending
-            </Link>
+          <nav className="flex px-4 py-4 bg-white border-b border-gray-200">
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-4">
+                <Link 
+                  href="/search" 
+                  className={`text-gray-700 hover:text-orange-600 font-medium px-3 py-1 rounded-full ${!isTrending ? "bg-orange-100 text-orange-600" : ""}`}
+                >
+                  Home
+                </Link>
+                <Link 
+                  href="/search/trending" 
+                  className={`flex items-center gap-1 text-gray-700 hover:text-orange-600 font-medium px-3 py-1 rounded-full ${isTrending ? "bg-orange-100 text-orange-600" : ""}`}
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  <span>Trending</span>
+                </Link>
+              </div>
+              
+              <div className="flex gap-6 items-center">
+                {trendingDataset && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">Trending Dataset:</span>
+                    <Link 
+                      href={`/datasets/description?id=${trendingDataset.dataset_id}`} 
+                      className="text-sm font-semibold text-orange-600 hover:underline"
+                    >
+                      {trendingDataset.title}
+                    </Link>
+                  </div>
+                )}
+                
+                {trendingResearcher && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">Trending Researcher:</span>
+                    <Link 
+                      href={`/researcher/profile/${trendingResearcher.id}`} 
+                      className="text-sm font-semibold text-orange-600 hover:underline"
+                    >
+                      {`${capitalize(trendingResearcher.first_name)} ${capitalize(trendingResearcher.sur_name)}`}
+                    </Link>
+                  </div>
+                )}
+                
+                {trendingOrganization && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">Trending Org:</span>
+                    <Link 
+                      href={`/organisation/profile/${trendingOrganization.Organization_id}`} 
+                      className="text-sm font-semibold text-orange-600 hover:underline"
+                    >
+                      {capitalize(trendingOrganization.name)}
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
           </nav>
           <div className="px-4 py-4">
-            {searchResults && isAuthenticated ? (
+            {isTrending ? (
+              <>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">Trending Datasets</h2>
+                {datasets.length ? (
+                  <div className="grid grid-cols-1 gap-4">
+                    {datasets.map((dataset) => <DatasetCard key={dataset.dataset_id} dataset={dataset} />)}
+                  </div>
+                ) : (
+                  <p className="text-gray-600">No trending datasets available.</p>
+                )}
+                <h2 className="text-lg font-semibold text-gray-900 mt-4 mb-2">Trending Researchers</h2>
+                {researchers.length ? (
+                  <div className="grid grid-cols-1 gap-4">
+                    {researchers.map((user) => <UserCard key={user.username} user={user} />)}
+                  </div>
+                ) : (
+                  <p className="text-gray-600">No trending researchers available.</p>
+                )}
+                <h2 className="text-lg font-semibold text-gray-900 mt-4 mb-2">Trending Organizations</h2>
+                {organizations.length ? (
+                  <div className="grid grid-cols-1 gap-4">
+                    {organizations.map((org) => <OrgCard key={org.email} org={org} />)}
+                  </div>
+                ) : (
+                  <p className="text-gray-600">No trending organizations available.</p>
+                )}
+              </>
+            ) : searchResults && isAuthenticated ? (
               <>
                 <h2 className="text-lg font-semibold text-gray-900 mb-2">Datasets</h2>
                 {searchResults.datasets.length ? (
@@ -375,17 +420,13 @@ export default function SearchPage() {
               </>
             ) : (
               <>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">
-                  {isTrending ? "Trending Datasets" : "Related Datasets"}
-                </h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">Related Datasets</h2>
                 {datasets.length ? (
                   datasets.map((dataset) => <DatasetCard key={dataset.dataset_id} dataset={dataset} />)
                 ) : (
                   <p className="text-gray-600">No datasets available.</p>
                 )}
-                <h2 className="text-lg font-semibold text-gray-900 mt-4">
-                  {isTrending ? "Trending Research" : "Related Research"}
-                </h2>
+                <h2 className="text-lg font-semibold text-gray-900 mt-4">Related Research</h2>
                 <p className="text-gray-600">Research content coming soon...</p>
               </>
             )}
@@ -499,14 +540,6 @@ export default function SearchPage() {
                 ) : (
                   <p className="text-gray-600">No organizations available.</p>
                 )}
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Trending</h2>
-                <ul className="space-y-3">
-                  <li className="text-gray-700 hover:text-orange-600 cursor-pointer">Dr. Emily Brown</li>
-                  <li className="text-gray-700 hover:text-orange-600 cursor-pointer">BioResearch Inc.</li>
-                  <li className="text-gray-700 hover:text-orange-600 cursor-pointer">Prof. Mark Lee</li>
-                </ul>
               </div>
             </>
           )}

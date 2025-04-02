@@ -1,13 +1,13 @@
 from django.urls import path
 from django.urls import include
 from rest_framework.routers import DefaultRouter
-from .views import ( ToggleBookmarkDatasetView, UserBookmarkedDatasetsView, descriptive_statistics, FeedbackView,
+from .views import ( ToggleBookmarkDatasetView, UserBookmarkedDatasetsView, descriptive_statistics, FeedbackView, TrendingDatasetsView,
 filter_and_clean_dataset, 
 get_datasets, get_filter_options, CreateDatasetView, DatasetListView, get_datasets,  get_datasets,
 
  pre_analysis)
 
-from .new import analyze_dataset , dataset_detail, all_datasets_view, clear_dataset_cache, dataset_view, download_dataset, RandomDatasets , SuggestedDatasets
+from .new import analyze_dataset , dataset_detail, all_datasets_view, clear_dataset_cache, dataset_view, download_dataset, RandomDatasets , SuggestedDatasets, all_suggested_datasets
 from .chat_view import ChatListView, SendMessageView, MessageListView,DatasetDetailView
 
 urlpatterns = [
@@ -39,5 +39,7 @@ urlpatterns = [
     path('feedback/<str:dataset_id>/', FeedbackView.as_view(), name='feedback'),
     path('random/datasets/', RandomDatasets.as_view(), name='random-datasets'),
     path('suggested/datasets/', SuggestedDatasets.as_view(), name='suggested-datasets'),
+    path('get_datasets/all', all_suggested_datasets.as_view(), name='get_datasets'),
+    path('trending/datasets/', TrendingDatasetsView.as_view(), name='trending-datasets'),
 ]
 

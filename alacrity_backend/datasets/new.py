@@ -30,7 +30,7 @@ from sklearn.preprocessing import LabelEncoder
 import json
 import tenseal as ts
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from random import choice
+from random import choice , sample
 import gzip
 import time
 from typing import List, Dict
@@ -693,23 +693,29 @@ def download_dataset(request, dataset_id):
     
 class RandomDatasets(APIView):
     permission_classes = [AllowAny]
-    
+
     def get(self, request):
         print("RandomDatasets accessed")
         try:
-            datasets = Dataset.objects.all()
-            print(f"Datasets count: {datasets.count()}")
-            if not datasets.exists():
+            datasets = list(Dataset.objects.all())  # Convert to list once
+            print(f"Datasets count: {len(datasets)}")
+
+            if not datasets:
                 print("No datasets, returning empty list")
                 return Response([], status=200)
-            random_dataset = choice(datasets)
-            print(f"Selected dataset: {random_dataset}")
-            serializer = DatasetSerializer(random_dataset, context={'request': request})
+
+            # Ensure we sample at most the available number of datasets
+            num_samples = min(len(datasets), 5)
+            random_dataset = sample(datasets, num_samples)
+
+            print(f"Selected datasets: {random_dataset}")
+            serializer = DatasetSerializer(random_dataset, context={'request': request}, many=True)
             print(f"Serialized data: {serializer.data}")
-            return Response([serializer.data], status=200)
+
+            return Response(serializer.data, status=200)  # No need to wrap in another list
         except Exception as e:
             print(f"Error in RandomDatasets: {str(e)}")
-            return Response({"error": str(e)}, status=500)  # Tem
+            return Response({"error": str(e)}, status=500)
         
 
 ''' brings suggested datasets to the users'''
@@ -741,5 +747,35 @@ class SuggestedDatasets(APIView):
         ).distinct()
         
         combined_datasets = (followed_datasets | suggested_datasets).distinct()[:5]
+        serializer = DatasetSerializer(combined_datasets, many=True)
+        return Response(serializer.data, status=200)
+
+
+class all_suggested_datasets(APIView):
+
+    @role_required(['contributor', 'researcher', 'organization_admin'])
+    def get(self,request):
+        user = request.user
+        print(f"SuggestedDatasets accessed by {user}")
+        user_field = user.field
+        print(f"User field: {user_field}")
+        if not user_field:
+            return Response({"error": "User has no field specified"}, status=400)
+        
+        followed_orgs = user.followed_organizations.all()
+        print(f"Followed organizations: {followed_orgs}")
+        followed_org_ids = followed_orgs.values_list('Organization_id', flat=True)
+        
+        followed_datasets = Dataset.objects.filter(
+            contributor_id__organization__in=followed_orgs
+        ).distinct()
+        
+        suggested_datasets = Dataset.objects.filter(
+            contributor_id__organization__field=user_field
+        ).exclude(
+            contributor_id__organization__in=followed_orgs
+        ).distinct()
+        
+        combined_datasets = (followed_datasets | suggested_datasets)
         serializer = DatasetSerializer(combined_datasets, many=True)
         return Response(serializer.data, status=200)

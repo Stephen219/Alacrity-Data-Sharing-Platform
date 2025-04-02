@@ -8,6 +8,7 @@ import tempfile
 import threading
 import uuid
 from datetime import datetime
+from django.utils import timezone
 from urllib.parse import urlparse
 import boto3
 import pandas as pd
@@ -36,10 +37,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from alacrity_backend.settings import MINIO_ACCESS_KEY, MINIO_BUCKET_NAME, MINIO_SECRET_KEY, MINIO_URL, MINIO_SECURE
 from users.decorators import role_required
-from .models import Dataset , Feedback
+from .models import Dataset , Feedback ,  ViewHistory
+from organisation.models import FollowerHistory
 from .serializer import DatasetSerializer , randomSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from random import choice
+from datetime import timedelta
+from django.db.models import F, ExpressionWrapper, DurationField, Sum
 
 from rest_framework.parsers import JSONParser
 # from django.http import JsonResponse
@@ -736,3 +740,17 @@ class FeedbackView(APIView):
         # this will be used to give feedback to the dataset
 
 
+class TrendingDatasetsView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        # Define a short period (e.g., last 7 days)
+        time_threshold = timezone.now() - timedelta(days=7)
+        
+        # Datasets with most views in the last 7 days since creation
+        trending_datasets = Dataset.objects.filter(
+            created_at__gte=time_threshold
+        ).order_by('-view_count')[:3]
+        
+        serializer = DatasetSerializer(trending_datasets, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

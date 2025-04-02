@@ -8,7 +8,10 @@ from django.middleware.csrf import get_token
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django.db import models
+from django.db.models import F, ExpressionWrapper, DurationField
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.db.models import Sum
 from django.contrib.auth.models import User
 from django.db import transaction
 from rest_framework.permissions import AllowAny
@@ -23,7 +26,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .decorators import role_required
-from datasets.models import Dataset
+from datasets.models import Dataset , ViewHistory
 from payments.models import DatasetPurchase
 from django.db.models import Q
 from django.db.models.functions import TruncMonth
@@ -48,7 +51,7 @@ from  notifications.models import Notification
 
 from datasets.serializer import DatasetSerializer
 from organisation.serializer import OrganizationSerializer
-from organisation.models import Organization
+from organisation.models import Organization 
 
 
 
@@ -993,11 +996,23 @@ class SearchView(APIView):
             "users": user_serializer.data
         }, status=status.HTTP_200_OK)
 
-       
+class TrendingUsersView(APIView):
+    permission_classes = [AllowAny]
 
-    
-
-
+    def get(self, request):
+        # Define a short period (e.g., last 7 days)
+        time_threshold = timezone.now() - timedelta(days=7)
+        
+        # Filter researchers joined in the last 7 days and order by follower count
+        trending_users = User.objects.filter(
+            date_joined__gte=time_threshold,
+            role='researcher'  # Only researchers
+        ).annotate(
+            follower_count=models.Count('followers')
+        ).order_by('-follower_count')[:3]
+        
+        serializer = UserSerializer(trending_users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
     
