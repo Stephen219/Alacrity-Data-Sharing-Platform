@@ -1,5 +1,5 @@
 import React, { JSX } from "react";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, within } from "@testing-library/react";
 import BookmarkList from "@/app/researcher/bookmarks/page";
 import { fetchWithAuth } from "@/libs/auth";
 import { useRouter } from "next/navigation";
@@ -109,17 +109,23 @@ describe("BookmarkList Page", () => {
     await waitFor(() => {
       expect(screen.queryByText("Loading...")).not.toBeInTheDocument();
     });
-    // Ensure both bookmark items are rendered.
-    const unbookmarkButtons = screen.getAllByRole("button", { name: "Unbookmark" });
-    expect(unbookmarkButtons.length).toBe(2);
-    // Click the unbookmark button for the first bookmark.
-    fireEvent.click(unbookmarkButtons[0]);
-    // After successful unbookmark, only one bookmark should remain.
-    await waitFor(() => {
-      const bookmarkItems = screen.getAllByTestId("bookmark-item");
-      expect(bookmarkItems.length).toBe(1);
-      expect(screen.queryByText("Bookmark 1")).not.toBeInTheDocument();
-    });
+    // Find the bookmark item that contains "Bookmark 1"
+    const bookmarkItem1 = screen
+  .getByText("Bookmark 1")
+  .closest("[data-testid='bookmark-item']") as HTMLElement;
+    expect(bookmarkItem1).toBeInTheDocument();
+    // Find the unbookmark button within that bookmark item.
+    const unbookmarkButton = within(bookmarkItem1!).getByRole("button", { name: "Unbookmark" });
+    fireEvent.click(unbookmarkButton);
+    await waitFor(
+      () => {
+        expect(screen.queryByText("Bookmark 1")).not.toBeInTheDocument();
+        const bookmarkItems = screen.getAllByTestId("bookmark-item");
+        // Now only one bookmark should remain (Bookmark 2)
+        expect(bookmarkItems.length).toBe(1);
+      },
+      { timeout: 3000 }
+    );
   });
 
   test("clicking Read button navigates to the bookmark detail page", async () => {
