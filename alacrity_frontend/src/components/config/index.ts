@@ -34,7 +34,7 @@ export const NAV_ITEMS = [
         },
         {
           name: "Dataset Usage Metrics",
-          href: "#",
+          href: "/organisation/metrics",
           imageSrc: "/navbar/datasets/metrics.png",
         },
       ],

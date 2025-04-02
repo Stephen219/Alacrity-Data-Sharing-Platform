@@ -161,9 +161,13 @@ class PendingSubmissionsView(ListAPIView):
 
     @role_required(['organization_admin'])
     def get(self, request, *args, **kwargs):
-        pending_submissions = AnalysisSubmission.objects.filter(status="pending")
+        pending_submissions = AnalysisSubmission.objects.filter(
+
+            dataset__contributor_id__organization_id=request.user.organization_id,
+            
+            status="pending"
+            )
         
-        # serializer returns JSON data
         serializer = self.serializer_class(pending_submissions, many=True)
         return Response(serializer.data)
 
