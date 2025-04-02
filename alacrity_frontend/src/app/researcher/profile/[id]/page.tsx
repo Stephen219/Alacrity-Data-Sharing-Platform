@@ -288,13 +288,25 @@ function ResearcherProfilePage() {
   }
   const handleChat = async (userId: string) => {
     try {
-      await router.push(`/chat/users/message/${userId}`);
+      // Call the StartChatView API to get or create a conversation
+      const response = await fetchWithAuth(`${BACKEND_URL}/users/api/start-chat/${userId}/`);
+      if (!response.ok) {
+        throw new Error(`Failed to start chat: ${response.status} ${response.statusText}`);
+      }
+  
+      const { conversation_id } = await response.json();
+      if (!conversation_id) {
+        throw new Error("No conversation ID returned from the server");
+      }
+  
+      // Navigate to the chat page with the conversation ID
+      await router.push(`/chat/users/message/${conversation_id}`);
       return true;
     } catch (error) {
       console.error("Error starting chat:", error);
       return false;
     }
-  }
+  };
 
   const handleDragMove = (e: MouseEvent<HTMLDivElement> | TouchEvent<HTMLDivElement>) => {
     if (!isDragging || startX === null) return

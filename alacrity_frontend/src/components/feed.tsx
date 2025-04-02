@@ -5,7 +5,7 @@ import { Search, TrendingUp } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { BACKEND_URL } from "@/config";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { fetchUserData } from "@/libs/auth";
 import debounce from "lodash/debounce";
 
@@ -30,9 +30,11 @@ interface Organization {
 
 interface Dataset {
   dataset_id: string;
+  contributor_id: string;
   title: string;
-  description: string;
+  category: string;
   link: string;
+  description: string;
   organization_name: string;
 }
 
@@ -47,13 +49,18 @@ export default function SearchPage() {
   const [researchers, setResearchers] = useState<Researcher[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [trendingDatasets, setTrendingDatasets] = useState<Dataset[]>([]);
+  const [randomDatasets, setRandomDatasets] = useState<Dataset[]>([]);
   const [trendingResearcher, setTrendingResearcher] = useState<Researcher | null>(null);
   const [trendingOrganization, setTrendingOrganization] = useState<Organization | null>(null);
   const [trendingDataset, setTrendingDataset] = useState<Dataset | null>(null);
   const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
   const [suggestions, setSuggestions] = useState<SearchResults | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const pathname = usePathname();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isTrending, setIsTrending] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const router = useRouter();
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -99,17 +106,13 @@ export default function SearchPage() {
         });
 
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`Search failed with status: ${response.status}`, errorText);
-          throw new Error(`HTTP error! status: ${response.status}`);
+          throw new Error(`Search failed with status: ${response.status}`);
         }
 
         const data: SearchResults = await response.json();
-        console.log("Suggestions:", data);
         setSuggestions(data);
         setSearchResults(data);
-      } 
-      catch (error) {
+      } catch (error) {
         console.error("Error fetching suggestions:", error);
         setSuggestions({ datasets: [], users: [], organizations: [] });
         setSearchResults({ datasets: [], users: [], organizations: [] });
@@ -135,6 +138,7 @@ export default function SearchPage() {
     } else if ("email" in item) {
       router.push(`/organisation/profile/${item.Organization_id}`);
     }
+    setIsDropdownOpen(false);
   };
 
   const handleDatasetClick = (datasetId: string) => {
@@ -146,10 +150,68 @@ export default function SearchPage() {
     }
   };
 
+  const fetchData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem("access_token");
+      const headers = {
+        "Content-Type": "application/json",
+        ...(isAuthenticated && token && { Authorization: `Bearer ${token}` }),
+      };
+
+      // Fetch trending datasets (all users)
+      const trendingRes = await fetch(`${BACKEND_URL}/datasets/trending/datasets/`, { headers });
+      if (!trendingRes.ok) throw new Error("Failed to fetch trending datasets");
+      const trendingData: Dataset[] = await trendingRes.json();
+      setTrendingDatasets(trendingData);
+      setTrendingDataset(trendingData[0] || null);
+
+      // Fetch researchers and organizations (assuming existing endpoints)
+      const usersRes = await fetch(`${BACKEND_URL}/users/trending/`, { headers });
+      if (!usersRes.ok) throw new Error("Failed to fetch trending users");
+      const usersData: Researcher[] = await usersRes.json();
+      setResearchers(usersData);
+      setTrendingResearcher(usersData[0] || null);
+
+      const orgsRes = await fetch(`${BACKEND_URL}/organisation/trending/organizations/`, { headers });
+      if (!orgsRes.ok) throw new Error("Failed to fetch trending organizations");
+      const orgsData: Organization[] = await orgsRes.json();
+      setOrganizations(orgsData);
+      setTrendingOrganization(orgsData[0] || null);
+
+      // Fetch datasets based on authentication
+      if (isAuthenticated) {
+        const datasetsRes = await fetch(`${BACKEND_URL}/datasets/get_datasets/all`, { headers });
+        if (!datasetsRes.ok) throw new Error("Failed to fetch followed datasets");
+        const datasetsData: Dataset[] = await datasetsRes.json();
+        setDatasets(datasetsData);
+      } else {
+        const randomRes = await fetch(`${BACKEND_URL}/datasets/random/datasets/`, { headers });
+        if (!randomRes.ok) throw new Error("Failed to fetch random datasets");
+        const randomData: Dataset[] = await randomRes.json();
+        setRandomDatasets(randomData);
+        setDatasets(randomData); // Use random datasets as default for non-authenticated
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setError("Failed to load data. Please try again later.");
+      setDatasets([]);
+      setTrendingDatasets([]);
+      setRandomDatasets([]);
+      setResearchers([]);
+      setOrganizations([]);
+      setTrendingResearcher(null);
+      setTrendingOrganization(null);
+      setTrendingDataset(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     const getAuthData = async () => {
       const userData = await fetchUserData();
-      console.log("User data:", userData);
       if (userData) {
         setIsAuthenticated(true);
         setUserField(userData.field || "Diseases");
@@ -158,55 +220,30 @@ export default function SearchPage() {
         setUserField("");
       }
     };
-
-    const fetchTrendingData = async () => {
-      try {
-        const token = localStorage.getItem("access_token");
-        const headers = {
-          "Content-Type": "application/json",
-          ...(isAuthenticated && token && { Authorization: `Bearer ${token}` }),
-        };
-
-        // Fetch trending researchers
-        const usersRes = await fetch(`${BACKEND_URL}/users/trending/`, { headers });
-        if (!usersRes.ok) throw new Error("Failed to fetch trending users");
-        const usersData: Researcher[] = await usersRes.json();
-        setResearchers(usersData);
-        setTrendingResearcher(usersData[0] || null);
-
-        // Fetch trending organizations
-        const orgsRes = await fetch(`${BACKEND_URL}/organisation/trending/organizations/`, { headers });
-        if (!orgsRes.ok) throw new Error("Failed to fetch trending organizations");
-        const orgsData: Organization[] = await orgsRes.json();
-        setOrganizations(orgsData);
-        setTrendingOrganization(orgsData[0] || null);
-
-        // Fetch trending datasets
-        const datasetsRes = await fetch(`${BACKEND_URL}/datasets/trending/datasets/`, { headers });
-        if (!datasetsRes.ok) throw new Error("Failed to fetch trending datasets");
-        const datasetsData: Dataset[] = await datasetsRes.json(); // Fixed: Use datasetsRes instead of datasetsData
-        setDatasets(datasetsData);
-        setTrendingDataset(datasetsData[0] || null);
-      } catch (error) {
-        console.error("Error fetching trending data:", error);
-        setResearchers([]);
-        setOrganizations([]);
-        setDatasets([]);
-        setTrendingResearcher(null);
-        setTrendingOrganization(null);
-        setTrendingDataset(null);
-      }
-    };
-
     getAuthData();
-    fetchTrendingData();
+    fetchData();
   }, [isAuthenticated]);
 
-  const isTrending = pathname === "/search/trending";
+  // Extract unique categories
+  const getCategories = (datasetList: Dataset[]) => {
+    const categories = Array.from(new Set(datasetList.map((d) => d.category)));
+    return categories.sort();
+  };
+
+  const homeCategories = isAuthenticated ? getCategories(datasets) : getCategories(randomDatasets);
+  const trendingCategories = getCategories(trendingDatasets);
+
+  const handleCategoryClick = (category: string) => {
+    setSelectedCategory(category === selectedCategory ? null : category);
+  };
+
+  const filteredDatasets = selectedCategory
+    ? (isTrending ? trendingDatasets : datasets).filter((d) => d.category === selectedCategory)
+    : (isTrending ? trendingDatasets : datasets);
 
   const DatasetCard = ({ dataset }: { dataset: Dataset }) => (
     <div
-      className="border border-gray-200 rounded-lg p-4 mb-4 cursor-pointer hover:shadow-md transition-shadow"
+      className="border border-gray-200 rounded-lg p-4 flex-shrink-0 w-full sm:w-72 md:w-64 cursor-pointer hover:shadow-md transition-shadow"
       onClick={() => handleDatasetClick(dataset.dataset_id)}
     >
       <img
@@ -214,26 +251,26 @@ export default function SearchPage() {
         alt={dataset.title}
         className="w-full h-32 object-cover rounded-md mb-2"
       />
-      <h3 className="text-md font-semibold text-gray-900">{dataset.title}</h3>
-      <p className="text-sm text-gray-600 line-clamp-2">{dataset.description}</p>
+      <h3 className="text-sm sm:text-md font-semibold text-gray-900 truncate">{dataset.title}</h3>
+      <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{dataset.description}</p>
       <p className="text-xs text-gray-500 mt-1">By {dataset.organization_name}</p>
     </div>
   );
 
   const UserCard = ({ user }: { user: Researcher }) => (
-    <div className="border border-gray-200 rounded-lg p-4 mb-4 cursor-pointer hover:shadow-md transition-shadow">
+    <div className="border border-gray-200 rounded-lg p-4 flex-shrink-0 w-full sm:w-72 md:w-64 cursor-pointer hover:shadow-md transition-shadow">
       <Link href={`/researcher/profile/${user.id}`}>
         <div className="flex items-center gap-3">
           {user.profile_picture ? (
-            <img src={user.profile_picture} alt={user.username} className="w-12 h-12 rounded-full object-cover" />
+            <img src={user.profile_picture} alt={user.username} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover" />
           ) : (
-            <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-xl">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-lg sm:text-xl">
               {capitalize(user.first_name)[0]}
             </div>
           )}
-          <div>
-            <h3 className="text-md font-semibold text-gray-900">{`${capitalize(user.first_name)} ${capitalize(user.sur_name)}`}</h3>
-            <p className="text-sm text-gray-500">@{user.username}</p>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm sm:text-md font-semibold text-gray-900 truncate">{`${capitalize(user.first_name)} ${capitalize(user.sur_name)}`}</h3>
+            <p className="text-xs sm:text-sm text-gray-500 truncate">@{user.username}</p>
           </div>
         </div>
       </Link>
@@ -241,19 +278,19 @@ export default function SearchPage() {
   );
 
   const OrgCard = ({ org }: { org: Organization }) => (
-    <div className="border border-gray-200 rounded-lg p-4 mb-4 cursor-pointer hover:shadow-md transition-shadow">
+    <div className="border border-gray-200 rounded-lg p-4 flex-shrink-0 w-full sm:w-72 md:w-64 cursor-pointer hover:shadow-md transition-shadow">
       <Link href={`/organisation/profile/${org.Organization_id}`}>
         <div className="flex items-center gap-3">
           {org.profile_picture ? (
-            <img src={org.profile_picture} alt={org.name} className="w-12 h-12 rounded-full object-cover" />
+            <img src={org.profile_picture} alt={org.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover" />
           ) : (
-            <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-xl">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-lg sm:text-xl">
               {capitalize(org.name)[0]}
             </div>
           )}
-          <div>
-            <h3 className="text-md font-semibold text-gray-900">{capitalize(org.name)}</h3>
-            <p className="text-sm text-gray-500">{org.email}</p>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm sm:text-md font-semibold text-gray-900 truncate">{capitalize(org.name)}</h3>
+            <p className="text-xs sm:text-sm text-gray-500 truncate">{org.email}</p>
           </div>
         </div>
       </Link>
@@ -261,25 +298,25 @@ export default function SearchPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <div className="flex flex-1">
-        <main className="flex-1 max-w-2xl bg-white shadow-md rounded-lg">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="flex flex-col lg:flex-row flex-1 px-4 sm:px-6 lg:px-8 py-6 gap-6">
+        <main className="flex-1 w-full max-w-full lg:max-w-2xl bg-white shadow-md rounded-lg">
           <header className="w-full bg-white shadow-md flex justify-center p-4">
-            <div className="relative flex-1 max-w-2xl w-full">
+            <div className="relative w-full max-w-2xl">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={handleInputChange}
                 placeholder="Search datasets, users, or more..."
-                className="w-full p-3 pl-10 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-600 text-gray-900"
+                className="w-full p-2 sm:p-3 pl-8 sm:pl-10 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-600 text-gray-900 text-sm sm:text-base"
               />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
               {isDropdownOpen && suggestions && (
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                   {suggestions.datasets.map((dataset) => (
                     <div
                       key={dataset.dataset_id}
-                      className="p-2 hover:bg-gray-100 cursor-pointer"
+                      className="p-2 hover:bg-gray-100 cursor-pointer text-sm sm:text-base"
                       onClick={() => handleSuggestionClick(dataset)}
                     >
                       <span className="font-semibold">{dataset.title}</span> (Dataset)
@@ -288,7 +325,7 @@ export default function SearchPage() {
                   {suggestions.users.map((user) => (
                     <div
                       key={user.username}
-                      className="p-2 hover:bg-gray-100 cursor-pointer"
+                      className="p-2 hover:bg-gray-100 cursor-pointer text-sm sm:text-base"
                       onClick={() => handleSuggestionClick(user)}
                     >
                       <span className="font-semibold">{`${capitalize(user.first_name)} ${capitalize(user.sur_name)}`}</span> (@{user.username})
@@ -297,7 +334,7 @@ export default function SearchPage() {
                   {suggestions.organizations.map((org) => (
                     <div
                       key={org.email}
-                      className="p-2 hover:bg-gray-100 cursor-pointer"
+                      className="p-2 hover:bg-gray-100 cursor-pointer text-sm sm:text-base"
                       onClick={() => handleSuggestionClick(org)}
                     >
                       <span className="font-semibold">{capitalize(org.name)}</span> (Org)
@@ -306,61 +343,58 @@ export default function SearchPage() {
                   {suggestions.datasets.length === 0 &&
                     suggestions.users.length === 0 &&
                     suggestions.organizations.length === 0 && (
-                      <div className="p-2 text-gray-500">No suggestions found</div>
+                      <div className="p-2 text-gray-500 text-sm sm:text-base">No suggestions found</div>
                     )}
                 </div>
               )}
             </div>
           </header>
-          <nav className="flex px-4 py-4 bg-white border-b border-gray-200">
-            <div className="flex items-center justify-between w-full">
+          <nav className="flex px-4 sm:px-6 py-4 bg-white border-b border-gray-200">
+            <div className="flex items-center justify-between w-full flex-col sm:flex-row gap-4 sm:gap-0">
               <div className="flex items-center gap-4">
-                <Link 
-                  href="/search" 
-                  className={`text-gray-700 hover:text-orange-600 font-medium px-3 py-1 rounded-full ${!isTrending ? "bg-orange-100 text-orange-600" : ""}`}
+                <button
+                  onClick={() => { setIsTrending(false); setSelectedCategory(null); }}
+                  className={`text-gray-700 hover:text-orange-600 font-medium px-3 py-1 rounded-full text-sm sm:text-base ${!isTrending ? "bg-orange-100 text-orange-600" : ""}`}
                 >
                   Home
-                </Link>
-                <Link 
-                  href="/search/trending" 
-                  className={`flex items-center gap-1 text-gray-700 hover:text-orange-600 font-medium px-3 py-1 rounded-full ${isTrending ? "bg-orange-100 text-orange-600" : ""}`}
+                </button>
+                <button
+                  onClick={() => { setIsTrending(true); setSelectedCategory(null); }}
+                  className={`flex items-center gap-1 text-gray-700 hover:text-orange-600 font-medium px-3 py-1 rounded-full text-sm sm:text-base ${isTrending ? "bg-orange-100 text-orange-600" : ""}`}
                 >
                   <TrendingUp className="w-4 h-4" />
                   <span>Trending</span>
-                </Link>
+                </button>
               </div>
-              
-              <div className="flex gap-6 items-center">
+              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-center text-sm">
                 {trendingDataset && (
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">Trending Dataset:</span>
-                    <Link 
-                      href={`/datasets/description?id=${trendingDataset.dataset_id}`} 
-                      className="text-sm font-semibold text-orange-600 hover:underline"
+                    <span className="text-gray-500 hidden sm:inline">Trending Dataset:</span>
+                    <Link
+                      href={`/datasets/description?id=${trendingDataset.dataset_id}`}
+                      className="font-semibold text-orange-600 hover:underline truncate max-w-[150px] sm:max-w-none"
                     >
                       {trendingDataset.title}
                     </Link>
                   </div>
                 )}
-                
                 {trendingResearcher && (
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">Trending Researcher:</span>
-                    <Link 
-                      href={`/researcher/profile/${trendingResearcher.id}`} 
-                      className="text-sm font-semibold text-orange-600 hover:underline"
+                    <span className="text-gray-500 hidden sm:inline">Trending Researcher:</span>
+                    <Link
+                      href={`/researcher/profile/${trendingResearcher.id}`}
+                      className="font-semibold text-orange-600 hover:underline truncate max-w-[150px] sm:max-w-none"
                     >
                       {`${capitalize(trendingResearcher.first_name)} ${capitalize(trendingResearcher.sur_name)}`}
                     </Link>
                   </div>
                 )}
-                
                 {trendingOrganization && (
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">Trending Org:</span>
-                    <Link 
-                      href={`/organisation/profile/${trendingOrganization.Organization_id}`} 
-                      className="text-sm font-semibold text-orange-600 hover:underline"
+                    <span className="text-gray-500 hidden sm:inline">Trending Org:</span>
+                    <Link
+                      href={`/organisation/profile/${trendingOrganization.Organization_id}`}
+                      className="font-semibold text-orange-600 hover:underline truncate max-w-[150px] sm:max-w-none"
                     >
                       {capitalize(trendingOrganization.name)}
                     </Link>
@@ -369,176 +403,196 @@ export default function SearchPage() {
               </div>
             </div>
           </nav>
-          <div className="px-4 py-4">
-            {isTrending ? (
-              <>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Trending Datasets</h2>
-                {datasets.length ? (
-                  <div className="grid grid-cols-1 gap-4">
-                    {datasets.map((dataset) => <DatasetCard key={dataset.dataset_id} dataset={dataset} />)}
-                  </div>
-                ) : (
-                  <p className="text-gray-600">No trending datasets available.</p>
-                )}
-                <h2 className="text-lg font-semibold text-gray-900 mt-4 mb-2">Trending Researchers</h2>
-                {researchers.length ? (
-                  <div className="grid grid-cols-1 gap-4">
-                    {researchers.map((user) => <UserCard key={user.username} user={user} />)}
-                  </div>
-                ) : (
-                  <p className="text-gray-600">No trending researchers available.</p>
-                )}
-                <h2 className="text-lg font-semibold text-gray-900 mt-4 mb-2">Trending Organizations</h2>
-                {organizations.length ? (
-                  <div className="grid grid-cols-1 gap-4">
-                    {organizations.map((org) => <OrgCard key={org.email} org={org} />)}
-                  </div>
-                ) : (
-                  <p className="text-gray-600">No trending organizations available.</p>
-                )}
-              </>
-            ) : searchResults && isAuthenticated ? (
-              <>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Datasets</h2>
-                {searchResults.datasets.length ? (
-                  searchResults.datasets.map((dataset) => <DatasetCard key={dataset.dataset_id} dataset={dataset} />)
-                ) : (
-                  <p className="text-gray-600">No datasets found.</p>
-                )}
-                <h2 className="text-lg font-semibold text-gray-900 mt-4 mb-2">Users</h2>
-                {searchResults.users.length ? (
-                  searchResults.users.map((user) => <UserCard key={user.username} user={user} />)
-                ) : (
-                  <p className="text-gray-600">No users found.</p>
-                )}
-                <h2 className="text-lg font-semibold text-gray-900 mt-4 mb-2">Organizations</h2>
-                {searchResults.organizations.length ? (
-                  searchResults.organizations.map((org) => <OrgCard key={org.email} org={org} />)
-                ) : (
-                  <p className="text-gray-600">No organizations found.</p>
-                )}
-              </>
+          <div className="px-4 sm:px-6 py-4">
+            {/* Categories Section */}
+            <div className="mb-6">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Categories</h2>
+              <div className="flex overflow-x-auto gap-2 pb-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                {(isTrending ? trendingCategories : homeCategories).map((category) => (
+                  <button
+                    key={category}
+                    onClick={() => handleCategoryClick(category)}
+                    className={`flex-shrink-0 px-3 py-1 rounded-full text-sm sm:text-base font-medium ${
+                      selectedCategory === category
+                        ? "bg-orange-600 text-white"
+                        : "bg-gray-200 text-gray-700 hover:bg-orange-100 hover:text-orange-600"
+                    }`}
+                  >
+                    {capitalize(category)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {isLoading ? (
+              <div className="text-center py-8">
+                <svg
+                  className="animate-spin h-8 w-8 text-orange-600 mx-auto"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z" />
+                </svg>
+                <p className="mt-2 text-gray-600 text-sm sm:text-base">Loading content...</p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8 text-red-600 text-sm sm:text-base">{error}</div>
             ) : (
               <>
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Related Datasets</h2>
-                {datasets.length ? (
-                  datasets.map((dataset) => <DatasetCard key={dataset.dataset_id} dataset={dataset} />)
+                {isTrending ? (
+                  <>
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Trending Datasets</h2>
+                    {filteredDatasets.length ? (
+                      <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                        {filteredDatasets.map((dataset) => <DatasetCard key={dataset.dataset_id} dataset={dataset} />)}
+                      </div>
+                    ) : (
+                      <p className="text-gray-600 text-sm sm:text-base">No trending datasets available.</p>
+                    )}
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mt-6 mb-2">Trending Researchers</h2>
+                    {researchers.length ? (
+                      <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                        {researchers.map((user) => <UserCard key={user.username} user={user} />)}
+                      </div>
+                    ) : (
+                      <p className="text-gray-600 text-sm sm:text-base">No trending researchers available.</p>
+                    )}
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mt-6 mb-2">Trending Organizations</h2>
+                    {organizations.length ? (
+                      <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                        {organizations.map((org) => <OrgCard key={org.email} org={org} />)}
+                      </div>
+                    ) : (
+                      <p className="text-gray-600 text-sm sm:text-base">No trending organizations available.</p>
+                    )}
+                  </>
                 ) : (
-                  <p className="text-gray-600">No datasets available.</p>
+                  <>
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Related Datasets</h2>
+                    {filteredDatasets.length ? (
+                      <div className="flex overflow-x-auto gap-3 sm:gap-4 pb-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                        {filteredDatasets.map((dataset) => <DatasetCard key={dataset.dataset_id} dataset={dataset} />)}
+                      </div>
+                    ) : (
+                      <p className="text-gray-600 text-sm sm:text-base">No datasets available.</p>
+                    )}
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mt-6">Related Research</h2>
+                    <p className="text-gray-600 text-sm sm:text-base">Research content coming soon...</p>
+                  </>
                 )}
-                <h2 className="text-lg font-semibold text-gray-900 mt-4">Related Research</h2>
-                <p className="text-gray-600">Research content coming soon...</p>
               </>
             )}
           </div>
         </main>
-        <aside className="w-80 bg-white shadow-md rounded-lg p-6">
+        <aside className="w-full lg:w-80 bg-white shadow-md rounded-lg p-4 sm:p-6">
           {!isAuthenticated ? (
             <div className="text-center">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Join Us</h2>
-              <p className="text-gray-600 mb-4">Sign in to follow researchers and organizations!</p>
-              <Link href="/auth/sign-in" className={buttonVariants({ size: "lg", className: "bg-orange-600 text-white hover:bg-orange-700 w-full" })}>
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Join Us</h2>
+              <p className="text-gray-600 mb-4 text-sm sm:text-base">Sign in to follow researchers and organizations!</p>
+              <Link href="/auth/sign-in" className={buttonVariants({ size: "lg", className: "bg-orange-600 text-white hover:bg-orange-700 w-full text-sm sm:text-base" })}>
                 Sign In
               </Link>
-              <div className="mt-8">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Top Researchers</h2>
+              <div className="mt-6 sm:mt-8">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Top Researchers</h2>
                 {researchers.length ? (
                   <ul className="space-y-4">
                     {researchers.map((researcher) => (
                       <li key={researcher.username} className="flex items-center gap-3 text-gray-700">
                         {researcher.profile_picture ? (
-                          <img src={researcher.profile_picture} alt={`${researcher.first_name} ${researcher.sur_name}`} className="w-12 h-12 rounded-full object-cover" />
+                          <img src={researcher.profile_picture} alt={`${researcher.first_name} ${researcher.sur_name}`} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover" />
                         ) : (
-                          <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-xl">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-lg sm:text-xl">
                             {capitalize(researcher.first_name)[0]}
                           </div>
                         )}
-                        <div className="flex-1 flex flex-col">
-                          <span className="font-bold text-base">{`${capitalize(researcher.first_name)} ${capitalize(researcher.sur_name)}`}</span>
-                          <span className="text-sm text-gray-500">@{researcher.username}</span>
+                        <div className="flex-1 flex flex-col min-w-0">
+                          <span className="font-bold text-sm sm:text-base truncate">{`${capitalize(researcher.first_name)} ${capitalize(researcher.sur_name)}`}</span>
+                          <span className="text-xs sm:text-sm text-gray-500 truncate">@{researcher.username}</span>
                         </div>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-gray-600">No researchers available.</p>
+                  <p className="text-gray-600 text-sm sm:text-base">No researchers available.</p>
                 )}
-                <h2 className="text-lg font-semibold text-gray-900 mt-6 mb-4">Top Organizations</h2>
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mt-6 mb-4">Top Organizations</h2>
                 {organizations.length ? (
                   <ul className="space-y-4">
                     {organizations.map((organization) => (
                       <li key={organization.email} className="flex items-center gap-3 text-gray-700">
                         {organization.profile_picture ? (
-                          <img src={organization.profile_picture} alt={organization.name} className="w-12 h-12 rounded-full object-cover" />
+                          <img src={organization.profile_picture} alt={organization.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover" />
                         ) : (
-                          <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-xl">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-lg sm:text-xl">
                             {capitalize(organization.name)[0]}
                           </div>
                         )}
-                        <div className="flex-1 flex flex-col">
-                          <span className="font-bold text-base">{capitalize(organization.name)}</span>
-                          <span className="text-sm text-gray-500">{organization.email}</span>
+                        <div className="flex-1 flex flex-col min-w-0">
+                          <span className="font-bold text-sm sm:text-base truncate">{capitalize(organization.name)}</span>
+                          <span className="text-xs sm:text-sm text-gray-500 truncate">{organization.email}</span>
                         </div>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-gray-600">No organizations available.</p>
+                  <p className="text-gray-600 text-sm sm:text-base">No organizations available.</p>
                 )}
               </div>
             </div>
           ) : (
             <>
-              <div className="mb-8">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Who to Follow (Researchers)</h2>
+              <div className="mb-6 sm:mb-8">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Who to Follow (Researchers)</h2>
                 {researchers.length ? (
                   <ul className="space-y-4">
                     {researchers.map((researcher) => (
                       <Link href={`/researcher/profile/${researcher.id}`} key={researcher.username}>
                         <li className="flex items-center gap-3 text-gray-700 hover:text-orange-600 cursor-pointer">
                           {researcher.profile_picture ? (
-                            <img src={researcher.profile_picture} alt={`${researcher.first_name} ${researcher.sur_name}`} className="w-12 h-12 rounded-full object-cover" />
+                            <img src={researcher.profile_picture} alt={`${researcher.first_name} ${researcher.sur_name}`} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover" />
                           ) : (
-                            <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-xl">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-lg sm:text-xl">
                               {capitalize(researcher.first_name)[0]}
                             </div>
                           )}
-                          <div className="flex-1 flex flex-col">
-                            <span className="font-bold text-base">{`${capitalize(researcher.first_name)} ${capitalize(researcher.sur_name)}`}</span>
-                            <span className="text-sm text-gray-500">@{researcher.username}</span>
+                          <div className="flex-1 flex flex-col min-w-0">
+                            <span className="font-bold text-sm sm:text-base truncate">{`${capitalize(researcher.first_name)} ${capitalize(researcher.sur_name)}`}</span>
+                            <span className="text-xs sm:text-sm text-gray-500 truncate">@{researcher.username}</span>
                           </div>
                         </li>
                       </Link>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-gray-600">No researchers available.</p>
+                  <p className="text-gray-600 text-sm sm:text-base">No researchers available.</p>
                 )}
               </div>
-              <div className="mb-8">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Who to Follow (Organizations)</h2>
+              <div className="mb-6 sm:mb-8">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Who to Follow (Organizations)</h2>
                 {organizations.length ? (
                   <ul className="space-y-4">
                     {organizations.map((organization) => (
                       <Link href={`/organisation/profile/${organization.Organization_id}`} key={organization.email}>
                         <li className="flex items-center gap-3 text-gray-700 hover:text-orange-600 cursor-pointer">
                           {organization.profile_picture ? (
-                            <img src={organization.profile_picture} alt={organization.name} className="w-12 h-12 rounded-full object-cover" />
+                            <img src={organization.profile_picture} alt={organization.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover" />
                           ) : (
-                            <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-xl">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-lg sm:text-xl">
                               {capitalize(organization.name)[0]}
                             </div>
                           )}
-                          <div className="flex-1 flex flex-col">
-                            <span className="font-bold text-base">{capitalize(organization.name)}</span>
-                            <span className="text-sm text-gray-500">{organization.email}</span>
+                          <div className="flex-1 flex flex-col min-w-0">
+                            <span className="font-bold text-sm sm:text-base truncate">{capitalize(organization.name)}</span>
+                            <span className="text-xs sm:text-sm text-gray-500 truncate">{organization.email}</span>
                           </div>
                         </li>
                       </Link>
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-gray-600">No organizations available.</p>
+                  <p className="text-gray-600 text-sm sm:text-base">No organizations available.</p>
                 )}
               </div>
             </>

@@ -750,7 +750,7 @@ class TrendingDatasetsView(APIView):
         # Datasets with most views in the last 7 days since creation
         trending_datasets = Dataset.objects.filter(
             created_at__gte=time_threshold
-        ).order_by('-view_count')[:3]
+        ).order_by('-view_count')
         
         serializer = DatasetSerializer(trending_datasets, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

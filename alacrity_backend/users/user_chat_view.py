@@ -48,20 +48,19 @@ class ConversationDetailView(APIView):
             "id": conversation.participant1.id,
             "first_name": conversation.participant1.first_name,
             "last_name": conversation.participant1.last_name,
-            "profile_picture": conversation.participant1.profile_picture.url if conversation.participant1.profile_picture else None,
+            "profile_picture": conversation.participant1.profile_picture,  # String or None
         }
         participant2 = {
             "id": conversation.participant2.id,
             "first_name": conversation.participant2.first_name,
             "last_name": conversation.participant2.last_name,
-            "profile_picture": conversation.participant2.profile_picture.url if conversation.participant2.profile_picture else None,
+            "profile_picture": conversation.participant2.profile_picture,  # String or None
         }
         return Response({
             "conversation_id": conversation.id,
             "participant1": participant1,
             "participant2": participant2,
         })
-
 class MessageListView(APIView):
     permission_classes = [IsAuthenticated]
     @role_required('researcher')
@@ -79,7 +78,7 @@ class MessageListView(APIView):
                 "timestamp": msg.created_at.isoformat(),
                 "sender_first_name": msg.sender.first_name,
                 "sender_last_name": msg.sender.last_name,
-                "sender_profile_picture": msg.sender.profile_picture.url if msg.sender.profile_picture else None,
+                "sender_profile_picture": msg.sender.profile_picture,  # Just the string or None
             }
             for msg in messages
         ])
@@ -98,11 +97,8 @@ class UserConversationsView(APIView):
                     "first_name": conv.participant2.first_name if conv.participant1 == request.user else conv.participant1.first_name,
                     "last_name": conv.participant2.last_name if conv.participant1 == request.user else conv.participant1.last_name,
                     "profile_picture": (
-                        conv.participant2.profile_picture.url if conv.participant2.profile_picture 
-                        else None
-                    ) if conv.participant1 == request.user else (
-                        conv.participant1.profile_picture.url if conv.participant1.profile_picture 
-                        else None
+                        conv.participant2.profile_picture if conv.participant1 == request.user 
+                        else conv.participant1.profile_picture
                     ),
                 },
                 "last_message": conv.messages.last().message if conv.messages.exists() else "No messages yet",
@@ -113,4 +109,3 @@ class UserConversationsView(APIView):
                 ).count(),
             } for conv in conversations
         ])
-    

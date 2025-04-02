@@ -987,7 +987,7 @@ class SearchView(APIView):
 
         # searching for users
         users = User.objects.filter(
-            Q(first_name__icontains=query) | Q(sur_name__icontains=query) | Q(email__icontains=query))
+            Q(first_name__icontains=query) | Q(sur_name__icontains=query) | Q(email__icontains=query), role='researcher')
         user_serializer = UserSerializer(users, many=True, context={'request': request})
 
         return Response({

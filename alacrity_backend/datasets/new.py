@@ -756,7 +756,6 @@ class all_suggested_datasets(APIView):
     @role_required(['contributor', 'researcher', 'organization_admin'])
     def get(self,request):
         user = request.user
-        print(f"SuggestedDatasets accessed by {user}")
         user_field = user.field
         print(f"User field: {user_field}")
         if not user_field:
