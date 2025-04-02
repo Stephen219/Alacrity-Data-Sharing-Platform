@@ -12,7 +12,7 @@ const ViewBookmarkedSubmission = () => {
   return (
     <SubmissionDetails
       submissionId={id as string}
-      fetchUrl={`${BACKEND_URL}/research/bookmarks/${id}/`}
+      fetchUrl={`${BACKEND_URL}/research/submissions/${id}/`}
       backUrl="/researcher/bookmarks"
     />
   );

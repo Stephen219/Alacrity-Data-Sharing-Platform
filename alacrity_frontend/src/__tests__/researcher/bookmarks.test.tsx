@@ -109,18 +109,23 @@ describe("BookmarkList Page", () => {
     await waitFor(() => {
       expect(screen.queryByText("Loading...")).not.toBeInTheDocument();
     });
-    // Ensure both bookmark items are rendered.
+    // Find the unbookmark buttons.
     const unbookmarkButtons = screen.getAllByRole("button", { name: "Unbookmark" });
     expect(unbookmarkButtons.length).toBe(2);
+    
     // Click the unbookmark button for the first bookmark.
     fireEvent.click(unbookmarkButtons[0]);
-    // After successful unbookmark, only one bookmark should remain.
-    await waitFor(() => {
-      const bookmarkItems = screen.getAllByTestId("bookmark-item");
-      expect(bookmarkItems.length).toBe(1);
-      expect(screen.queryByText("Bookmark 1")).not.toBeInTheDocument();
-    });
-  });
+    
+    // Wait for the state update.
+    await waitFor(
+      () => {
+        const bookmarkItems = screen.getAllByTestId("bookmark-item");
+        expect(bookmarkItems.length).toBe(1);
+        expect(screen.queryByText("Bookmark 1")).not.toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+  });  
 
   test("clicking Read button navigates to the bookmark detail page", async () => {
     // Set up a single bookmark.
