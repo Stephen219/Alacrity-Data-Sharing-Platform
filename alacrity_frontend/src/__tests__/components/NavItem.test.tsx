@@ -1,6 +1,6 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
-import NavItem from "@/components/Navbar/NavItem";
+import NavItem from "@/components/NavItem";
 import "@testing-library/jest-dom";
 
 jest.mock("lucide-react", () => ({

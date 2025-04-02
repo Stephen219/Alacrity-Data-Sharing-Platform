@@ -2,14 +2,14 @@
 import React, { useState, useEffect } from "react";
 import { Bell, Menu, X } from "lucide-react";
 import Link from "next/link";
-import { buttonVariants } from "../ui/button";
+import { buttonVariants } from "./ui/button";
 import { usePathname } from "next/navigation";
 import { fetchUserData } from "@/libs/auth";
 import { User } from "@/types/types";
 import { BACKEND_URL } from "@/config"
 import { fetchWithAuth } from "@/libs/auth";
-import TopBarProfile from "../ui/TopbarProfile";
-import { ModeToggle } from "../ui/ModeToggle";
+import TopBarProfile from "./ui/TopbarProfile";
+import { ModeToggle } from "./ui/ModeToggle";
 import {
   DropdownMenu,
   DropdownMenuTrigger,

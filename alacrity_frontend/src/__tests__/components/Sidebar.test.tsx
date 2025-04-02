@@ -2,16 +2,16 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
-import Sidebar from '@/components/Navbar/Sidebar';
+import Sidebar from '@/components/Sidebar';
 import { fetchUserData } from '@/libs/auth';
-import NavItems from '@/components/Navbar/NavItems';
+import NavItems from '@/components/NavItems';
 
 // Mock the dependencies
 jest.mock('@/libs/auth', () => ({
   fetchUserData: jest.fn(),
 }));
 
-jest.mock('@/components/Navbar/NavItems', () => {
+jest.mock('@/components/NavItems', () => {
   return jest.fn(() => <div data-testid="nav-items">NavItems Component</div>);
 });
 
