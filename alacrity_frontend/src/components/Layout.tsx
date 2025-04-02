@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import Sidebar from "./Sidebar";
-import Navbar from "./Navbar";
+import Sidebar from "./Navbar/Sidebar";
+import Navbar from "./Navbar/Navbar";
 import { fetchUserData } from "@/libs/auth";
 import { User } from "@/types/types";
 import Footer from "./Footer";
