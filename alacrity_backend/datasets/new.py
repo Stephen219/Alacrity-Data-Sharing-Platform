@@ -737,11 +737,11 @@ class SuggestedDatasets(APIView):
         followed_org_ids = followed_orgs.values_list('Organization_id', flat=True)
         
         followed_datasets = Dataset.objects.filter(
-            contributor_id__organization__in=followed_orgs
+            contributor_id__organization__in=followed_orgs , is_active=True
         ).distinct()
         
         suggested_datasets = Dataset.objects.filter(
-            contributor_id__organization__field=user_field
+            contributor_id__organization__field=user_field , is_active=True
         ).exclude(
             contributor_id__organization__in=followed_orgs
         ).distinct()
@@ -766,7 +766,7 @@ class all_suggested_datasets(APIView):
         followed_org_ids = followed_orgs.values_list('Organization_id', flat=True)
         
         followed_datasets = Dataset.objects.filter(
-            contributor_id__organization__in=followed_orgs
+            contributor_id__organization__in=followed_orgs , is_active=True
         ).distinct()
         
         suggested_datasets = Dataset.objects.filter(
