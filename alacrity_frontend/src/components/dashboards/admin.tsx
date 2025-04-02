@@ -123,7 +123,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleViewAllClick = () => {
-    router.push("/requests/pending");
+    router.push("/requests/all");
   };
 
 
