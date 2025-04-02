@@ -37,7 +37,7 @@ urlpatterns = [
     path('<str:dataset_id>/', dataset_view, name='dataset_detail'),
     path("<str:dataset_id>/bookmark/", ToggleBookmarkDatasetView.as_view(), name="toggle-bookmark-dataset"),
     path('feedback/<str:dataset_id>/', FeedbackView.as_view(), name='feedback'),
-    path('random/', RandomDatasets.as_view(), name='random-datasets'),
-    path('suggested/', SuggestedDatasets.as_view(), name='suggested-datasets'),
+    path('random/datasets/', RandomDatasets.as_view(), name='random-datasets'),
+    path('suggested/datasets/', SuggestedDatasets.as_view(), name='suggested-datasets'),
 ]
 

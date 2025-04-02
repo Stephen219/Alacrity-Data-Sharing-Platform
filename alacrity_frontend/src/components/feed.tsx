@@ -202,7 +202,7 @@ export default function SearchPage() {
     const fetchDatasets = async () => {
       try {
         const token = localStorage.getItem("access_token");
-        const url = isAuthenticated ? `${BACKEND_URL}/datasets/suggested/` : `${BACKEND_URL}/datasets/random/`;
+        const url = isAuthenticated ? `${BACKEND_URL}/datasets/suggested/datasets/` : `${BACKEND_URL}/datasets/random/datasets/`;
         console.log("Fetching from:", url);
         const response = await fetch(url, {
           method: "GET",

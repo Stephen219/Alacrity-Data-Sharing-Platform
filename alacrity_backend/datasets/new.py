@@ -720,12 +720,15 @@ class SuggestedDatasets(APIView):
     @role_required(['contributor', 'researcher', 'organization_admin'])
     def get(self, request):
         user = request.user
+        print(f"SuggestedDatasets accessed by {user}")
         user_field = user.field
+        print(f"User field: {user_field}")
         if not user_field:
             return Response({"error": "User has no field specified"}, status=400)
         
         followed_orgs = user.followed_organizations.all()
-        followed_org_ids = followed_orgs.values_list('id', flat=True)
+        print(f"Followed organizations: {followed_orgs}")
+        followed_org_ids = followed_orgs.values_list('Organization_id', flat=True)
         
         followed_datasets = Dataset.objects.filter(
             contributor_id__organization__in=followed_orgs
