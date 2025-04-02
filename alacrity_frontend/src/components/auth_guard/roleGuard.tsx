@@ -36,7 +36,7 @@ export default function RoleGuard({ allowedRoles, children }: RoleGuardProps) {
             if (!user) {
                 router.push("/auth/sign-in");
             } else if (!allowedRoles.includes(user.role)) {
-                router.push("/unauthorized");
+                router.push("/errors/403");
             }
         }
     }, [user, loading, mounted, router, allowedRoles]);

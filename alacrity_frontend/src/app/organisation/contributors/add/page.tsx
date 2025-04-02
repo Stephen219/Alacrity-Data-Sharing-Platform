@@ -21,6 +21,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/libs/auth";
 import { BACKEND_URL } from "@/config";
+import { withAccessControl } from "@/components/auth_guard/AccessControl";
 
 const AddContributorForm: React.FC = () => {
   const router = useRouter();
@@ -303,4 +304,8 @@ const AddContributorForm: React.FC = () => {
   );
 };
 
-export default AddContributorForm;
+export default withAccessControl(AddContributorForm, [
+  "organization_admin",
+
+  "contributor"
+]);

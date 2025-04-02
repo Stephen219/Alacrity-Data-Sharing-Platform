@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import  { BACKEND_URL } from "@/config"
 import { fetchWithAuth } from "@/libs/auth"
+import { withAccessControl } from "@/components/auth_guard/AccessControl"
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend)
 
@@ -862,5 +863,9 @@ const DatasetMetrics: React.FC = () => {
   )
 }
 
-export default DatasetMetrics
+export default   withAccessControl(DatasetMetrics, [
+  "organization_admin",
+ "contributor",
+ 
+]);
 
