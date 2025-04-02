@@ -54,6 +54,100 @@ export default function ChatPage({ params }: ChatPageProps) {
     scrollToBottom();
   }, [messages]);
 
+  const connectWebSocket = () => {
+    if (socketRef.current) socketRef.current.close();
+
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      console.error("No access token found");
+      setSocketStatus("Authentication failed");
+      router.push("/login");
+      return;
+    }
+
+    const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+    const wsHost = BACKEND_URL.replace(/^https?:\/\//, "");
+    const wsUrl = `${wsScheme}://${wsHost}/ws/chat/${params.id}/?token=${token}`;
+    console.log("Connecting to WebSocket at:", wsUrl);
+
+    let retryCount = 0;
+    const maxRetries = 5;
+
+    const attemptConnection = () => {
+      socketRef.current = new WebSocket(wsUrl);
+
+      socketRef.current.onopen = () => {
+        console.log("WebSocket connection established for conversation:", params.id);
+        setSocketStatus("Connected");
+        retryCount = 0;
+        socketRef.current?.send(JSON.stringify({ mark_read: true }));
+      };
+
+      socketRef.current.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log("WebSocket message received:", data);
+          if (data.error) {
+            console.error("WebSocket error:", data.error);
+            return;
+          }
+          if (data.message) {
+            const newMessage = {
+              message_id: data.message.message_id || `fallback-${Date.now()}-${Math.random()}`,
+              sender_id: data.message.sender_id,
+              content: data.message.content || data.message.message,
+              timestamp: new Date(data.message.timestamp),
+              sender_first_name: data.message.sender_first_name,
+              sender_last_name: data.message.sender_last_name,
+              sender_profile_picture: data.message.sender_profile_picture,
+            };
+            setMessages((prev) => {
+              const optimisticIndex = prev.findIndex(
+                (m) => typeof m.message_id === "string" && m.message_id.startsWith("temp-") && m.content === newMessage.content
+              );
+              if (optimisticIndex !== -1) {
+                const updated = [...prev];
+                updated[optimisticIndex] = newMessage;
+                console.log("Replaced optimistic message with server response:", newMessage);
+                return updated;
+              }
+              if (!prev.some((m) => m.message_id === newMessage.message_id)) {
+                console.log("Adding new message to state:", newMessage);
+                return [...prev, newMessage];
+              }
+              console.log("Message already exists, skipping:", newMessage);
+              return prev;
+            });
+          } else if (data.is_typing !== undefined) {
+            setIsTyping(data.is_typing);
+          }
+        } catch (error) {
+          console.error("Error parsing WebSocket message:", error);
+        }
+      };
+
+      socketRef.current.onerror = (event) => {
+        console.error("WebSocket error occurred:", event);
+        setSocketStatus("Error");
+      };
+
+      socketRef.current.onclose = (event) => {
+        console.log("WebSocket closed:", event.code, event.reason);
+        setSocketStatus("Disconnected");
+        if (retryCount < maxRetries && event.code !== 1000) {
+          retryCount++;
+          const delayMs = Math.min(3000 * 2 ** retryCount, 30000); // Exponential backoff, max 30s
+          setSocketStatus(`Reconnecting... (${retryCount}/${maxRetries})`);
+          setTimeout(attemptConnection, delayMs);
+        } else {
+          setSocketStatus("Failed to connect");
+        }
+      };
+    };
+
+    attemptConnection();
+  };
+
   useEffect(() => {
     if (!params.id || params.id === "undefined") {
       console.error("Invalid conversation ID:", params.id);
@@ -122,138 +216,34 @@ export default function ChatPage({ params }: ChatPageProps) {
     };
 
     fetchConversationData();
-
-    const connectWebSocket = () => {
-      if (socketRef.current) socketRef.current.close();
-
-      let retryCount = 0;
-      const maxRetries = 5;
-      let retryTimeout: NodeJS.Timeout;
-
-      const attemptConnection = () => {
-        const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-        const wsHost = BACKEND_URL.replace(/^https?:\/\//, "");
-        const wsUrl = `${wsScheme}://${wsHost}/ws/chat/${params.id}/?token=${token}`;
-        console.log("Connecting to WebSocket at:", wsUrl);
-        socketRef.current = new WebSocket(wsUrl);
-
-        socketRef.current.onopen = () => {
-          console.log("WebSocket connection established for conversation:", params.id);
-          setSocketStatus("Connected");
-          retryCount = 0;
-          if (retryTimeout) clearTimeout(retryTimeout);
-          // Mark conversation as read on connect
-          socketRef.current?.send(JSON.stringify({ mark_read: true }));
-        };
-
-        socketRef.current.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            console.log("WebSocket message received:", data);
-            if (data.error) {
-              console.error("WebSocket error:", data.error);
-              return;
-            }
-            if (data.message) {
-              const newMessage = {
-                message_id: data.message.message_id || `fallback-${Date.now()}-${Math.random()}`,
-                sender_id: data.message.sender_id,
-                content: data.message.content || data.message.message,
-                timestamp: new Date(data.message.timestamp),
-                sender_first_name: data.message.sender_first_name,
-                sender_last_name: data.message.sender_last_name,
-                sender_profile_picture: data.message.sender_profile_picture,
-              };
-              setMessages((prev) => {
-                const optimisticIndex = prev.findIndex(
-                  (m) => typeof m.message_id === "string" && m.message_id.startsWith("temp-") && m.content === newMessage.content
-                );
-                if (optimisticIndex !== -1) {
-                  const updated = [...prev];
-                  updated[optimisticIndex] = newMessage;
-                  console.log("Replaced optimistic message with server response:", newMessage);
-                  return updated;
-                }
-                if (!prev.some((m) => m.message_id === newMessage.message_id)) {
-                  console.log("Adding new message to state:", newMessage);
-                  return [...prev, newMessage];
-                }
-                console.log("Message already exists, skipping:", newMessage);
-                return prev;
-              });
-            } else if (data.is_typing !== undefined) {
-              setIsTyping(data.is_typing);
-            }
-          } catch (error) {
-            console.error("Error parsing WebSocket message:", error);
-          }
-        };
-
-        socketRef.current.onerror = (error) => {
-          console.error("WebSocket error occurred:", error);
-          setSocketStatus("Error");
-        };
-
-        socketRef.current.onclose = (event) => {
-          console.log("WebSocket closed:", event.code, event.reason);
-          setSocketStatus("Disconnected");
-          if (retryCount < maxRetries && event.code !== 1000) {
-            retryCount++;
-            const delayMs = 3000 * retryCount;
-            setSocketStatus(`Reconnecting... (${retryCount}/${maxRetries})`);
-            retryTimeout = setTimeout(attemptConnection, delayMs);
-          } else {
-            setSocketStatus("Failed to connect");
-          }
-        };
-      };
-
-      attemptConnection();
-    };
-
     connectWebSocket();
-
-    const handleTyping = () => {
-      if (socketRef.current?.readyState === WebSocket.OPEN) {
-        socketRef.current.send(JSON.stringify({ typing: true }));
-        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-        typingTimeoutRef.current = setTimeout(() => {
-          socketRef.current?.send(JSON.stringify({ typing: false }));
-        }, 2000);
-      }
-    };
-
-    const textarea = document.querySelector("textarea");
-    textarea?.addEventListener("input", handleTyping);
 
     return () => {
       if (socketRef.current) socketRef.current.close(1000, "Component unmounting");
-      textarea?.removeEventListener("input", handleTyping);
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
   }, [params.id, router, currentUserId]);
 
   const sendMessage = () => {
-    if (!newMessage.trim() || !socketRef.current) return;
-
-    if (socketRef.current.readyState === WebSocket.OPEN) {
-      const messageData = { message: newMessage };
-      console.log("Sending message:", messageData);
-      socketRef.current.send(JSON.stringify(messageData));
-      const optimisticMessage: Message = {
-        message_id: `temp-${Date.now()}`,
-        sender_id: currentUserId!,
-        content: newMessage,
-        timestamp: new Date(),
-        sender_first_name: "You",
-        sender_last_name: "",
-      };
-      setMessages((prev) => [...prev, optimisticMessage]);
-      setNewMessage("");
-    } else {
-      console.error("WebSocket not open. Current state:", socketRef.current?.readyState);
-      alert("Connection lost. Please wait while we reconnect...");
+    if (!newMessage.trim() || !socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
+      console.error("Cannot send message. WebSocket state:", socketRef.current?.readyState);
+      alert("Connection not ready. Please wait...");
+      return;
     }
+
+    const messageData = { message: newMessage };
+    console.log("Sending message:", messageData);
+    socketRef.current.send(JSON.stringify(messageData));
+    const optimisticMessage: Message = {
+      message_id: `temp-${Date.now()}`,
+      sender_id: currentUserId!,
+      content: newMessage,
+      timestamp: new Date(),
+      sender_first_name: "You",
+      sender_last_name: "",
+    };
+    setMessages((prev) => [...prev, optimisticMessage]);
+    setNewMessage("");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -262,6 +252,29 @@ export default function ChatPage({ params }: ChatPageProps) {
       sendMessage();
     }
   };
+
+  const handleTyping = () => {
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify({ typing: true }));
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        if (socketRef.current?.readyState === WebSocket.OPEN) {
+          socketRef.current.send(JSON.stringify({ typing: false }));
+        }
+      }, 2000);
+    } else {
+      console.log("Typing event skipped: WebSocket not open");
+    }
+  };
+
+  useEffect(() => {
+    const textarea = document.querySelector("textarea");
+    textarea?.addEventListener("input", handleTyping);
+
+    return () => {
+      textarea?.removeEventListener("input", handleTyping);
+    };
+  }, []);
 
   const isCurrentUserMessage = (message: Message) => {
     return currentUserId === message.sender_id;

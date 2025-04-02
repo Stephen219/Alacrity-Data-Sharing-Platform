@@ -60,9 +60,9 @@ describe("Navbar Component", () => {
   });
 
   test("renders Sign In and Sign Up links when user is not logged in", async () => {
-    // Override the mock for this specific test using jest.spyOn
-    const authModule = require("@/libs/auth");
-    jest.spyOn(authModule, "fetchUserData").mockResolvedValueOnce(null);
+    // Dynamically override the mock for this test
+    const fetchUserDataMock = jest.requireMock("@/libs/auth").fetchUserData;
+    fetchUserDataMock.mockResolvedValueOnce(null);
 
     await act(async () => {
       render(<Navbar toggleSidebar={mockToggleSidebar} />);

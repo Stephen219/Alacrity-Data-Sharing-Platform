@@ -73,11 +73,9 @@ export default function SearchPage() {
   const [reports, setReports] = useState<PublishedResearch[]>([]);
   const [trendingDatasets, setTrendingDatasets] = useState<Dataset[]>([]);
   const [randomDatasets, setRandomDatasets] = useState<Dataset[]>([]);
-  const [randomReports, setRandomReports] = useState<PublishedResearch[]>([]);
   const [trendingResearcher, setTrendingResearcher] = useState<Researcher | null>(null);
   const [trendingOrganization, setTrendingOrganization] = useState<Organization | null>(null);
   const [trendingDataset, setTrendingDataset] = useState<Dataset | null>(null);
-  const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
   const [suggestions, setSuggestions] = useState<SearchResults | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -88,7 +86,6 @@ export default function SearchPage() {
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState<string>("");
-  const [userField, setUserField] = useState<string>("");
 
   const capitalize = (str: string): string => {
     if (!str) return "";
@@ -108,40 +105,39 @@ export default function SearchPage() {
   };
 
   const fetchSuggestions = useCallback(
-    debounce(async (query: string) => {
+    debounce((query: string) => {
       if (!isAuthenticated || !query.trim()) {
         setSuggestions(null);
         return;
       }
 
-      try {
-        const token = localStorage.getItem("access_token");
-        if (!token) {
-          alert("No access token found. Please sign in again.");
-          router.push("/auth/sign-in");
-          return;
-        }
-
-        const response = await fetch(`${BACKEND_URL}/users/search/?q=${encodeURIComponent(query)}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`Search failed with status: ${response.status}`);
-        }
-
-        const data: SearchResults = await response.json();
-        setSuggestions(data);
-        setSearchResults(data);
-      } catch (error) {
-        console.error("Error fetching suggestions:", error);
-        setSuggestions({ datasets: [], users: [], organizations: [], reports: [] });
-        setSearchResults({ datasets: [], users: [], organizations: [], reports: [] });
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        alert("No access token found. Please sign in again.");
+        router.push("/auth/sign-in");
+        return;
       }
+
+      fetch(`${BACKEND_URL}/users/search/?q=${encodeURIComponent(query)}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`Search failed with status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data: SearchResults) => {
+          setSuggestions(data);
+        })
+        .catch(() => {
+          setError("Failed to fetch suggestions. Please try again.");
+          setSuggestions({ datasets: [], users: [], organizations: [], reports: [] });
+        });
     }, 300),
     [isAuthenticated, router]
   );
@@ -232,7 +228,6 @@ export default function SearchPage() {
           const randomReportsRes = await fetch(`${BACKEND_URL}/research/random-reports/`, { headers });
           if (!randomReportsRes.ok) throw new Error("Failed to fetch random reports");
           const randomReportsData: PublishedResearch[] = await randomReportsRes.json();
-          setRandomReports(randomReportsData);
           setReports(randomReportsData);
         }
       } else {
@@ -243,14 +238,12 @@ export default function SearchPage() {
         setDatasets(randomData);
         setReports([]);
       }
-    } catch (error) {
-      console.error("Error fetching data:", error);
+    } catch {
       setError("Failed to load data. Please try again later.");
       setDatasets([]);
       setReports([]);
       setTrendingDatasets([]);
       setRandomDatasets([]);
-      setRandomReports([]);
       setResearchers([]);
       setOrganizations([]);
       setTrendingResearcher(null);
@@ -267,11 +260,9 @@ export default function SearchPage() {
       if (userData) {
         setIsAuthenticated(true);
         setUserRole(userData.role || "");
-        setUserField(userData.field || "Diseases");
       } else {
         setIsAuthenticated(false);
         setUserRole("");
-        setUserField("");
       }
       fetchData();
     };

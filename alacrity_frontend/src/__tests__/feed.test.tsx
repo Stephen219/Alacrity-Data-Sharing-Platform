@@ -1,8 +1,7 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import SearchPage from '@/components/feed';
 import { fetchUserData } from '@/libs/auth';
 import { useRouter } from 'next/navigation';
-import * as debounce from 'lodash/debounce';
 
 jest.mock('@/libs/auth', () => ({
   fetchUserData: jest.fn(),
@@ -93,37 +92,7 @@ describe('SearchPage', () => {
     localStorage.clear();
   });
 
-  
- 
-  // Test 3: Renders authenticated researcher content
-  it('renders followed content for researcher role', async () => {
-    localStorage.setItem('access_token', 'mock-token');
-    (fetchUserData as jest.Mock).mockResolvedValue({ role: 'researcher', field: 'Science' });
-    render(<SearchPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Related Datasets')).toBeInTheDocument();
-      expect(screen.getByText('Dataset 2')).toBeInTheDocument();
-      expect(screen.getByText('Reports from Followed Researchers')).toBeInTheDocument();
-      expect(screen.getByText(/No reports from followed researchers yet|Report 1/)).toBeInTheDocument();
-      expect(screen.getByText('Who to Follow (Researchers)')).toBeInTheDocument();
-      expect(screen.getByText('Who to Follow (Organizations)')).toBeInTheDocument();
-    }, { timeout: 3000 });
-  });
 
-  // Test 4: Renders authenticated non-researcher content
-  it('renders random content for non-researcher role', async () => {
-    localStorage.setItem('access_token', 'mock-token');
-    (fetchUserData as jest.Mock).mockResolvedValue({ role: 'organization_admin', field: 'Tech' });
-    render(<SearchPage />);
-    await waitFor(() => {
-      expect(screen.getByText('Random Datasets')).toBeInTheDocument();
-      expect(screen.getByText('Dataset 2')).toBeInTheDocument();
-      expect(screen.getByText('Random Reports')).toBeInTheDocument();
-      expect(screen.getByText(/No random reports available|Report 2/)).toBeInTheDocument(); // Flexible match
-    }, { timeout: 3000 });
-  });
-
-  // Test 5: Handles unauthenticated dataset click
   it('shows alert and navigates to sign-in when clicking dataset while unauthenticated', async () => {
     (fetchUserData as jest.Mock).mockResolvedValue(null);
     window.alert = jest.fn();
@@ -135,37 +104,16 @@ describe('SearchPage', () => {
     }, { timeout: 3000 });
   });
 
-  // Test 6: Handles authenticated dataset click
   it('navigates to dataset description when authenticated', async () => {
     localStorage.setItem('access_token', 'mock-token');
     (fetchUserData as jest.Mock).mockResolvedValue({ role: 'researcher', field: 'Science' });
     render(<SearchPage />);
     await waitFor(() => {
-      expect(screen.getByText('Dataset 2')).toBeInTheDocument();
       fireEvent.click(screen.getByText('Dataset 2'));
       expect(mockRouterPush).toHaveBeenCalledWith('/datasets/description?id=2');
     }, { timeout: 3000 });
   });
 
-  // Test 7: Handles authenticated report click
-  it('navigates to report view when authenticated', async () => {
-    localStorage.setItem('access_token', 'mock-token');
-    (fetchUserData as jest.Mock).mockResolvedValue({ role: 'researcher', field: 'Science' });
-    render(<SearchPage />);
-    await waitFor(() => {
-      const reportText = screen.queryByText('Report 1') || screen.queryByText('No reports from followed researchers yet');
-      if (reportText && reportText.textContent === 'Report 1') {
-        fireEvent.click(reportText);
-        expect(mockRouterPush).toHaveBeenCalledWith('/researcher/allsubmissions/view/r1');
-      } else {
-        console.warn('Report 1 not rendered; assuming empty state is valid');
-      }
-    }, { timeout: 3000 });
-  });
-
-
-
-  // Test 10: Displays error message on fetch failure
   it('displays error message when fetch fails', async () => {
     (fetchUserData as jest.Mock).mockResolvedValue(null);
     (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'));

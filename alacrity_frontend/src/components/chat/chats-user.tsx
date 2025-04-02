@@ -42,9 +42,11 @@ export default function UserChatListPage() {
     try {
       const response = await fetchWithAuth(`${BACKEND_URL}/users/api/conversations/`, { cache: "no-store" });
       if (response.ok) {
-        const chatData = await response.json();
-        setChats(chatData);
-        setFilteredChats(chatData);
+        const chatData: ChatSummary[] = await response.json();
+        // Deduplicate by participant.id, keeping the most recent conversation
+        const uniqueChats = deduplicateChats(chatData);
+        setChats(uniqueChats);
+        setFilteredChats(uniqueChats);
       } else {
         setChats([]);
         setFilteredChats([]);
@@ -56,6 +58,22 @@ export default function UserChatListPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper function to deduplicate chats by participant.id
+  const deduplicateChats = (chatList: ChatSummary[]): ChatSummary[] => {
+    const chatMap = new Map<number, ChatSummary>();
+    chatList.forEach((chat) => {
+      const participantId = chat.participant.id;
+      const existingChat = chatMap.get(participantId);
+      if (!existingChat || (chat.last_timestamp && chat.last_timestamp > (existingChat.last_timestamp || ""))) {
+        chatMap.set(participantId, chat);
+      } else if (existingChat) {
+        // Aggregate unread_count if needed
+        existingChat.unread_count += chat.unread_count;
+      }
+    });
+    return Array.from(chatMap.values());
   };
 
   const searchResearchers = async (query: string) => {
@@ -103,7 +121,6 @@ export default function UserChatListPage() {
 
       let retryCount = 0;
       const maxRetries = 5;
-      let retryTimeout: NodeJS.Timeout;
 
       const attemptConnection = () => {
         socketRef.current = new WebSocket(wsUrl);
@@ -112,7 +129,6 @@ export default function UserChatListPage() {
           console.log("User Chat List WebSocket connected");
           setSocketStatus("Connected");
           retryCount = 0;
-          if (retryTimeout) clearTimeout(retryTimeout);
         };
 
         socketRef.current.onmessage = (event) => {
@@ -125,7 +141,7 @@ export default function UserChatListPage() {
             }
             if (data.message) {
               setChats((prev) => {
-                const updated = prev.map((chat) =>
+                const updatedChats = prev.map((chat) =>
                   chat.conversation_id === data.message.conversation_id
                     ? {
                         ...chat,
@@ -135,20 +151,24 @@ export default function UserChatListPage() {
                       }
                     : chat
                 );
-                setFilteredChats(updated);
-                return updated;
+                // Deduplicate after update
+                const uniqueChats = deduplicateChats(updatedChats);
+                setFilteredChats(uniqueChats);
+                return uniqueChats;
               });
             } else if (data.is_typing !== undefined) {
               setTypingStatus((prev) => ({ ...prev, [data.conversation_id]: data.is_typing }));
             } else if (data.read_conversation) {
               setChats((prev) => {
-                const updated = prev.map((chat) =>
+                const updatedChats = prev.map((chat) =>
                   chat.conversation_id === data.read_conversation
                     ? { ...chat, unread_count: 0 }
                     : chat
                 );
-                setFilteredChats(updated);
-                return updated;
+                // Deduplicate after update
+                const uniqueChats = deduplicateChats(updatedChats);
+                setFilteredChats(uniqueChats);
+                return uniqueChats;
               });
             }
           } catch (error) {
@@ -156,8 +176,8 @@ export default function UserChatListPage() {
           }
         };
 
-        socketRef.current.onerror = (error) => {
-          console.error("WebSocket error occurred:", error);
+        socketRef.current.onerror = (event) => {
+          console.error("WebSocket error occurred:", event);
           setSocketStatus("Error");
         };
 
@@ -166,9 +186,9 @@ export default function UserChatListPage() {
           setSocketStatus("Disconnected");
           if (retryCount < maxRetries && event.code !== 1000) {
             retryCount++;
-            const delayMs = 3000 * retryCount;
+            const delayMs = Math.min(3000 * 2 ** retryCount, 30000); // Exponential backoff, max 30s
             setSocketStatus(`Reconnecting... (${retryCount}/${maxRetries})`);
-            retryTimeout = setTimeout(attemptConnection, delayMs);
+            setTimeout(attemptConnection, delayMs);
           } else {
             setSocketStatus("Failed to connect after retries");
           }
