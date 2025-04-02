@@ -6,6 +6,7 @@ filter_and_clean_dataset,
 get_datasets, get_filter_options, CreateDatasetView, DatasetListView, get_datasets,  get_datasets,
 
  pre_analysis)
+from .metric import DatasetMetricsView, DatasetAnalyticsCardView
 
 from .new import analyze_dataset , dataset_detail, all_datasets_view, clear_dataset_cache, dataset_view, download_dataset
 from .chat_view import ChatListView, SendMessageView, MessageListView,DatasetDetailView
@@ -37,5 +38,9 @@ urlpatterns = [
     path('<str:dataset_id>/', dataset_view, name='dataset_detail'),
     path("<str:dataset_id>/bookmark/", ToggleBookmarkDatasetView.as_view(), name="toggle-bookmark-dataset"),
     path('feedback/<str:dataset_id>/', FeedbackView.as_view(), name='feedback'),
+
+    path('dataset-analytics-card/dash/', DatasetAnalyticsCardView.as_view(), name='dataset_analytics_card'),
+     path('dataset-metrics/page/', DatasetMetricsView.as_view(), name='dataset_analytics_card')
 ]
+
 

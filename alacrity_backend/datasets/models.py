@@ -89,3 +89,22 @@ class Feedback(models.Model):
 
     def __str__(self):
         return f"Feedback for {self.dataset.title} from {self.user}"
+    
+
+
+class DatasetAccessMetrics(models.Model):
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name='access_metrics')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='dataset_access_metrics')
+    access_time = models.DateTimeField(auto_now_add=True)
+    download_time = models.DateTimeField(null=True, blank=True) 
+    Actions = [
+        ('view', 'View'),
+        ('download', 'Download'),
+        ('bookmark', 'Bookmark'),
+    ] 
+
+
+    action = models.CharField(max_length=10, choices=Actions, default='view')
+
+    def __str__(self):
+        return f"{self.action} by {self.user} on {self.dataset.title} at {self.access_time}"
