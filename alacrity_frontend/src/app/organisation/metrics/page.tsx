@@ -774,7 +774,7 @@ const DatasetMetrics: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Top Users */}
+      
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Top 10 Active Users</CardTitle>
@@ -852,13 +852,8 @@ const DatasetMetrics: React.FC = () => {
         </Card>
       </div>
 
-      {/* Legal Disclaimer */}
-      <div className="mb-6 bg-blue-50 border border-blue-200 text-blue-700 p-4 rounded-md">
-        <p>
-          <strong>Legal Notice:</strong> Data displayed here is aggregated and anonymized to comply with privacy
-          regulations. For detailed user data, please ensure compliance with applicable laws (e.g., GDPR, CCPA).
-        </p>
-      </div>
+     
+      
     </div>
   )
 }

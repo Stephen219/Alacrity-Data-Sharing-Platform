@@ -352,7 +352,7 @@ class LoginView(APIView):
             try:
                 user = User.objects.get(email=email)
                 print(user)
-                if user.is_active == False:
+                if not user.is_active or user.is_deleted:
                     return Response({
                         'error': 'your account is not active, please contact the admin'
                     }, status=status.HTTP_401_UNAUTHORIZED)
