@@ -712,7 +712,7 @@ class FeedbackView(APIView):
     def get(self, request, dataset_id):
         try:
             dataset = Dataset.objects.get(dataset_id=dataset_id)
-            feedback = dataset.feedbacks.all().values("user__username", "rating", "comment", "created_at")
+            feedback = dataset.feedbacks.all().values("user__username", "rating","title", "comment", "created_at")
             return Response(list(feedback))
         except Dataset.DoesNotExist:
             return Response({"error": "Dataset not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -726,6 +726,7 @@ class FeedbackView(APIView):
         try:
             dataset = Dataset.objects.get(dataset_id=dataset_id)
             rating = request.data.get("rating")
+            title = request.data.get("title")
             comments = request.data.get("comments")
             if not rating or not comments:
                 return Response({"error": "Rating and comments are required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -736,6 +737,7 @@ class FeedbackView(APIView):
                 dataset=dataset,
                 user=request.user,
                 rating=rating,
+                title=title,
                 comment=comments  # Match model field (assuming typo in your original)
             )
             return Response({"message": "Feedback submitted"}, status=status.HTTP_201_CREATED)

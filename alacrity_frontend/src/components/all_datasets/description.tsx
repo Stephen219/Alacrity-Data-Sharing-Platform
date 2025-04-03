@@ -25,6 +25,7 @@ interface Dataset {
 interface Feedback {
   user__username: string;
   rating: number;
+  title:string;
   comment: string;
   created_at: string;
 }
@@ -336,6 +337,7 @@ export default function DatasetDetail() {
                     </span>
                     <div className="flex gap-1">{renderStars(fb.rating)}</div>
                   </div>
+                  <p className="text-gray-700 text-bold dark:text-gray-100">{fb.title}</p>
                   <p className="text-gray-700 dark:text-gray-100">{fb.comment}</p>
                   <span className="text-xs text-gray-500 dark:text-gray-100">
                     {new Date(fb.created_at).toLocaleString()}

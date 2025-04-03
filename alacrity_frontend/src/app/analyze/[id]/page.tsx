@@ -26,6 +26,7 @@ import {
 import AnalysisFormComponent from "@/components/ResearchForm"
 import TextEditorToolbar from "@/components/TextEditorToolbar"
 import TourTooltip from "@/components/analyze/tooltip"
+import DatasetDetailModal from "@/components/all_datasets/dataset_detail"; 
 
 type Schema = Record<string, string>
 type Dataset = {
@@ -216,6 +217,16 @@ const AnalyzePage = () => {
 
   const debouncedFilterValue = useDebounce(state.filterValue, 300)
   const debouncedNotes = useDebounce(state.notes, 500)
+  //this is to render pop up 
+  const [showDatasetModal, setShowDatasetModal] = useState(false);
+
+  //check is user already left a review so pop up is only shown if review hasnt been left
+  useEffect(() => {
+    const hasReviewed = localStorage.getItem(`hasReviewed_${id}`);
+    if (!hasReviewed) {
+      setShowDatasetModal(true);
+    }
+  }, [id]);
 
   // Check if this is the first visit
   useEffect(() => {
@@ -1495,7 +1506,14 @@ const AnalyzePage = () => {
           </div>
         )}
       </div>
+              {/* Only render the review modal if the user hasn't reviewed */}
+      {showDatasetModal && (
+        <DatasetDetailModal
+          dataset_id={id as string}
+          onClose={() => setShowDatasetModal(false)}
+        />
 
+)}
       {/* Tour Tooltips */}
       {showTour && tourSteps[currentTourStep] && (
         <TourTooltip

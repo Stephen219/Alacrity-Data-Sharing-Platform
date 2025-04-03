@@ -84,6 +84,7 @@ class Feedback(models.Model):
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name='feedbacks')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='feedbacks')
     rating = models.PositiveIntegerField()
+    title = models.CharField(max_length=100,validators=[MinLengthValidator(1), MaxLengthValidator(100)], default="Untitled")
     comment = models.TextField(validators=[MinLengthValidator(1)])
     created_at = models.DateTimeField(auto_now_add=True)
 

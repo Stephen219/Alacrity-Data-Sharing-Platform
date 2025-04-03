@@ -82,4 +82,4 @@ class ChatSerializer(serializers.ModelSerializer):
 class FeebackSerializer(serializers.ModelSerializer):
     class Meta:
         model = Feedback
-        fields = ['feedback_id', 'user','comment', 'rating','created_at']
+        fields = ['feedback_id', 'user', 'title', 'comment', 'rating','created_at']
