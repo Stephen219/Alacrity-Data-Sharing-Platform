@@ -51,7 +51,7 @@ describe("RoleGuard", () => {
 
         render(<RoleGuard allowedRoles={allowedRoles}>Protected Content</RoleGuard>);
 
-        await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/unauthorized"));
+        await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/errors/403"));
     });
 
     it("should render children if user has the required role", () => {

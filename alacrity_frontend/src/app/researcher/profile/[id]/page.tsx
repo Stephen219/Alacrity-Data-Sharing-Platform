@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+// dissable the 
 /**
  * Researcher Profile Page**
  * @fileoverview Researcher profile page
@@ -18,12 +19,11 @@
  * The component is wrapped with an access control HOC (withAccessControl) to restrict access to certain user roles.
  */
 
- 
+
 
 "use client"
 
 import type React from "react"
-
 import { useRouter } from "next/navigation"
 import { useState, useEffect, type ChangeEvent, type MouseEvent, type TouchEvent } from "react"
 import { useParams } from "next/navigation"
@@ -31,7 +31,6 @@ import { fetchUserData, fetchWithAuth } from "@/libs/auth"
 import { BACKEND_URL } from "@/config"
 import { withAccessControl } from "@/components/auth_guard/AccessControl"
 import parse from "html-react-parser"
-
 
 type Profile = {
   id: string
@@ -53,6 +52,19 @@ type Profile = {
   social_links: string[]
   is_followed?: boolean 
 }
+
+
+interface formData {
+  firstname: string
+  lastname: string
+  bio: string
+  email: string
+  phonenumber: string
+  username: string
+  field: string
+  social_links: string[]
+}
+
 
 type AnalysisSubmission = {
   id: string
@@ -76,6 +88,47 @@ type SocialLinkError = {
   index?: number
 }
 
+
+const validateEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
+}
+
+const validatePhone = (phone: string): boolean => {
+  const phoneRegex = /^\+?[\d\s-]{8,15}$/
+  return phoneRegex.test(phone)
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const validateFormData = (data: formData): { isValid: boolean; errors: Record<string, string[]> } => {
+  const errors: Record<string, string[]> = {}
+  
+  if (!data.firstname.trim()) {
+    errors.firstname = ["This field may not be blank."]
+  }
+  
+  if (!data.lastname.trim()) {
+    errors.lastname = ["This field may not be blank."]
+  }
+  
+  if (!data.username.trim()) {
+    errors.username = ["This field may not be blank."]
+  }
+  
+  if (data.email && !validateEmail(data.email)) {
+    errors.email = ["Enter a valid email address."]
+  }
+  
+  if (data.phonenumber && !validatePhone(data.phonenumber)) {
+    errors.phonenumber = ["Enter a valid phone number."]
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors
+  }
+}
+
 const fetchProfileData = async (profileId: string): Promise<Profile | null> => {
   try {
     const response = await fetchWithAuth(`${BACKEND_URL}/users/profile/${profileId}/`, {
@@ -91,21 +144,20 @@ const fetchProfileData = async (profileId: string): Promise<Profile | null> => {
   }
 }
 
-const updateProfile = async (userId: string, updatedData: Partial<Profile>) => {
+const toggleFollowUser = async (userId: string, isFollowing: boolean): Promise<boolean> => {
   try {
-    const response = await fetchWithAuth(`${BACKEND_URL}/users/profile/${userId}/`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatedData),
+    const endpoint = isFollowing ? "unfollow" : "follow"
+    const response = await fetchWithAuth(`${BACKEND_URL}/users/${endpoint}/${userId}/`, {
+      method: "POST",
     })
-    
+
     if (!response.ok) {
-      throw new Error(`Failed to update profile: ${response.status} ${response.statusText}`)
+      throw new Error(`Failed to ${endpoint} user: ${response.status} ${response.statusText}`)
     }
-    return await response.json()
+    return true
   } catch (error) {
-    console.error("Error updating profile:", error)
-    throw error
+    console.error(`Error ${isFollowing ? "unfollowing" : "following"} user:`, error)
+    return false
   }
 }
 
@@ -126,24 +178,6 @@ const updateProfilePicture = async (userId: string, file: File) => {
   } catch (error) {
     console.error("Error updating profile picture:", error)
     throw error
-  }
-}
-
-
-const toggleFollowUser = async (userId: string, isFollowing: boolean): Promise<boolean> => {
-  try {
-    const endpoint = isFollowing ? "unfollow" : "follow"
-    const response = await fetchWithAuth(`${BACKEND_URL}/users/${endpoint}/${userId}/`, {
-      method: "POST",
-    })
-
-    if (!response.ok) {
-      throw new Error(`Failed to ${endpoint} user: ${response.status} ${response.statusText}`)
-    }
-    return true
-  } catch (error) {
-    console.error(`Error ${isFollowing ? "unfollowing" : "following"} user:`, error)
-    return false
   }
 }
 
@@ -228,24 +262,60 @@ function ResearcherProfilePage() {
   }
 
   const handleSave = async () => {
-  if (!userData?.id || !isOwner) return
-  setLoading(true)
-  try {
-    const updatedProfile = await updateProfile(userData.id, formData)
-    setUserData((prev) => {
-      if (!prev) return prev 
-      return { ...prev, ...updatedProfile }
-    })
-    setIsEditing(false)
-  } catch (err) {
-    setError("Failed to save profile changes")
-    console.error("Save error:", err)
-  } finally {
-    setLoading(false)
-    window.location.reload() 
-    window.scrollTo(0, 0) 
+    if (!userData?.id || !isOwner) return
+
+    // Validate form data
+    const { isValid, errors } = validateFormData(formData)
+    
+    if (!isValid) {
+      setError(JSON.stringify(errors))
+      return
+    }
+
+    setLoading(true)
+    try {
+      const updatedData = {
+        firstname: formData.firstname,
+        lastname: formData.lastname,
+        bio: formData.bio,
+        email: formData.email,
+        phonenumber: formData.phonenumber,
+        username: formData.username,
+        field: formData.field,
+        social_links: formData.social_links,
+      }
+
+      const response = await fetchWithAuth(`${BACKEND_URL}/users/profile/${userData.id}/`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        if (response.status === 404) {
+          setNotFound(true)
+          return
+        }
+        setError(JSON.stringify(errorData))
+        throw new Error("Failed to update profile")
+      }
+
+      const updatedProfile = await response.json()
+      setUserData((prev) => {
+        if (!prev) return prev
+        return { ...prev, ...updatedProfile }
+      })
+      setIsEditing(false)
+    } catch (err) {
+      console.error("Save error:", err)
+      if (!error) {
+        setError("Failed to update profile. Please try again.")
+      }
+    } finally {
+      setLoading(false)
+    }
   }
-}
 
   const handleProfilePicChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (!isOwner || !userData?.id || !e.target.files || e.target.files.length === 0) return
@@ -317,16 +387,13 @@ function ResearcherProfilePage() {
     return text.substring(0, maxLength) + "..."
   }
 
-  
   const addSocialLink = () => {
-  
     setSocialLinkError(null)
     if (!newSocialLink) {
       setSocialLinkError({ message: "Please enter a social link" })
       return
     }
 
-    // Check if it's a valid URL
     try {
       new URL(newSocialLink)
     } catch (e) {
@@ -334,7 +401,6 @@ function ResearcherProfilePage() {
       return
     }
 
-    
     const validDomains = ["linkedin.com", "twitter.com", "x.com", "facebook.com"]
     const isValid = validDomains.some((domain) => newSocialLink.includes(domain))
 
@@ -352,7 +418,6 @@ function ResearcherProfilePage() {
       return
     }
 
-    // Add the link if it passes validation
     setFormData((prev) => ({
       ...prev,
       social_links: [...prev.social_links, newSocialLink],
@@ -360,7 +425,6 @@ function ResearcherProfilePage() {
     setNewSocialLink("")
   }
 
-  // Remove social link
   const removeSocialLink = (index: number) => {
     setFormData((prev) => ({
       ...prev,
@@ -368,23 +432,23 @@ function ResearcherProfilePage() {
     }))
   }
 
-  
   const getSocialIcon = (link: string) => {
     if (link.includes("linkedin.com")) {
-      return  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" className="h-5 w-5 text-[#0077B5]">
-        <path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3zM135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5zm282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9V416z"/></svg>
+      return <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" className="h-5 w-5 text-[#0077B5]">
+        <path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3zM135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5zm282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9V416z"/>
+      </svg>
     } else if (link.includes("twitter.com") || link.includes("x.com")) {
       return <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="h-5 w-5 text-[#1DA1F2]">
-    
-        <path d="M389.2 48h70.6L305.6 224.2 487 464H345L233.7 318.6 106.5 464H35.8L200.7 275.5 26.8 48H172.4L272.9 180.9 389.2 48zM364.4 421.8h39.1L151.1 88h-42L364.4 421.8z"/></svg>
+        <path d="M389.2 48h70.6L305.6 224.2 487 464H345L233.7 318.6 106.5 464H35.8L200.7 275.5 26.8 48H172.4L272.9 180.9 389.2 48zM364.4 421.8h39.1L151.1 88h-42L364.4 421.8z"/>
+      </svg>
     } else if (link.includes("facebook.com")) {
       return <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="h-5 w-5 text-[#1877F2]">
-        <path fill="#2653d9" d="M512 256C512 114.6 397.4 0 256 0S0 114.6 0 256C0 376 82.7 476.8 194.2 504.5V334.2H141.4V256h52.8V222.3c0-87.1 39.4-127.5 125-127.5c16.2 0 44.2 3.2 55.7 6.4V172c-6-.6-16.5-1-29.6-1c-42 0-58.2 15.9-58.2 57.2V256h83.6l-14.4 78.2H287V510.1C413.8 494.8 512 386.9 512 256h0z"/></svg>
+        <path fill="#2653d9" d="M512 256C512 114.6 397.4 0 256 0S0 114.6 0 256C0 376 82.7 476.8 194.2 504.5V334.2H141.4V256h52.8V222.3c0-87.1 39.4-127.5 125-127.5c16.2 0 44.2 3.2 55.7 6.4V172c-6-.6-16.5-1-29.6-1c-42 0-58.2 15.9-58.2 57.2V256h83.6l-14.4 78.2H287V510.1C413.8 494.8 512 386.9 512 256h0z"/>
+      </svg>
     }
     return null
   }
 
-  // Handle follow/unfollow
   const handleFollowToggle = async () => {
     if (!userData || !currentUser || isOwner) return
 
@@ -394,10 +458,8 @@ function ResearcherProfilePage() {
       const success = await toggleFollowUser(userData.id, isCurrentlyFollowing)
 
       if (success) {
-  
         setUserData((prev) => {
           if (!prev) return null
-
           return {
             ...prev,
             is_followed: !isCurrentlyFollowing,
@@ -412,8 +474,53 @@ function ResearcherProfilePage() {
     }
   }
 
-  if (loading) return <div className="container mx-auto px-4 py-8">Loading profile...</div>
-  if (error)
+  if (loading && !userData) return <div className="container mx-auto px-4 py-8">Loading profile...</div>
+  if (notfound) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <button
+          onClick={() => window.history.back()}
+          className="flex items-center text-[#f97316] mb-6 hover:underline group transition-all"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="mr-2 group-hover:-translate-x-1 transition-transform"
+          >
+            <path d="m12 19-7-7 7-7" />
+            <path d="M19 12H5" />
+          </svg>
+          go back to the previous page
+        </button>
+        <div className="flex flex-col items-center justify-center py-8">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="80"
+            height="80"
+            viewBox="0 0 24 24"
+            fill="none"
+            className="mb-4 text-[#f97316]"
+          >
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" opacity="0.2" />
+            <path d="M12 7v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <circle cx="12" cy="16" r="1" fill="currentColor" />
+          </svg>
+          <div className="text-xl font-medium">Profile not found</div>
+          <p className="text-gray-500 mt-2 text-center">
+            The profile you&apos;re looking for doesn&apos;t exist or has been removed.
+          </p>
+        </div>
+      </div>
+    )
+  }
+  if (error && !isEditing)
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-center py-8">
@@ -473,7 +580,7 @@ function ResearcherProfilePage() {
           </svg>
           <div className="text-xl font-medium">Profile not found</div>
           <p className="text-gray-500 mt-2 text-center">
-            The profile you&apos;re looking for doesn&apos;t exist or has been removed.
+            The profile you&lsquo;re looking for doesn&apos;t exist or has been removed.
           </p>
         </div>
       </div>
@@ -526,7 +633,7 @@ function ResearcherProfilePage() {
                             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                             <circle cx="12" cy="13" r="4" />
                           </svg>
-                          <input type="file" accept="image/*" data-testid= "camera" className="hidden" onChange={handleProfilePicChange} />
+                          <input type="file" accept="image/*" data-testid="camera" className="hidden" onChange={handleProfilePicChange} />
                         </label>
                       )}
                     </div>
@@ -548,7 +655,7 @@ function ResearcherProfilePage() {
                             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                             <circle cx="12" cy="13" r="4" />
                           </svg>
-                          <input type="file" data-testid= "camera" accept="image/*" className="hidden" onChange={handleProfilePicChange} />
+                          <input type="file" data-testid="camera" accept="image/*" className="hidden" onChange={handleProfilePicChange} />
                         </label>
                       )}
                     </div>
@@ -575,49 +682,64 @@ function ResearcherProfilePage() {
                       Edit Profile
                     </button>
                   ) : isOwner && isEditing ? (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setIsEditing(false)}
-                        className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleSave}
-                        className="px-4 py-2 bg-[#F47521] text-white rounded-md hover:bg-[#E06010] transition-colors flex items-center gap-2"
-                        disabled={loading}
-                      >
-                        {loading ? (
-                          <>
-                            <svg
-                              className="animate-spin h-5 w-5 text-white"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                              />
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z"
-                              />
-                            </svg>
-                            Saving...
-                          </>
-                        ) : (
-                          "Save"
-                        )}
-                      </button>
+                    <div className="flex flex-col gap-4">
+                      {error && (
+                        <div className="p-3 bg-red-100 text-red-700 rounded-md">
+                          {error.includes("{") ? (
+                            Object.entries(JSON.parse(error)).map(([field, errors]) => (
+                              <p key={field}>{field}: {(errors as string[])[0]}</p>
+                            ))
+                          ) : (
+                            <p>{error}</p>
+                          )}
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setIsEditing(false)
+                            setError(null)
+                          }}
+                          className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleSave}
+                          className="px-4 py-2 bg-[#F47521] text-white rounded-md hover:bg-[#E06010] transition-colors flex items-center gap-2"
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <>
+                              <svg
+                                className="animate-spin h-5 w-5 text-white"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                              >
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                />
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z"
+                                />
+                              </svg>
+                              Saving...
+                            </>
+                          ) : (
+                            "Save"
+                          )}
+                        </button>
+                      </div>
                     </div>
                   ) : (
-        
                     !isOwner &&
                     currentUser && (
                       <button
@@ -696,7 +818,6 @@ function ResearcherProfilePage() {
                     </h2>
                     <p className="text-gray-500 dark:text-gray-200">@{userData.username}</p>
                   </div>
-                  {/* Followers and Following */}
                   <div className="flex justify-center gap-6 mt-2">
                     <div className="text-center">
                       <span className="font-semibold">{userData.followers_count || 0}</span>
@@ -788,7 +909,6 @@ function ResearcherProfilePage() {
                       </svg>
                       <span>Joined {formatDate(userData.date_joined)}</span>
                     </div>
-                    {/* Display Social Links with proper icons */}
                     {userData.social_links && userData.social_links.length > 0 && (
                       <div className="space-y-2">
                         {userData.social_links.map((link, index) => (
@@ -897,7 +1017,6 @@ function ResearcherProfilePage() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#F47521]"
                       />
                     </div>
-                    {/* Edit Social Links with improved error handling */}
                     <div className="space-y-2">
                       <label className="block text-sm font-medium text-gray-700">Social Links</label>
                       {formData.social_links.map((link, index) => (
@@ -951,7 +1070,6 @@ function ResearcherProfilePage() {
                               value={newSocialLink}
                               onChange={(e) => {
                                 setNewSocialLink(e.target.value)
-                                
                                 if (socialLinkError) setSocialLinkError(null)
                               }}
                               placeholder="https://linkedin.com/in/username"
@@ -1139,7 +1257,25 @@ function ResearcherProfilePage() {
         </div>
       </div>
 
-    
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-40">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg">
+            <div className="flex items-center gap-3">
+              <svg
+                className="animate-spin h-8 w-8 text-[#F47521]"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z" />
+              </svg>
+              <span className="text-lg">Saving profile...</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {previewImage && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-lg w-full">
