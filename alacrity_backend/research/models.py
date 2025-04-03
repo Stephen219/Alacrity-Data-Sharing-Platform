@@ -64,3 +64,4 @@ class PublishedResearch(models.Model):
 
     def __str__(self):
         return f"Published Research for {self.research_submission.title}"
+

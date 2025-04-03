@@ -31,6 +31,7 @@ import { fetchUserData, fetchWithAuth } from "@/libs/auth"
 import { BACKEND_URL } from "@/config"
 import { withAccessControl } from "@/components/auth_guard/AccessControl"
 import parse from "html-react-parser"
+import { Router } from "lucide-react"
 
 
 type Profile = {
@@ -285,6 +286,27 @@ function ResearcherProfilePage() {
     const clientX = "touches" in e ? e.touches[0].clientX : e.clientX
     setStartX(clientX)
   }
+  const handleChat = async (userId: string) => {
+    try {
+      // Call the StartChatView API to get or create a conversation
+      const response = await fetchWithAuth(`${BACKEND_URL}/users/api/start-chat/${userId}/`);
+      if (!response.ok) {
+        throw new Error(`Failed to start chat: ${response.status} ${response.statusText}`);
+      }
+  
+      const { conversation_id } = await response.json();
+      if (!conversation_id) {
+        throw new Error("No conversation ID returned from the server");
+      }
+  
+      // Navigate to the chat page with the conversation ID
+      await router.push(`/chat/users/message/${conversation_id}`);
+      return true;
+    } catch (error) {
+      console.error("Error starting chat:", error);
+      return false;
+    }
+  };
 
   const handleDragMove = (e: MouseEvent<HTMLDivElement> | TouchEvent<HTMLDivElement>) => {
     if (!isDragging || startX === null) return
@@ -694,6 +716,27 @@ function ResearcherProfilePage() {
                     <h2 className="text-2xl font-bold">
                       {userData.firstname} {userData.lastname}
                     </h2>
+                    {/* Chat Button */}
+                    {!isOwner && currentUser && (
+                        <button
+                          onClick={() => handleChat(userData.id)}
+                          className="p-2 text-[#F47521] hover:text-[#E06010] transition-colors"
+                          title="Chat with this researcher"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-6 w-6"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                          </svg>
+                        </button>
+                      )}
                     <p className="text-gray-500 dark:text-gray-200">@{userData.username}</p>
                   </div>
                   {/* Followers and Following */}

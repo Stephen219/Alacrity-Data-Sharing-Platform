@@ -6,9 +6,13 @@ from users.serializers import UserSerializer
 from django.contrib.auth.hashers import make_password
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.core.exceptions import ValidationError
+from django.utils import timezone
+from datetime import timedelta
 from users.decorators import role_required
 import random
 import string
+from django.db.models import Count
+from django.db import models
 from alacrity_backend.config import FRONTEND_URL
 from django.core.mail import send_mail
 from alacrity_backend.settings import DEFAULT_FROM_EMAIL
@@ -16,21 +20,20 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from django.db import transaction
-from .models import Organization
-from .serializer import OrganizationSerializer
+from .models import Organization , FollowerHistory
+from .serializer import OrganizationSerializer , TopOrganizationSerializer
 from datasets.models import Dataset
 from datasets.serializer import DatasetSerializer
 from rest_framework.parsers import MultiPartParser, FormParser
 from minio import Minio
 from alacrity_backend.settings import MINIO_ACCESS_KEY , MINIO_SECRET_KEY, MINIO_BUCKET_NAME, MINIO_URL, MINIO_SECURE
 import uuid
-
-
-
+from django.db.models import Q
 from dataset_requests.models import DatasetRequest
 from users.models import User
 from users.serializers import UserSerializer
-from datasets.models import Dataset
+from datasets.models import Dataset , ViewHistory
+from django.db.models import F, ExpressionWrapper, DurationField, Sum
 
 minio_client = Minio(
         endpoint=MINIO_URL,
@@ -230,16 +233,6 @@ class RegisterOrganizationView(APIView):
         print(f"Serializer errors: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-
-
-
-
-
-
-
-        
-
-
 
 class OrganizationProfileView(APIView):
     permission_classes = [AllowAny]
@@ -482,3 +475,51 @@ class RequestsProcessedByContributorAndAdminView(APIView):
         except Exception as e:
             print(f"Error: {str(e)}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class TopOrganizationsView(APIView):
+    permission_classes = [AllowAny]  # No authentication required for now
+
+    def get(self, request):
+        # Get top 3 organizations by follower count
+        top_organizations = Organization.objects.annotate(
+            follower_count=Count('following')  # Use 'following', not 'followed_organizations'
+        ).order_by('-follower_count')[:3]
+        
+        serializer = TopOrganizationSerializer(top_organizations, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class TopOrganization(APIView):
+    permission_classes = [IsAuthenticated] # ensures the user is authentiacted
+    @role_required(["organization_admin" , "contributor", "researcher"])
+
+    def get(self, request):
+        user = request.user
+        field = user.field
+        if field:
+            top_organizations = Organization.objects.filter(field=field).annotate(
+                follower_count=Count('following')
+            ).order_by('-follower_count')[:3]
+        else:
+            top_organizations = Organization.objects.annotate(
+                follower_count=Count('following')
+            ).order_by('-follower_count')[:3]
+        serializer = TopOrganizationSerializer(top_organizations, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class TrendingOrganizationsView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        # Define a short period (e.g., last 7 days)
+        time_threshold = timezone.now() - timedelta(days=7)
+        
+        # Organizations with most followers or dataset views in the last 7 days
+        trending_orgs = Organization.objects.annotate(
+            follower_count=models.Count('following'),
+            dataset_views=models.Sum('user__datasets__view_count')
+        ).filter(
+            date_joined__gte=time_threshold
+        ).order_by('-follower_count', '-dataset_views')[:3]
+        
+        serializer = OrganizationSerializer(trending_orgs, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -33,7 +33,7 @@ describe("LandingPage Component", () => {
     // Check that the "About Us" Link exists with the correct href
     const aboutLink = screen.getByRole("link", { name: /About Us/i });
     expect(aboutLink).toBeInTheDocument();
-    expect(aboutLink).toHaveAttribute("href", "#");
+    expect(aboutLink).toHaveAttribute("href", "/about");
 
     // Check that the "Explore Research →" Button is rendered
     const exploreButton = screen.getByRole("button", { name: /Explore Research/i });
@@ -48,6 +48,6 @@ describe("LandingPage Component", () => {
     render(<LandingPage />);
     const exploreButton = screen.getByRole("button", { name: /Explore Research/i });
     fireEvent.click(exploreButton);
-    expect(pushMock).toHaveBeenCalledWith("/researcher/allSubmissions");
+    expect(pushMock).toHaveBeenCalledWith("/feed");
   });
 });

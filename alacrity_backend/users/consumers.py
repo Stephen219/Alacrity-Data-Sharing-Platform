@@ -122,9 +122,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         'timestamp': msg.created_at.isoformat(),
                         'sender_first_name': self.user.first_name,
                         'sender_last_name': self.user.last_name,
-                        'sender_profile_picture': (
-                            self.user.profile_picture.url if hasattr(self.user, 'profile_picture') and self.user.profile_picture else None
-                        ),
+                        'sender_profile_picture': self.user.profile_picture,
                     }
                 }
             )
