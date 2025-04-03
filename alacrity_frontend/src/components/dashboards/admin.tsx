@@ -273,7 +273,7 @@ const AdminDashboard: React.FC = () => {
               <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-700">
                 {limitedPendingDatasets.length > 0 ? (
                   limitedPendingDatasets.map((request) => (
-                    <tr key={request.request_id} className="hover:bg-gray-50" onClick={() => router.push(`/requests/approval/${request.request_id}`)}>
+                    <tr key={request.request_id} className="" onClick={() => router.push(`/requests/approval/${request.request_id}`)}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
@@ -373,7 +373,7 @@ interface MetricCardProps {
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon, change, changeColor }) => (
-  <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg hover:shadow-md transition-shadow">
+  <div className=" overflow-hidden shadow-sm sm:rounded-lg hover:shadow-md transition-shadow">
     <div className="p-6">
       <div className="flex items-center">
         <div className="flex-shrink-0 bg-[#FF6B1A] bg-opacity-10 rounded-md p-3">
