@@ -58,6 +58,9 @@ from dataset_requests.models import DatasetRequest
 from payments.models import DatasetPurchase
 from research.models import AnalysisSubmission, PublishedResearch
 from users.decorators import role_required
+
+from .new import has_access_to_dataset
+
 from .models import Dataset , Feedback ,  ViewHistory
 from organisation.models import FollowerHistory
 from .serializer import DatasetSerializer , randomSerializer
@@ -65,6 +68,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from random import choice
 from datetime import timedelta
 from django.db.models import F, ExpressionWrapper, DurationField, Sum
+
 
 
 from .models import Dataset, DatasetAccessMetrics, Feedback, Chat, Message
@@ -664,16 +668,18 @@ class UserBookmarkedDatasetsView(APIView):
     
 
 class DatasetListView(APIView):
+    """
+    API endpoint to list datasets.
+    """
     def get(self, request):
-        # Get org query parameter
+   # we need to add the the has_access_to_dataset function to check if the user has access to the dataset
         org_id = request.query_params.get("org", None)
-        
-        # Base queryset with select_related for optimization
-        datasets = Dataset.objects.select_related("contributor_id__organization").all()
 
-        # Filter by organization if org_id is provided
+
+
+        datasets = Dataset.objects.select_related("contributor_id__organization").all()
         if org_id:
-            datasets = datasets.filter(contributor_id__organization__Organization_id=org_id)
+            datasets = datasets.filter(contributor_id__organization__Organization_id=org_id, is_active=True, is_deleted=False) 
             if not datasets.exists():
                 return Response(
                     {"detail": f"No datasets found for organization ID {org_id}"},
@@ -681,10 +687,15 @@ class DatasetListView(APIView):
                 )
 
         serializer = DatasetSerializer(datasets, many=True, context={"request": request})
-        return Response({"datasets": serializer.data}, status=status.HTTP_200_OK)
+        response = serializer.data
+       
+        for dataset in response:
+            dataset["has_access"] = has_access_to_dataset(request.user, dataset["dataset_id"])
+
+        return Response({"datasets": response}, status=status.HTTP_200_OK)
 
     def put(self, request):
-        # Restrict to organization admins
+      
         if not request.user.is_authenticated or request.user.role != "organization_admin":
             return Response(
                 {"detail": "Only organization admins can edit datasets"},

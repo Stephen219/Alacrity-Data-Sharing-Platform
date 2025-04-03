@@ -229,7 +229,7 @@ class RegisterOrganizationView(APIView):
                 print(f"Error during save: {str(e)}")
                 import traceback
                 traceback.print_exc()
-                return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'error': "an error occured pleae try again later"}, status=status.HTTP_400_BAD_REQUEST)
         print(f"Serializer errors: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     

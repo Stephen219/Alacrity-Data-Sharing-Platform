@@ -32,6 +32,7 @@ interface Dataset {
   darkMode: boolean;
   averageRating?: number;
   number_of_downloads?: number;
+  has_access?: boolean;
   
 
 }
@@ -164,7 +165,7 @@ const DatasetsPage: React.FC = () => {
         ? bookmarkedDatasets.filter((id) => id !== datasetId)
         : [...bookmarkedDatasets, datasetId];
 
-      setBookmarkedDatasets(optimisticBookmarks); // Optimistic update
+      setBookmarkedDatasets(optimisticBookmarks); 
 
       try {
         const bookmarkResponse = await fetchWithAuth(`${BACKEND_URL}/datasets/${datasetId}/bookmark/`, {
@@ -173,7 +174,7 @@ const DatasetsPage: React.FC = () => {
         if (!bookmarkResponse.ok) throw new Error(`Failed to toggle bookmark: ${bookmarkResponse.status}`);
       } catch (error) {
         console.error("Dataset bookmark error:", error);
-        setBookmarkedDatasets(bookmarkedDatasets); // Revert on failure
+        setBookmarkedDatasets(bookmarkedDatasets); 
         setError("Failed to update bookmark. Please try again.");
       }
     },
@@ -386,7 +387,12 @@ const DatasetsPage: React.FC = () => {
           {paginatedDatasets.length > 0 ? (
             paginatedDatasets.map((dataset) => (
               <div key={dataset.dataset_id} className="relative">
-                <Link href={`/datasets/description?id=${dataset.dataset_id}`} className="block">
+                <Link 
+                // if has acces  the url should be redirected to analyze dataset page
+                // to don  let the user be shown  
+
+                href={dataset.has_access ==true ? `/requests/detail/${dataset.dataset_id}` : `/datasets/description?id=${dataset.dataset_id}`}
+                className="block">
                   <DatasetCard
                     dataset_id={dataset.dataset_id}
                     title={dataset.title}

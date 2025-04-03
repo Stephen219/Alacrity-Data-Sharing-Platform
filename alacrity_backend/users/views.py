@@ -562,6 +562,9 @@ class UserView(APIView):
         data['sur_name'] = sur_name
         data['phone_number'] = phone_number
         serializer = UserSerializer(user, data, partial=True, context={"request": request})
+        print(serializer.is_valid())
+        print(serializer.errors)
+        
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
