@@ -762,11 +762,13 @@ function ResearcherProfilePage() {
                       </div>
                     </div>
                   ) : (
+
+                 
                     !isOwner &&
-                    currentUser && (
+                    currentUser &&  (
                       <button
                         onClick={handleFollowToggle}
-                        disabled={followLoading}
+                        disabled={followLoading || currentUser.role === "organization_admin" || currentUser.role === "contributor"} 
                         className={`px-4 py-2 rounded-md flex items-center gap-2 transition-colors ${
                           userData.is_followed
                             ? "bg-gray-200 text-gray-800 hover:bg-gray-300"
