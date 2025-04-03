@@ -807,7 +807,8 @@ class AllOrganizationMembersViews(APIView):
     def get(self, request):
         user = request.user
         organization = user.organization
-        employees = User.objects.filter(organization=organization).values(
+        employees = User.objects.filter(organization=organization, is_deleted=False
+                                        ).values(
             'id', 'email', 'first_name', 'sur_name', 'phone_number', 'role', 'date_joined', 'date_of_birth', 'profile_picture'
         )
         return JsonResponse(list(employees), safe=False)
@@ -858,7 +859,8 @@ class MemberProfileView(APIView):
         try:
             member = User.objects.get(id=member_id, organization=user.organization)
             is_blocked = request.data.get('is_blocked', False)
-            member.is_active = not is_blocked # TODO: NOT WORKING YET
+            is_blocked = bool(is_blocked)  
+            member.is_active = not is_blocked 
             member.save()
             return JsonResponse({'message': 'Block status updated'}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
@@ -869,7 +871,18 @@ class MemberProfileView(APIView):
         user = request.user
         try:
             member = User.objects.get(id=member_id, organization=user.organization)
-            member.delete()
+            is_deleted = member.is_deleted
+            print (is_deleted)
+            print(is_deleted)
+            if member == user:
+                return JsonResponse({'error': 'You cannot remove yourself'}, status=status.HTTP_400_BAD_REQUEST)
+            # member.delete() have a soft delete field in the user model so i will not delete it but just set the is_deleted field to true
+
+            member.is_deleted = True
+            member.save()
+            print("deleted")
+            print(member.is_deleted)
+
             return JsonResponse({'message': 'Member removed'}, status=status.HTTP_204_NO_CONTENT)
         except User.DoesNotExist:
             return JsonResponse({'error': 'Member not found'}, status=status.HTTP_404_NOT_FOUND)

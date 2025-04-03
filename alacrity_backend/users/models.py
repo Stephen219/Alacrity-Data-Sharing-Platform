@@ -32,6 +32,7 @@ class User(AbstractUser):
     date_of_birth = models.DateField(blank=True, null=True)
     bio = models.TextField(blank=True, null=True)  
     social_links = models.JSONField(blank=True, null=True)
+    is_deleted = models.BooleanField(default=False)
 
 
     # Chose ManyToManyField because it’s simple and gets the job done for basic follow/unfollow functionality. 
