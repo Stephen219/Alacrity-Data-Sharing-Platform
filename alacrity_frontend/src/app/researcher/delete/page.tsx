@@ -87,7 +87,7 @@ const RecentlyDeleted = () => {
       sortOrder={sortOrder}
       setSortOrder={setSortOrder}
       renderButtons={(id) => (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col items-end gap-4">
           {/* Delete AlertDialog */}
           <AlertDialog>
             <AlertDialogTrigger asChild>

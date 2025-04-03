@@ -551,14 +551,14 @@ const AnalyzePage = () => {
 
   if (accessDenied) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-white">
-        <div className="max-w-md p-6 text-center bg-white rounded-lg shadow-lg">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-white dark:bg-card">
+        <div className="max-w-md p-6 text-center bg-white dark:bg-card rounded-lg shadow-lg">
           <Lock size={90} className="mx-auto mb-6" style={{ color: "#f97316" }} strokeWidth={1.5} />
           <h2 className="text-2xl font-bold mb-3" style={{ color: "#f97316" }}>
             Oops! Limited Access
           </h2>
-          <p className="text-gray-700 text-lg mb-4">Sorry, you dont have access to this resource right now.</p>
-          <p className="text-gray-500 mt-3 text-sm">If you think this is a mistake, please contact support.</p>
+          <p className="text-gray-700 dark:text-gray-100 text-lg mb-4">Sorry, you dont have access to this resource right now.</p>
+          <p className="text-gray-500 dark:text-gray-300 mt-3 text-sm">If you think this is a mistake, please contact support.</p>
         </div>
       </div>
     )
@@ -567,17 +567,17 @@ const AnalyzePage = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#fff8f3" }}>
-        <div className="p-6 text-center bg-white rounded-lg shadow-lg">
+        <div className="p-6 text-center bg-white dark:bg-card rounded-lg shadow-lg">
           <div className="animate-spin h-12 w-12 mx-auto mb-4" style={{ color: "#f97316" }}>
             <svg viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-semibold mb-2" style={{ color: "#f97316" }}>
+          <h2 className="text-2xl font-semibold mb-2 dark:text-gray-100" style={{ color: "#f97316" }}>
             Loading Dataset
           </h2>
-          <p className="text-gray-600">Preparing your data...</p>
+          <p className="text-gray-600 dark:text-gray-300">Preparing your data...</p>
         </div>
       </div>
     )
@@ -594,7 +594,7 @@ const AnalyzePage = () => {
   if (!dataset) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#fff8f3" }}>
-        <p className="text-gray-600">No dataset available.</p>
+        <p className="text-gray-600 dark:text-gray-100">No dataset available.</p>
       </div>
     )
   }
@@ -608,12 +608,12 @@ const AnalyzePage = () => {
         </div>
 
         <div className="w-full mb-6">
-          <div className="grid grid-cols-5 gap-1 bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="grid grid-cols-5 gap-1 bg-white dark:bg-card rounded-lg shadow-md overflow-hidden">
             <button
               id="overview-tab"
               onClick={() => setActiveTab("overview")}
               className={`py-3 px-4 text-center font-medium ${
-                activeTab === "overview" ? "bg-orange-500 text-white" : "text-gray-700 hover:bg-orange-100"
+                activeTab === "overview" ? "bg-orange-500 text-white" : "dark:text-gray-100 text-gray-700 hover:bg-orange-100"
               }`}
             >
               Overview
@@ -622,7 +622,7 @@ const AnalyzePage = () => {
               id="analysis-tab"
               onClick={() => setActiveTab("analysis")}
               className={`py-3 px-4 text-center font-medium flex items-center justify-center ${
-                activeTab === "analysis" ? "bg-orange-500 text-white" : "text-gray-700 hover:bg-orange-100"
+                activeTab === "analysis" ? "bg-orange-500 text-white" : "dark:text-gray-100 text-gray-700 hover:bg-orange-100"
               }`}
             >
               <BarChart3 className="mr-2 h-4 w-4" /> Analysis
@@ -631,7 +631,7 @@ const AnalyzePage = () => {
               id="results-tab"
               onClick={() => setActiveTab("results")}
               className={`py-3 px-4 text-center font-medium flex items-center justify-center ${
-                activeTab === "results" ? "bg-orange-500 text-white" : "text-gray-700 hover:bg-orange-100"
+                activeTab === "results" ? "bg-orange-500 text-white" : "dark:text-gray-100 text-gray-700 hover:bg-orange-100"
               }`}
             >
               <ChevronRight className="mr-2 h-4 w-4" /> Results
@@ -640,7 +640,7 @@ const AnalyzePage = () => {
               id="notes-tab"
               onClick={() => setActiveTab("notes")}
               className={`py-3 px-4 text-center font-medium flex items-center justify-center ${
-                activeTab === "notes" ? "bg-orange-500 text-white" : "text-gray-700 hover:bg-orange-100"
+                activeTab === "notes" ? "bg-orange-500 text-white" : "dark:text-gray-100 text-gray-700 hover:bg-orange-100"
               }`}
             >
               <FileText className="mr-2 h-4 w-4" /> Notes
@@ -649,7 +649,7 @@ const AnalyzePage = () => {
               id="submit-tab"
               onClick={() => setActiveTab("submit")}
               className={`py-3 px-4 text-center font-medium flex items-center justify-center ${
-                activeTab === "submit" ? "bg-orange-500 text-white" : "text-gray-700 hover:bg-orange-100"
+                activeTab === "submit" ? "bg-orange-500 text-white" : "dark:text-gray-100 text-gray-700 hover:bg-orange-100"
               }`}
             >
               <Save className="mr-2 h-4 w-4" /> Submit
@@ -658,13 +658,13 @@ const AnalyzePage = () => {
         </div>
 
         {activeTab === "overview" && (
-          <div className="bg-white p-6 rounded-lg shadow-md">
+          <div className="bg-white dark:bg-card p-6 rounded-lg shadow-md">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-semibold" style={{ color: "#f97316" }}>
                 Dataset Overview
               </h2>
               <div className="flex items-center space-x-2" id="data-cleaning-toggle">
-                <span className="text-sm text-gray-600">Raw Data</span>
+                <span className="text-sm text-gray-600 dark:text-gray-300">Raw Data</span>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
@@ -673,11 +673,11 @@ const AnalyzePage = () => {
                     className="sr-only peer"
                     disabled={cleaning || analysisLoading}
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                  <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
                 </label>
-                <span className="text-sm text-gray-600">Clean Data</span>
+                <span className="text-sm text-gray-600 dark:text-gray-300">Clean Data</span>
                 <button
-                  className="ml-2 text-gray-500 hover:text-orange-500 focus:outline-none"
+                  className="ml-2 text-gray-500 dark:text-gray-300 hover:text-orange-500 focus:outline-none"
                   title="Clean data removes duplicates and fills missing values"
                 >
                   <Info size={16} />
@@ -715,14 +715,14 @@ const AnalyzePage = () => {
               <div className="space-y-6">
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div className="p-4 border border-orange-200 rounded-lg bg-white shadow-sm">
-                    <h3 className="text-sm font-medium text-gray-500 mb-1">Total Rows</h3>
+                  <div className="p-4 border border-orange-200 rounded-lg bg-white dark:bg-gray-600 shadow-sm">
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-100 mb-1">Total Rows</h3>
                     <p className="text-2xl font-bold" style={{ color: "#f97316" }}>
                       {dataset.overview.total_rows ?? "N/A"}
                     </p>
                   </div>
-                  <div className="p-4 border border-orange-200 rounded-lg bg-white shadow-sm">
-                    <h3 className="text-sm font-medium text-gray-500 mb-1">Duplicate Rows</h3>
+                  <div className="p-4 border border-orange-200 rounded-lg bg-white dark:bg-gray-600 shadow-sm">
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-100 mb-1">Duplicate Rows</h3>
                     <div className="flex items-center">
                       <p
                         className="text-2xl font-bold"
@@ -733,8 +733,8 @@ const AnalyzePage = () => {
                       {dataset.overview.duplicate_rows > 0 && <AlertTriangle className="h-5 w-5 ml-2 text-red-500" />}
                     </div>
                   </div>
-                  <div className="p-4 border border-orange-200 rounded-lg bg-white shadow-sm">
-                    <h3 className="text-sm font-medium text-gray-500 mb-1">Missing Values</h3>
+                  <div className="p-4 border border-orange-200 rounded-lg bg-white dark:bg-gray-600 shadow-sm">
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-100 mb-1">Missing Values</h3>
                     <div className="flex items-center">
                       <p
                         className="text-2xl font-bold"
@@ -756,7 +756,7 @@ const AnalyzePage = () => {
                 {/* Missing Values Visualization */}
                 <div className="mb-6">
                   <h3 className="text-sm font-medium text-gray-500 mb-2">Missing Values by Column</h3>
-                  <div className="h-8 w-full bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-8 w-full bg-gray-100 dark:bg-gray-600 rounded-full overflow-hidden">
                     {Object.entries(dataset.overview.missing_values).map(([column, count], index) => {
                       const percentage = (count / dataset.overview.total_rows) * 100
                       if (percentage === 0) return null
@@ -793,12 +793,12 @@ const AnalyzePage = () => {
 
                 {/* Numeric Statistics */}
                 <div className="mb-6">
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">Numeric Statistics</h3>
+                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-100 mb-2">Numeric Statistics</h3>
                   {dataset.overview.numeric_stats && Object.keys(dataset.overview.numeric_stats).length > 0 ? (
-                    <div className="overflow-x-auto bg-white border border-orange-200 rounded-lg">
+                    <div className="overflow-x-auto bg-white dark:bg-card border border-orange-200 rounded-lg">
                       <table className="w-full border-collapse">
                         <thead>
-                          <tr className="bg-orange-50">
+                          <tr className="bg-orange-50 dark:bg-orange-500">
                             <th className="border-b border-orange-200 p-2 text-left">Statistic</th>
                             {Object.keys(dataset.overview.numeric_stats).map((col) => (
                               <th key={col} className="border-b border-orange-200 p-2 text-left">
@@ -811,7 +811,7 @@ const AnalyzePage = () => {
                           {Object.keys(
                             dataset.overview.numeric_stats[Object.keys(dataset.overview.numeric_stats)[0]],
                           ).map((stat, idx) => (
-                            <tr key={stat} className={idx % 2 === 0 ? "bg-white" : "bg-orange-50/30"}>
+                            <tr key={stat} className={idx % 2 === 0 ? "bg-white dark:bg-card" : "bg-orange-50/30"}>
                               <td className="border-b border-orange-200 p-2 font-medium">{stat}</td>
                               {Object.entries(dataset.overview.numeric_stats).map(([col, stats]) => (
                                 <td key={`${col}-${stat}`} className="border-b border-orange-200 p-2">
@@ -828,7 +828,7 @@ const AnalyzePage = () => {
                       </table>
                     </div>
                   ) : (
-                    <div className="p-4 bg-gray-50 rounded-lg text-gray-500 text-center">
+                    <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-300 text-center">
                       No numeric statistics available.
                     </div>
                   )}
@@ -836,7 +836,7 @@ const AnalyzePage = () => {
 
                 {/* Categorical Data Visualization */}
                 <div id="categorical-data-section" className="mb-4">
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">Categorical Data Visualization</h3>
+                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-300 mb-2">Categorical Data Visualization</h3>
 
                   {dataset.overview.categorical_stats && Object.keys(dataset.overview.categorical_stats).length > 0 ? (
                     <>
@@ -848,7 +848,7 @@ const AnalyzePage = () => {
                             className={`px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap ${
                               activeCategory === category
                                 ? "bg-orange-500 text-white"
-                                : "bg-white border border-orange-200 text-gray-700 hover:bg-orange-50"
+                                : "bg-white border border-orange-200 text-gray-700 dark:text-gray-300 hover:bg-orange-50"
                             }`}
                           >
                             {category}
@@ -857,11 +857,11 @@ const AnalyzePage = () => {
                       </div>
 
                       {activeCategory && dataset.overview.categorical_stats[activeCategory] && (
-                        <div className="p-4 border border-orange-200 rounded-lg bg-white shadow-sm">
+                        <div className="p-4 border border-orange-200 rounded-lg bg-white dark:bg-card shadow-sm">
                           <div className="flex justify-between items-center mb-4">
                             <div>
                               <h4 className="font-medium capitalize">{activeCategory}</h4>
-                              <div className="text-sm text-gray-500 mt-1">
+                              <div className="text-sm text-gray-500 dark:text-gray-100 mt-1">
                                 <span className="inline-block mr-4">
                                   Unique Values: {Object.keys(dataset.overview.categorical_stats[activeCategory]).length}
                                 </span>
@@ -878,8 +878,8 @@ const AnalyzePage = () => {
                                 onClick={() => setChartType("bar")}
                                 className={`px-2 py-1 rounded-md text-sm flex items-center ${
                                   chartType === "bar"
-                                    ? "bg-orange-100 text-orange-700 border border-orange-300"
-                                    : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                                    ? "bg-orange-100 dark:bg-gray-700 text-orange-700 dark:text-gray-100 border border-orange-300"
+                                    : "bg-white dark:bg-card border border-gray-300 text-gray-700 dark:text-gray-100 hover:bg-gray-50"
                                 }`}
                               >
                                 <BarChart3 className="h-4 w-4 mr-1" />
@@ -889,8 +889,8 @@ const AnalyzePage = () => {
                                 onClick={() => setChartType("pie")}
                                 className={`px-2 py-1 rounded-md text-sm flex items-center ${
                                   chartType === "pie"
-                                    ? "bg-orange-100 text-orange-700 border border-orange-300"
-                                    : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                                    ? "bg-orange-100 text-orange-700 dark:text-gray-300 border border-orange-300"
+                                    : "bg-white dark:bg-card dark:text-gray-100 border border-gray-300 text-gray-700 hover:bg-gray-50"
                                 }`}
                               >
                                 <PieChart className="h-4 w-4 mr-1" />
@@ -906,7 +906,7 @@ const AnalyzePage = () => {
                       )}
                     </>
                   ) : (
-                    <div className="p-4 bg-gray-50 rounded-lg text-gray-500 text-center">
+                    <div className="p-4 bg-gray-50 dark:bg-gray-700 dark:text-gray-200 rounded-lg text-gray-500 text-center">
                       No categorical data available.
                     </div>
                   )}

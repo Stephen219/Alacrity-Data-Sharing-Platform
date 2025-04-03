@@ -144,7 +144,6 @@ const AnalysisList: React.FC = () => {
         const submission = submissions.find((s) => s.id === id);
 
         return (
-          <div className="flex flex-col items-center gap-3">
             
             <SubmissionButtons
   onDelete={() => handleSoftDelete(id)}
@@ -156,7 +155,6 @@ const AnalysisList: React.FC = () => {
 />
 
 
-          </div>
         );
       }}
     />
