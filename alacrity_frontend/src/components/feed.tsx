@@ -135,7 +135,9 @@ export default function SearchPage() {
 
   const handleNavigation = (path: string) => {
     if (!isAuthenticated) {
-      alert("Please sign in to continue.");
+      // Use a more specific message for dataset navigation
+      const isDatasetPath = path.includes('/datasets/description');
+      alert(isDatasetPath ? "Please sign in to view the dataset." : "Please sign in to continue.");
       router.push("/auth/sign-in");
       return false;
     }
@@ -269,7 +271,7 @@ export default function SearchPage() {
         setReports([]);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load data");
+      setError("Failed to load data. Please try again later.");
       setDatasets([]);
       setReports([]);
       setTrendingDatasets([]);
