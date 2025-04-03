@@ -148,11 +148,11 @@ const fetchOrgMembers = async (): Promise<User[] | null> => {
 
       <div className="border rounded-lg overflow-hidden overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="">
             <tr>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium  uppercase tracking-wider"
               >
                 Avatar
               </th>
@@ -188,10 +188,10 @@ const fetchOrgMembers = async (): Promise<User[] | null> => {
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className=" divide-y divide-gray-200">
             {filteredMembers.length > 0 ? (
               filteredMembers.map((member) => (
-                <tr key={member.id} className="hover:bg-gray-50">
+                <tr key={member.id} className="">
                   <td className="px-6 py-4 whitespace-nowrap">
                     {member.profile_picture ? (
                       <img

@@ -238,7 +238,7 @@ const AdminDashboard: React.FC = () => {
           title="Pending Access Requests"
           value={data.pending_requests.toString()}
           icon="📝"
-          change={<Link href="/requests/pending" className="px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f] transition-colors">View All</Link>}
+          change={<Link href="/requests/all" className="px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f] transition-colors">View All</Link>}
           changeColor="text-[#FF6B1A]"
         />
         {user?.role === "organization_admin" && (

@@ -33,7 +33,7 @@ const SignInForm: React.FC = () => {
       }
       window.location.href = "/feed";
     } else {
-      window.location.href = "/auth/sign-in";
+  
       setError(result.error || "An unknown error occurred");
     }
   };
