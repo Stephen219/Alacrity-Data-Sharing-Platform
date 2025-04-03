@@ -37,8 +37,7 @@ urlpatterns = [
     path("top-researchers/", most_followed_users.as_view(), name="most-followed-users"),
     path("top-fielders/", top_researchers.as_view(), name="top-researchers"),
     path("search/", SearchView.as_view(), name="search"),
-    path("trending/",TrendingUsersView.as_view(), name="trending-users")
-
+    path("trending/",TrendingUsersView.as_view(), name="trending-users"),
     path('change-password/', ChangePasswordView.as_view(), name='change-password'),
 
 ]

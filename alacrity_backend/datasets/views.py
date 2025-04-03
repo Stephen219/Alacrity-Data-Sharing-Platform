@@ -58,7 +58,6 @@ from dataset_requests.models import DatasetRequest
 from payments.models import DatasetPurchase
 from research.models import AnalysisSubmission, PublishedResearch
 from users.decorators import role_required
-<<<<<<< alacrity_backend/datasets/views.py
 from .models import Dataset , Feedback ,  ViewHistory
 from organisation.models import FollowerHistory
 from .serializer import DatasetSerializer , randomSerializer
@@ -765,8 +764,6 @@ class FeedbackView(APIView):
         # takes back the comments and the rating of the dataset to a given dataset_id
         # this will be used to give feedback to the dataset
 
-<<<<<<< alacrity_backend/datasets/views.py
-
 class TrendingDatasetsView(APIView):
     permission_classes = [AllowAny]
 
@@ -781,5 +778,3 @@ class TrendingDatasetsView(APIView):
         
         serializer = DatasetSerializer(trending_datasets, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-=======
->>>>>>> alacrity_backend/datasets/views.py
