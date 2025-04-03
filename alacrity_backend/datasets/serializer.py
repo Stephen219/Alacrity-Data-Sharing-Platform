@@ -82,10 +82,11 @@ class ChatSerializer(serializers.ModelSerializer):
 class FeebackSerializer(serializers.ModelSerializer):
     class Meta:
         model = Feedback
-        fields = ['feedback_id', 'user','comment', 'rating','created_at']
+        fields = ['feedback_id', 'user', 'title', 'comment', 'rating','created_at']
 
 class randomSerializer(serializers.ModelSerializer):
     organization_name = serializers.CharField(source='organization_name', read_only=True)
     class Meta:
         model = Dataset
         fields = ['dataset_id', 'title', 'organization_name', 'description', 'link']
+

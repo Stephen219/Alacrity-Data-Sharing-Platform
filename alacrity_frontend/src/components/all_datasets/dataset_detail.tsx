@@ -4,8 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { fetchWithAuth } from "@/libs/auth";
 import { BACKEND_URL } from "@/config";
-import { Star, Send, ArrowLeft, Loader2 } from "lucide-react";
-import Link from "next/link";
+import { Star, Send, X, Loader2 } from "lucide-react";
 
 interface Dataset {
   dataset_id: string;
@@ -18,10 +17,16 @@ interface Comment {
   timestamp: string;
 }
 
-export default function DatasetDetailPage({ params }: { params: { dataset_id: string } }) {
+interface DatasetDetailModalProps {
+  dataset_id: string;
+  onClose: () => void;
+}
+
+export default function DatasetDetailModal({ dataset_id, onClose }: DatasetDetailModalProps) {
   const router = useRouter();
   const [dataset, setDataset] = useState<Dataset | null>(null);
   const [rating, setRating] = useState<number>(0);
+  const [reviewTitle, setReviewTitle] = useState<string>("");
   const [comment, setComment] = useState<string>("");
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -34,7 +39,7 @@ export default function DatasetDetailPage({ params }: { params: { dataset_id: st
       try {
         setLoading(true);
         setError(null);
-        const response = await fetchWithAuth(`${BACKEND_URL}/datasets/${params.dataset_id}/`);
+        const response = await fetchWithAuth(`${BACKEND_URL}/datasets/${dataset_id}/`);
         if (!response.ok) {
           throw new Error(`Failed to fetch dataset details: ${response.status}`);
         }
@@ -49,11 +54,11 @@ export default function DatasetDetailPage({ params }: { params: { dataset_id: st
     };
 
     fetchDatasetDetails();
-  }, [params.dataset_id]);
+  }, [dataset_id]);
 
   const handleFeedbackSubmit = async () => {
-    if (!rating || !comment.trim()) {
-      setSubmissionStatus("Please provide both a rating and a comment.");
+    if (!rating || !reviewTitle.trim() || !comment.trim()) {
+      setSubmissionStatus("Please provide a rating, title and a comment.");
       return;
     }
 
@@ -61,13 +66,14 @@ export default function DatasetDetailPage({ params }: { params: { dataset_id: st
     setSubmissionStatus(null);
 
     try {
-      const response = await fetchWithAuth(`${BACKEND_URL}/datasets/feedback/${params.dataset_id}/`, {
+      const response = await fetchWithAuth(`${BACKEND_URL}/datasets/feedback/${dataset_id}/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           rating: rating,
+          title: reviewTitle.trim(),
           comments: comment.trim(),
         }),
       });
@@ -84,6 +90,12 @@ export default function DatasetDetailPage({ params }: { params: { dataset_id: st
       ]);
       setComment("");
       setRating(0);
+      // Mark that a review has been left and close the modal.
+      localStorage.setItem(`hasReviewed_${dataset_id}`, "true");
+      // wait so the user sees the success message.
+      setTimeout(() => {
+        onClose();
+      }, 1500);
     } catch (error) {
       console.error("Error submitting feedback:", error);
       setSubmissionStatus("Failed to submit feedback. Please try again.");
@@ -101,22 +113,22 @@ export default function DatasetDetailPage({ params }: { params: { dataset_id: st
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-card">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" role="status" />
+      <div className="flex items-center justify-center p-6">
+        <Loader2 className="w-8 h-8 animate-spin text-orange-500" role="status" />
       </div>
     );
   }
 
   if (error || !dataset) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-card">
+      <div className="flex flex-col items-center justify-center p-6">
         <div className="text-center text-gray-600 dark:text-gray-300">
           <p>{error || "Dataset not found."}</p>
           <button
-            onClick={() => router.push("/researcher/datasetWithAccess")}
+            onClick={onClose}
             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
           >
-            Back to Datasets
+            Close
           </button>
         </div>
       </div>
@@ -124,109 +136,126 @@ export default function DatasetDetailPage({ params }: { params: { dataset_id: st
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-card py-12 px-6 md:px-12 lg:px-24 text-gray-900 dark:text-gray-100">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4 md:mb-0 dark:text-gray-200">
-            {dataset.title}
-          </h1>
-          <Link href={`/analyze/${dataset.dataset_id}`}>
-            <button className="px-6 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors font-medium">
-              Analyze Dataset
-            </button>
-          </Link>
-        </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Modal overlay */}
+      <div className="absolute inset-0 bg-black opacity-50" onClick={onClose} />
+      {/* Modal content */}
+      <div className="relative bg-gray-50 dark:bg-gray-800 p-4 sm:p-6 md:p-8 rounded-lg shadow-lg z-10 max-w-3xl mx-auto transform scale-75">
+        {/* Close button */}
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-700 dark:text-gray-300 hover:text-gray-900">
+          <X className="w-6 h-6" />
+          <span className="sr-only">Close modal</span>
+        </button>
 
-        <p className="text-gray-700 mb-8 leading-relaxed dark:text-gray-300">{dataset.description}</p>
-        {/* Divider Line */}
-<div className="border-t border-gray-200 mt-12 pt-6"></div>
-        <section className="mb-12">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-3 dark:text-gray-100">Leave a Review</h2>
-          <div className="mb-4">
-            <h3 className="text-lg font-medium text-gray-700 mb-2 dark:text-gray-100">Rating</h3>
-            <div className="flex gap-2">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  size={32}
-                  data-testid="lucide-star" // Added for testability
-                  className={`cursor-pointer transition-colors ${
-                    star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
-                  }`}
-                  onClick={() => setRating(star)}
-                />
-              ))}
+        <div className="space-y-8">
+          {/* Dataset Header */}
+          <div>
+            <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100 tracking-tight text-center">
+              Add a Review for:
+            </h1>
+            <h2 className="text-md font-bold text-gray-800 dark:text-gray-100 tracking-tight">{dataset.title}</h2>
+            <div className="max-h-20 overflow-x-auto">
+                <p className="text-sm text-gray-700 leading-relaxed dark:text-gray-300 tracking-tight break-words">
+                    {dataset.description}
+                  </p>
+  </div>
+          </div>
+
+
+          {/* Review Form */}
+          <section className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                Rating
+              </label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    size={32}
+                    data-testid="lucide-star"
+                    className={`cursor-pointer transition-colors ${
+                      star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+                    }`}
+                    onClick={() => setRating(star)}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div className="flex flex-col gap-4">
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Write your review here..."
-              className="w-full p-4 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 resize-none"
-              rows={4}
-            />
-            <button
-              onClick={handleFeedbackSubmit}
-              disabled={submitting || !rating || !comment.trim()}
-              className={`self-start px-6 py-2 flex items-center gap-2 rounded-md transition-colors ${
-                submitting || !rating || !comment.trim()
-                  ? "bg-gray-300 text-gray-500 300 dark:bg-gray-700 dark:text-gray-400 cursor-not-allowed"
-                  : "bg-blue-500 text-white hover:bg-blue-600"
-              }`}
-            >
-              {submitting ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Send className="w-5 h-5" />
-              )}
-              Submit
-            </button>
-          </div>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                Review Title
+              </label>
+              <input type="text" name="title" id="title" value={reviewTitle} onChange={(e) => setReviewTitle(e.target.value)} placeholder="Write your title here..." className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-primary-600 focus:ring-primary-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-primary-500 dark:focus:ring-primary-500" />
+            </div>
 
-          {submissionStatus && (
-            <p
-              className={`mt-2 text-sm ${
-                submissionStatus.includes("success") ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              {submissionStatus}
-            </p>
-          )}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
+                Your Review
+              </label>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Write your review here..."
+                className="w-full p-2.5 border border-gray-300 bg-gray-50 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400 resize-none"
+                rows={4}
+              />
+              <p className="ms-auto text-sm text-gray-500 dark:text-gray-300">Problems with the dataset? <button onClick={() => router.push(`/chat/${dataset.dataset_id}`)} className="text-alacrityred hover:underline dark:text-alacrityred">Send a report</button>.</p>
+            </div>
 
+            <div className="flex justify-end">
+              <button
+                onClick={handleFeedbackSubmit}
+                disabled={submitting || !rating || !reviewTitle.trim() || !comment.trim()}
+                className={`inline-flex items-center rounded-lg px-5 py-2.5 text-sm font-medium transition-colors ${
+                  submitting || !rating || !reviewTitle.trim() || !comment.trim()
+                    ? "bg-gray-300 text-gray-500 dark:bg-gray-700 dark:text-gray-400 cursor-not-allowed"
+                    : "bg-primary text-white hover:bg-orange-400 focus:outline-none focus:ring-4 focus:ring-primary dark:bg-primary dark:hover:bg-orange-400 dark:focus:ring-primary"
+                }`}
+              >
+                {submitting ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Send className="w-5 h-5" />
+                )}
+                <span className="ml-2">Submit</span>
+              </button>
+            </div>
+
+            {submissionStatus && (
+              <p
+                className={`mt-3 text-sm ${
+                  submissionStatus.toLowerCase().includes("success")
+                    ? "text-green-600"
+                    : "text-red-600"
+                }`}
+              >
+                {submissionStatus}
+              </p>
+            )}
+          </section>
+
+          {/* Reviews List */}
           {comments.length > 0 && (
-            <div className="mt-6 space-y-4">
-              <h3 className="text-lg font-medium text-gray-700">Your Reviews</h3>
-              {comments.map((c, index) => (
-                <div
-                  key={index}
-                  className="bg-gray-50 dark:bg-card dark:border-gray-700 p-4 rounded-md shadow-sm border border-gray-200 flex justify-between items-start"
-                >
-                  <p className="text-gray-800">{c.text}</p>
-                  <span className="text-xs text-gray-500 ml-4 dark:text-gray-300">{c.timestamp}</span>
-                </div>
-              ))}
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Your Reviews</h3>
+              <div className="space-y-4">
+                {comments.map((c, index) => (
+                  <div
+                    key={index}
+                    className="flex justify-between items-start border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800"
+                  >
+                    <p className="text-gray-800 dark:text-gray-100">{c.text}</p>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{c.timestamp}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
-        </section>
-      </div>
 
-      <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between gap-4 mt-12">
-        <button
-          onClick={() => router.push("/researcher/datasetWithAccess")}
-          className="px-6 py-3 bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 rounded-md hover:bg-gray-300 transition-colors flex items-center gap-2"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          Back to Datasets
-        </button>
-        <button
-          onClick={() => router.push(`/chat/${dataset.dataset_id}`)}
-          className="px-6 py-3 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
-        >
-          Raise an Issue
-        </button>
+        </div>
       </div>
     </div>
   );
