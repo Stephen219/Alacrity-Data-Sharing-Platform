@@ -153,7 +153,7 @@ describe("TextEditorToolbar Component", () => {
 
   test("clicking exit table button calls editor insertContentAt", async () => {
     render(<TextEditorToolbar editor={mockEditor} />);
-    const exitTableButton = screen.getByTestId("Exit Table");
+    const exitTableButton = screen.getByTestId("Break Line");
 
     await act(async () => {
       fireEvent.click(exitTableButton);

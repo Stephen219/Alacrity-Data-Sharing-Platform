@@ -22,6 +22,7 @@ from notifications.models import Notification
 from users.models import User
 from rest_framework import status
 from django.utils.html import strip_tags
+from rest_framework.parsers import MultiPartParser, FormParser
 
 
 class HTMLStripper(HTMLParser):
@@ -40,8 +41,34 @@ def strip_html(html):
     stripper.feed(html)
     return stripper.get_text()
 
+class UploadImageView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        """
+        Receives a file in request.FILES named 'file', saves it, and returns the absolute URL.
+        Used by the Tiptap toolbar's image upload button.
+        """
+        if 'file' not in request.FILES:
+            return Response({"error": "No file provided"}, status=400)
+
+        image_file = request.FILES['file']
+
+        submission = AnalysisSubmission.objects.create(
+            researcher=request.user,
+            image=image_file,
+            title="Temp image submission"
+        )
+
+        # Build the full URL
+        image_url = request.build_absolute_uri(submission.image.url)
+
+        return Response({"url": image_url}, status=200)
+
 class SaveSubmissionView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
     @role_required(['contributor', 'organization_admin', 'researcher'])
     def post(self, request):
         """
@@ -74,6 +101,7 @@ class SaveSubmissionView(APIView):
             submission.raw_results = data.get("rawResults", submission.raw_results)
             submission.summary = data.get("summary", submission.summary)
             submission.status = data.get("status", submission.status)
+            
 
             if dataset_id:
                 dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
@@ -401,6 +429,7 @@ class EditSubmissionView(APIView):
             submission.raw_results = data.get("raw_results", submission.raw_results)
             submission.summary = data.get("summary", submission.summary)
             submission.status = data.get("status", submission.status)
+            
 
             # Validates before publishing
             if submission.status == "published":
