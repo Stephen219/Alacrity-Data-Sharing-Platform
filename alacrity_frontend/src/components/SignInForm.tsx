@@ -29,7 +29,7 @@ const SignInForm: React.FC = () => {
 
     if (result.success) {
 
-      window.location.href = "/dashboard";
+      window.location.href = "/feed";
 
     } else {
       setError(result.error || "An unknown error occurred");

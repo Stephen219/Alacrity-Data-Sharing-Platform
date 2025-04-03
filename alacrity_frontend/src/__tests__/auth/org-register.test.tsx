@@ -35,12 +35,12 @@ describe('AddOrganizationForm', () => {
   it('renders the form correctly', () => {
     render(<AddOrganizationForm />);
 
-    
     expect(screen.getByLabelText('Name')).toBeInTheDocument();
     expect(screen.getByLabelText('Description')).toBeInTheDocument();
     expect(screen.getByLabelText('Organization Email')).toBeInTheDocument();
     expect(screen.getByLabelText('Phone')).toBeInTheDocument();
     expect(screen.getByLabelText('Address')).toBeInTheDocument();
+    expect(screen.getByLabelText('Field of Data')).toBeInTheDocument(); // Added
     expect(screen.getByLabelText('First Name')).toBeInTheDocument();
     expect(screen.getByLabelText('Last Name')).toBeInTheDocument();
     expect(screen.getByLabelText('Admin Email')).toBeInTheDocument();
@@ -56,6 +56,10 @@ describe('AddOrganizationForm', () => {
     const nameInput = screen.getByLabelText('Name') as HTMLInputElement;
     fireEvent.change(nameInput, { target: { value: 'Test Org' } });
     expect(nameInput.value).toBe('Test Org');
+
+    const fieldInput = screen.getByLabelText('Field of Data') as HTMLInputElement; // Added
+    fireEvent.change(fieldInput, { target: { value: 'Technology' } });
+    expect(fieldInput.value).toBe('Technology');
 
     const adminEmailInput = screen.getByLabelText('Admin Email') as HTMLInputElement;
     fireEvent.change(adminEmailInput, { target: { value: 'admin@test.com' } });
@@ -76,8 +80,6 @@ describe('AddOrganizationForm', () => {
     });
   });
 
- 
-
   it('handles successful form submission', async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
@@ -91,6 +93,7 @@ describe('AddOrganizationForm', () => {
     fireEvent.change(screen.getByLabelText('Organization Email'), { target: { value: 'org@test.com' } });
     fireEvent.change(screen.getByLabelText('Phone'), { target: { value: '+1234567890' } });
     fireEvent.change(screen.getByLabelText('Address'), { target: { value: '123 Test St' } });
+    fireEvent.change(screen.getByLabelText('Field of Data'), { target: { value: 'Technology' } }); // Added
     fireEvent.change(screen.getByLabelText('First Name'), { target: { value: 'John' } });
     fireEvent.change(screen.getByLabelText('Last Name'), { target: { value: 'Doe' } });
     fireEvent.change(screen.getByLabelText('Admin Email'), { target: { value: 'admin@test.com' } });
@@ -104,7 +107,7 @@ describe('AddOrganizationForm', () => {
     await waitFor(() => {
       expect(screen.getByText('Organization Registered Successfully!')).toBeInTheDocument();
       expect(global.fetch).toHaveBeenCalledWith(
-        'http://localhost:8000/organisation/register-org/', // Changed to match received URL
+        'http://localhost:8000/organisation/register-org/',
         expect.objectContaining({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -114,6 +117,7 @@ describe('AddOrganizationForm', () => {
             email: 'org@test.com',
             phone: '+1234567890',
             address: '123 Test St',
+            field: 'Technology', // Added to match frontend
             admin: {
               first_name: 'John',
               sur_name: 'Doe',

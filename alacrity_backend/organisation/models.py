@@ -5,8 +5,7 @@ from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth import get_user_model
-
-
+from users.models import User
 def generate_id():
     return generate(size=10)
 
@@ -35,6 +34,7 @@ class Organization(models.Model):
     )
     date_joined = models.DateTimeField(auto_now_add=True, editable=False, null=True)
     social_links = models.JSONField(blank=True, null=True)
+    field = models.CharField(max_length=100,blank=True, null=True)
     following = models.ManyToManyField(
         get_user_model(),
         symmetrical=False,
@@ -49,3 +49,8 @@ class Organization(models.Model):
         return self.name
 
 #
+class FollowerHistory(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
+    previous_count = models.IntegerField()
+    timestamp = models.DateTimeField(auto_now_add=True)
