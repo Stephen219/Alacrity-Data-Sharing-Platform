@@ -8,7 +8,7 @@ get_datasets, get_filter_options, CreateDatasetView, DatasetListView, get_datase
  pre_analysis)
 from .metric import DatasetMetricsView, DatasetAnalyticsCardView
 
-from .new import analyze_dataset , dataset_detail, all_datasets_view, clear_dataset_cache, dataset_view, download_dataset, RandomDatasets , SuggestedDatasets, all_suggested_datasets
+from .new import analyze_dataset , dataset_detail, all_datasets_view, clear_dataset_cache, dataset_view, download_dataset, RandomDatasets , SuggestedDatasets, AllSuggestedDatasets
 from .chat_view import ChatListView, SendMessageView, MessageListView,DatasetDetailView
 
 urlpatterns = [
@@ -41,7 +41,7 @@ urlpatterns = [
 
     path('random/datasets/', RandomDatasets.as_view(), name='random-datasets'),
     path('suggested/datasets/', SuggestedDatasets.as_view(), name='suggested-datasets'),
-    path('get_datasets/all', all_suggested_datasets.as_view(), name='get_datasets'),
+    path('get_datasets/all', AllSuggestedDatasets.as_view(), name='get_datasets'),
     path('trending/datasets/', TrendingDatasetsView.as_view(), name='trending-datasets'),
 
 

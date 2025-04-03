@@ -9,7 +9,6 @@ import { useRouter } from "next/navigation";
 import { fetchUserData } from "@/libs/auth";
 import debounce from "lodash/debounce";
 
-// Type definitions remain unchanged
 interface Researcher {
   id: string;
   first_name: string;
@@ -67,7 +66,6 @@ interface SearchResults {
 }
 
 export default function SearchPage() {
-  // State declarations
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<SearchResults | null>(null);
@@ -95,14 +93,12 @@ export default function SearchPage() {
 
   const router = useRouter();
 
-  // Utility functions
   const capitalize = (str: string): string => 
     str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : "";
 
   const getCategories = (datasetList: Dataset[]) => 
     Array.from(new Set(datasetList.map((d) => d.category))).sort();
 
-  // Memoized categories
   const homeCategories = useMemo(() => 
     getCategories(isAuthenticated ? datasets : randomDatasets), 
     [isAuthenticated, datasets, randomDatasets]
@@ -120,7 +116,6 @@ export default function SearchPage() {
     [selectedCategory, isTrending, trendingDatasets, datasets]
   );
 
-  // Event handlers
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchQuery(value);
@@ -135,9 +130,6 @@ export default function SearchPage() {
 
   const handleNavigation = (path: string) => {
     if (!isAuthenticated) {
-      // Use a more specific message for dataset navigation
-      const isDatasetPath = path.includes('/datasets/description');
-      alert(isDatasetPath ? "Please sign in to view the dataset." : "Please sign in to continue.");
       router.push("/auth/sign-in");
       return false;
     }
@@ -159,7 +151,6 @@ export default function SearchPage() {
     else if ("research_submission" in item) handleNavigation(`/researcher/allsubmissions/view/${item.research_submission.id}`);
   };
 
-  // API calls
   const fetchSuggestions = useCallback(
     debounce((query: string) => {
       if (!isAuthenticated || !query.trim()) {
@@ -169,7 +160,6 @@ export default function SearchPage() {
 
       const token = localStorage.getItem("access_token");
       if (!token) {
-        alert("Please sign in again.");
         router.push("/auth/sign-in");
         return;
       }
@@ -286,7 +276,6 @@ export default function SearchPage() {
     }
   }, [isAuthenticated, userRole]);
 
-  // Component logic
   useEffect(() => {
     const initialize = async () => {
       const userData = await fetchUserData();
@@ -301,7 +290,6 @@ export default function SearchPage() {
     setExpandedSection(expandedSection === section ? null : section);
   };
 
-  // Component definitions
   const Card = <T,>({
     item,
     renderContent,
@@ -411,7 +399,6 @@ export default function SearchPage() {
     />
   );
 
-  // Section component with consistent behavior
   const Section = <T,>({
     title,
     items,
@@ -473,7 +460,6 @@ export default function SearchPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {expandedSection ? (
-        // Render only the expanded section
         <>
           {expandedSection === "trendingDatasets" && (
             <Section
@@ -517,7 +503,6 @@ export default function SearchPage() {
           )}
         </>
       ) : (
-        // Normal layout with header, nav, main, and aside
         <div className="flex flex-col lg:flex-row flex-1 px-4 sm:px-6 lg:px-8 py-6 gap-6">
           <main className="flex-1 w-full max-w-full lg:max-w-3xl bg-white shadow-md rounded-lg">
             <header className="w-full bg-white shadow-md flex justify-center p-4 sticky top-0 z-10">
