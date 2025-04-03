@@ -32,7 +32,7 @@ const SubmissionButtons = ({
   onToggle,
 }: SubmissionButtonsProps) => {
   return (
-    <div className="flex flex-col items-center gap-4 space-y-8">
+    <div className="flex flex-col items-end gap-4">
       {/* Optional Toggle Switch */}
       {showToggle && onToggle && (
         <div className="flex items-center gap-2">
