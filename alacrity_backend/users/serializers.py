@@ -178,7 +178,12 @@ class UserSerializer(serializers.ModelSerializer):
             ret["organization"] = None
         ret.pop("organization_name", None)
         return ret
-    
+
+class TopResearcherSerializer(serializers.ModelSerializer):
+    followers_count = serializers.IntegerField(read_only=True)
+    class Meta:
+        model = User
+        fields = ['id','first_name', 'sur_name', 'username', 'profile_picture' , 'field', 'followers_count']
 
 class MessageSerializer(serializers.ModelSerializer):
     message_id = serializers.CharField(source='id')

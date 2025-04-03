@@ -8,12 +8,15 @@ from django.middleware.csrf import get_token
 from django.contrib.auth import authenticate, get_user_model
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django.db import models
+from django.db.models import F, ExpressionWrapper, DurationField
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.db.models import Sum
 from django.contrib.auth.models import User
 from django.db import transaction
 from rest_framework.permissions import AllowAny
 from rest_framework import status
-from .serializers import UserSerializer
+from .serializers import UserSerializer , TopResearcherSerializer
 from django.utils import timezone
 from dataset_requests.models import DatasetRequest
 from research.models import AnalysisSubmission
@@ -23,7 +26,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .decorators import role_required
-from datasets.models import Dataset
+from datasets.models import Dataset , ViewHistory
 from payments.models import DatasetPurchase
 from django.db.models import Q
 from django.db.models.functions import TruncMonth
@@ -46,6 +49,9 @@ from minio import Minio, S3Error
 from rest_framework import status
 from  notifications.models import Notification
 
+from datasets.serializer import DatasetSerializer
+from organisation.serializer import OrganizationSerializer
+from organisation.models import Organization 
 
 
 
@@ -976,12 +982,99 @@ class DatasetWithAccessView(APIView):
         return JsonResponse(response.data, safe=False)
     
 
-
+class UserSearchView(APIView):
+    permission_classes = [IsAuthenticated]
+    @role_required(["organization_admin" , "contributor", "researcher"])
+    def get(self, request):
+        user = request.user
+        query = request.GET.get('query', '')
+        if not query:
+            return JsonResponse([], safe=False)
+        users = User.objects.filter(
+            Q(first_name__icontains=query) | Q(sur_name__icontains=query),
+            organization=user.organization
+        ).values(
+            'id', 'email', 'first_name', 'sur_name', 'phone_number', 'role', 'date_joined', 'date_of_birth', 'profile_picture'
+        )
+        return JsonResponse(list(users), safe=False)
     
 
+class most_followed_users(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request):
+        user = request.user
+        users = User.objects.filter(role='researcher').annotate(
+            followers_count=Count('followers')
+        ).order_by('-followers_count')[:3]
+        serializer = TopResearcherSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
+class top_researchers(APIView):
+    permission_classes = [IsAuthenticated]
+    @role_required(["organization_admin" , "contributor", "researcher"])
+    def get(self, request):
+        user = request.user
+        field = user.field  # Assuming 'field' is a field on your User model
+        if not field:
+            return Response({"error": "User has no field specified"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Fetch top researchers in the same field
+        users = User.objects.filter(role='researcher', field=field).annotate(
+            followers_count=Count('followers')
+        ).order_by('-followers_count')[:3]
+        
+        serializer = TopResearcherSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
 
+class SearchView(APIView):
+    permission_classes = [IsAuthenticated] # ensures the user is authentiacted
 
+    @role_required(["organization_admin" , "contributor", "researcher"])
+    def get(self, request):
+        query = request.query_params.get('q' , '').strip()
+        if not query:
+            return Response({"error": "Search query is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+        # searching for datasets 
+        datasets = Dataset.objects.filter(
+            Q(title__icontains=query) | Q(description__icontains=query) | Q(tags__icontains=query))
+        dataset_serializer = DatasetSerializer(datasets, many=True, context={'request': request})
+
+        # searching for organizations
+        organizations = Organization.objects.filter(
+            Q(name__icontains=query) | Q(description__icontains=query)) 
+        organization_serializer = OrganizationSerializer(organizations, many=True, context={'request': request})
+
+        # searching for users
+        users = User.objects.filter(
+            Q(first_name__icontains=query) | Q(sur_name__icontains=query) | Q(email__icontains=query), role='researcher')
+        user_serializer = UserSerializer(users, many=True, context={'request': request})
+
+        return Response({
+            "datasets": dataset_serializer.data,
+            "organizations": organization_serializer.data,
+            "users": user_serializer.data
+        }, status=status.HTTP_200_OK)
+
+class TrendingUsersView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        # Define a short period (e.g., last 7 days)
+        time_threshold = timezone.now() - timedelta(days=7)
+        
+        # Filter researchers joined in the last 7 days and order by follower count
+        trending_users = User.objects.filter(
+            date_joined__gte=time_threshold,
+            role='researcher'  # Only researchers
+        ).annotate(
+            follower_count=models.Count('followers')
+        ).order_by('-follower_count')[:3]
+        
+        serializer = UserSerializer(trending_users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
     

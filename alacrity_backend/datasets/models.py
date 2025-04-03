@@ -92,6 +92,12 @@ class Feedback(models.Model):
     
 
 
+
+class ViewHistory(models.Model):
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
+    view_count = models.IntegerField(default=1)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
 class DatasetAccessMetrics(models.Model):
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name='access_metrics')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='dataset_access_metrics')
@@ -108,3 +114,4 @@ class DatasetAccessMetrics(models.Model):
 
     def __str__(self):
         return f"{self.action} by {self.user} on {self.dataset.title} at {self.access_time}"
+

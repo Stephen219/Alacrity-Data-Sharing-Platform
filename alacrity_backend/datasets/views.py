@@ -6,8 +6,13 @@ import re
 import tempfile
 import threading
 import uuid
+
+from datetime import datetime
+from django.utils import timezone
+
 from datetime import datetime, timedelta
 from typing import Any, Dict, List
+
 from urllib.parse import urlparse
 
 import boto3
@@ -53,9 +58,18 @@ from dataset_requests.models import DatasetRequest
 from payments.models import DatasetPurchase
 from research.models import AnalysisSubmission, PublishedResearch
 from users.decorators import role_required
+from .models import Dataset , Feedback ,  ViewHistory
+from organisation.models import FollowerHistory
+from .serializer import DatasetSerializer , randomSerializer
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from random import choice
+from datetime import timedelta
+from django.db.models import F, ExpressionWrapper, DurationField, Sum
+
 
 from .models import Dataset, DatasetAccessMetrics, Feedback, Chat, Message
 from .serializer import DatasetSerializer
+
 
 # from django.http import JsonResponse
 
@@ -750,3 +764,17 @@ class FeedbackView(APIView):
         # takes back the comments and the rating of the dataset to a given dataset_id
         # this will be used to give feedback to the dataset
 
+class TrendingDatasetsView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        # Define a short period (e.g., last 7 days)
+        time_threshold = timezone.now() - timedelta(days=7)
+        
+        # Datasets with most views in the last 7 days since creation
+        trending_datasets = Dataset.objects.filter(
+            created_at__gte=time_threshold ,is_active=True
+        ).order_by('-view_count')
+        
+        serializer = DatasetSerializer(trending_datasets, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -1,0 +1,2 @@
+output "server1" { value = "frontend Server : ssh -i cloud.key rocky@${openstack_networking_floatingip_v2.floating_ip_1.address}" }
+output "server2" { value = "backend Server : ssh -i cloud.key rocky@${openstack_networking_floatingip_v2.floating_ip_2.address}" }
