@@ -138,7 +138,7 @@ export default function SignUp() {
            Have an account? Sign in
           </Link> 
           <Link href="/auth/sign-up/org-sign-up" className="text-[#f97316] text-sm text-center">
-           Sign in as an organization?
+           Sign up as an organization?
           </Link> 
           
 
