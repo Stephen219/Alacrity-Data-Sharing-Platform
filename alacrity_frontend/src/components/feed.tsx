@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, ChangeEvent, useEffect, useCallback, useMemo } from "react";
+import React, { useState, ChangeEvent, useEffect, useCallback, useMemo,JSX } from "react";
 import { Search, TrendingUp } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { BACKEND_URL } from "@/config";
@@ -65,7 +65,7 @@ interface SearchResults {
   reports?: PublishedResearch[];
 }
 
-export default function SearchPage() {
+export default function Feed() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<SearchResults | null>(null);
@@ -260,7 +260,7 @@ export default function SearchPage() {
         setDatasets(randomData);
         setReports([]);
       }
-    } catch (err) {
+    } catch {
       setError("Failed to load data. Please try again later.");
       setDatasets([]);
       setReports([]);
