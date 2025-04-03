@@ -21,7 +21,7 @@ from django.conf.urls.static import static
 from .views import health_check
 
 
-urlpatterns = [
+url = [
     path("health/", health_check, name="health_check"),
     path('admin/', admin.site.urls),
     path('datasets/', include('datasets.urls')),
@@ -35,9 +35,9 @@ urlpatterns = [
 ]
 
 
-# urlpatterns = [
-#     path("api/", include(url)),
-# ]
+urlpatterns = [
+    path("api/", include(url)),
+]
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
