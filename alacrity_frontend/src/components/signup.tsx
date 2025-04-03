@@ -136,7 +136,13 @@ export default function SignUp() {
           <div className="flex flex-col space-y-2">
           <Link href="/auth/sign-in/" className="text-[#f97316] text-sm text-center">
            Have an account? Sign in
-          </Link> </div>
+          </Link> 
+          <Link href="/auth/sign-up/org-sign-up" className="text-[#f97316] text-sm text-center">
+           Sign in as an organization?
+          </Link> 
+          
+
+          </div>
         </div>
         <form className="space-y-6" onSubmit={handleFormSubmit} noValidate>
           <div className="grid grid-cols-2 gap-4">

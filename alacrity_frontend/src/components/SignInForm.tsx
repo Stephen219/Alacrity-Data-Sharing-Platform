@@ -28,10 +28,12 @@ const SignInForm: React.FC = () => {
 
 
     if (result.success) {
-
+      if (result.user?.role === "organization_admin" || result.user?.role === "contributor") {
+        window.location.href = "/admin/dashboard";
+      }
       window.location.href = "/feed";
-
     } else {
+      window.location.href = "/auth/sign-in";
       setError(result.error || "An unknown error occurred");
     }
   };

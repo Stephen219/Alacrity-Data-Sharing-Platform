@@ -23,7 +23,7 @@ pipeline {
             steps {
                 script {
                     sh 'docker-compose down -v --remove-orphans || true'
-                    sh 'docker system prune -a --volumes -f || true'
+                    // sh 'docker system prune -a --volumes -f || true'
                     sh 'docker stop deploywith_docker-backend-1 || true'
                     sh 'docker rm deploywith_docker-backend-1 || true'
 

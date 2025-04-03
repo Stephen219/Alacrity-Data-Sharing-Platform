@@ -29,7 +29,7 @@ export async function login(email: string, password: string, remember_me: boolea
     }
   } catch (error) {
     console.error("Login failed", error);
-    return { success: false, error: "Network error" };
+    return { success: false, error: "Network error.Please try again" };
   }
 }
 

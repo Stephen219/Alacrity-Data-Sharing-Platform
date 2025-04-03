@@ -113,7 +113,7 @@ services:
       migration:
         condition: service_completed_successfully
     volumes:
-      - /storage1:/storage1  # Mount /storage1 as a volume to the container
+      - /storage1:/storage1  
     networks:
       - app-network
 
