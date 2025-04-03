@@ -629,12 +629,12 @@ export default function SearchPage() {
           ) : (
             <>
               <div className="mb-6 sm:mb-8">
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Who to Follow (Researchers)</h2>
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Researchers to Follow</h2>
                 {researchers.length ? (
                   <ul className="space-y-4">
                     {researchers.map((researcher) => (
                       <Link href={`/researcher/profile/${researcher.id}`} key={researcher.username}>
-                        <li className="flex items-center gap-3 text-gray-700 hover:text-orange-600 cursor-pointer">
+                        <li className="flex items-center gap-3 text-gray-700 hover:text-orange-600 cursor-pointer space-y-3">
                           {researcher.profile_picture ? (
                             <img src={researcher.profile_picture} alt={`${researcher.first_name} ${researcher.sur_name}`} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover" />
                           ) : (
@@ -655,16 +655,16 @@ export default function SearchPage() {
                 )}
               </div>
               <div className="mb-6 sm:mb-8">
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Who to Follow (Organizations)</h2>
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Researchers to Follow</h2>
                 {organizations.length ? (
                   <ul className="space-y-4">
                     {organizations.map((organization) => (
                       <Link href={`/organisation/profile/${organization.Organization_id}`} key={organization.email}>
-                        <li className="flex items-center gap-3 text-gray-700 hover:text-orange-600 cursor-pointer">
+                        <li className="flex items-center gap-3 text-gray-700 hover:text-orange-600 cursor-pointer p-1">
                           {organization.profile_picture ? (
                             <img src={organization.profile_picture} alt={organization.name} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover" />
                           ) : (
-                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-300 flex items-center justify-center text-white text-lg sm:text-xl">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-300 flex items-center justify-center  text-white text-lg sm:text-xl">
                               {capitalize(organization.name)[0]}
                             </div>
                           )}

@@ -674,9 +674,6 @@ class DatasetListView(APIView):
     def get(self, request):
    # we need to add the the has_access_to_dataset function to check if the user has access to the dataset
         org_id = request.query_params.get("org", None)
-
-
-
         datasets = Dataset.objects.select_related("contributor_id__organization").all()
         if org_id:
             datasets = datasets.filter(contributor_id__organization__Organization_id=org_id, is_active=True, is_deleted=False) 
@@ -688,6 +685,14 @@ class DatasetListView(APIView):
 
         serializer = DatasetSerializer(datasets, many=True, context={"request": request})
         response = serializer.data
+
+        # we need to also append the org id to the dataset
+    
+
+        
+
+            
+         
        
         for dataset in response:
             dataset["has_access"] = has_access_to_dataset(request.user, dataset["dataset_id"])

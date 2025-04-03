@@ -2,6 +2,7 @@
 from rest_framework import serializers
 from .models import Dataset , Chat, Message , Feedback
 from payments.models import DatasetPurchase
+from django.core.exceptions import ObjectDoesNotExist
 
 class DatasetSerializer(serializers.ModelSerializer):
     contributor_name = serializers.CharField()
@@ -9,6 +10,7 @@ class DatasetSerializer(serializers.ModelSerializer):
     price = serializers.DecimalField(max_digits=10, decimal_places=2, coerce_to_string=True)
     hasPaid = serializers.SerializerMethodField()
     is_active = serializers.BooleanField()
+    organization_id = serializers.SerializerMethodField()
 
 # this is the data that will be returned when a dataset is queried
     class Meta:
@@ -33,6 +35,7 @@ class DatasetSerializer(serializers.ModelSerializer):
             'number_of_downloads',
             'number_of_rows',
             'size',
+            'organization_id',
 
         ]
 
@@ -49,6 +52,22 @@ class DatasetSerializer(serializers.ModelSerializer):
         if not request or not request.user.is_authenticated:
             return False
         return DatasetPurchase.objects.filter(dataset=obj, buyer=request.user).exists()
+
+ 
+
+
+    from django.core.exceptions import ObjectDoesNotExist
+
+    def get_organization_id(self, obj):
+            try:
+                if obj.contributor_id:
+                    return obj.contributor_id.organization_id
+                return None
+            except (ObjectDoesNotExist, AttributeError):
+                return None
+
+        
+        
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['tags'] = [tag.strip() for tag in instance.tags] if isinstance(instance.tags, list) else \
@@ -59,6 +78,7 @@ class DatasetSerializer(serializers.ModelSerializer):
 
     
         return data
+    
 
 
 class MessageSerializer(serializers.ModelSerializer):
