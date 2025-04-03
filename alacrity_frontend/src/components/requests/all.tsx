@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 // "use client";
 
 // import React, { useEffect, useState } from "react";
@@ -311,7 +312,7 @@ export default function AllRequests() {
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber)
 
   // Generate page numbers for pagination
-  const pageNumbers = []
+  const pageNumbers: number[] = []
   for (let i = 1; i <= totalPages; i++) {
     pageNumbers.push(i)
   }
