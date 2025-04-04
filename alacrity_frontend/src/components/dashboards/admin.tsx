@@ -215,9 +215,15 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="p-6 bg-gray-card">
-      <div className="mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">Organization Dashboard</h1>
-        <p className="text-gray-500 dark:text-gray-200">Overview of your organization datasets and activities</p>
+        {/* <p className="text-gray-500 dark:text-gray-200">Overview of your organization datasets and activities</p> */}
+        <button className="px-4 py-2 text-sm font-medium text-white bg-[#FF6B1A] rounded-md hover:bg-[#e65c0f] dark:hover:bg-gray-700 transition-colors" onClick={
+     
+          () => router.push(`/organisation/profile/${user?.organization_id}/`)
+        }>
+         View Organisation settings
+        </button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <MetricCard
@@ -373,26 +379,30 @@ interface MetricCardProps {
 }
 
 const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon, change, changeColor }) => (
-  <div className=" overflow-hidden shadow-sm sm:rounded-lg hover:shadow-md transition-shadow">
+  <div className="overflow-hidden shadow-sm dark:shadow-gray-800 sm:rounded-lg hover:shadow-md dark:hover:shadow-gray-700 transition-shadow dark:bg-gray-800">
     <div className="p-6">
       <div className="flex items-center">
-        <div className="flex-shrink-0 bg-[#FF6B1A] bg-opacity-10 rounded-md p-3">
-          <span className="text-3xl">{icon}</span>
+        <div className="flex-shrink-0 bg-[#FF6B1A] bg-opacity-10 dark:bg-opacity-20 rounded-md p-3">
+          <span className="text-3xl text-[#FF6B1A] dark:text-[#FF8C4D]">{icon}</span>
         </div>
         <div className="ml-5 w-0 flex-1">
           <dl>
-            <dt className="text-sm font-medium text-gray-500 truncate">{title}</dt>
+            <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">{title}</dt>
             <dd>
-              <div className="text-lg font-medium text-gray-900">{value}</div>
+              <div className="text-lg font-medium text-gray-900 dark:text-white">{value}</div>
             </dd>
           </dl>
         </div>
       </div>
       <div className="mt-4">
-        <div className={`text-sm ${changeColor}`}>{change}</div>
+        <div
+          className={`text-sm ${changeColor.replace("text-green-500", "text-green-500 dark:text-green-400").replace("text-red-500", "text-red-500 dark:text-red-400")}`}
+        >
+          {change}
+        </div>
       </div>
     </div>
   </div>
-);
+)
 
 export default AdminDashboard;

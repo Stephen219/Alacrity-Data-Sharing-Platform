@@ -332,7 +332,7 @@ class ViewSubmissionsView(APIView):
         Uses caching for faster response times.
         """
         cache_key = "all_submissions"
-        cache.delete(cache_key)  # Clears old cache before updating
+        cache.delete(cache_key)  
 
         # Fetches all published research 
         all_published_submissions = list(
@@ -347,7 +347,9 @@ class ViewSubmissionsView(APIView):
                     F("researcher__sur_name"),
                     output_field=models.CharField(),
                 ),
-                bookmark_count=Count("bookmarked_by")
+                bookmark_count=Count("bookmarked_by"),
+                # researcher_id =
+                username = F("researcher__username"),
             )
             .values(
                 "id",
@@ -358,7 +360,12 @@ class ViewSubmissionsView(APIView):
                 "image",
                 "full_name",
                 "bookmark_count",
-                "is_private"
+                "is_private",
+                "username",
+                "researcher__id",
+                "researcher__profile_picture",
+               
+
             )
         )
 
@@ -690,26 +697,52 @@ class SubmittedSubmissionsView(APIView):
         return Response(data)
 
 
+# class FollowedReportsView(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request):
+#         user = request.user
+#         followed_users = user.following.all()
+        
+#         reports = PublishedResearch.objects.filter(
+#             research_submission__researcher__in=followed_users,
+#             research_submission__status='published',
+#             is_private=False
+#         ).select_related('research_submission__researcher')
+
+#         serializer = PublishedResearchSerializer(reports, many=True)
+#         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+# class Random_repotsInDB(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request):
+#         reports = PublishedResearch.objects.all().order_by('?')[:5]
+#         serializer = PublishedResearchSerializer(reports, many=True)
+#         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+
 class FollowedReportsView(APIView):
     permission_classes = [IsAuthenticated]
-
+ 
     def get(self, request):
         user = request.user
         followed_users = user.following.all()
-        
+       
         reports = PublishedResearch.objects.filter(
             research_submission__researcher__in=followed_users,
-            research_submission__status='published',
             is_private=False
         ).select_related('research_submission__researcher')
-
+ 
         serializer = PublishedResearchSerializer(reports, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
+   
 class Random_repotsInDB(APIView):
     permission_classes = [IsAuthenticated]
-
+ 
     def get(self, request):
-        reports = PublishedResearch.objects.all().order_by('?')[:5]
+        reports = PublishedResearch.objects.all().order_by('?')
         serializer = PublishedResearchSerializer(reports, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

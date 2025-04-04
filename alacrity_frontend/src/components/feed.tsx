@@ -358,10 +358,10 @@ export default function SearchPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50  flex flex-col dark:bg-gray-900">
       <div className="flex flex-col lg:flex-row flex-1 px-4 sm:px-6 lg:px-8 py-6 gap-6">
-        <main className="flex-1 w-full max-w-full lg:max-w-2xl bg-white shadow-md rounded-lg">
-          <header className="w-full bg-white shadow-md flex justify-center p-4">
+        <main className="flex-1 w-full max-w-full lg:max-w-2xl bg-white dark:bg-gray-900 shadow-md rounded-lg">
+          <header className="w-full bg-white shadow-md dark:bg-gray-900 flex justify-center p-4">
             <div className="relative w-full max-w-2xl">
               <input
                 type="text"
@@ -419,7 +419,7 @@ export default function SearchPage() {
               )}
             </div>
           </header>
-          <nav className="flex px-4 sm:px-6 py-4 bg-white border-b border-gray-200">
+          <nav className="flex px-4 sm:px-6 py-4 bg-white dark:bg-gray-900 border-b border-gray-200">
             <div className="flex items-center justify-between w-full flex-col sm:flex-row gap-4 sm:gap-0">
               <div className="flex items-center gap-4">
                 <button
@@ -571,7 +571,7 @@ export default function SearchPage() {
             )}
           </div>
         </main>
-        <aside className="w-full lg:w-80 bg-white shadow-md rounded-lg p-4 sm:p-6">
+        <aside className="w-full lg:w-80 bg-white shadow-md rounded-lg p-4 sm:p-6 dark:bg-gray-900 dark:text-gray-100">
           {!isAuthenticated ? (
             <div className="text-center">
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Join Us</h2>
@@ -579,7 +579,7 @@ export default function SearchPage() {
               <Link href="/auth/sign-in" className={buttonVariants({ size: "lg", className: "bg-orange-600 text-white hover:bg-orange-700 w-full text-sm sm:text-base" })}>
                 Sign In
               </Link>
-              <div className="mt-6 sm:mt-8">
+              <div className="mt-6 sm:mt-8 dark:bg-gray-900">
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Top Researchers</h2>
                 {researchers.length ? (
                   <ul className="space-y-4">
@@ -628,7 +628,7 @@ export default function SearchPage() {
             </div>
           ) : (
             <>
-              <div className="mb-6 sm:mb-8">
+              <div className="mb-6 sm:mb-8 ">
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Researchers to Follow</h2>
                 {researchers.length ? (
                   <ul className="space-y-4">

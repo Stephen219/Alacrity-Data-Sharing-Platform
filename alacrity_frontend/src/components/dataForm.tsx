@@ -229,7 +229,8 @@ const DatasetForm = () => {
 
       if (!response.ok) {
         if (data.error) {
-          setServerError(data.error);
+          // setServerError(data.error);
+          setServerError("An error occurred while uploading. Please Retry.");
         } else {
           console.log(data);
           setServerError("An error occurred while uploading. Please try again.");

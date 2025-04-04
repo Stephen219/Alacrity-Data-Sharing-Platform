@@ -91,7 +91,7 @@ export default function DatasetDetailModal({ dataset_id, onClose }: DatasetDetai
       setComment("");
       setRating(0);
       // Mark that a review has been left and close the modal.
-      localStorage.setItem(`hasReviewed_${dataset_id}`, "true");
+      localStorage.setItem(`hasReviewed_${dataset_id}`, "true"); // tecchnically not scallaber, but it works for now.
       // wait so the user sees the success message.
       setTimeout(() => {
         onClose();
@@ -202,7 +202,12 @@ export default function DatasetDetailModal({ dataset_id, onClose }: DatasetDetai
                 className="w-full p-2.5 border border-gray-300 bg-gray-50 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-300 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400 resize-none"
                 rows={4}
               />
-              <p className="ms-auto text-sm text-gray-500 dark:text-gray-300">Problems with the dataset? <button onClick={() => router.push(`/chat/${dataset.dataset_id}`)} className="text-alacrityred hover:underline dark:text-alacrityred">Send a report</button>.</p>
+
+              <div className="mt-5"><p className="ms-auto text-sm text-gray-500 dark:text-gray-300">Problems with the dataset? .</p>
+              <button onClick={() => router.push(`/chat/${dataset.dataset_id}`)} 
+              className="text-alacrityred hover:underline dark:text-alacrityred dark:hover:underline">
+              Talk to an assistant</button>
+              </div>
             </div>
 
             <div className="flex justify-end">
