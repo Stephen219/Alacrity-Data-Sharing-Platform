@@ -308,7 +308,7 @@ function AllMembersPage() {
     const loadUserData = async () => {
       try {
         const userData = await fetchUserData()
-        setCurrentUser(userData)
+        setCurrentUser(userData as User | null) 
       } catch (err) {
         console.error('Error fetching current user:', err)
       }
