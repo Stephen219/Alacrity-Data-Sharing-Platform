@@ -1,0 +1,4 @@
+#The frontend 
+
+we are using type script for the front END
+hence we will install node, npm, inorder for our server to function
