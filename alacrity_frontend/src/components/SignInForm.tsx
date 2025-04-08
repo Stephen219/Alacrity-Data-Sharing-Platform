@@ -14,6 +14,7 @@ const SignInForm: React.FC = () => {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [remember_me, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   
 
@@ -21,29 +22,17 @@ const SignInForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const result = await login(email, password);
+    const result = await login(email, password, remember_me);
 
 
 
 
     if (result.success) {
-      // console.log(result.user);
-      // if (result.user.role === "admin") {
-      //   // technically i should us to redirec as it prevents the page reload   but i am using window.location.href for now to avoid the need to mock the router in the test file.
-      //   // consider this resource https://www.npmjs.com/package/next-router-mock when implementing it 
-      //   // i used 5 hrs to try to implement it but i could not get it to work so add the counter as you try
-      //   // counter 5
-      //   window.location.href = "/organization";
-      // } else if (result.user.role === "researcher" || result.user.role === "contributor") {
-      //   window.location.href = "/researcher";
-      // } else {
-      //   window.location.href = "/dashboard";
-      // }
-      // router.push("/dashboard");
-      window.location.href = "/dashboard";
+
+      window.location.href = "/feed";
 
     } else {
-      setError(result.error);
+      setError(result.error || "An unknown error occurred");
     }
   };
 
@@ -68,7 +57,6 @@ const SignInForm: React.FC = () => {
 
             {error && <p className="text-red-500 text-sm">{error}</p>} 
 
-            {/* TODO  :  HANDLE THIS ERROR IN THE UI like a person */}
             
 
             <form className="space-y-4" onSubmit={handleSubmit}>
@@ -106,8 +94,12 @@ const SignInForm: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <input
-                    id="remember" 
+                    id="remember_me" 
                     type="checkbox" 
+                    checked={remember_me}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+
+
                     className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                    
                   />

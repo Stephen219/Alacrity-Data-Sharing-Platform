@@ -16,7 +16,7 @@ interface Analysis {
   raw_results: string;
   summary: string;
   status: string;
-  image?: File | null;
+  image?: File | string | null;
 }
 
 interface AnalysisFormProps {
@@ -54,7 +54,7 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
       setFormData((prev) => ({
         ...prev,
         ...initialData,
-        image: null,
+        image: initialData.image ? initialData.image : prev.image,
       }));
     }
   }, [initialData, setFormData]);
@@ -72,18 +72,24 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  // Use the SWR hook to fetch research submissions and get the mutate function.
   const { mutate: mutateSubmissions } = useResearchSubmissions();
 
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setFormData((prev) => ({ ...prev, image: file }));
+      setFormData((prev) => ({
+        ...prev,
+        image: file,
+      }));
     }
   };
+  
 
   const handleSave = async (publish = false) => {
+    setLoading(true);
+    setMessage("");
+  
     if (!formData.datasetId) {
       console.error("Missing dataset_id! Cannot submit.");
       setMessage("Error: Missing dataset ID.");
@@ -91,19 +97,30 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
       return;
     }
   
+    if (!editorInstance) {
+      console.error("Editor instance is null.");
+      setMessage("Error: Editor is not ready.");
+      setLoading(false);
+      return;
+    }  
+  
+    // Build the FormData
     const requestData = new FormData();
     requestData.append("title", formData.title);
-    requestData.append("description", formData.description);
+    // Use the editor's HTML for the description
+    requestData.append("description", editorInstance.getHTML());
     requestData.append("rawResults", formData.raw_results);
     requestData.append("summary", formData.summary);
     requestData.append("status", publish ? "published" : "draft");
     requestData.append("dataset_id", String(formData.datasetId));
   
-    if (formData.image) {
+    // Append the image file if available
+    if (formData.image instanceof File) {
       requestData.append("image", formData.image);
     }
   
     try {
+      // Send the FormData as the body
       const response = await fetchWithAuth(`${BACKEND_URL}/research/submissions/save/`, {
         method: "POST",
         body: requestData,
@@ -114,9 +131,11 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
   
       if (response.ok) {
         setMessage(publish ? "Research Submitted for Approval!" : "Draft Saved Successfully!");
+        // Reset form data while keeping the datasetId
         setFormData({
           ...initialFormState,
           datasetId: formData.datasetId,
+          image: data.image,
         });
         if (publish) {
           setLastPublishedData({ ...formData, id: data.id });
@@ -137,9 +156,10 @@ const AnalysisFormComponent = ({ editorInstance, setEditorInstance, initialData 
         setMessage("Failed to save.");
       }
     }
-    
+  
     setLoading(false);
   };
+  
 
   return (
     <form className="space-y-6">

@@ -1,9 +1,14 @@
+
+/* eslint-disable @typescript-eslint/no-unused-vars, no-unused-vars */
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { BACKEND_URL } from "@/config";
 import { cn } from "@/lib/utils";
+import { fetchWithAuth } from "@/libs/auth";
 import { Editor } from "@tiptap/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
+
 
 interface ToolbarProps {
   editor: Editor | null;
@@ -12,6 +17,39 @@ interface ToolbarProps {
 
 const TextEditorToolbar = ({ editor }: ToolbarProps) => {
     const [, forceUpdate] = useState(0);
+    /*eslint no-unused-vars: "error"*/
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+ 
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files?.length) return;
+
+    const file = files[0];
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetchWithAuth(`${BACKEND_URL}/research/upload-image/`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (res.ok && data.url) {
+        // Insert the image into Tiptap
+        editor?.chain().focus().setImage({ src: data.url }).run();
+        forceUpdate((prev) => prev + 1);
+      } else {
+        console.error("Upload error:", data.error || data);
+      }
+    } catch (err) {
+      console.error("Image upload failed:", err);
+    }
+  };
+
+
   if (!editor) return null;
 
   return (
@@ -281,10 +319,8 @@ const TextEditorToolbar = ({ editor }: ToolbarProps) => {
     editor.commands.focus(); 
   }}
 >
-  Exit Table
+  Break Line
 </Button>
-
-
 
     </div>
   );

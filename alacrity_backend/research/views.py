@@ -11,16 +11,18 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import permission_classes
 from django.core.mail import send_mail
 from alacrity_backend.config import FRONTEND_URL
-from research.serializers import AnalysisSubmissionSerializer
+from research.serializers import AnalysisSubmissionSerializer , PublishedResearchSerializer
 from users.decorators import role_required
-from .models import AnalysisSubmission
+from .models import AnalysisSubmission , PublishedResearch
 from rest_framework.generics import ListAPIView
 from datasets.models import Dataset
 from django.conf import settings
 from html.parser import HTMLParser
 from notifications.models import Notification
 from users.models import User
+from rest_framework import status
 from django.utils.html import strip_tags
+from rest_framework.parsers import MultiPartParser, FormParser
 
 
 class HTMLStripper(HTMLParser):
@@ -39,8 +41,34 @@ def strip_html(html):
     stripper.feed(html)
     return stripper.get_text()
 
+class UploadImageView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        """
+        Receives a file in request.FILES named 'file', saves it, and returns the absolute URL.
+        Used by the Tiptap toolbar's image upload button.
+        """
+        if 'file' not in request.FILES:
+            return Response({"error": "No file provided"}, status=400)
+
+        image_file = request.FILES['file']
+
+        submission = AnalysisSubmission.objects.create(
+            researcher=request.user,
+            image=image_file,
+            title="Temp image submission"
+        )
+
+        # Build the full URL
+        image_url = request.build_absolute_uri(submission.image.url)
+
+        return Response({"url": image_url}, status=200)
+
 class SaveSubmissionView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
     @role_required(['contributor', 'organization_admin', 'researcher'])
     def post(self, request):
         """
@@ -73,6 +101,7 @@ class SaveSubmissionView(APIView):
             submission.raw_results = data.get("rawResults", submission.raw_results)
             submission.summary = data.get("summary", submission.summary)
             submission.status = data.get("status", submission.status)
+            
 
             if dataset_id:
                 dataset = get_object_or_404(Dataset, dataset_id=dataset_id)
@@ -161,9 +190,13 @@ class PendingSubmissionsView(ListAPIView):
 
     @role_required(['organization_admin'])
     def get(self, request, *args, **kwargs):
-        pending_submissions = AnalysisSubmission.objects.filter(status="pending")
+        pending_submissions = AnalysisSubmission.objects.filter(
+
+            dataset__contributor_id__organization_id=request.user.organization_id,
+            
+            status="pending"
+            )
         
-        # serializer returns JSON data
         serializer = self.serializer_class(pending_submissions, many=True)
         return Response(serializer.data)
 
@@ -396,6 +429,7 @@ class EditSubmissionView(APIView):
             submission.raw_results = data.get("raw_results", submission.raw_results)
             submission.summary = data.get("summary", submission.summary)
             submission.status = data.get("status", submission.status)
+            
 
             # Validates before publishing
             if submission.status == "published":
@@ -685,3 +719,26 @@ class SubmittedSubmissionsView(APIView):
         return Response(data)
 
 
+class FollowedReportsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        followed_users = user.following.all()
+        
+        reports = PublishedResearch.objects.filter(
+            research_submission__researcher__in=followed_users,
+            research_submission__status='published',
+            is_private=False
+        ).select_related('research_submission__researcher')
+
+        serializer = PublishedResearchSerializer(reports, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class Random_repotsInDB(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        reports = PublishedResearch.objects.all().order_by('?')[:5]
+        serializer = PublishedResearchSerializer(reports, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

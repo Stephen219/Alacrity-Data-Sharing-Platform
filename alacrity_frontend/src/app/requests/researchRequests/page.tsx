@@ -12,7 +12,7 @@ const FullPublicationPage: React.FC = () => {
 
   const getPublications = async () => {
     try {
-      const response = await fetchWithAuth(`${BACKEND_URL}research/submissions/submitted`)
+      const response = await fetchWithAuth(`${BACKEND_URL}/research/submissions/submitted`)
       const data = await response.json()
       setPublications(data)
     } catch (error) {
@@ -39,7 +39,7 @@ const FullPublicationPage: React.FC = () => {
     if (status === "pending") {
       return "cursor-default opacity-50"
     }
-    return "cursor-pointer hover:bg-gray-50"
+    return "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
   }
 
   return (

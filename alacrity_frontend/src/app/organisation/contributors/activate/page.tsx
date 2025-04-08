@@ -107,7 +107,7 @@ export default function ActivateAccount() {
       if (!response.ok) throw new Error(data.error)
       setMessage(data.message)
       alert("Account activated! You can now log in.")
-      window.location.href = "/login"
+      window.location.href = "/auth/sign-in"
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err.message)

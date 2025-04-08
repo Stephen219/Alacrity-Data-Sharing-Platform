@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 import SubmissionDetails from "@/components/ViewSubmission";
+import { BACKEND_URL } from "@/config";
 
 const ViewBookmarkedSubmission = () => {
   const { id } = useParams();
@@ -11,7 +12,7 @@ const ViewBookmarkedSubmission = () => {
   return (
     <SubmissionDetails
       submissionId={id as string}
-      fetchUrl={`http://127.0.0.1:8000/research/bookmarks/${id}/`}
+      fetchUrl={`${BACKEND_URL}/research/submissions/${id}/`}
       backUrl="/researcher/bookmarks"
     />
   );

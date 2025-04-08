@@ -1,10 +1,13 @@
 import "@testing-library/jest-dom";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ReviewSubmissionPage from "@/app/requests/submissions/[id]/page";
-import { fetchWithAuth } from "@/libs/auth";
+import { fetchWithAuth, useAuth } from "@/libs/auth"; // Import useAuth
 import { useRouter } from "next/navigation";
 
-jest.mock("@/libs/auth");
+jest.mock("@/libs/auth", () => ({
+  fetchWithAuth: jest.fn(),
+  useAuth: jest.fn(), // Mock useAuth
+}));
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
   useParams: () => ({ id: "1" }),
@@ -12,6 +15,14 @@ jest.mock("next/navigation", () => ({
 
 const mockRouter = { push: jest.fn() };
 (useRouter as jest.Mock).mockReturnValue(mockRouter);
+
+// Mock AuthContext for withAccessControl
+const mockAuthContextValue = {
+  user: { id: "admin1", role: "admin" }, // Adjust role as needed
+  loading: false,
+  logout: jest.fn(),
+};
+(useAuth as jest.Mock).mockReturnValue(mockAuthContextValue);
 
 describe("ReviewSubmissionPage", () => {
   beforeEach(() => {
@@ -30,10 +41,10 @@ describe("ReviewSubmissionPage", () => {
   };
 
   test("displays submission details when fetched successfully", async () => {
-    (fetchWithAuth as jest.Mock).mockResolvedValueOnce(Promise.resolve({
+    (fetchWithAuth as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => mockSubmission,
-    }));
+    });
 
     render(<ReviewSubmissionPage />);
 
@@ -47,7 +58,7 @@ describe("ReviewSubmissionPage", () => {
   });
 
   test("displays error message when API fails", async () => {
-    (fetchWithAuth as jest.Mock).mockRejectedValueOnce(new Error("Failed to fetch"));
+    (fetchWithAuth as jest.Mock).mockRejectedValue(new Error("Failed to fetch"));
 
     render(<ReviewSubmissionPage />);
 
@@ -57,18 +68,18 @@ describe("ReviewSubmissionPage", () => {
   });
 
   test("calls approve API and shows success alert", async () => {
-    (fetchWithAuth as jest.Mock).mockResolvedValueOnce(Promise.resolve({
+    (fetchWithAuth as jest.Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => mockSubmission,
-    }));
+    });
 
     render(<ReviewSubmissionPage />);
     await waitFor(() => expect(screen.getByText("Approve")).toBeInTheDocument());
 
-    (fetchWithAuth as jest.Mock).mockResolvedValueOnce(Promise.resolve({
+    (fetchWithAuth as jest.Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ message: "Approved" }),
-    }));
+    });
 
     fireEvent.click(screen.getByText("Approve"));
 
@@ -77,27 +88,25 @@ describe("ReviewSubmissionPage", () => {
       expect(screen.getByText("Submission approved successfully. Email sent.")).toBeInTheDocument();
     });
 
-    // Close alert and ensure redirect is triggered
     fireEvent.click(screen.getByText("Close"));
-
     await waitFor(() => {
       expect(mockRouter.push).toHaveBeenCalledWith("/dashboard");
     });
   });
 
   test("calls reject API and shows success alert", async () => {
-    (fetchWithAuth as jest.Mock).mockResolvedValueOnce(Promise.resolve({
+    (fetchWithAuth as jest.Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => mockSubmission,
-    }));
+    });
 
     render(<ReviewSubmissionPage />);
     await waitFor(() => expect(screen.getByText("Reject")).toBeInTheDocument());
 
-    (fetchWithAuth as jest.Mock).mockResolvedValueOnce(Promise.resolve({
+    (fetchWithAuth as jest.Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ message: "Rejected" }),
-    }));
+    });
 
     fireEvent.click(screen.getByText("Reject"));
 
@@ -106,19 +115,17 @@ describe("ReviewSubmissionPage", () => {
       expect(screen.getByText("Submission rejected successfully. Email sent.")).toBeInTheDocument();
     });
 
-    // Close alert and ensure redirect is triggered
     fireEvent.click(screen.getByText("Close"));
-
     await waitFor(() => {
       expect(mockRouter.push).toHaveBeenCalledWith("/dashboard");
     });
   });
 
   test("handles API failure for approve action", async () => {
-    (fetchWithAuth as jest.Mock).mockResolvedValueOnce(Promise.resolve({
+    (fetchWithAuth as jest.Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => mockSubmission,
-    }));
+    });
 
     render(<ReviewSubmissionPage />);
     await waitFor(() => expect(screen.getByText("Approve")).toBeInTheDocument());
@@ -133,10 +140,10 @@ describe("ReviewSubmissionPage", () => {
   });
 
   test("handles API failure for reject action", async () => {
-    (fetchWithAuth as jest.Mock).mockResolvedValueOnce(Promise.resolve({
+    (fetchWithAuth as jest.Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => mockSubmission,
-    }));
+    });
 
     render(<ReviewSubmissionPage />);
     await waitFor(() => expect(screen.getByText("Reject")).toBeInTheDocument());
@@ -151,15 +158,19 @@ describe("ReviewSubmissionPage", () => {
   });
 
   test("updates message state correctly", async () => {
-    (fetchWithAuth as jest.Mock).mockResolvedValueOnce(Promise.resolve({
+    (fetchWithAuth as jest.Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => mockSubmission,
-    }));
+    });
 
     render(<ReviewSubmissionPage />);
-    await waitFor(() => expect(screen.getByPlaceholderText("Write a message to the researcher (optional)...")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("Write a message to the researcher (optional)...")).toBeInTheDocument()
+    );
 
-    const messageInput = screen.getByPlaceholderText("Write a message to the researcher (optional)...") as HTMLTextAreaElement;
+    const messageInput = screen.getByPlaceholderText(
+      "Write a message to the researcher (optional)..."
+    ) as HTMLTextAreaElement;
     fireEvent.change(messageInput, { target: { value: "This is a test message" } });
 
     expect(messageInput.value).toBe("This is a test message");

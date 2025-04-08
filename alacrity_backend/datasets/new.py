@@ -6,6 +6,8 @@ from rest_framework import status
 from payments.models import DatasetPurchase
 from .models import Dataset
 from .serializer import DatasetSerializer
+from rest_framework.views import APIView
+from users.decorators import role_required
 import pandas as pd
 import numpy as np
 from minio import Minio
@@ -27,17 +29,28 @@ from threading import Lock
 from sklearn.preprocessing import LabelEncoder
 import json
 import tenseal as ts
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from random import choice , sample
 import gzip
 import time
 from typing import List, Dict
 from django.http import HttpResponse
 from .pre_analysis import pre_analysis
+from alacrity_backend.settings import MINIO_ACCESS_KEY, MINIO_BUCKET_NAME, MINIO_SECRET_KEY, MINIO_URL, MINIO_SECURE
+from .models import DatasetAccessMetrics 
+from dataset_requests.models import DatasetRequest
+from django.utils import timezone  
 
 
 logger = logging.getLogger(__name__)
 
-MINIO_URL = "10.72.98.137:9000"
-minio_client = Minio(endpoint=MINIO_URL, access_key="admin", secret_key="Notgood1", secure=False)
+
+minio_client = Minio(
+    endpoint=MINIO_URL, 
+    access_key=MINIO_ACCESS_KEY,
+    secret_key=MINIO_SECRET_KEY, 
+    secure=MINIO_SECURE
+    )
 BUCKET = "alacrity"
 DATASET_CACHE = OrderedDict()
 CACHE_LOCK = Lock()
@@ -157,13 +170,20 @@ def dataset_detail(request, dataset_id):
         con = load_dataset_into_cache(request, dataset_id, normalize=normalize)
         df = con.execute("SELECT * FROM temp").fetchdf()
         overview = pre_analysis(df)
-        print (overview)
+      
         
         serializer = DatasetSerializer(dataset)
         data = serializer.data
         data['is_loaded'] = cache_key in DATASET_CACHE
         data['overview'] = overview
         data['normalized'] = DATASET_CACHE[cache_key]["normalized"]
+        # update metrics
+        DatasetAccessMetrics.objects.update_or_create(
+            dataset=dataset,
+            user =request.user,
+            defaults={"access_time": timezone.now()}
+        )
+        
         return Response(data, status=200)
     except Dataset.DoesNotExist:
         return Response({"error": "Dataset not found"}, status=404)
@@ -432,12 +452,23 @@ def analyze_dataset(request, dataset_id):
     except Exception as e:
         logger.error(f"Error in analyze_dataset: {e}", exc_info=True)
         return Response({"error": "Something went wrong"}, status=500)
+    
+
+
+
+
+    
 
 @api_view(['GET'])
 def all_datasets_view(request):
     datasets = Dataset.objects.select_related('contributor_id__organization').all()
     serializer = DatasetSerializer(datasets, many=True, context={"request": request})
     return Response({"datasets": serializer.data}, status=status.HTTP_200_OK)
+
+
+
+
+
 
 @api_view(['GET'])
 def dataset_view(request, dataset_id):
@@ -467,6 +498,10 @@ def dataset_view(request, dataset_id):
 
 import numpy as np
 import concurrent.futures
+import base64
+import json
+# threading
+import threading
 
 
 def encode_column(values: List, col_type: str) -> List[float]:
@@ -643,6 +678,13 @@ def download_dataset(request, dataset_id):
         response['Content-Length'] = len(compressed_data)
         response['X-Processing-Time'] = f"{elapsed_time:.2f}s"
         response['X-Compression-Ratio'] = f"{size_ratio:.2f}x"
+        DatasetAccessMetrics.objects.update_or_create(
+            dataset=dataset,
+            user=request.user,
+            action="download",
+            defaults={"download_time": timezone.now()}
+        )
+        logger.info(f"Dataset {dataset_id} download response prepared")
         
         return response
 
@@ -668,6 +710,88 @@ def download_dataset(request, dataset_id):
             content_type="application/json"
         )
     
+# brings random datasets to the users
+    
+class RandomDatasets(APIView):
+    permission_classes = [AllowAny]
 
+    def get(self, request):
+        print("RandomDatasets accessed")
+        try:
+            # Fetch random datasets directly from the database
+            datasets = Dataset.objects.order_by('?')  # Random ordering
+            print(f"Selected datasets: {datasets}")
+            serializer = DatasetSerializer(datasets, context={'request': request}, many=True)
+            print(f"Serialized data: {serializer.data}")
 
+            return Response(serializer.data, status=200)
+        except Exception as e:
+            print(f"Error in RandomDatasets: {str(e)}")
+            return Response({"error": str(e)}, status=500)
+        
 
+''' brings suggested datasets to the users'''
+    
+class BaseSuggestedDatasets(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_base_queryset(self, user):
+        if not user.field:
+            return None, Response({"error": "User has no field specified"}, status=400)
+
+        followed_orgs = user.followed_organizations.all()
+        followed_org_ids = followed_orgs.values_list('Organization_id', flat=True)
+        
+        # Get datasets the user has requested
+        requested_dataset_ids = DatasetRequest.objects.filter(
+            researcher_id=user
+        ).values_list('dataset_id', flat=True)
+
+        # Base querysets
+        followed_datasets = Dataset.objects.filter(
+            contributor_id__organization__in=followed_orgs,
+            is_active=True
+        ).exclude(
+            dataset_id__in=requested_dataset_ids
+        ).distinct()
+
+        suggested_datasets = Dataset.objects.filter(
+            contributor_id__organization__field=user.field,
+            is_active=True
+        ).exclude(
+            contributor_id__organization__in=followed_orgs
+        ).exclude(
+            dataset_id__in=requested_dataset_ids
+        ).distinct()
+
+        return (followed_datasets, suggested_datasets), None
+
+class SuggestedDatasets(BaseSuggestedDatasets):
+    @role_required(['contributor', 'researcher', 'organization_admin'])
+    def get(self, request):
+        user = request.user
+        print(f"SuggestedDatasets accessed by {user}")
+        
+        datasets, error_response = self.get_base_queryset(user)
+        if error_response:
+            return error_response
+
+        followed_datasets, suggested_datasets = datasets
+        combined_datasets = (followed_datasets | suggested_datasets).distinct()[:5]
+        serializer = DatasetSerializer(combined_datasets, many=True)
+        return Response(serializer.data, status=200)
+
+class AllSuggestedDatasets(BaseSuggestedDatasets):
+    @role_required(['contributor', 'researcher', 'organization_admin'])
+    def get(self, request):
+        user = request.user
+        print(f"AllSuggestedDatasets accessed by {user}")
+        
+        datasets, error_response = self.get_base_queryset(user)
+        if error_response:
+            return error_response
+
+        followed_datasets, suggested_datasets = datasets
+        combined_datasets = (followed_datasets | suggested_datasets).distinct()
+        serializer = DatasetSerializer(combined_datasets, many=True)
+        return Response(serializer.data, status=200)

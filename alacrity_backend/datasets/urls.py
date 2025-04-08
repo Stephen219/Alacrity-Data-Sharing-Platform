@@ -1,13 +1,14 @@
 from django.urls import path
 from django.urls import include
 from rest_framework.routers import DefaultRouter
-from .views import ( ToggleBookmarkDatasetView, UserBookmarkedDatasetsView, descriptive_statistics, FeedbackView,
+from .views import ( ToggleBookmarkDatasetView, UserBookmarkedDatasetsView, descriptive_statistics, FeedbackView, TrendingDatasetsView,
 filter_and_clean_dataset, 
-get_datasets, get_filter_options, CreateDatasetView, 
+get_datasets, get_filter_options, CreateDatasetView, DatasetListView, get_datasets,  get_datasets,
 
  pre_analysis)
+from .metric import DatasetMetricsView, DatasetAnalyticsCardView
 
-from .new import analyze_dataset , dataset_detail, all_datasets_view, clear_dataset_cache, dataset_view, download_dataset
+from .new import analyze_dataset , dataset_detail, all_datasets_view, clear_dataset_cache, dataset_view, download_dataset, RandomDatasets , SuggestedDatasets, AllSuggestedDatasets
 from .chat_view import ChatListView, SendMessageView, MessageListView,DatasetDetailView
 
 urlpatterns = [
@@ -25,7 +26,8 @@ urlpatterns = [
     path('datasets/<str:dataset_id>/', dataset_detail, name='dataset_detail'),
     path('datasets/analyze/<str:dataset_id>/', analyze_dataset, name='analyze_dataset'),
     path('datasets/', all_datasets_view, name='all_datasets'),
-    path('all/', all_datasets_view, name='dataset-list'),
+    # path('all/', all_datasets_view, name='dataset-list'),
+    path('all/', DatasetListView.as_view(), name='dataset-list'),
     path('perform/<str:dataset_id>/', analyze_dataset, name='analyze_dataset'),
     path("", get_datasets, name="get_datasets"),
     path("analysis/pre-analysis/<str:dataset_id>/", pre_analysis, name="pre-analysis"),
@@ -36,5 +38,16 @@ urlpatterns = [
     path('<str:dataset_id>/', dataset_view, name='dataset_detail'),
     path("<str:dataset_id>/bookmark/", ToggleBookmarkDatasetView.as_view(), name="toggle-bookmark-dataset"),
     path('feedback/<str:dataset_id>/', FeedbackView.as_view(), name='feedback'),
+
+    path('random/datasets/', RandomDatasets.as_view(), name='random-datasets'),
+    path('suggested/datasets/', SuggestedDatasets.as_view(), name='suggested-datasets'),
+    path('get_datasets/all', AllSuggestedDatasets.as_view(), name='get_datasets'),
+    path('trending/datasets/', TrendingDatasetsView.as_view(), name='trending-datasets'),
+
+
+    path('dataset-analytics-card/dash/', DatasetAnalyticsCardView.as_view(), name='dataset_analytics_card'),
+     path('dataset-metrics/page/', DatasetMetricsView.as_view(), name='dataset_analytics_card')
+
 ]
+
 

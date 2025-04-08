@@ -21,6 +21,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchWithAuth } from "@/libs/auth";
 import { BACKEND_URL } from "@/config";
+import { withAccessControl } from "@/components/auth_guard/AccessControl";
 
 const AddContributorForm: React.FC = () => {
   const router = useRouter();
@@ -115,6 +116,7 @@ const AddContributorForm: React.FC = () => {
     <div className="w-full max-w-xl mx-auto px-4 sm:px-6 md:px-8">
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold tracking-tight mb-2">Add New Contributor</h1>
+        <h1 className="text-3xl font-bold tracking-tight mb-2">Add New Contributors</h1>
         <p className="text-gray-600 dark:text-gray-400">Invite a team member to collaborate on your organization</p>
       </div>
 
@@ -302,4 +304,8 @@ const AddContributorForm: React.FC = () => {
   );
 };
 
-export default AddContributorForm;
+export default withAccessControl(AddContributorForm, [
+  "organization_admin",
+
+  "contributor"
+]);

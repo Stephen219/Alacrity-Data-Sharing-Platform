@@ -1,4 +1,4 @@
-
+//add side nav items 
 export const NAV_ITEMS = [
 
   {
@@ -29,12 +29,12 @@ export const NAV_ITEMS = [
         },
         {
           name: "Manage Datasets",
-          href: "#",
+          href: "/organisation/admin/datasets",
           imageSrc: "/navbar/datasets/manageDataset.png",
         },
         {
           name: "Dataset Usage Metrics",
-          href: "#",
+          href: "/organisation/metrics",
           imageSrc: "/navbar/datasets/metrics.png",
         },
       ],
@@ -47,12 +47,7 @@ export const NAV_ITEMS = [
         {
           name: "All Requests",
           href: "/requests/all",
-          imageSrc: "/navbar/review/accessRequests.jpg",
-        },
-        {
-          name: "Pending Requests",
-          href: "/requests/pending",
-          imageSrc: "/navbar/review/accessRequests.png",
+          imageSrc: "/navbar/review/all.png",
         },
         {
           name: "Review Research",
@@ -62,7 +57,7 @@ export const NAV_ITEMS = [
         {
           name: "chats",
           href: "/chat",
-          imageSrc: "/datasets/image.png",
+          imageSrc: "/navbar/chats/admin_chats.png",
         },
       ],
     },
@@ -156,8 +151,13 @@ export const NAV_ITEMS = [
     {
       label: "My Hub",
       value: "my-account",
-      roles: ["researcher", "contributor"],
+      roles: ["researcher"],
       featured: [
+        {
+          name: "Chats",
+          href: "/chat/users/chats",
+          imageSrc: "/navbar/chats/user_chats.png",
+        },
         {
           name: "Research Library",
           href: "/researcher/Submissions",

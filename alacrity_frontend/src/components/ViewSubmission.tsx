@@ -53,7 +53,7 @@ const SubmissionDetails = ({ submissionId, fetchUrl}: SubmissionDetailsProps) =>
         <div className="bg-white border-black border shadow-lg rounded-2xl dark:bg-gray-600 p-8 max-w-4xl mx-auto mt-32">
 
           {/* Title */}
-          <div className="text-4xl font-bold text-center mb-3 text-gray-900 dark:text-white">
+          <div className="text-4xl font-bold text-center mb-3 text-gray-900 dark:text-white break-words">
             {parsedSubmission.title}
           </div>
           
@@ -65,7 +65,7 @@ const SubmissionDetails = ({ submissionId, fetchUrl}: SubmissionDetailsProps) =>
               <div className="text-2xl font-semibold border-b pb-2 mb-2 border-gray-300 dark:border-gray-700">
                 Description
               </div> 
-              <div className="leading-relaxed text-lg mt-6">{parsedSubmission.description}</div>
+              <div className="leading-relaxed text-lg mt-6 break-words">{parsedSubmission.description}</div>
             </div>
 
             {/* Raw Results */}
@@ -73,7 +73,7 @@ const SubmissionDetails = ({ submissionId, fetchUrl}: SubmissionDetailsProps) =>
               <div className="text-2xl font-semibold border-b pb-2 mb-2 border-gray-300 dark:border-gray-700">
                 Raw Results
               </div>
-              <div className="leading-relaxed text-lg mt-6">{parsedSubmission.rawResults}</div>
+              <div className="leading-relaxed text-lg mt-6 break-words">{parsedSubmission.rawResults}</div>
             </div>
 
             {/* Summary */}
@@ -81,7 +81,7 @@ const SubmissionDetails = ({ submissionId, fetchUrl}: SubmissionDetailsProps) =>
               <div className="text-2xl font-semibold border-b pb-2 mb-2 border-gray-300 dark:border-gray-700">
                 Summary
               </div>
-              <div className="leading-relaxed text-lg mt-6">{parsedSubmission.summary}</div>
+              <div className="leading-relaxed text-lg mt-6 break-words">{parsedSubmission.summary}</div>
             </div>
           </div>
 

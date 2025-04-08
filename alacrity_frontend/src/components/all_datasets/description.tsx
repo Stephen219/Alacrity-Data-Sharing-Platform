@@ -4,7 +4,9 @@ import React, { useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BACKEND_URL } from "../../config";
 import { fetchWithAuth } from "@/libs/auth";
-import { Star, Loader2, ArrowLeft, Send } from "lucide-react";
+import { Star, Loader2, Send, ChevronUp, ChevronDown } from "lucide-react";
+import MaxWidthWrapper from "../MaxWidthWrapper";
+import { Button } from "../ui/button";
 
 interface Dataset {
   dataset_id: string;
@@ -23,6 +25,7 @@ interface Dataset {
 interface Feedback {
   user__username: string;
   rating: number;
+  title:string;
   comment: string;
   created_at: string;
 }
@@ -39,6 +42,8 @@ export default function DatasetDetail() {
   const [objective, setObjective] = useState<string>("");
   const [message, setMessage] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [showDetails, setShowDetails] = useState<boolean>(false);
+  const [showTags, setShowTags] = useState<boolean>(false);
 
   useEffect(() => {
     if (!datasetId) {
@@ -172,128 +177,169 @@ export default function DatasetDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-6 md:px-12 lg:px-24 text-gray-900">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-800">{dataset.title}</h1>
-          <button
-            onClick={() => router.back()}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors flex items-center gap-2"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Back
-          </button>
+    <section className="py-8 bg-white dark:bg-gray-900 antialiased">
+      <MaxWidthWrapper>
+        {/* Header with Title & Reviews */}
+        <div className="border-b border-gray-200 pb-4 mb-8">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+            {dataset.title}
+          </h1>
+          <div className="mt-2 flex items-center gap-2">
+            {renderStars(averageRating)}
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              ({averageRating.toFixed(1)} / 5, {feedbacks.length} review
+              {feedbacks.length !== 1 ? "s" : ""})
+            </p>
+          </div>
         </div>
 
-        {/* Quick Request Form */}
-        <div className="mb-8 bg-white p-6 rounded-md shadow-sm border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800 mb-3">Request Access</h2>
-          <div className="flex flex-col gap-4">
+        {/* Two-column layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Left column: Request Form */}
+          <div className="flex flex-col text-sm tracking-tight">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white">
+              Request Access to Dataset:
+            </h2>
             <textarea
+              id="objective"
               ref={textareaRef}
               value={objective}
               onChange={(e) => setObjective(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Why do you need this dataset? (e.g., research, analysis)"
-              className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-800 placeholder-gray-400 resize-none"
-              rows={3}
+              placeholder="Provide details on why you would like to access this dataset."
+              rows={10}
+              className="mt-6 w-full p-4 rounded-lg bg-gray-50 dark:bg-gray-700 
+                         text-gray-900 dark:text-gray-100 
+                         focus:outline-none focus:ring-2 focus:ring-orange-500 
+                         resize-none border"
             />
-            <button
-              onClick={handleRequest}
-              disabled={!objective.trim()}
-              className={`self-start px-6 py-2 flex items-center gap-2 rounded-md transition-colors ${
-                objective.trim()
-                  ? "bg-orange-500 text-white hover:bg-orange-600"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
-            >
-              <Send className="w-5 h-5" />
-              Submit Request
-            </button>
-          </div>
-          {message && (
-            <p
-              className={`mt-2 text-sm ${message.includes("success") ? "text-green-600" : "text-red-600"}`}
-            >
-              {message}
-            </p>
-          )}
-        </div>
-
-        {/* Description */}
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">Description</h2>
-          <p className="text-gray-700 leading-relaxed">{dataset.description}</p>
-        </div>
-
-        {/* Metadata */}
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">Details</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-            <p>
-              <span className="font-semibold">Organization:</span> {dataset.organization_name}
-            </p>
-            <p>
-              <span className="font-semibold">Category:</span> {dataset.category}
-            </p>
-            <p>
-              <span className="font-semibold">Date Added:</span>{" "}
-              {new Date(dataset.created_at).toLocaleDateString()}
-            </p>
-            <p>
-              <span className="font-semibold">Last Updated:</span>{" "}
-              {new Date(dataset.updated_at).toLocaleDateString()}
-            </p>
-          </div>
-        </div>
-
-        {/* Tags */}
-        {dataset.tags.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-lg font-semibold text-gray-800 mb-2">Tags</h2>
-            <div className="flex flex-wrap gap-2">
-              {dataset.tags.map((tag, index) => (
-                <span
-                  key={index}
-                  className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-sm font-medium"
-                >
-                  {tag}
-                </span>
-              ))}
+            <div className="mt-6">
+              <Button onClick={handleRequest} disabled={!objective.trim()}>
+                <Send className="mx-2 w-5 h-5" />
+                Submit Request
+              </Button>
             </div>
+            {message && (
+              <p
+                className={`mt-4 text-sm ${
+                  message.includes("success") ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {message}
+              </p>
+            )}
           </div>
-        )}
 
-        {/* Rating */}
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">Average Rating</h2>
-          <div className="flex items-center gap-1">
-            {renderStars(averageRating)}
-            <span className="text-gray-500 text-sm ml-2">
-              ({averageRating.toFixed(1)} / 5 from {feedbacks.length} review{feedbacks.length !== 1 ? "s" : ""})
-            </span>
+          {/* Right column: Dataset Info */}
+          <div className="text-sm tracking-tight">
+            {/* Description with custom scrollbar */}
+            <h2 className="text-base font-semibold text-gray-900 dark:text-white">
+              Description
+            </h2>
+            <div className="mt-2 max-h-[150px] overflow-y-auto p-2 rounded scrollbar-custom">
+              <p className="text-gray-600 dark:text-gray-100 break-words">
+                {dataset.description}
+              </p>
+            </div>
+
+            {/* Collapsible Details */}
+            <div className="mt-6">
+              <button
+              aria-label="Toggle Details"
+              data-testid="details-toggle"
+                className="flex items-center w-full justify-between text-base font-semibold text-gray-900 dark:text-white focus:outline-none"
+                onClick={() => setShowDetails((prev) => !prev)}
+              >
+                <span>Details</span>
+                {showDetails ? (
+                  <ChevronUp size={20} />
+                ) : (
+                  <ChevronDown size={20} />
+                )}
+              </button>
+              {showDetails && (
+                <ul className="mt-2 space-y-1 text-gray-600 dark:text-gray-300">
+                <li>
+                  <span className="font-medium">Organization: </span>
+                  <span data-testid="organization-name">{dataset.organization_name}</span>
+                </li>
+                <li>
+                  <span className="font-medium">Category: </span>
+                  <span>{dataset.category}</span>
+                </li>
+                <li>
+                  <span className="font-medium">Date Added: </span>
+                  <span>{new Date(dataset.created_at).toLocaleDateString()}</span>
+                </li>
+                <li>
+                  <span className="font-medium">Last Updated: </span>
+                  <span>{new Date(dataset.updated_at).toLocaleDateString()}</span>
+                </li>
+              </ul>
+              
+              )}
+            </div>
+
+            {/* Collapsible Tags */}
+            {dataset.tags.length > 0 && (
+              <div className="mt-6">
+                <button
+                  className="flex items-center w-full justify-between text-base font-semibold text-gray-900 dark:text-white focus:outline-none"
+                  onClick={() => setShowTags((prev) => !prev)}
+                  data-testid="tags-toggle"
+                >
+                  <span>Tags</span>
+                  {showTags ? (
+                    <ChevronUp size={20} />
+                  ) : (
+                    <ChevronDown size={20} />
+                  )}
+                </button>
+                {showTags && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {dataset.tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="bg-orange-100 text-orange-800 px-3 py-1 
+                                   rounded-full text-sm font-medium"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Scrollable Feedback/Comments */}
-        <div className="mb-12">
-          <h2 className="text-lg font-semibold text-gray-800 mb-3">User Reviews</h2>
+        {/* Divider Line */}
+        <div className="border-t border-gray-200 mt-12 pt-6">
+          {/* Reviews Header */}
+          <div className="text-sm tracking-tight">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-white">
+              User Reviews
+            </h2>
+          </div>
+          {/* Reviews Content */}
           {feedbacks.length === 0 ? (
-            <p className="text-gray-600">No reviews yet.</p>
+            <p className="text-gray-600 dark:text-gray-100">No reviews yet.</p>
           ) : (
-            <div className="max-h-80 overflow-y-auto space-y-4 pr-2">
+            <div className="space-y-4">
               {feedbacks.map((fb, index) => (
                 <div
                   key={index}
-                  className="bg-white p-4 rounded-md shadow-sm border border-gray-200 flex flex-col gap-2"
+                  className="mt-4 bg-gray-50 dark:bg-card p-4 rounded-md shadow-sm border border-gray-200 flex flex-col gap-2"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-gray-800">{fb.user__username}</span>
+                    <span className="font-semibold text-gray-800 dark:text-gray-100">
+                      {fb.user__username}
+                    </span>
                     <div className="flex gap-1">{renderStars(fb.rating)}</div>
                   </div>
-                  <p className="text-gray-700">{fb.comment}</p>
-                  <span className="text-xs text-gray-500">
+                  <p className="text-gray-700 text-bold dark:text-gray-100">{fb.title}</p>
+                  <p className="text-gray-700 dark:text-gray-100">{fb.comment}</p>
+                  <span className="text-xs text-gray-500 dark:text-gray-100">
                     {new Date(fb.created_at).toLocaleString()}
                   </span>
                 </div>
@@ -301,7 +347,7 @@ export default function DatasetDetail() {
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </MaxWidthWrapper>
+    </section>
   );
 }

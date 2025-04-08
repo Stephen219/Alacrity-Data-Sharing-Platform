@@ -1,18 +1,28 @@
 
+
+
+
 FROM node:18
 
-# Set the working directory
+# Set the working directory in the container
 WORKDIR /app
 
-
+# Copy package.json and package-lock.json to install dependencies
 COPY alacrity_frontend/package.json alacrity_frontend/package-lock.json ./
 RUN npm install
 
-
+# Copy the rest of the application files
 COPY alacrity_frontend /app
+
+# Set environment variable for API URL
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 
 EXPOSE 3000
 
-# Start the Next.js development server
-CMD ["npm", "run", "dev"]
+# Build the app
+RUN npm run build
+
+
+CMD ["npm", "run", "start"]

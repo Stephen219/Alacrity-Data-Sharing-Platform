@@ -30,6 +30,13 @@ class Dataset(models.Model):
 
 
     view_count = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    is_deleted = models.BooleanField(default=False)
+    number_of_downloads = models.PositiveIntegerField(default=0)
+    number_of_rows = models.PositiveIntegerField(default=0)
+
+    # The size of the dataset in bytes (or any other unit you prefe   can be a decimal field if you want to allow for fractions)
+    size = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     class Meta:
         unique_together = ['title', 'link']
@@ -77,8 +84,35 @@ class Feedback(models.Model):
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name='feedbacks')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='feedbacks')
     rating = models.PositiveIntegerField()
+    title = models.CharField(max_length=100,validators=[MinLengthValidator(1), MaxLengthValidator(100)], default="Untitled")
     comment = models.TextField(validators=[MinLengthValidator(1)])
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Feedback for {self.dataset.title} from {self.user}"
+    
+
+
+
+class ViewHistory(models.Model):
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
+    view_count = models.IntegerField(default=1)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+class DatasetAccessMetrics(models.Model):
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name='access_metrics')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='dataset_access_metrics')
+    access_time = models.DateTimeField(auto_now_add=True)
+    download_time = models.DateTimeField(null=True, blank=True) 
+    Actions = [
+        ('view', 'View'),
+        ('download', 'Download'),
+        ('bookmark', 'Bookmark'),
+    ] 
+
+
+    action = models.CharField(max_length=10, choices=Actions, default='view')
+
+    def __str__(self):
+        return f"{self.action} by {self.user} on {self.dataset.title} at {self.access_time}"
+

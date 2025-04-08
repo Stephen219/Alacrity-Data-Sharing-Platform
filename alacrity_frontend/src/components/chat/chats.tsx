@@ -1,4 +1,3 @@
-// app/chats/page.tsx
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -24,8 +23,10 @@ interface ChatSummary {
 export default function ChatListPage() {
   const router = useRouter();
   const [chats, setChats] = useState<ChatSummary[]>([]);
+  const [filteredChats, setFilteredChats] = useState<ChatSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [typingStatus, setTypingStatus] = useState<{ [key: string]: boolean }>({});
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const socketRef = useRef<WebSocket | null>(null);
 
   const fetchChats = async () => {
@@ -35,14 +36,18 @@ export default function ChatListPage() {
       if (response.ok) {
         const chatData = await response.json();
         console.log("Fetched chat data:", chatData);
-        setChats(Array.isArray(chatData) ? chatData : []);
+        const fetchedChats = Array.isArray(chatData) ? chatData : [];
+        setChats(fetchedChats);
+        setFilteredChats(fetchedChats);
       } else {
         console.warn("Failed to fetch chats, status:", response.status);
         setChats([]);
+        setFilteredChats([]);
       }
     } catch (error) {
       console.error("Error fetching chats:", error);
       setChats([]);
+      setFilteredChats([]);
     } finally {
       setLoading(false);
     }
@@ -57,37 +62,40 @@ export default function ChatListPage() {
         console.error("No access token found in localStorage");
         return;
       }
-      const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-      const wsHost = BACKEND_URL.replace(/^https?:\/\//, "");
-      const wsUrl = `${wsScheme}://${wsHost}/ws/user/?token=${token}`;
-      console.log("Connecting to user WebSocket:", wsUrl);
-      socketRef.current = new WebSocket(wsUrl);
 
-      socketRef.current.onopen = () => {
-        console.log("User WebSocket connected");
-      };
+      // Delay WebSocket connection by 1 second to ensure token availability
+      setTimeout(() => {
+        const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+        // const wsHost = BACKEND_URL.replace(/^https?:\/\//, "");
+        const wsHost = BACKEND_URL.replace(/^https?:\/\//, "").replace(/\/api\/?$/, "");
 
-      socketRef.current.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        console.log("User WebSocket message:", data);
-        if (data.message) {
-          setChats((prev) => {
-            const existingChat = prev.find((chat) => chat.dataset_id === data.message.dataset_id);
-            if (existingChat) {
-              return prev.map((chat) =>
-                chat.dataset_id === data.message.dataset_id
-                  ? {
-                      ...chat,
-                      last_message: data.message.last_message,
-                      last_timestamp: data.message.last_timestamp,
-                      unread_count: data.message.unread_count, // Use backend-provided count
-                    }
-                  : chat
-              );
-            } else {
-              return [
-                ...prev,
-                {
+        const wsUrl = `${wsScheme}://${wsHost}/ws/user/?token=${token}`;
+        console.log("Connecting to user WebSocket:", wsUrl);
+        socketRef.current = new WebSocket(wsUrl);
+
+        socketRef.current.onopen = () => {
+          console.log("User WebSocket connected");
+        };
+
+        socketRef.current.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          console.log("User WebSocket message:", data);
+          if (data.message) {
+            setChats((prev) => {
+              const existingChat = prev.find((chat) => chat.dataset_id === data.message.dataset_id);
+              if (existingChat) {
+                return prev.map((chat) =>
+                  chat.dataset_id === data.message.dataset_id
+                    ? {
+                        ...chat,
+                        last_message: data.message.last_message,
+                        last_timestamp: data.message.last_timestamp,
+                        unread_count: data.message.unread_count,
+                      }
+                    : chat
+                );
+              } else {
+                const newChat = {
                   dataset_id: data.message.dataset_id,
                   title: data.message.title || "New Chat",
                   organization: data.message.organization || "Unknown",
@@ -99,30 +107,35 @@ export default function ChatListPage() {
                   last_message: data.message.last_message,
                   last_timestamp: data.message.last_timestamp,
                   unread_count: data.message.unread_count || 1,
-                },
-              ];
-            }
-          });
-        } else if (data.typing !== undefined) {
-          setTypingStatus((prev) => ({
-            ...prev,
-            [data.dataset_id]: data.is_typing,
-          }));
-        }
-      };
+                };
+                const updatedChats = [...prev, newChat];
+                setFilteredChats(updatedChats); // Update filtered chats as well
+                return updatedChats;
+              }
+            });
+          } else if (data.typing !== undefined) {
+            setTypingStatus((prev) => ({
+              ...prev,
+              [data.dataset_id]: data.is_typing,
+            }));
+          }
+        };
 
-      socketRef.current.onerror = (error) => {
-        console.error("User WebSocket error:", error);
-      };
+        socketRef.current.onerror = (error) => {
+          console.error("User WebSocket error:", error);
+          if (error instanceof Event) {
+            console.error("Error event details:", error);
+          }
+        };
 
-      socketRef.current.onclose = (event) => {
-        console.log("User WebSocket closed. Code:", event.code, "Reason:", event.reason);
-      };
+        socketRef.current.onclose = (event) => {
+          console.log("User WebSocket closed. Code:", event.code, "Reason:", event.reason);
+        };
+      }, 1000); // Delay WebSocket connection by 1 second
     };
 
     connectWebSocket();
 
-    // Refetch chats when the page regains focus
     const handleFocus = () => {
       console.log("Window regained focus, refetching chats...");
       fetchChats();
@@ -135,6 +148,20 @@ export default function ChatListPage() {
     };
   }, []);
 
+  // Filter chats based on search query
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredChats(chats);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = chats.filter((chat) => {
+        const fullName = `${chat.participant.first_name} ${chat.participant.sur_name}`.toLowerCase();
+        return fullName.includes(query);
+      });
+      setFilteredChats(filtered);
+    }
+  }, [searchQuery, chats]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -145,67 +172,68 @@ export default function ChatListPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      <header className="bg-white shadow-md p-4 flex items-center sticky top-0 z-10">
-        <h1 className="text-xl font-bold text-gray-800">Chats</h1>
-      </header>
-      <main className="flex-1 p-6">
-        <div className="max-w-4xl mx-auto space-y-4">
-          {chats.length === 0 ? (
-            <div className="bg-white p-6 rounded-lg shadow-sm text-center border border-gray-200">
-              <p className="text-gray-600">No chats available. Start a new conversation!</p>
+      <main className="flex-1">
+        <div className="max-w-5xl mx-auto bg-white rounded-lg">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+            <h1 className="text-2xl font-bold">Chats</h1>
+            <input
+              type="text"
+              placeholder="Search by Participant Name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="border border-gray-300 rounded p-2 w-full md:w-64"
+            />
+          </div>
+          {filteredChats.length === 0 ? (
+            <div className="text-center text-gray-500 py-4">
+              No chats available. Start a new conversation!
             </div>
           ) : (
-            chats.map((chat) => (
-              <div
-                key={chat.dataset_id}
-                onClick={() => router.push(`/chat/${chat.dataset_id}`)}
-                className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:bg-gray-50 cursor-pointer flex items-center space-x-4"
-              >
-                <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
-                  {chat.participant.profile_picture ? (
-                    <img
-                      src={chat.participant.profile_picture}
-                      alt={`${chat.participant.first_name} ${chat.participant.sur_name}`}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-300 flex items-center justify-center text-white font-semibold">
-                      {chat.participant.first_name[0]}
-                      {chat.participant.sur_name[0] || ""}
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-lg font-semibold text-gray-800 truncate">
-                    {chat.participant.first_name} {chat.participant.sur_name}
-                  </h2>
-                  <div className="flex items-center space-x-2">
-                    {typingStatus[chat.dataset_id] ? (
-                      <p className="text-sm text-gray-500 flex items-center">
-                        <span className="animate-pulse">...</span> Typing
-                      </p>
+            <div className="divide-y divide-gray-200">
+              {filteredChats.map((chat) => (
+                <div
+                  key={chat.dataset_id}
+                  className="hover:bg-gray-100 cursor-pointer transition px-6 py-4 flex items-center space-x-4"
+                  onClick={() => router.push(`/chat/${chat.dataset_id}`)}
+                >
+                  <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                    {chat.participant.profile_picture ? (
+                      <img
+                        src={chat.participant.profile_picture}
+                        alt={`${chat.participant.first_name} ${chat.participant.sur_name}`}
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
-                      <p className="text-sm text-gray-500 truncate">
-                        {chat.last_message || "No messages yet"}
-                      </p>
-                    )}
-                    {chat.unread_count > 0 && !typingStatus[chat.dataset_id] && (
-                      <span className="bg-blue-500 text-white text-xs font-semibold px-2 py-1 rounded-full">
-                        {chat.unread_count}
-                      </span>
+                      <div className="w-full h-full bg-gray-300 flex items-center justify-center text-white font-semibold">
+                        {chat.participant.first_name[0]}
+                        {chat.participant.sur_name[0] || ""}
+                      </div>
                     )}
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-lg font-bold text-black">
+                      {chat.participant.first_name} {chat.participant.sur_name}
+                    </h2>
+                    <div className="flex items-center space-x-2">
+                      {typingStatus[chat.dataset_id] ? (
+                        <p className="text-sm text-gray-500 flex items-center">
+                          <span className="animate-pulse">...</span> Typing
+                        </p>
+                      ) : (
+                        <p className="text-sm text-gray-500">
+                          {chat.last_message || "No messages yet"}
+                        </p>
+                      )}
+                      {chat.unread_count > 0 && !typingStatus[chat.dataset_id] && (
+                        <span className="bg-blue-500 text-white text-xs font-semibold px-2 py-1 rounded-full">
+                          {chat.unread_count}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                {chat.last_timestamp && !typingStatus[chat.dataset_id] && (
-                  <p className="text-xs text-gray-400 flex-shrink-0">
-                    {new Date(chat.last_timestamp).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                )}
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
       </main>

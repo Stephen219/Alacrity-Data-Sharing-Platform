@@ -15,6 +15,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button";
+import { BACKEND_URL } from "@/config";
 
 
 interface Analysis {
@@ -35,7 +36,7 @@ const RecentlyDeleted = () => {
       setLoading(true);
       try {
         const response = await fetchWithAuth(
-          `http://127.0.0.1:8000/research/submissions/recently-deleted/?sort=${sortOrder}` 
+          `${BACKEND_URL}/research/submissions/recently-deleted/?sort=${sortOrder}`
         );
         if (!response.ok) throw new Error("Failed to fetch deleted submissions.");
         const data = await response.json();
@@ -52,7 +53,7 @@ const RecentlyDeleted = () => {
 
   const handleRestore = async (id: number) => {
     try {
-      const response = await fetchWithAuth(`http://127.0.0.1:8000/research/submissions/restore/${id}/`, {
+      const response = await fetchWithAuth(`${BACKEND_URL}/research/submissions/restore/${id}/`, {
         method: "POST",
       });
       if (!response.ok) throw new Error("Failed to restore submission.");
@@ -65,7 +66,7 @@ const RecentlyDeleted = () => {
   const handleHardDelete = async (id: number) => {
     try {
       const response = await fetchWithAuth(
-        `http://127.0.0.1:8000/research/submissions/permanent-delete/${id}/`,
+        `${BACKEND_URL}/research/submissions/permanent-delete/${id}/`,
         { method: "DELETE" }
       );
       if (!response.ok) throw new Error("Failed to permanently delete submission.");
@@ -86,7 +87,7 @@ const RecentlyDeleted = () => {
       sortOrder={sortOrder}
       setSortOrder={setSortOrder}
       renderButtons={(id) => (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col items-end gap-4">
           {/* Delete AlertDialog */}
           <AlertDialog>
             <AlertDialogTrigger asChild>

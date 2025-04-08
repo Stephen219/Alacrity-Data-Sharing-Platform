@@ -19,6 +19,8 @@ from .views import (
     ToggleBookmarkView,
     UserBookmarksView,
     SubmittedSubmissionsView,
+    FollowedReportsView,
+    Random_repotsInDB,
 )
 
 urlpatterns = [
@@ -41,7 +43,7 @@ urlpatterns = [
     path("submissions/toggle-privacy/<int:submission_id>/", TogglePrivacyView.as_view(), name="toggle_privacy"),
     path("submissions/pending/", PendingSubmissionsView.as_view(), name="pending-submissions"),
     path("submissions/submitted/", SubmittedSubmissionsView.as_view(), name="submitted_submissions"),
-    
-
+    path("followed-reports/", FollowedReportsView.as_view(), name="followed_reports"),
+    path("random-reports/", Random_repotsInDB.as_view(), name="random_reports"),
 ]
 

@@ -1,8 +1,5 @@
+
 /* eslint-disable @typescript-eslint/no-unused-vars */
-// this is for the sake of the err   i will handle them 
-
-
-
 /**
  * @fileoverview This page displays the profile of a member in the organization.
  * It allows the organization admin to view and manage the member's details.
@@ -11,19 +8,17 @@
  * The admin can view the member's date of birth if available.
  * The admin can navigate to the "Requests Processed" tab to view the requests processed by the member.
  * The admin can block/unblock the member and remove the member from the organization.
- * 
- * 
  */
 
-
 "use client"
-import React from "react"
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { BACKEND_URL } from "@/config"
 import { fetchWithAuth } from "@/libs/auth"
 import { fetchUserData } from "@/libs/auth"
+import Image from "next/image";
+import { ClipboardX } from "lucide-react"
 
 type User = {
   id: number;
@@ -41,9 +36,28 @@ type User = {
 
 type RequestProcessed = {
   id: string;
+  researcher_id: string;
+  profile_picture: string | null;
+  researcher_name: string;
   title: string;
+  dataset_title: string;
+  dataset_id: string;
   date_processed: string;
-  status: "approved" | "rejected" | "pending";
+  request_status: "approved" | "rejected" | "pending";
+}
+
+const fetchRequestsProcessed = async (id: string): Promise<RequestProcessed[]> => {
+  try {
+    const response = await fetchWithAuth(`${BACKEND_URL}/organisation/requests-processed-by/${id}/`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    if (!response.ok) throw new Error(`Failed to fetch requests processed: ${response.statusText}`)
+    return await response.json()
+  } catch (error) {
+
+    return []
+  }
 }
 
 const fetchMemberData = async (id: string): Promise<User | null> => {
@@ -55,7 +69,7 @@ const fetchMemberData = async (id: string): Promise<User | null> => {
     if (!response.ok) throw new Error(`Failed to fetch member data: ${response.statusText}`)
     return await response.json()
   } catch (error) {
-    console.error('Error fetching member data:', error)
+
     return null
   }
 }
@@ -70,7 +84,7 @@ const toggleBlockMember = async (id: string, isBlocked: boolean) => {
     if (!response.ok) throw new Error('Failed to update block status')
     return await response.json()
   } catch (error) {
-    console.error('Error updating block status:', error)
+
     throw error
   }
 }
@@ -84,7 +98,7 @@ const removeMember = async (id: string) => {
     if (!response.ok) throw new Error('Failed to remove member')
     return true
   } catch (error) {
-    console.error('Error removing member:', error)
+
     throw error
   }
 }
@@ -98,94 +112,42 @@ export default function MemberProfilePage({ params: paramsPromise }: { params: P
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<"profile" | "requests">("profile")
+  const [searchTerm, setSearchTerm] = useState("")
+  const [sortType, setSortType] = useState<"date-asc" | "date-desc" | "status" | "">("")
+  const [originalRequests, setOriginalRequests] = useState<RequestProcessed[]>([])
 
   useEffect(() => {
     const initializePage = async () => {
       setLoading(true)
       try {
-        // Fetch current user
         const currentUserData = await fetchUserData() as unknown as User
         if (!currentUserData) {
-          setError(`Cannot load usccer with id ${params.id}`)
+          setError(`Cannot load user with id ${params.id}`)
           setLoading(false)
           return
         }
         setCurrentUser(currentUserData)
 
-        // Fetch member data
         const fetchedMember = await fetchMemberData(params.id)
         if (!fetchedMember) {
-          // setError(`Cannot load uscer with id ${params.id}`)
-          setLoading(false)
-          return (
-            <div className="container mx-auto px-4 py-8">
-              <button
-                onClick={() => window.history.back()}
-                className="flex items-center text-[#f97316] mb-6 hover:underline group transition-all"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="mr-2 group-hover:-translate-x-1 transition-transform"
-                >
-                  <path d="m12 19-7-7 7-7" />
-                  <path d="M19 12H5" />
-                </svg>
-                go back to the previous page
-              </button>
-        
-              <div className="flex flex-col items-center justify-center py-8">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="80"
-                  height="80"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  className="mb-4 text-[#f97316]"
-                >
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" opacity="0.2" />
-                  <path d="M12 7v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  <circle cx="12" cy="16" r="1" fill="currentColor" />
-                </svg>
-        
-                <div className="text-xl font-medium">Profile not found</div>
-                <p className="text-gray-500 mt-2 text-center">
-                  The profile youre looking for doesnt exist or has been removed.
-                </p>
-              </div>
-            </div>
-          )
-        }
-
-        // Access control: only org admin or self can view
-        const isOrgAdmin = currentUserData.role === 'organization_admin'
-        const isSelf = currentUserData.id === Number(params.id)
-        if (!isOrgAdmin && !isSelf) {
-          setError(`Cannot load ucser with id ${params.id}`)
           setLoading(false)
           return
         }
 
-        // Set member data with requests
-        const memberWithRequests = {
-          ...fetchedMember,
-          // TODO: UNHARDCODE THIS ONE LATER  
-          requests_processed: fetchedMember.requests_processed || [
-            { id: "1", title: "Data Analysis Request", date_processed: "2025-03-05", status: "approved" },
-            { id: "2", title: "Report Generation", date_processed: "2025-03-06", status: "rejected" },
-          ]
+        const isOrgAdmin = currentUserData.role === 'organization_admin'
+        const isSelf = currentUserData.id === Number(params.id)
+        if (!isOrgAdmin && !isSelf) {
+          setError(`Cannot load user with id ${params.id}`)
+          setLoading(false)
+          return
         }
-        setMember(memberWithRequests)
+
+        const memberWithRequests = await fetchRequestsProcessed(params.id)
+        setOriginalRequests(memberWithRequests)
+        setMember({ ...fetchedMember, requests_processed: memberWithRequests })
         setIsBlocked(fetchedMember.is_blocked || false)
       } catch (err) {
-        setError(`Cannot load ucser with id ${params.id}`)
+        setError(`Cannot load user with id ${params.id}`)
       } finally {
         setLoading(false)
       }
@@ -226,53 +188,50 @@ export default function MemberProfilePage({ params: paramsPromise }: { params: P
   if (loading) return <div className="container mx-auto py-8 px-4">Loading profile...</div>
   if (error) return <div className="container mx-auto py-8 px-4">{error}</div>
 
-
   if (!currentUser || !member) {
     return (
-    <div className="container mx-auto px-4 py-8">
-      <button
-        onClick={() => window.history.back()}
-        className="flex items-center text-[#f97316] mb-6 hover:underline group transition-all"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="mr-2 group-hover:-translate-x-1 transition-transform"
+      <div className="container mx-auto px-4 py-8">
+        <button
+          onClick={() => window.history.back()}
+          className="flex items-center text-[#f97316] mb-6 hover:underline group transition-all"
         >
-          <path d="m12 19-7-7 7-7" />
-          <path d="M19 12H5" />
-        </svg>
-        go back to the previous page
-      </button>
-
-      <div className="flex flex-col items-center justify-center py-8">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="80"
-          height="80"
-          viewBox="0 0 24 24"
-          fill="none"
-          className="mb-4 text-[#f97316]"
-        >
-          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" opacity="0.2" />
-          <path d="M12 7v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          <circle cx="12" cy="16" r="1" fill="currentColor" />
-        </svg>
-
-        <div className="text-xl font-medium">Profile not found</div>
-        <p className="text-gray-500 mt-2 text-center">
-          The profile you&apos;re looking for doesn&apos;t exist or has been removed.
-        </p>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="mr-2 group-hover:-translate-x-1 transition-transform"
+          >
+            <path d="m12 19-7-7 7-7" />
+            <path d="M19 12H5" />
+          </svg>
+          go back to the previous page
+        </button>
+        <div className="flex flex-col items-center justify-center py-8">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="80"
+            height="80"
+            viewBox="0 0 24 24"
+            fill="none"
+            className="mb-4 text-[#f97316]"
+          >
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5" opacity="0.2" />
+            <path d="M12 7v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <circle cx="12" cy="16" r="1" fill="currentColor" />
+          </svg>
+          <div className="text-xl font-medium">Profile not found</div>
+          <p className="text-gray-500 mt-2 text-center">
+            The profile you&apos;re looking for doesn&apos;t exist or has been removed.
+          </p>
+        </div>
       </div>
-    </div>
-  )
+    )
   }
 
   const isOrgAdmin = currentUser.role === 'organization_admin'
@@ -305,17 +264,21 @@ export default function MemberProfilePage({ params: paramsPromise }: { params: P
         <div className="lg:col-span-1">
           <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
             <div className="flex flex-col items-center">
-              {member.profile_picture ? (
-                <img
-                  src={member.profile_picture}
-                  alt={`${member.first_name} ${member.sur_name}`}
-                  className="rounded-full w-24 h-24 object-cover mb-4"
-                />
-              ) : (
-                <div className="rounded-full w-24 h-24 bg-[#FF6B1A] flex items-center justify-center text-white text-3xl font-bold mb-4">
-                  {member.first_name?.[0]?.toUpperCase() || ""}
-                </div>
-              )}
+
+              <Link href={`/organisation/members/${member.id}`} className="mb-4">
+                {member.profile_picture ? (
+                  <Image
+                    src={member.profile_picture}
+                    alt={`${member.first_name} ${member.sur_name}`}
+                    className="rounded-full w-24 h-24 object-cover mb-4"
+                    width={96}
+                    height={96}
+                  />
+                ) : (
+                  <div className="rounded-full w-24 h-24 bg-[#FF6B1A] flex items-center justify-center text-white text-3xl font-bold mb-4">
+                    {member.first_name?.[0]?.toUpperCase() || ""}
+                  </div>
+                )}</Link>
               <h2 className="text-2xl font-bold mb-2">
                 {member.first_name} {member.sur_name}
               </h2>
@@ -362,21 +325,19 @@ export default function MemberProfilePage({ params: paramsPromise }: { params: P
             <div className="border-b border-gray-200">
               <div className="flex -mb-px px-6">
                 <button
-                  className={`py-3 px-4 font-medium text-sm border-b-2 ${
-                    activeTab === "profile"
+                  className={`py-3 px-4 font-medium text-sm border-b-2 ${activeTab === "profile"
                       ? "border-[#F47521] text-[#F47521]"
                       : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
+                    }`}
                   onClick={() => setActiveTab("profile")}
                 >
                   Profile
                 </button>
                 <button
-                  className={`py-3 px-4 font-medium text-sm border-b-2 ${
-                    activeTab === "requests"
+                  className={`py-3 px-4 font-medium text-sm border-b-2 ${activeTab === "requests"
                       ? "border-[#F47521] text-[#F47521]"
                       : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
+                    }`}
                   onClick={() => setActiveTab("requests")}
                 >
                   Requests Processed
@@ -481,37 +442,195 @@ export default function MemberProfilePage({ params: paramsPromise }: { params: P
             {activeTab === "requests" && (
               <div className="p-6">
                 <h3 className="text-xl font-semibold mb-4">Requests Processed</h3>
-                {member.requests_processed && member.requests_processed.length > 0 ? (
-                  <div className="space-y-4">
-                    {member.requests_processed.map((request) => (
-                      <div key={request.id} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h4 className="font-medium">{request.title}</h4>
-                            <p className="text-sm text-gray-500">
-                              Processed on {formatDate(request.date_processed)}
-                            </p>
+
+                {/* Search and Sort Controls */}
+                <div className="mb-4 flex flex-col sm:flex-row gap-4">
+                  <input
+                    type="text"
+                    placeholder="Search by researcher name..."
+                    value={searchTerm}
+                    className="flex-grow p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#F47521]"
+                    onChange={(e) => {
+                      const term = e.target.value
+                      setSearchTerm(term)
+                      if (!term) {
+                        setMember(prev => ({ ...prev!, requests_processed: [...originalRequests] }))
+                      } else {
+                        setMember(prev => ({
+                          ...prev!,
+                          requests_processed: originalRequests.filter(req =>
+                            req.researcher_name.toLowerCase().includes(term.toLowerCase())
+                          )
+                        }))
+                      }
+                    }}
+                  />
+                  <div className="flex gap-2">
+                    <select
+                      className="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#F47521]"
+                      value={sortType}
+                      onChange={(e) => {
+                        const type = e.target.value as "date-asc" | "date-desc" | "status" | ""
+                        setSortType(type)
+                        setMember(prev => {
+                          const sortedRequests = [...(prev!.requests_processed || [])]
+                          if (type === "date-asc") {
+                            sortedRequests.sort((a, b) =>
+                              new Date(a.date_processed).getTime() - new Date(b.date_processed).getTime()
+                            )
+                          } else if (type === "date-desc") {
+                            sortedRequests.sort((a, b) =>
+                              new Date(b.date_processed).getTime() - new Date(a.date_processed).getTime()
+                            )
+                          } else if (type === "status") {
+                            sortedRequests.sort((a, b) =>
+                              a.request_status.localeCompare(b.request_status)
+                            )
+                          }
+                          return { ...prev!, requests_processed: sortedRequests }
+                        })
+                      }}
+                    >
+                      <option value="">Sort by...</option>
+                      <option value="date-desc">Date (Newest First)</option>
+                      <option value="date-asc">Date (Oldest First)</option>
+                      <option value="status">Status</option>
+                    </select>
+                  </div>
+                </div>
+                {member?.requests_processed && member.requests_processed.length > 0 ? (
+                  <div className="max-h-[400px] overflow-y-auto scrollbar-hide">
+                    {member.requests_processed.slice(0, 5).map((request, index) => {
+                      const truncatedDatasetTitle =
+                        request.dataset_title.length > 30
+                          ? `${request.dataset_title.substring(0, 27)}...`
+                          : request.dataset_title
+
+                      const key = request.id || `request-${index}`
+
+                      return (
+                        <div
+                          key={key}
+                          className="border rounded-lg p-4 flex items-center space-x-4 mb-4 last:mb-0"
+                        >
+                          <div className="flex-shrink-0">
+
+                            <Link href={`/researcher/profile/${request.researcher_id}`} className="flex items-center">
+                              {request.profile_picture ? (
+                                <Image
+                                  src={request.profile_picture}
+                                  alt={request.researcher_name}
+                                  className="rounded-full w-12 h-12 object-cover"
+                                  width={48}
+                                  height={48}
+                                />
+                              ) : (
+                                <div className="rounded-full w-12 h-12 bg-[#FF6B1A] flex items-center justify-center text-white text-xl font-bold">
+                                  {request.researcher_name?.[0]?.toUpperCase() || ""}
+                                </div>
+                              )} </Link>
                           </div>
-                          <span
-                            className={`px-2 py-1 rounded-full text-sm ${
-                              request.status === "approved"
-                                ? "bg-green-100 text-green-800"
-                                : request.status === "rejected"
-                                ? "bg-red-100 text-red-800"
-                                : "bg-yellow-100 text-yellow-800"
-                            }`}
-                          >
-                            {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                          </span>
+                          <div className="flex-grow">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h4 className="font-medium">{request.researcher_name}</h4>
+                                <Link href={`/organisation/admin/datasets/${request.dataset_id}`} className="text-sm text-gray-500 hover:text-[#F47521]">
+                                  <p className="text-sm text-gray-500">
+                                    Dataset: {truncatedDatasetTitle}
+                                  </p>
+                                </Link>
+                                <p className="text-sm text-gray-500">
+                                  Processed on {request.date_processed}
+                                </p>
+                              </div>
+                              <span
+                                className={`px-2 py-1 rounded-full text-sm ${request.request_status === "approved"
+                                    ? "bg-green-100 text-green-800"
+                                    : request.request_status === "rejected"
+                                      ? "bg-red-100 text-red-800"
+                                      : "bg-yellow-100 text-yellow-800"
+                                  }`}
+                              >
+                                {request.request_status.charAt(0).toUpperCase() +
+                                  request.request_status.slice(1)}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-4">
-                    No requests processed by this member yet.
-                  </p>
+
+
+
+                  <div className="text-center">
+                    <div className="relative w-24 h-24 mx-auto">
+
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-br from-orange-100 to-orange-50" />
+
+
+                      <svg
+                        className="absolute inset-0"
+                        viewBox="0 0 200 200"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+
+                        <circle cx="40" cy="40" r="4" fill="#f97316" opacity="0.3" />
+                        <circle cx="160" cy="160" r="4" fill="#f97316" opacity="0.3" />
+                        <circle cx="160" cy="40" r="4" fill="#f97316" opacity="0.3" />
+                        <circle cx="40" cy="160" r="4" fill="#f97316" opacity="0.3" />
+
+
+                        <path
+                          d="M30,100 C30,60 60,30 100,30 C140,30 170,60 170,100 C170,140 140,170 100,170 C60,170 30,140 30,100"
+                          fill="none"
+                          stroke="#f97316"
+                          strokeWidth="3"
+                          strokeDasharray="8 8"
+                          opacity="0.4"
+                        />
+
+
+                        <circle
+                          cx="100"
+                          cy="100"
+                          r="50"
+                          fill="none"
+                          stroke="#f97316"
+                          strokeWidth="2"
+                          opacity="0.6"
+                        />
+                        <circle
+                          cx="100"
+                          cy="100"
+                          r="45"
+                          fill="none"
+                          stroke="#f97316"
+                          strokeWidth="1"
+                          opacity="0.3"
+                          strokeDasharray="4 4"
+                        />
+                      </svg>
+
+
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <ClipboardX
+                          className="w-10 h-10 text-[#f97316]"
+                          strokeWidth={2}
+                        />
+                      </div>
+                    </div>
+                    <p className=" text-center py-4 font-medium text-gray-500">
+                      No requests processed by this member yet.
+                    </p>
+                  </div>
+
+
+
+
                 )}
+
               </div>
             )}
           </div>

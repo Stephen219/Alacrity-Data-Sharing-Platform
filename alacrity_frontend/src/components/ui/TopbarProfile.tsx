@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { User } from "@/types/types";
 import  { logout } from "@/libs/auth";
 import Link from "next/link";
+import Image from "next/image";
 
 function TopBarProfile({ User }: { User: User }) {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -24,9 +25,27 @@ function TopBarProfile({ User }: { User: User }) {
                     onClick={() => setIsProfileOpen(!isProfileOpen)}
                     className="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6B1A]"
                   >
-                    <div className="h-8 w-8 rounded-full bg-[#FF6B1A] flex items-center justify-center text-white">
+                    {/* <div className="h-8 w-8 rounded-full bg-[#FF6B1A] flex items-center justify-center text-white">
                       {User?.firstname[0]}
-                    </div>
+                    </div> */}
+                    {User.profile_picture ? (
+                      <Image
+                        className="h-8 w-8 rounded-full"
+                        src={User.profile_picture}
+                        alt="profile"
+                        width={32}
+                        height={32}
+                      />
+                      
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-[#FF6B1A] flex items-center justify-center text-white">
+                        {User?.firstname[0]}
+                      </div>
+                    )}
+
+
+
+
                   </button>
                 </div>
                 {isProfileOpen && (
@@ -51,7 +70,12 @@ function TopBarProfile({ User }: { User: User }) {
                       </svg>
                       Your Profile
                     </Link>
-                    <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <Link
+            href={
+              User.role === "organization_admin" || User.role === "contributor"
+                ? `/organisation/members/${User.id}/password`
+                : `/researcher/profile/${User.id}/password`
+            } className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                       <svg
                         className="inline-block w-5 h-5 mr-2 -mt-1"
                         fill="none"
@@ -72,8 +96,8 @@ function TopBarProfile({ User }: { User: User }) {
                           d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                         />
                       </svg>
-                      Settings
-                    </a>
+                      Change Password
+                    </Link>
                     <button className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={handleLogout}>
                       <svg
                         className="inline-block w-5 h-5 mr-2 -mt-1"

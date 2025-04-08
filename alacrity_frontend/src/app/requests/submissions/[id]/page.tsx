@@ -43,7 +43,7 @@ const ReviewSubmissionPage: React.FC = () => {
   useEffect(() => {
     const fetchSubmission = async () => {
       try {
-        const response = await fetchWithAuth(`${BACKEND_URL}research/submissions/review/${id}/`);
+        const response = await fetchWithAuth(`${BACKEND_URL}/research/submissions/review/${id}/`);
 
         if (!response.ok) {
           const errorData = await response.json();
@@ -76,7 +76,7 @@ const ReviewSubmissionPage: React.FC = () => {
 
   const handleApprove = async () => {
     try {
-      const response = await fetchWithAuth(`${BACKEND_URL}research/submissions/review/${id}/`, {
+      const response = await fetchWithAuth(`${BACKEND_URL}/research/submissions/review/${id}/`, {
         method: "POST",
         body: JSON.stringify({ action: "approve", message }),
         headers: { "Content-Type": "application/json" },
@@ -97,7 +97,7 @@ const ReviewSubmissionPage: React.FC = () => {
   
   const handleReject = async () => {
     try {
-      const response = await fetchWithAuth(`${BACKEND_URL}research/submissions/review/${id}/`, {
+      const response = await fetchWithAuth(`${BACKEND_URL}/research/submissions/review/${id}/`, {
         method: "POST",
         body: JSON.stringify({ action: "reject", message }),
         headers: { "Content-Type": "application/json" },
@@ -170,7 +170,7 @@ const ReviewSubmissionPage: React.FC = () => {
     
         <Card className="shadow-lg border border-gray-200 rounded-lg">
           <CardHeader>
-            <CardTitle className="text-2xl">{parse(submission.title)}</CardTitle>
+            <CardTitle className="text-2xl dark:text-gray-100 break-words">{parse(submission.title)}</CardTitle>
             <div className="text-sm text-gray-500">
               Submitted by: <span className="font-medium">{submission.researcher_email}</span> •{" "}
               {new Date(submission.submitted_at).toLocaleString()}
@@ -182,7 +182,7 @@ const ReviewSubmissionPage: React.FC = () => {
     
             <div className="mb-6">
               <div className="text-lg font-semibold">Description</div>
-              <div className="text-gray-700">{parse(submission.description)}</div>
+              <div className="text-gray-700 dark:text-gray-100 break-words">{parse(submission.description)}</div>
             </div>
     
             <Separator />
@@ -198,7 +198,7 @@ const ReviewSubmissionPage: React.FC = () => {
     
             <div className="mb-6 mt-4">
               <div className="text-lg font-semibold">Summary</div>
-              <div className="text-gray-700">{parse(submission.summary)}</div>
+              <div className="text-gray-700 dark:text-gray-100 break-words">{parse(submission.summary)}</div>
             </div>
     
             <Separator className="my-4" />

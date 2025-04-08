@@ -95,7 +95,7 @@ const PendingSubmissionsTable: React.FC<PendingSubmissionsTableProps> = ({
                 setSearchQuery(e.target.value);
                 setCurrentPage(1); 
               }}
-              className="border border-gray-300 rounded-md py-1 px-2 focus:outline-none focus:border-[#FF6B1A]"
+              className="dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 rounded-md py-1 px-2 focus:outline-none focus:border-[#FF6B1A]"
             />
           )}
           {showSortDropdown && (
@@ -123,40 +123,40 @@ const PendingSubmissionsTable: React.FC<PendingSubmissionsTableProps> = ({
         className={enableVerticalScroll ? "overflow-y-auto scrollbar-custom" : ""}
         style={enableVerticalScroll ? { maxHeight: verticalScrollHeight } : {}}
       >
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-100 uppercase tracking-wider">
                 Researcher
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-100 uppercase tracking-wider">
                 Title
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-100 uppercase tracking-wider">
                 Submitted At
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-100 uppercase tracking-wider">
                 Status
               </th>
               <th className="px-6 py-3"></th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-gray-200 dark:divide-gray-700">
             {displayedSubmissions.length > 0 ? (
               displayedSubmissions.map((submission) => (
                 <tr
                   key={submission.id}
-                  className="hover:bg-gray-100 cursor-pointer transition"
+                  className="bg-white dark:bg-gray-900 cursor-pointer transition"
                   onClick={() => handleRowClick(submission.id)}
                 >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-100">
                     {submission.researcher_email}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                     {parse(submission.title.split(" ").slice(0, 5).join(" "))}
                     {submission.title.split(" ").length > 5 ? "..." : ""}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-100">
                     {formatDate(submission.submitted_at)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-[#FF6B1A]">
@@ -166,7 +166,7 @@ const PendingSubmissionsTable: React.FC<PendingSubmissionsTableProps> = ({
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                <td colSpan={5} className="px-6 py-4 text-center text-gray-500 dark:text-gray-100">
                   No pending submissions found.
                 </td>
               </tr>

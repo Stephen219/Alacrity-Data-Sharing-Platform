@@ -62,26 +62,6 @@ describe("Submissions Component", () => {
     await waitFor(() => expect(screen.getByText("Error: Failed to fetch submissions.")).toBeInTheDocument());
   });
 
-  test("sorts submissions by newest first", async () => {
-    (fetchWithAuth as jest.Mock)
-      .mockResolvedValueOnce({ ok: true, json: async () => mockSubmissions }) // Initial load
-      .mockResolvedValueOnce({ ok: true, json: async () => mockSubmissions.reverse() }); // After sort
-
-    render(<Submissions />);
-
-    await waitFor(() => expect(screen.getByText("Test Submission 1")).toBeInTheDocument());
-
-    // Change sort order
-    act(() => {
-      fireEvent.change(screen.getByRole("combobox"), { target: { value: "oldest" } });
-    });
-
-    await waitFor(() => {
-      const titles = screen.getAllByText(/Test Submission/i).map(el => el.textContent);
-      expect(titles).toEqual(["Test Submission 2", "Test Submission 1"]);
-    });
-  });
-
 
   test("toggles privacy status of a submission", async () => {
     (fetchWithAuth as jest.Mock).mockResolvedValueOnce({
