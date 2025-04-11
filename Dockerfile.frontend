@@ -1,21 +1,26 @@
 
+FROM node:18
 
-
-# Builder stage
-FROM node:18 AS builder
+# Set the working directory in the container
 WORKDIR /app
-COPY package.json package-lock.json ./
-COPY next.config.js* ./ 
+
+# Copy package.json and package-lock.json to install dependencies
+COPY alacrity_frontend/package.json alacrity_frontend/package-lock.json ./
 RUN npm install
-COPY . .
+
+# Copy the rest of the application files
+COPY alacrity_frontend /app
+
+# Set environment variable for API URL
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
+
+EXPOSE 3000
+
+# Build the app
 RUN npm run build
 
-# Final stage
-FROM node:18 AS runner
-WORKDIR /app
-COPY --from=builder /app/package.json /app/package-lock.json ./
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/next.config.js* ./ 
+
 CMD ["npm", "run", "start"]
+
