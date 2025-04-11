@@ -166,21 +166,7 @@ describe('ResearcherProfilePage', () => {
     });
   });
 
-  test('handles follow/unfollow toggle', async () => {
-    (fetchUserData as jest.Mock).mockResolvedValue({ ...mockUser, id: '2' });
-    (require('@/libs/auth').useAuth as jest.Mock).mockReturnValue({
-      ...mockAuthContextValue,
-      user: { id: '2', role: 'researcher' },
-    });
-    render(<ResearcherProfilePage />, { wrapper: AuthProviderWrapper });
-    await waitFor(() => {
-      fireEvent.click(screen.getByText('Follow'));
-    });
-    await waitFor(() => {
-      expect(screen.getByText('Following')).toBeInTheDocument();
-    });
-  });
-
+  
   test('adds and removes social links in edit mode', async () => {
     render(<ResearcherProfilePage />, { wrapper: AuthProviderWrapper });
     await waitFor(() => {

@@ -693,11 +693,14 @@ class UserDashboardView(APIView):
             data = {
             "total_researches":AnalysisSubmission.objects.filter(dataset__contributor_id__organization=organization).count(), 
             "total_datasets": Dataset.objects.filter(contributor_id__organization=organization).count(),
-            "all_datasets": Dataset.objects.count(),
+            "all_datasets": Dataset.objects.filter(contributor_id__organization=organization).count(),
             "pending_requests": DatasetRequest.objects.filter(
                 dataset_id__contributor_id__organization=organization
             ).select_related('dataset_id', 'researcher_id').count(),
-            "approved_requests": 2,
+            "approved_requests": DatasetRequest.objects.filter(
+                dataset_id__contributor_id__organization=organization,
+                request_status="approved"
+            ).select_related('dataset_id', 'researcher_id').count(),
             "total_users": User.objects.filter(organization=organization).count(),
             "total_publishes_for_organization_data": AnalysisSubmission.objects.filter(researcher__organization=organization).count(),
         
@@ -1084,13 +1087,37 @@ class TrendingUsersView(APIView):
         # Filter researchers joined in the last 7 days and order by follower count
         trending_users = User.objects.filter(
             date_joined__gte=time_threshold,
-            role='researcher'  # Only researchers
+            role='researcher'
         ).annotate(
             follower_count=models.Count('followers')
         ).order_by('-follower_count')[:3]
         
         serializer = UserSerializer(trending_users, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+
+# class to view all followers of a user
+
+class UserFollowersView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
+        followers = user.followers.all()
+        serializer = UserSerializer(followers, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class OrganisationFollowers(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, org_id):
+        organization = get_object_or_404(Organization, Organization_id=org_id)
+        print(organization)
+        followers = organization.following.filter(role='researcher')
+        serializer = UserSerializer(followers, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
 
 
     

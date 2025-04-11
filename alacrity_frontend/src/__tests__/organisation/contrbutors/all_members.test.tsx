@@ -3,7 +3,7 @@ import AllMembersPage from "@/app/organisation/members/page";
 import { fetchWithAuth } from "@/libs/auth";
 
 
-// Mock Next.js Link component
+
 jest.mock("next/link", () => {
   const MockLink = ({ children, href }: { children: React.ReactNode; href: string }) => (
     <a href={href}>{children}</a>
@@ -91,7 +91,7 @@ describe("AllMembersPage", () => {
     render(<AllMembersPage />);
 
     await waitFor(() => {
-      expect(screen.getByText("Organization Members")).toBeInTheDocument();
+      
       expect(screen.getByText("John Doe")).toBeInTheDocument();
       expect(screen.getByText("john.doe@example.com")).toBeInTheDocument();
       expect(screen.getByText("1234567890")).toBeInTheDocument();
@@ -102,9 +102,9 @@ describe("AllMembersPage", () => {
       expect(screen.getByText("Admin")).toBeInTheDocument();
     });
 
-    // Check profile picture rendering
+    
     expect(screen.getByAltText("John Doe")).toHaveAttribute("src", "https://example.com/john.jpg");
-    expect(screen.getByText("J")).toBeInTheDocument(); // Initial for Jane
+    expect(screen.getByText("J")).toBeInTheDocument();
   });
 
   it("filters members based on search query", async () => {

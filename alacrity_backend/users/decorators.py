@@ -23,6 +23,7 @@ def get_user_from_token(token):
     # https://medium.com/@sdhone98/custom-decorator-in-python-for-validating-user-based-on-function-level-roles-85d1d0381425
     """
     Decorator to restrict access to a view based on user roles.
+    
 
     Args:
         allowed_roles (list/set): Roles permitted to access the view.
@@ -37,7 +38,9 @@ def get_user_from_token(token):
     """
 
 def role_required(allowed_roles=[]):
+    
     """
+    Note: use this decorator on class-based views, not function-based views.
     role_required Decorator
 
     This decorator restricts access to a view based on the user's role. It requires JWT authentication and checks if the user's role is in the allowed roles list.

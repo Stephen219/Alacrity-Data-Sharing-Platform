@@ -12,6 +12,7 @@ import { useSearchParams } from "next/navigation";
 import { DatasetCard } from "./datasetCard";
 import { BACKEND_URL } from "@/config";
 import { fetchWithAuth } from "@/libs/auth";
+import { useRouter } from "next/navigation";
 
 interface Dataset {
   dataset_id: string;
@@ -33,6 +34,7 @@ interface Dataset {
   averageRating?: number;
   number_of_downloads?: number;
   has_access?: boolean;
+  organization_id?: string;
   
 
 }
@@ -40,6 +42,7 @@ interface Dataset {
 const ITEMS_PER_PAGE = 6;
 
 const DatasetsPage: React.FC = () => {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
@@ -384,39 +387,54 @@ const DatasetsPage: React.FC = () => {
         <div
           className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"}`}
         >
-          {paginatedDatasets.length > 0 ? (
-            paginatedDatasets.map((dataset) => (
-              <div key={dataset.dataset_id} className="relative">
-                <Link 
-                // if has acces  the url should be redirected to analyze dataset page
-                // to don  let the user be shown  
-
-                href={dataset.has_access ==true ? `/requests/detail/${dataset.dataset_id}` : `/datasets/description?id=${dataset.dataset_id}`}
-                className="block">
-                  <DatasetCard
-                    dataset_id={dataset.dataset_id}
-                    title={dataset.title}
-                    description={dataset.description}
-                    organization={dataset.organization_name}
-                    dateUploaded={new Date(dataset.created_at).toLocaleDateString()}
-                    imageUrl={dataset.imageUrl || ""}
-                    tags={dataset.tags}
-                    category={dataset.category}
-                    entries={dataset.number_of_rows || 0}
-                    size={dataset.size || "N/A"}
-                    view_count={dataset.view_count}
-                    extraActions={() => toggleDatasetBookmark(dataset.dataset_id)}
-                    isBookmarked={bookmarkedDatasets.includes(dataset.dataset_id)}
-                    onToggleBookmark={() => toggleDatasetBookmark(dataset.dataset_id)}
-                    viewMode={viewMode}
-                    darkMode={dataset.darkMode}
-                    price={dataset.price}
-                    averageRating={dataset.averageRating}
-                  />
-                </Link>
-              </div>
-            ))
-          ) : searchParams.get("org") ? (
+{paginatedDatasets.length > 0 ? (
+  paginatedDatasets.map((dataset) => (
+    <div key={dataset.dataset_id} className="relative">
+      <div className="cursor-pointer" onClick={() => {
+        router.push(dataset.has_access 
+          ? `/requests/detail/${dataset.dataset_id}` 
+          : `/datasets/description?id=${dataset.dataset_id}`);
+      }}>
+        <DatasetCard
+          dataset_id={dataset.dataset_id}
+          title={dataset.title}
+          description={dataset.description}
+         
+          organization={
+            <span 
+              className=" hover:underline cursor-pointer" 
+              onClick={(e) => {
+                e.stopPropagation(); 
+                router.push(`/organisation/profile/${dataset.organization_id}`);
+              }}
+            >
+              {dataset.organization_name}
+            </span>
+          }
+          dateUploaded={new Date(dataset.created_at).toLocaleDateString()}
+         
+          imageUrl={dataset.imageUrl || `https://picsum.photos/300/200?random=${dataset.dataset_id}`}
+          tags={dataset.tags}
+          category={dataset.category}
+          entries={dataset.number_of_rows || 0}
+          size={dataset.size || "N/A"}
+          view_count={dataset.view_count}
+          extraActions={() => toggleDatasetBookmark(dataset.dataset_id)}
+          isBookmarked={bookmarkedDatasets.includes(dataset.dataset_id)}
+          onToggleBookmark={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleDatasetBookmark(dataset.dataset_id);
+          }}
+          viewMode={viewMode}
+          darkMode={dataset.darkMode}
+          price={dataset.price}
+          averageRating={dataset.averageRating}
+        />
+      </div>
+    </div>
+  ))
+) : searchParams.get("org") ? (
             <div className="col-span-full text-center py-8">
               <p className="text-lg text-gray-600 dark:text-gray-300">
                 This organization has absolutely zero datasets.

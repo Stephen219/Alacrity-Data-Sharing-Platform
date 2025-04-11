@@ -1,4 +1,26 @@
 
+/**
+ * DatasetDetailPage Component
+ * 
+ * @description This component is responsible for fetching and displaying the details of a specific dataset.
+ * It provides functionality for authorized users to edit the dataset's information, including title, description,
+ * price, category, and tags. Users can also toggle the dataset's public visibility, delete the dataset, or view
+ * users with access to the dataset. The component ensures that only users with valid roles or matching organizations
+ * can make modifications.
+ * 
+ * @param {Promise<{ id: string }>} paramsPromise - A promise resolving to the route parameters, including the dataset ID.
+ * 
+ * @returns {JSX.Element} The rendered JSX element for the dataset detail page.
+ */
+/**
+ * DatasetDetailPage component
+ * @description This component fetches and displays the details of a specific dataset.
+ * It allows users to edit the dataset's information, including title, description, price, category, and tags.
+ * 
+ */
+
+
+
 
 "use client"
 

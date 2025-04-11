@@ -57,7 +57,7 @@ class PublishedResearch(models.Model):
         related_name="published_research"
     )
     visibility = models.CharField(max_length=20, choices=[('public', 'Public'), ('private', 'Private')], default='public')
-    tags = models.JSONField(default=list)  # Store tags as a JSON array
+    tags = models.JSONField(default=list)  
     likes_count = models.PositiveIntegerField(default=0)
     bookmarks_count = models.PositiveIntegerField(default=0)
     is_private = models.BooleanField(default=False)

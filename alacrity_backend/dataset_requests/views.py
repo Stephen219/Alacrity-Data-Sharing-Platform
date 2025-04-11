@@ -232,7 +232,11 @@ class request_actions(APIView):
     def post(self, request, id):
         request_id = id
         action = request.data.get('action')
+        print ("######################"* 20)
+        print(request.data)
         print(request_id, action)
+        print(f"Received request for ID: {request_id} and action: {action}")
+        
 
         if not request_id:
             return Response({'error': 'Please provide a request_id'}, status=status.HTTP_400_BAD_REQUEST)
@@ -271,9 +275,9 @@ class request_actions(APIView):
                 message=f"Your dataset request for '{dataset_request.dataset_id.title}' has been approved."
             )
 
-        elif action == 'reject':
+        elif action.strip().lower() == 'reject':
             dataset_request.request_status = 'denied'
-            dataset_request.request_status = 'approved'
+            
             dataset_request.updated_by = request.user  
             dataset_request.updated_at = timezone.now()
             dataset_request.save()

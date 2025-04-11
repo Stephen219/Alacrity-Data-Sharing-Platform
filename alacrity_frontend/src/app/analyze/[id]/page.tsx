@@ -1,4 +1,35 @@
+/**
+ * @fileoverview AnalyzePage Component
+ * 
+ * This component serves as a comprehensive data analysis and visualization workspace. 
+ * It allows users to explore datasets, perform statistical analyses, and document insights. 
+ * Key features include:
+ * 
+ * - **Dataset Overview**: Provides a summary of dataset statistics, including total rows, duplicate rows, 
+ *   missing values, numeric statistics, and categorical data visualizations.
+ * - **Data Cleaning**: Enables toggling between raw and cleaned datasets, with options to remove duplicates 
+ *   and fill missing values.
+ * - **Analysis Setup**: Allows users to configure and run various statistical operations, such as descriptive 
+ *   statistics, inferential tests (e.g., T-Test, ANOVA), and correlation analyses.
+ * - **Results Visualization**: Displays numerical results, contingency tables, and graphical visualizations 
+ *   for the selected analysis.
+ * - **Research Notes**: Provides a space for users to document observations and insights during analysis.
+ * - **Submission**: Facilitates the submission of research findings for approval, with a rich text editor 
+ *   for detailed documentation.
+ * - **Interactive Tour**: Guides first-time users through the interface with step-by-step tooltips.
+ * 
+ * The component integrates with backend APIs for dataset retrieval, analysis execution, and encrypted 
+ * dataset downloads. It also includes user-friendly features like debounced inputs, local storage for 
+ * notes, and customizable chart types for categorical data visualization.
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+
+/**
+ * @fileoverview Analyze page for data analysis and visualization
+ * This component provides a user interface for performing various statistical analyses on datasets.
+ * 
+ */
 
 
 
@@ -132,16 +163,17 @@ const operators = [
   { value: "<=", label: "Less or Equal (<=)" },
 ]
 
-// Chart colors
+
+
 const CHART_COLORS = [
-  "#f97316", 
-  "#fb923c", 
-  "#fdba74", 
-  "#ffedd5",
-  "#ea580c", 
-  "#9a3412", 
-  "#c2410c", // Dark orange
+  "#3b82f6", // Blue
+  "#ef4444", // Red
+  "#10b981", // Green
+  "#8b5cf6", // Purple
   "#f59e0b", // Amber
+  "#ec4899", // Pink
+  "#06b6d4", // Cyan
+  "#6366f1", // Indigo
 ]
 
 const initialState = {
@@ -221,12 +253,12 @@ const AnalyzePage = () => {
   const [showDatasetModal, setShowDatasetModal] = useState(false);
 
   //check is user already left a review so pop up is only shown if review hasnt been left
-  useEffect(() => {
-    const hasReviewed = localStorage.getItem(`hasReviewed_${id}`);
-    if (!hasReviewed) {
-      setShowDatasetModal(true);
-    }
-  }, [id]);
+  // useEffect(() => {
+  //   const hasReviewed = localStorage.getItem(`hasReviewed_${id}`);
+  //   if (!hasReviewed) {
+  //     setShowDatasetModal(true);
+  //   }
+  // }, [id]);
 
   // Check if this is the first visit
   useEffect(() => {
@@ -616,6 +648,39 @@ const AnalyzePage = () => {
         <div className="mb-6 p-4 rounded-lg shadow-lg" style={{ backgroundColor: "#f97316" }}>
           <h1 className="text-2xl sm:text-3xl font-bold text-center text-white">{dataset.title}</h1>
           <p className="text-white/80 text-center mt-1">Data Analysis Workspace</p>
+
+         
+
+        </div>
+        <div className="flex justify-between items-center mb-6">
+        {/* <button
+           onClick={() => setShowDatasetModal(true)}
+           className="flex items-center px-4 py-2 rounded-md text-white bg-[#f97316] hover:bg-orange-600 focus:outline-none"
+          >
+            
+            Give Feedback on Dataset
+          </button> */}
+        
+
+          <button
+            onClick={() => setShowDatasetModal(true)}
+            className="flex items-center px-4 py-2 rounded-md text-white bg-[#f97316] hover:bg-orange-600 focus:outline-none"
+          >
+            <FileText className="mr-2" /> Have some feedback?
+          </button>
+
+
+         
+          <button
+            onClick={handleDownload}
+            className={`flex items-center px-4 py-2 rounded-md text-white bg-[#f97316] hover:bg-orange-600 focus:outline-none ${
+              downloadLoading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            disabled
+          >
+            {downloadLoading ? <span>Downloading...</span> : <Download className="mr-2" />}
+            Download encrypted Dataset
+          </button>
         </div>
 
         <div className="w-full mb-6">
@@ -1502,7 +1567,9 @@ const AnalyzePage = () => {
                   I Agree
                 </button>
               </div>
+             
             </div>
+            iiidi
           </div>
         )}
       </div>

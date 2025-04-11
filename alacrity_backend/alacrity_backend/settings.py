@@ -31,11 +31,11 @@ load_dotenv()
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
+
 SECRET_KEY = os.getenv('SECRET_KEY', '9cdf91842b864472c0570e917223afcc51a390b39a083a3f0de114cadf408f41')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
 
 ASGI_APPLICATION = "alacrity_backend.asgi.application"
 
@@ -123,7 +123,7 @@ if os.getenv('ENV') == 'production':
         },
     }
 else:
-    # Use InMemoryChannelLayer for development
+   
     CHANNEL_LAYERS = {
         'default': {
             'BACKEND': 'channels.layers.InMemoryChannelLayer',
@@ -239,7 +239,7 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.MultiPartParser',
         'rest_framework.parsers.FormParser',
     ],
-    'DEFAULT_PERMISSION_CLASSES': [],  # Empty to respect view-level permissions
+    'DEFAULT_PERMISSION_CLASSES': [],  
     'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
 }
 

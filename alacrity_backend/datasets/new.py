@@ -519,6 +519,8 @@ def encode_column(values: List, col_type: str) -> List[float]:
 @api_view(['GET'])
 def download_dataset(request, dataset_id):
     """Download entire dataset with HE encryption, 
+    TODO: ADD MULTITHREADING FOR ENCRYPTION AND COMPRESSION   IT IT VERY SLOW
+
 
     Args:
         request: Django request object

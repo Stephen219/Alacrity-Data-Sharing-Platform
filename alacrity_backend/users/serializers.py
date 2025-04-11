@@ -66,7 +66,20 @@ class UserSerializer(serializers.ModelSerializer):
         return AnalysisSubmissionSerializer(researches, many=True).data
 
     def get_bookmarked_researches(self, obj):
-        return []  
+
+        #  so in the analysis submission model we have a field called bookmarked_by which is a many to many field with the user model
+        #  so we can filter the analysis submission model by the user and get all the bookmarked research for that user
+        #  and then we can serialize it using the AnalysisSubmissionSerializer and return it
+        #  so we can filter the analysis submission model by the user and get all the bookmarked research for that user
+        #  and then we can serialize it using the AnalysisSubmissionSerializer and return it
+        #  so we can filter the analysis submission model by the user and get all the bookmarked research for that user
+        bookmarked_researches = AnalysisSubmission.objects.filter(
+            bookmarked_by=obj, status="published", is_private=False
+        )
+        return bookmarked_researches
+    
+
+
     def get_followers_count(self, obj):
         return obj.followers.count()
 

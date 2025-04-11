@@ -90,6 +90,7 @@ import { useState, useEffect } from "react";
 import { fetchWithAuth } from "@/libs/auth";
 import { BACKEND_URL } from "@/config";
 import { User } from "@/types/types";
+import Link from "next/link";
 
 type Organization = {
   Organization_id: string;
@@ -601,7 +602,7 @@ export default function OrganizationProfilePage() {
           />
         </div>
 
-        <div className="px-6 py-4 flex flex-col md:flex-row md:items-end relative">
+        <div className="px-6 py-4 flex flex-col md:flex-row md:items-end relative dark:bg-gray-900">
           <div className="absolute -top-16 left-6 md:left-6 group">
             {profilePreview || orgData.profile_picture ? (
               <div className="h-32 w-32 rounded-full overflow-hidden bg-white border-4 border-white shadow-md relative">
@@ -677,7 +678,7 @@ export default function OrganizationProfilePage() {
             />
           </div>
 
-          <div className="mt-16 md:mt-0 md:ml-36 flex-grow">
+          <div className="mt-16 md:mt-0 md:ml-36 flex-grow ">
             {!isEditing ? (
               <>
                 <h2 className="text-2xl font-bold">{orgData.name}</h2>
@@ -840,13 +841,21 @@ export default function OrganizationProfilePage() {
           </div>
         </div>
 
-        <div className="border-t border-gray-200 px-6 py-4">
+        <div className="border-t border-gray-200 px-6 py-4 dark:bg-gray-900">
           <div className="flex flex-wrap justify-between">
             <div className="flex space-x-8">
+             
+              
+             <Link href= {`/organisation/followers/${orgData.Organization_id}`}
+              className="hover:underline flex items-center">
+            
+             
               <div className="text-center">
                 <span className="block font-bold text-xl">{orgData.followers_count}</span>
                 <span className="text-gray-600">Followers</span>
               </div>
+              </Link>
+              
               {/* <div className="text-center">
                 <span className="block font-bold text-xl">{orgData.following_count}</span>
                 <span className="text-gray-600">Following</span>
@@ -909,14 +918,14 @@ export default function OrganizationProfilePage() {
 
         {!isEditing ? (
           orgData.bio && (
-            <div className="px-6 py-4 border-t border-gray-200">
+            <div className="px-6 py-4 border-t border-gray-200 dark:bg-gray-900">
               <h3 className="font-semibold mb-2">About</h3>
               <p className="text-gray-700">{orgData.bio}</p>
             </div>
           )
         ) : (
-          <div className="px-6 py-4 border-t border-gray-200">
-            <label htmlFor="bio" className="block text-sm font-medium text-gray-700">
+          <div className="px-6 py-4 border-t border-gray-200 dark:bg-gray-900">
+            <label htmlFor="bio" className="block text-sm font-medium text-gray-700 dark:text-gray-100">
               About
             </label>
             <textarea
@@ -932,7 +941,7 @@ export default function OrganizationProfilePage() {
         )}
 
         {isEditing && (
-          <div className="px-6 py-4 border-t border-gray-200">
+          <div className="px-6 py-4 border-t border-gray-200 dark:bg-gray-900">
             <h3 className="font-semibold mb-2">Social Links</h3>
             {formData.social_links.length > 0 && (
               <div className="space-y-2 mb-4">
@@ -1008,7 +1017,7 @@ export default function OrganizationProfilePage() {
           </div>
         )}
 
-        <div className="px-6 py-4 border-t border-gray-200 text-sm text-gray-600">
+        <div className="px-6 py-4 border-t border-gray-200 dark:bg-gray-900 text-sm text-gray-600 dark:text-gray-200">
           <div className="flex items-center">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -1036,12 +1045,12 @@ export default function OrganizationProfilePage() {
         </div>
 
         {datasets.length > 0 ? (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="bg-white rounded-lg shadow-md p-4 dark:bg-gray-900">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 dark:bg-gray-900">
               {datasets.map((dataset) => (
                 <div
                   key={dataset.dataset_id}
-                  className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                  className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow dark:bg-gray-900"
                 >
                   <div className="h-40 bg-gray-200 relative overflow-hidden">
                   <img
@@ -1072,7 +1081,9 @@ export default function OrganizationProfilePage() {
 
                   <div className="p-4">
                     <h3 className="font-bold text-lg mb-1 hover:text-[#F47521] transition-colors">
-                      <a href={`/datasets/${dataset.dataset_id}`}>{dataset.title}</a>
+                    
+                      <a href={`/datasets/description?id=${dataset.dataset_id}`}>
+                      {dataset.title}</a>
                     </h3>
                     <p className="text-gray-600 text-sm mb-3">{truncateDescription(dataset.description)}</p>
                     <div className="flex justify-between items-center text-sm text-gray-500">
@@ -1120,7 +1131,7 @@ export default function OrganizationProfilePage() {
                 </svg>
               </button>
             </div>
-          </>
+          </div>
         ) : (
           <div className="bg-white rounded-lg shadow-md p-8 text-center">
             <svg

@@ -3,7 +3,9 @@ from .views import (
     ChangePasswordView, ForgotPasswordView, MonthlyUsersView, RegisterView, ResetPasswordView, WeeklyActivityView,
     LoginView, UserView, CSRFTokenView, LogoutView, UserDashboardView,
     AllOrganizationMembersViews, MemberProfileView, LoggedInUser, DatasetWithAccessView,
-    ProfilePictureUpdateView, FollowUserView, UnfollowUserView , most_followed_users , top_researchers , SearchView ,TrendingUsersView
+    ProfilePictureUpdateView, FollowUserView, UnfollowUserView , UserFollowersView,
+      most_followed_users , top_researchers , SearchView ,TrendingUsersView,
+      OrganisationFollowers
 )
 from .user_chat_view import SearchUsersView, StartChatView, ConversationDetailView, MessageListView, UserConversationsView 
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -13,6 +15,10 @@ urlpatterns = [
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("login/", LoginView.as_view(), name="login"),
     path("profile/", LoggedInUser.as_view(), name="profile"),
+    path("followers/<str:user_id>/", UserFollowersView.as_view(), name="followers"),
+    path("organisation_followers/<str:org_id>/", OrganisationFollowers.as_view(), name="organisation_followers"),
+
+
     path("datasetsWithAccess/", DatasetWithAccessView.as_view(), name="dataset"),
     path("profile_pic_update/", ProfilePictureUpdateView.as_view(), name="profile-pic-update"),
     path("api/search-users/", SearchUsersView.as_view(), name="search_users"),
@@ -34,10 +40,12 @@ urlpatterns = [
     path("api/conversations/<int:conversation_id>/messages/", MessageListView.as_view(), name="message_list"),
     path("api/conversations/", UserConversationsView.as_view(), name="user_conversations"),
 
+
     path("top-researchers/", most_followed_users.as_view(), name="most-followed-users"),
     path("top-fielders/", top_researchers.as_view(), name="top-researchers"),
     path("search/", SearchView.as_view(), name="search"),
     path("trending/",TrendingUsersView.as_view(), name="trending-users"),
     path('change-password/', ChangePasswordView.as_view(), name='change-password'),
+
 
 ]

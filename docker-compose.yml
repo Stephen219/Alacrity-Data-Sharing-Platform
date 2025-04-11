@@ -43,6 +43,8 @@ services:
     networks:
       - app-network
 
+    restart: always
+
   backend-1:
     build:
       context: .
@@ -84,6 +86,8 @@ services:
     networks:
       - app-network
 
+    restart: always
+
   backend-2:
     build:
       context: .
@@ -113,9 +117,11 @@ services:
       migration:
         condition: service_completed_successfully
     volumes:
-      - /storage1:/storage1  # Mount /storage1 as a volume to the container
+      - /storage1:/storage1  
     networks:
       - app-network
+
+    restart: always
 
   backend-3:
     build:
@@ -150,6 +156,10 @@ services:
     networks:
       - app-network
 
+    restart: always
+
+  
+
   mysql:
     build:
       context: .
@@ -171,6 +181,9 @@ services:
     networks:
       - app-network
 
+    restart: always
+
+
 
   redis:
     image: redis:latest
@@ -183,6 +196,7 @@ services:
 
     networks:
       - app-network
+    restart: always 
 
 
   nginx:
@@ -202,6 +216,7 @@ services:
         condition: service_started
     networks:
       - app-network
+    restart: always
 
 volumes:
   db_data:

@@ -1,4 +1,14 @@
+/**
+ * @fileoverview Datasets page for organization admins.
+ * This component provides a user interface for managing and viewing datasets
+ * within an organization. It includes features such as searching, filtering,
+ * and sorting datasets, as well as displaying dataset details in a grid layout.
+ * The page fetches datasets and user information from the backend and dynamically
+ * updates the displayed datasets based on user interactions.
+ */
 /* eslint-disable @typescript-eslint/no-unused-vars */
+
+
 "use client"
 
 import { useState, useEffect, MouseEvent, SetStateAction } from "react"

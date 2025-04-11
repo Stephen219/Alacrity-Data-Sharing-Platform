@@ -284,7 +284,7 @@ export default function ChatPage({ params }: ChatPageProps) {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      <header className="bg-white p-4 flex items-center sticky top-0 z-10">
+      <header className=" p-4 flex items-center sticky top-0 z-10 dark:bg-gray-900">
         <button
           onClick={() => router.push("/chat/users/chats")}
           className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -292,7 +292,7 @@ export default function ChatPage({ params }: ChatPageProps) {
         >
           <ArrowLeft className="w-6 h-6 text-gray-700" />
         </button>
-        <div className="flex items-center ml-3">
+        <div className="flex items-center ml-3   rounded-full p-2">
           <div className="w-10 h-10 rounded-full overflow-hidden mr-3">
             {recipient?.profile_picture ? (
               <img
@@ -301,14 +301,14 @@ export default function ChatPage({ params }: ChatPageProps) {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-500 text-white font-semibold">
+              <div className="w-full h-full flex items-center justify-center bg-alacrityyellow text-white font-semibold">
                 {recipient?.first_name?.[0] || "U"}
                 {recipient?.last_name?.[0] || ""}
               </div>
             )}
           </div>
           <div className="flex-1">
-            <h1 className="text-xl font-bold text-gray-800">
+            <h1 className="text-xl font-bold ">
               {recipient ? `${recipient.first_name} ${recipient.last_name}` : "Chat"}
             </h1>
           </div>
@@ -326,7 +326,7 @@ export default function ChatPage({ params }: ChatPageProps) {
         </span>
       </header>
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto dark:bg-gray-900">
         <div className="max-w-4xl mx-auto space-y-4">
           {messages.length === 0 ? (
             <div className="text-center text-gray-500 py-4">
@@ -389,8 +389,8 @@ export default function ChatPage({ params }: ChatPageProps) {
               {isTyping && (
                 <div key="typing-indicator" className="flex justify-start px-6 py-2">
                   <div className="flex items-end space-x-2 max-w-[70%]">
-                    <div className="w-8 h-8 rounded-full bg-gray-500" />
-                    <div className="p-3 rounded-lg bg-white text-gray-800 rounded-bl-none border border-gray-200">
+                    <div className="w-8 h-8 rounded-full " />
+                    <div className="p-3 rounded-lg  text-gray-800 rounded-bl-none border border-gray-200">
                       <span className="animate-pulse">...</span>
                     </div>
                   </div>
@@ -402,14 +402,14 @@ export default function ChatPage({ params }: ChatPageProps) {
         </div>
       </main>
 
-      <footer className="bg-white border-t border-gray-200">
+      <footer className="border-t border-gray-200 bg-white dark:bg-gray-900">
         <div className="max-w-4xl mx-auto flex items-center gap-3 p-4">
           <textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Type your message..."
-            className="flex-1 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-gray-800 placeholder-gray-400"
+            className="flex-1 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:[#f97316] resize-none  "
             rows={2}
           />
           <button

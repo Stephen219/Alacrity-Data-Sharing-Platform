@@ -1,12 +1,12 @@
 "use client";
 import ApproveRequest from "@/components/requests/card";
 import { withAccessControl } from "@/components/auth_guard/AccessControl";
-import { useParams } from "next/navigation"; // Use useParams to get the ID from URL
+import { useParams } from "next/navigation";
 
 function Home() {
-  const { id } = useParams(); // Get the id from the URL
+  const { id } = useParams(); 
 
-  return <ApproveRequest requestId={id} />; // Pass id as requestId prop
+  return <ApproveRequest requestId={id} />; 
 }
 
 export default withAccessControl(Home, ['organization_admin', 'contributor']);
