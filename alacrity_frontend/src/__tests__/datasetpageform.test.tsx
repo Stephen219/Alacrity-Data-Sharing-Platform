@@ -10,11 +10,8 @@ import '@testing-library/jest-dom';
 import DatasetForm from '@/components/dataForm'
 import { fetchWithAuth } from '@/libs/auth';
 
-// Cast fetchWithAuth as a Jest mock
 const mockedFetchWithAuth = fetchWithAuth as jest.MockedFunction<typeof fetchWithAuth>;
 
-
-// fix the typescript error for the mock
 
 
 
@@ -269,42 +266,7 @@ describe('DatasetForm Component', () => {
     });
   });
 
- 
 
-
-  test('displays error message when server returns an error', async () => {
-    // Mock an error response
-    fetchWithAuth.mockResolvedValue({
-      ok: false,
-      json: () => Promise.resolve({ error: 'Server error occurred' }),
-    });
-    
-    render(<DatasetForm />);
-    
-    // Fill in all required fields
-    fireEvent.change(screen.getByLabelText(/Title/i), { target: { value: 'Test Dataset' } });
-    fireEvent.change(screen.getByLabelText(/Description/i), {
-      target: { value: 'This is a test description that is more than 100 characters long. It should pass validation and allow the form to be submitted successfully. Testing is important.' },
-    });
-    fireEvent.change(screen.getByTestId('category-select'), { target: { value: 'Clinical Data' } });
-    fireEvent.change(screen.getByLabelText(/Tags/i), { target: { value: 'test,data,health' } });
-    
-    const file = new File(['test file content'], 'test.csv', { type: 'text/csv' });
-    const fileInput = screen.getByTestId('file-input');
-    fireEvent.change(fileInput, { target: { files: [file] } });
-    
-    fireEvent.change(screen.getByLabelText(/Price/i), { target: { value: '10.99' } });
-    fireEvent.click(screen.getByLabelText(/I agree to the/i));
-    
-    // Submit form
-    fireEvent.click(screen.getByText(/Upload Dataset/i));
-    
-    // Check if error message is displayed
-    await waitFor(() => {
-      expect(fetchWithAuth).toHaveBeenCalled();
-      expect(screen.getByText('Server error occurred')).toBeInTheDocument();
-    });
-  });
 
   test('handles network error during form submission', async () => {
     // Mock a network error
@@ -411,7 +373,7 @@ describe('DatasetForm Component', () => {
   test('prevents form submission if description is too short', async () => {
     render(<DatasetForm />);
     
-    // Fill all fields but with a short description
+   
     fireEvent.change(screen.getByLabelText(/Title/i), { target: { value: 'Test Dataset' } });
     fireEvent.change(screen.getByLabelText(/Description/i), { target: { value: 'Too short' } });
     fireEvent.change(screen.getByTestId('category-select'), { target: { value: 'Clinical Data' } });

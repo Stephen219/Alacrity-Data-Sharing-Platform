@@ -1,4 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/**
+ * @fileoverview Followers list page
+ * 
+ * This component renders a searchable list of followers for a specific user.
+ * It fetches the followers' data from the backend using the user's ID, 
+ * displays the followers in a card-like format, and allows filtering 
+ * through a search input. The component handles loading states, errors, 
+ * and displays appropriate messages when no followers are found or when 
+ * the search yields no results.
+ * 
+ * Features:
+ * - Fetches followers data from the backend using an authenticated request.
+ * - Displays followers' profile pictures, names, usernames, follower counts, and fields.
+ * - Provides a search bar to filter followers by name, username, or field.
+ * - Handles loading and error states gracefully.
+ * - Responsive design for better user experience across devices.
+ */
 "use client";
 
 import { useState, useEffect } from "react";

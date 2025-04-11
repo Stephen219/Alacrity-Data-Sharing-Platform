@@ -22,6 +22,7 @@ class DatasetRequestSerializer(serializers.ModelSerializer):
             'dataset_title',
             'dataset_description',
             'researcher_name',
+            'researcher_id',  
             'researcher_field',
             'researcher_description',  
             'request_status',

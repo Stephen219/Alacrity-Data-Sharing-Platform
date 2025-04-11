@@ -24,7 +24,7 @@ class SearchUsersView(APIView):
         ])
 
 class StartChatView(APIView):
-    @role_required('researcher')
+    @role_required(['contributor', 'researcher', 'organization_admin'])
     def get(self, request, recipient_id):
         recipient = get_object_or_404(User, id=recipient_id)
         if recipient == request.user:
@@ -38,7 +38,7 @@ class StartChatView(APIView):
 
 class ConversationDetailView(APIView):
     permission_classes = [IsAuthenticated]
-
+    @role_required(['contributor', 'researcher', 'organization_admin'])
     def get(self, request, conversation_id):
         conversation = get_object_or_404(Conversation, id=conversation_id)
         if request.user not in (conversation.participant1, conversation.participant2):

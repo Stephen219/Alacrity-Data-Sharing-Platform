@@ -1,4 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+/**
+ * @fileoverview Followers list page
+ * @package @alacrity/researcher
+ * it should display a list of followers for a researcher
+ * it should display a search input to filter followers by name or field
+ * it should display a button to view a follower's profile
+ * it should display a message when there are no followers found
+ * it should display a loading state while fetching followers
+ * it should display an error message if fetching followers fails
+ */
 "use client";
 
 import { useState, useEffect } from "react";

@@ -22,6 +22,7 @@ import TableHeader from "@tiptap/extension-table-header";
 import { useEffect } from "react";
 import Image from "@tiptap/extension-image";
 import { Editor } from "@tiptap/react";
+import { PasteImage } from "./pasteImage";
 
 interface EditorProps {
   content: string;
@@ -43,6 +44,7 @@ const TextEditor = ({ content, onChange, editorInstance, setEditorInstance,
   const editor = useEditor({
     extensions: [
       StarterKit,
+      PasteImage,
       Image,
       Heading.configure({ levels: [1, 2, 3] }),
       Bold,

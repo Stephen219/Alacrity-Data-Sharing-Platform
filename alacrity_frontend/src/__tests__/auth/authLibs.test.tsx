@@ -104,11 +104,11 @@ describe("Authentication Functions", () => {
     });
 
     it("handles network error", async () => {
-      (global.fetch as jest.Mock).mockRejectedValue(new Error("Network error"));
+      (global.fetch as jest.Mock).mockRejectedValue(new Error("Network error.Please try again "));
 
       const result = await login("test@example.com", "password123");
 
-      expect(result).toEqual({ success: false, error: "Network error" });
+      expect(result).toEqual({ success: false, error: "Network error.Please try again" });
     });
   });
 
