@@ -40,16 +40,40 @@ def get_user_from_token(token):
 def role_required(allowed_roles=[]):
     
     """
-    Note: use this decorator on class-based views, not function-based views.
+    Note: use this decorator on class-based views, not function-based views therefore you are encoraged to use class-based views i
     role_required Decorator
 
     This decorator restricts access to a view based on the user's role. It requires JWT authentication and checks if the user's role is in the allowed roles list.
+
+    
+    Returns:
+        function: A wrapped view with role-based access control.
+
+    
+        Raises:
+            - 401 Unauthorized if authentication fails.
+            - 403 Forbidden if the user's role is not authorized.
+            - 500 Internal Server Error for other exceptions.
     """
 
 
     def decorator(view_func):
+        """
+        Decorator to restrict access to a view based on user roles.
+        
+        Raises:
+            - 401 Unauthorized if authentication fails.
+            - 403 Forbidden if the user's role is not authorized.
+            - 500 Internal Server Error for other exceptions.
+        """
         @wraps(view_func)
         def wrapped_view(self,request, *args, **kwargs):
+            """
+            Wrapped view function that performs role-based access control.
+            
+            Returns:
+                Response: A JSON response indicating the result of the access control.
+            """
             try:
                 print("Incoming Headers:", request.headers)
                 

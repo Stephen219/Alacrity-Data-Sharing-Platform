@@ -102,11 +102,25 @@ class AddContributors(APIView):
 
     """
     Add a new contributor to the organization.
+    This endpoint is only accessible to organization admins.
+    Arguments:
+        - request: The HTTP request object containing the data for the new contributor.
+    Returns:
+        - A JSON response with the status of the operation.
 
     """
 
     @role_required('organization_admin')
     def post(self, request):
+        """
+        Add a new contributor to the organization.
+        This endpoint returns a JSON response with the status of the operation.
+        The request data should include the following fields:
+        - first_name: The first name of the contributor.
+        - sur_name: The surname of the contributor.
+        - role: The role of the contributor (optional, defaults to 'contributor').
+        - email: The email address of the contributor.  
+        """
         
         data = request.data.copy()
         print (data)
@@ -178,6 +192,16 @@ class AddContributors(APIView):
 class ActivateContributorAccount(APIView):
     permission_classes = [AllowAny]
     def get(self, request):
+        """
+        Retrieve the activation token and prompt the user to set their password.
+        This endpoint is used to check if the activation link is valid and not expired.
+        Arguments:
+            - request: The HTTP request object containing the activation token.
+        Returns:
+            - A JSON response indicating whether the activation link is valid or not.
+
+        
+        """
         token = request.GET.get('token')
         activation_token = get_object_or_404(ActivationToken, token=token)
         
@@ -188,6 +212,14 @@ class ActivateContributorAccount(APIView):
 
     permission_classes = [AllowAny]
     def post(self, request):
+        """
+        Activate the contributor's account using the provided token and password.
+        This endpoint is used to set the password for the new contributor and activate their account.
+        Arguments:
+            - request: The HTTP request object containing the activation token and password.
+            Returns:
+                - A JSON response indicating the status of the activation process.
+                """
         token = request.data.get('token')
         password = request.data.get('password')
         confirm_password = request.data.get('confirm_password')  #
@@ -212,7 +244,15 @@ class ActivateContributorAccount(APIView):
 class RegisterOrganizationView(APIView):
     permission_classes = [AllowAny]
 
+
     def post(self, request):
+        """
+        This endpoint is used to register a new organization.
+        Arguments:
+            - request: The HTTP request object containing organization data.
+        Returns:
+            - A JSON response with the status of the registration process.
+        """
         data = request.data.copy()
         data['admin']['username'] = generate_username(data['admin']['first_name'], data['admin']['sur_name'])
         data['admin']['password2'] = data['admin']['password']
@@ -238,6 +278,15 @@ class OrganizationProfileView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, org_id):
+        """
+        Retrieve the organization profile by organization ID.
+        This endpoint returns the organization details along with the number of datasets associated with it.
+        Arguments:
+            - request: The HTTP request object.
+            - org_id: The ID of the organization.
+        Returns:
+            - A JSON response containing the organization details and dataset count.
+        """
         try:
             organization = Organization.objects.get(Organization_id=org_id)
             serializer = OrganizationSerializer(organization, context={'request': request})
@@ -249,7 +298,18 @@ class OrganizationProfileView(APIView):
 
     parser_classes = (MultiPartParser, FormParser)
 
+    @role_required('organization_admin')
     def put(self, request, org_id):
+            """
+            Update the organization profile.
+            This endpoint allows the organization admin to update the organization details.
+            It also allows uploading a new profile picture and cover image.
+            Arguments:
+                - request: The HTTP request object containing the updated organization data.
+                - org_id: The ID of the organization.
+            Returns:
+                - A JSON response with the updated organization details or an error message.
+            """
             
             try:
                 print(request.user)
@@ -319,6 +379,14 @@ class OrganizationDatasetsView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, org_id):
+        """Fetch datasets for the specified organization.
+        
+        This endpoint retrieves datasets based on the user's role and organization.
+        Args:
+            request (Request): The HTTP request containing user information.
+        Returns:
+            Response: A JSON response containing the datasets or an error message.
+        """
         try:
             organization = Organization.objects.get(Organization_id=org_id)
             limit = int(request.query_params.get('limit', 6))
@@ -334,9 +402,21 @@ class FollowOrganizationView(APIView):
     permission_classes = [IsAuthenticated]
     """
     Follow an organization.
+
     """
 
+
     def post(self, request, org_id):
+        """
+        Follow an organization.
+        This endpoint allows authenticated users to follow an organization.
+        Arguments:
+            - request: The HTTP request object.
+            - org_id: The ID of the organization to follow.
+        Returns:
+            - A JSON response indicating the status of the follow operation.
+        """
+
         try:
             organization = Organization.objects.get(Organization_id=org_id)
             if organization.following.filter(id=request.user.id).exists():

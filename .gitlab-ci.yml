@@ -1,5 +1,19 @@
 
+#
+# GitLab CI/CD Configuration for Alacrity Project
+#
+# This configuration defines the CI/CD pipeline for the backend and frontend of the Alacrity project.
+# The pipeline includes stages for linting, testing, building, deployment, and development. 
+# It runs the tests and deploys both the backend (Django) and frontend (React/Next.js) apps.
+# 
+# Key stages:
+#  - lint: Runs linting checks to ensure code quality.
+#  - test: Runs both backend and frontend tests.
+#  - build: Builds the frontend app for production.
+#  - deploy: Deploys the app (not included in this file, can be configured separately).
+#  - dev: Runs the frontend app in development mode for debugging and testing.
 
+# Defines the tags that the runners should use for this CI pipeline
 default:
   tags:
     - comsc-ci
@@ -205,4 +219,17 @@ dev:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       changes:
         - alacrity_frontend/**/*
+
+# Todo: 
+# link with jenins
+
+# deploy:
+#   stage: deploy
+#   script:
+#     - echo "Deploying the application..."
+#     # Add your deployment commands here
+#   rules:
+#     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+#       changes:
+#         - alacrity_backend/**/*
 
