@@ -1,4 +1,49 @@
 
+/*
+=====================================================================
+Jenkins Declarative Pipeline for GitLab-triggered Docker Deployment
+=====================================================================
+
+Purpose:
+This pipeline automates the server for deploying a full-stack 
+application (Django backend & next js frontend) using Docker Compose.
+
+Trigger:
+- Automatically triggered on pushes to the `main` branch from GitLab.
+- Trigger uses a GitLab secret token (currently hardcoded for testing; 
+  recommended to store securely in Jenkins credentials).
+
+Pipeline Stages:
+1. Cleanup
+   - Stops and removes old containers or processes on ports 8000/3000
+   - Ensures a clean state before building new containers
+
+2. Checkout Code
+   - Clones the project from the GitLab repository using SSH credentials
+
+3. Retrieve Secrets & Create .env
+   - Pulls environment files securely from Jenkins credentials
+   - Creates backend and frontend `.env` files in the correct locations
+   - Ensures proper permissions for required directories
+
+4. Build Docker Images
+   - Builds all services defined in `docker-compose.yml`
+
+5. Deploy Containers
+   - Runs the containers in detached mode and removes orphans
+
+Post Actions:
+- Logs container output for diagnostics
+- Echoes success or failure messages for quick feedback
+
+Security Note:
+- The GitLab secret token should be stored securely using Jenkins 
+  credentials, not hardcoded as done temporarily here.
+
+Author: Stephen Kariuki
+Date: 2025
+=====================================================================
+*/
 
 
 
