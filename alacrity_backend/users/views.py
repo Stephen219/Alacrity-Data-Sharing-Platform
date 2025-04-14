@@ -335,6 +335,12 @@ class MonthlyUsersView(APIView):
 class LoginView(APIView):
     permission_classes = [AllowAny]
     def post(self, request):
+        """
+        Handles user login. If successful, returns user data and JWT tokens.
+        If unsuccessful, returns error messages.
+        @param request: HTTP request containing email and password.
+        @return: JSON response with user data and tokens or error messages.
+        """
         try:
             email = request.data.get('email')
             password = request.data.get('password')
@@ -425,6 +431,13 @@ def generate_username(first_name: str, last_name: str) -> str:
     return username
 
 def clean_data(request_data):
+    """
+    Cleans and maps the incoming request data to the expected format.
+    It also generates a unique username based on the first and last name.
+    
+    Returns:
+        dict: The cleaned and mapped data.
+    """
     cleaned_data = request_data.copy()
     cleaned_data['first_name'] = cleaned_data.get('firstname', cleaned_data.get('first_name', ''))
     cleaned_data['sur_name'] = cleaned_data.get('surname', cleaned_data.get('sur_name', ''))
@@ -487,6 +500,15 @@ class RegisterView(APIView):
 
 class LoggedInUser(APIView):
     def get(self, request):
+
+        """"    
+        This view is used to get the logged in user data
+        Arguments:
+        request: the request object containing the user data
+
+        return: a json response of the user data
+
+        """
         user = request.user
         researchers = list(AnalysisSubmission.objects.filter(researcher=user, status="published",
         is_private=False)
@@ -524,6 +546,14 @@ class LoggedInUser(APIView):
 
 class UserView(APIView):
     def get(self, request, user_id):
+        """
+        Retrieve user details by user ID.
+        Arguments:
+            request: The HTTP request object.
+            user_id: The ID of the user to retrieve.
+        Returns:
+            Response: A JSON response containing user details.
+        """
         user = get_object_or_404(User, id=user_id)
         
         # i odont know why the phone number is not being returned in the serializer
@@ -544,6 +574,11 @@ class UserView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
     def put(self, request, user_id):
+        """
+        Update user details by user ID.
+        Arguments:
+            request: The HTTP request object containing updated user data.
+            user_id: The ID of the user to update."""
         user = get_object_or_404(User, id=user_id)
         print(request.data)
         print(request.data)
@@ -573,7 +608,14 @@ class UserView(APIView):
         pass
 
 class FollowUserView(APIView):
+
     def post(self, request, user_id):
+        """
+        Follow a user by user ID.
+        Arguments:
+            
+            request: The HTTP request object.
+            user_id: The ID of the user to follow."""
         if not request.user.is_authenticated:
             return Response({"detail": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -595,7 +637,15 @@ class FollowUserView(APIView):
         return Response({"detail": "Now following user"}, status=status.HTTP_200_OK)
 
 class UnfollowUserView(APIView):
+
     def post(self, request, user_id):
+        """"
+        Unfollow a user by user ID.
+        Arguments:
+            request: The HTTP request object.
+            user_id: The ID of the user to unfollow."""
+        
+
         if not request.user.is_authenticated:
             return Response({"detail": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -615,6 +665,13 @@ class UnfollowUserView(APIView):
 
 class ProfilePictureUpdateView(APIView):
     def post(self, request):
+        """
+        Update the user's profile picture.
+        Arguments:
+            request: The HTTP request object containing the new profile picture.
+        Returns:
+            Response: A JSON response indicating success or failure.
+        """
         if not request.user.is_authenticated:
             return Response({"detail": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
 
@@ -653,6 +710,13 @@ class ProfilePictureUpdateView(APIView):
     
 class LogoutView(APIView):
     def post(self, request):
+        """
+        Handles user logout by blacklisting the refresh token.
+        Arguments:
+            request: The HTTP request object containing the refresh token.
+            Returns:
+                Response: A JSON response indicating the result of the logout operation.
+        """
         try:
             refresh_token = request.data.get('refresh_token')
             token = RefreshToken(refresh_token)
