@@ -139,9 +139,7 @@ def load_dataset_into_cache(request, dataset_id, normalize=False):
             raise
 
 def has_access_to_dataset(user_id, dataset_id):
-
     """
-    
     Check if the user has access to the specified dataset.
     Access is granted if the user has an approved request for the dataset
     or if the dataset is free or the user has purchased it.
@@ -157,13 +155,9 @@ def has_access_to_dataset(user_id, dataset_id):
     try:
         approved_request_exists = DatasetRequest.objects.filter(
             dataset_id=dataset_id,
-            researcher_id=user_id,
-            request_status='approved'
-        ).exists()  # More efficient than converting to list
+            researcher_id=user_id,request_status='approved').exists() 
         if not approved_request_exists:
             return False
-
-        # Also checks if dataset is free or user purchased it
         dataset_obj = Dataset.objects.get(dataset_id=dataset_id)
         if dataset_obj.price == 0.0:
             # Free dataset
@@ -171,10 +165,7 @@ def has_access_to_dataset(user_id, dataset_id):
         else:
             # Paid dataset: user must have purchased
             return DatasetPurchase.objects.filter(
-                dataset_id=dataset_id,
-                buyer_id=user_id
-            ).exists()
-
+                dataset_id=dataset_id,buyer_id=user_id).exists()
     except Exception as e:
         logger.error(f"Error checking dataset access: {e}")
         return False

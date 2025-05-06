@@ -10,11 +10,20 @@ The **Alacrity** project is a secure gateway for AI products to leverage healthc
 ## Overview
 The application uses **MySQL** for data persistence, **Redis** for caching, and **MinIO** for object storage. Deployment is managed via **Docker Compose** for local and production environments, with a CI/CD pipeline using **Jenkins** and **GitLab** to automate builds and deployments.
 
+## docs 
+to get the backed docs run the following command in the backend directory
+```bash
+python manage.py runserver 
+
+```
+then access the docs at `http://localhost:8000/swagger.json/`
+for the db it is in the er diagram in the wiki directory
+
 ## Prerequisites
 - **Local Development**:
   - Python 3.9+
   - Node.js 18+ and npm
-  - MySQL 8.0+
+  - MySQL 8.0+ / MariaDB 10.5+
   - Docker and Docker Compose
 - **Production Deployment**:
   - Jenkins server for continuous integration and deployment
@@ -215,6 +224,6 @@ To contribute to the project:
 For support, open an issue on GitLab or contact the maintainers via email.
 
 ## Project Status
-this was a thesis project 
+this was a client thesis project 
 
 ## License

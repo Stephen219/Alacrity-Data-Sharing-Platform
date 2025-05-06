@@ -5,6 +5,7 @@ pymysql
 django-cors-headers
 nanoid
 pandas
+
 scipy
 statsmodels
 duckdb
@@ -17,6 +18,9 @@ tenseal
 channels
 channels-redis
 daphne
+django-extensions
+# docs 
+drf-yasg
 
 
 
