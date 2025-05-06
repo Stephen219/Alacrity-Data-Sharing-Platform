@@ -32,6 +32,7 @@ import { BACKEND_URL } from "@/config"
 import { withAccessControl } from "@/components/auth_guard/AccessControl"
 import parse from "html-react-parser"
 import { Router } from "lucide-react"
+import Link from "next/link"
 
 type Profile = {
   id: string
@@ -762,11 +763,13 @@ function ResearcherProfilePage() {
                       </div>
                     </div>
                   ) : (
+
+                 
                     !isOwner &&
-                    currentUser && (
+                    currentUser &&  (
                       <button
                         onClick={handleFollowToggle}
-                        disabled={followLoading}
+                        disabled={followLoading || currentUser.role === "organization_admin" || currentUser.role === "contributor"} 
                         className={`px-4 py-2 rounded-md flex items-center gap-2 transition-colors ${
                           userData.is_followed
                             ? "bg-gray-200 text-gray-800 hover:bg-gray-300"
@@ -862,10 +865,15 @@ function ResearcherProfilePage() {
                     <p className="text-gray-500 dark:text-gray-200">@{userData.username}</p>
                   </div>
                   <div className="flex justify-center gap-6 mt-2">
+                    
+                    <Link href={`/researcher/followers/${userData.id}`} className="text-center">
                     <div className="text-center">
                       <span className="font-semibold">{userData.followers_count || 0}</span>
                       <p className="text-gray-500 text-sm">Followers</p>
                     </div>
+                    </Link>
+
+
                     <div className="text-center">
                       <span className="font-semibold">{userData.following_count || 0}</span>
                       <p className="text-gray-500 text-sm">Following</p>

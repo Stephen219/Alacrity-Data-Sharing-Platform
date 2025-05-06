@@ -1,7 +1,42 @@
 
 
-
+/**
+ * @fileoverview This file defines the `DatasetUsersPage` component, which is responsible for displaying 
+ * a list of users who have access to a specific dataset. It provides functionality for filtering, 
+ * sorting, and revoking user access. The page is designed for organization administrators and contributors 
+ * with appropriate access permissions.
+ * 
+ * @module DatasetUsersPage
+ * 
+ * @description
+ * - Fetches and displays a list of users with access to a dataset.
+ * - Allows filtering by name, date range, and sorting options (e.g., newest, oldest, alphabetical).
+ * - Provides a search bar for quick user lookup.
+ * - Enables administrators to revoke access for specific users with confirmation dialogs.
+ * - Displays success and error messages for user actions.
+ * - Adapts to light and dark mode themes.
+ * 
+ * @access Control: Restricted to users with roles `organization_admin` or `contributor`.
+ * 
+ * @dependencies
+ * - React for component rendering and state management.
+ * - Next.js router for navigation.
+ * - Custom UI components (e.g., Button, Input) for consistent styling.
+ * - Utility functions for authenticated API requests and date formatting.
+ * - External libraries for icons and image handling.
+ * 
+ * @param {Promise<{ id: string }>} paramsPromise - A promise resolving to the dataset ID passed as a route parameter.
+ * 
+ * @returns {JSX.Element} The rendered page component.
+ */
+/**
+ * 
+ * @description  this page displays the users with access to a specific dataset and  ANS THE ADMin can revoke the access
+ * 
+ * 
+ */
 "use client"
+
 
 import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"

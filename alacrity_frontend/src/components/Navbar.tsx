@@ -145,7 +145,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
 
         {/* Right Section */}
         <div className="flex items-center space-x-4">
-          {/* Conditional Home or Organisation Sign Up */}
+         
           {user ? (
             <Link href="/dashboard" className={buttonVariants({ variant: "ghost" })}>
               Home

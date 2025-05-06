@@ -21,7 +21,7 @@ interface Message {
 interface Dataset {
   dataset_id: string;
   title: string;
-  organization: string;
+  organization_name: string;
 }
 
 interface DecodedToken {
@@ -32,7 +32,7 @@ interface DecodedToken {
 interface UserProfile {
   role: string;
 }
-
+// consistently rename files andd components to match the functionality they provide. This will help in maintaining a clean and understandable codebase.
 export default function DatasetChatPage({ params }: { params: { dataset_id: string } }) {
   const router = useRouter();
   const [dataset, setDataset] = useState<Dataset | null>(null);
@@ -261,7 +261,7 @@ export default function DatasetChatPage({ params }: { params: { dataset_id: stri
 
   const handleBackClick = () => {
     if (userRole === "researcher") {
-      router.push(`/requests/detail/${params.dataset_id}`);
+      router.push(`/analyze/${params.dataset_id}`);
     } else {
       router.push("/chat");
     }
@@ -287,8 +287,8 @@ export default function DatasetChatPage({ params }: { params: { dataset_id: stri
         </button>
         <div className="flex-1 ml-3">
           <h1 className="text-xl font-bold text-gray-800">{dataset?.title || "Chat"}</h1>
-          <p className="text-sm text-gray-600">
-            Support for {dataset?.organization || "Unknown Organization"}
+          <p className="text-md font-light">
+            Support for {dataset?.organization_name || "Unknown Organization"}
           </p>
         </div>
         <span

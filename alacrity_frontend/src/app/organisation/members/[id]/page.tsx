@@ -240,7 +240,7 @@ export default function MemberProfilePage({ params: paramsPromise }: { params: P
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-6">
-        <Link href="/organisation/members" className="flex items-center text-sm text-gray-500 hover:text-gray-900">
+        <Link href="/organisation/members" className="flex items-center text-sm text-gray-500 hover:text-gray-700">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="16"
@@ -262,7 +262,7 @@ export default function MemberProfilePage({ params: paramsPromise }: { params: P
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1">
-          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+          <div className=" p-6 rounded-lg border border-gray-200 shadow-sm">
             <div className="flex flex-col items-center">
 
               <Link href={`/organisation/members/${member.id}`} className="mb-4">
@@ -321,7 +321,7 @@ export default function MemberProfilePage({ params: paramsPromise }: { params: P
         </div>
 
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+          <div className=" rounded-lg border border-gray-200 shadow-sm">
             <div className="border-b border-gray-200">
               <div className="flex -mb-px px-6">
                 <button

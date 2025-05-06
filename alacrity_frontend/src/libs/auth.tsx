@@ -7,6 +7,19 @@ import { User } from "@/types/types";
 
 const API_BASE_URL = BACKEND_URL;
 
+/**
+ * * a servicce func Logs in a user with the provided email and password.
+ * 
+ * 
+ * @param email  the email of the user
+ * @param password  the password of the user
+ * @param remember_me  a boolean value to remember the user or not
+ * @returns 
+ * - success: boolean indicating if the login was successful
+ * - user: the user object if login was successful
+ * - error: an error message if login failed
+ */
+
 export async function login(email: string, password: string, remember_me: boolean): Promise<{ success: boolean; user?: User; error?: string }>
  {
     try {
@@ -29,7 +42,7 @@ export async function login(email: string, password: string, remember_me: boolea
     }
   } catch (error) {
     console.error("Login failed", error);
-    return { success: false, error: "Network error" };
+    return { success: false, error: "Network error.Please try again" };
   }
 }
 
@@ -58,8 +71,10 @@ export async function logout() {
 
             const data = await response.json();
             console.log(data.message);
+            
         } catch (error) {
             console.error("Error during logout:", error);
+            
             window.location.href = "/auth/sign-in";
          
         }
@@ -109,12 +124,12 @@ export async function logout() {
 export async function refreshToken(): Promise<string | null> {
   const refreshToken = localStorage.getItem("refresh_token");
   if (!refreshToken) {
-    console.error("No refresh token available for refresh");
+ 
     return null;
   }
 
   try {
-    console.log("Attempting token refresh with refresh_token:", refreshToken.slice(0, 10) + "...");
+   
     const response = await fetch(`${API_BASE_URL}/users/token/refresh/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -124,11 +139,11 @@ export async function refreshToken(): Promise<string | null> {
     const data = await response.json();
 
     if (response.ok) {
-      console.log("Token refresh successful, new access token:", data.access.slice(0, 10) + "...");
+     
       localStorage.setItem("access_token", data.access);
       return data.access;
     } else {
-      console.error("Token refresh failed:", data.error || "Unknown error");
+     
       await logout();
       return null;
     }
@@ -138,6 +153,17 @@ export async function refreshToken(): Promise<string | null> {
     return null;
   }
 }
+
+/**
+ * THIS IS THE FUNCTIUON USED ALLTHRIOUGHOUT THE APP TO FETCH DATA IN AUTHENTICATED USERS  Kariukis
+ * Fetches data from the given URL with the provided options.
+ * Automatically attaches the access token to the request headers.
+ * If a 401 response is received, attempts to refresh the token and retry the request.
+ *
+ * @param url - The URL to fetch data from.
+ * @param options - Optional fetch options (method, headers, body, etc.).
+ * @returns {Promise<Response>} - The response object from the fetch request.
+ */
 
 
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
@@ -154,7 +180,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
   const accessToken = localStorage.getItem("access_token");
   
   if (!accessToken) {
-      console.error("No access token found");
+      
        await logout();
        return new (class MockResponse {
           ok = false;
@@ -192,11 +218,11 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
 export function scheduleTokenRefresh() {
   const storedRefreshToken = localStorage.getItem("refresh_token");
   if (!storedRefreshToken) {
-    console.error("No refresh token found for scheduling");
+    
     return;
   }
 
-  console.log("Scheduling token refresh every 10 minutes");
+  
   setInterval(async () => {
     await refreshToken();
   }, 1000 * 60 * 10);
@@ -237,6 +263,13 @@ export function useAuth(): AuthContextType {
 
   return { user, loading };
 }
+/**
+ * 
+ * @returns {Promise<User | null>} - The user data or null if not authenticated.
+ * Fetches user data from the API using the stored access token.
+ * If the token is invalid or not present, returns null.
+ * If the fetch fails, returns null.
+ */
 
 export async function fetchUserData(): Promise<User | null> {
   const token = localStorage.getItem("access_token");

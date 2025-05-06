@@ -1,3 +1,5 @@
+
+
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 /**
@@ -14,13 +16,10 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-
-
-
 import { BACKEND_URL } from "@/config" 
 import { fetchWithAuth } from "@/libs/auth"
 import { withAccessControl } from "@/components/auth_guard/AccessControl"
-
+import { fetchUserData } from "@/libs/auth"
 
 type User = {
   id: number;
@@ -32,6 +31,7 @@ type User = {
   date_joined: string;
   date_of_birth: string | null;
   profile_picture: string;
+  organization?: string; 
 }
 
 const fetchOrgMembers = async (): Promise<User[] | null> => {
@@ -54,15 +54,26 @@ const fetchOrgMembers = async (): Promise<User[] | null> => {
   }
 }
 
- function AllMembersPage() {
+function AllMembersPage() {
   const [members, setMembers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
- 
+  const [currentUser, setCurrentUser] = useState<User | null>(null) 
+  // Fetch current user data
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const userData = await fetchUserData()
+        setCurrentUser(userData as User | null) 
+      } catch (err) {
+        console.error('Error fetching current user:', err)
+      }
+    }
+    loadUserData()
+  }, [])
 
- 
-
+  // Fetch organization members
   useEffect(() => {
     const loadMembers = async () => {
       try {
@@ -81,7 +92,6 @@ const fetchOrgMembers = async (): Promise<User[] | null> => {
     loadMembers()
   }, [])
 
-  
   const filteredMembers = members.filter(member => 
     `${member.first_name} ${member.sur_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
     member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -97,7 +107,16 @@ const fetchOrgMembers = async (): Promise<User[] | null> => {
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6">Organization Members</h1>
+      <h1 className="text-3xl font-bold mb-6">
+        Active 
+        <span className=""> {currentUser?.organization}  Members  </span> 
+        <span>
+        showing {filteredMembers.length} of {members.length} members
+      </span>
+      </h1>
+      <span>
+        showing {filteredMembers.length} of {members.length} members
+      </span>
 
       <div className="flex justify-between items-center mb-6 flex-col sm:flex-row gap-4">
         <div className="relative w-full sm:w-64">
@@ -148,50 +167,32 @@ const fetchOrgMembers = async (): Promise<User[] | null> => {
 
       <div className="border rounded-lg overflow-hidden overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="">
             <tr>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                 Avatar
               </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Name
               </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Email
               </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Phone
               </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Role
               </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="divide-y divide-gray-200">
             {filteredMembers.length > 0 ? (
               filteredMembers.map((member) => (
-                <tr key={member.id} className="hover:bg-gray-50">
+                <tr key={member.id} className="">
                   <td className="px-6 py-4 whitespace-nowrap">
                     {member.profile_picture ? (
                       <img
@@ -233,4 +234,5 @@ const fetchOrgMembers = async (): Promise<User[] | null> => {
     </div>
   )
 }
-export default withAccessControl(AllMembersPage, ["organization_admin"])  
+
+export default withAccessControl(AllMembersPage, ["organization_admin"])

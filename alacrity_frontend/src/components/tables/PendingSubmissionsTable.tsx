@@ -83,7 +83,7 @@ const PendingSubmissionsTable: React.FC<PendingSubmissionsTableProps> = ({
 
   return (
     <div>
-      {/* Renders search bar and sort dropdown if enabled */}
+     
       {(showSearchBar || showSortDropdown) && (
         <div className="flex items-center justify-between mb-4 pt-4">
           {showSearchBar && (
@@ -141,7 +141,7 @@ const PendingSubmissionsTable: React.FC<PendingSubmissionsTableProps> = ({
               <th className="px-6 py-3"></th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody className=" divide-y divide-gray-200 dark:divide-gray-700">
             {displayedSubmissions.length > 0 ? (
               displayedSubmissions.map((submission) => (
                 <tr

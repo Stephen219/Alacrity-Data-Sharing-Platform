@@ -75,7 +75,7 @@ from .models import Dataset, DatasetAccessMetrics, Feedback, Chat, Message
 from .serializer import DatasetSerializer
 
 
-# from django.http import JsonResponse
+
 
 
 
@@ -116,13 +116,34 @@ def convert_to_mbs(size_in_bytes):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class CreateDatasetView(APIView):
+    """
+    Handle the dataset creation and upload process.
+    This view supports uploading files from local storage or cloud storage (Google Drive, Dropbox).
+
+    It also handles the encryption of the dataset and uploads it to MinIO.
+
+    The dataset is then saved in the database with relevant metadata.
+    
+        """
     renderer_classes = [JSONRenderer]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     @role_required(['organization_admin', 'contributor'])
     def post(self, request, *args, **kwargs):
 
-        """Handle the dataset upload and processing."""
+        """Handle the dataset upload and processing.
+
+        This method processes the uploaded file, detects its encoding, and converts it to Parquet format.
+        It also encrypts the dataset and uploads it to MinIO.
+        Args:
+            request (Request): The HTTP request containing the file and metadata.
+        Returns:
+            Response: A JSON response indicating success or failure of the upload.
+        Raises:
+            Exception: If there is an error during the upload process.
+
+            
+        """
         
         file_size = 0
         number_of_rows = 0
@@ -283,7 +304,16 @@ class CreateDatasetView(APIView):
             return Response({"error": f"Upload failed: {str(e)}"}, status=500)
 
     def _download_from_google_drive(self, file_url, access_token):
-        """Download file from Google Drive using the provided access token."""
+        """Download file from Google Drive using the provided access token.
+        Args:
+
+            file_url (str): The Google Drive file URL.
+            access_token (str): The OAuth2 access token for Google Drive API.
+        Returns:
+            BytesIO: A buffer containing the downloaded file.
+        Raises:
+            Exception: If the download fails or the file is not found.
+        """
         try:
             file_id = file_url.split("/d/")[1].split("/")[0] if "/d/" in file_url else file_url.split("id=")[1].split("&")[0]
             download_url = f"https://www.googleapis.com/drive/v3/files/{file_id}?alt=media"
@@ -303,7 +333,12 @@ class CreateDatasetView(APIView):
             raise Exception(f"Failed to download from Google Drive: {str(e)}")
 
     def _download_from_dropbox(self, file_url):
-        """Download file from Dropbox."""
+        """Download file from Dropbox.
+        Args:
+            file_url (str): The Dropbox file URL.
+        Returns:
+            BytesIO: A buffer containing the downloaded file.
+        """
         try:
             if "?dl=0" in file_url:
                 file_url = file_url.replace("?dl=0", "?dl=1")
@@ -327,6 +362,12 @@ class CreateDatasetView(APIView):
 
     @role_required(['organization_admin', 'contributor'])
     def put(self, request, *args, **kwargs):
+        """Update an existing dataset
+        Args:
+            dataset_id (str): The ID of the dataset to update.
+        Returns:
+            Response: The updated dataset information or error message.
+        """
         dataset_id = request.data.get('dataset_id')
         print(f"Dataset ID:" , request.data.get('dataset_id'))
         print(f"Request data:", request.data)
@@ -355,6 +396,13 @@ class CreateDatasetView(APIView):
 @role_required(['organization_admin', 'contributor', 'researcher'])
 
 def get_datasets(request):
+    """Fetch all datasets for the logged-in user
+    This endpoint retrieves datasets based on the user's role and organization.
+    Args:
+        request (Request): The HTTP request containing user information.
+    Returns:
+        Response: A JSON response containing the datasets or an error message.
+    ."""
   
     organization = request.user.organization
     datasets = Dataset.objects.filter(orgid=organization)
@@ -674,9 +722,6 @@ class DatasetListView(APIView):
     def get(self, request):
    # we need to add the the has_access_to_dataset function to check if the user has access to the dataset
         org_id = request.query_params.get("org", None)
-
-
-
         datasets = Dataset.objects.select_related("contributor_id__organization").all()
         if org_id:
             datasets = datasets.filter(contributor_id__organization__Organization_id=org_id, is_active=True, is_deleted=False) 
@@ -688,6 +733,14 @@ class DatasetListView(APIView):
 
         serializer = DatasetSerializer(datasets, many=True, context={"request": request})
         response = serializer.data
+
+        # we need to also append the org id to the dataset
+    
+
+        
+
+            
+         
        
         for dataset in response:
             dataset["has_access"] = has_access_to_dataset(request.user, dataset["dataset_id"])
@@ -763,7 +816,7 @@ class FeedbackView(APIView):
                 user=request.user,
                 rating=rating,
                 title=title,
-                comment=comments  # Match model field (assuming typo in your original)
+                comment=comments  
             )
             return Response({"message": "Feedback submitted"}, status=status.HTTP_201_CREATED)
         except Dataset.DoesNotExist:

@@ -1,3 +1,31 @@
+
+/**
+ * Admin Component
+ * 
+ * This component serves as the main dashboard page for users with specific roles 
+ * such as "organization_admin", "contributor", or "researcher". It dynamically 
+ * renders either the `AdminDashboard` or `ResearcherDashboard` based on the 
+ * authenticated user's role.
+ * 
+ * Features:
+ * - Fetches user data asynchronously to determine the user's role.
+ * - Displays a loading state while fetching user data.
+ * - Implements role-based access control using the `withAccessControl` HOC.
+ * 
+ * Roles Supported:
+ * - organization_admin
+ * - contributor
+ * - researcher
+ * 
+ * Dependencies:
+ * - `fetchUserData` for retrieving user information.
+ * - `withAccessControl` for enforcing access control.
+ * - `AdminDashboard` and `ResearcherDashboard` for role-specific UI.
+ */
+/**
+ * 
+ */
+
 'use client'
 import AdminDashboard from "@/components/dashboards/admin";
 import ResearcherDashboard from "@/components/dashboards/researcher";

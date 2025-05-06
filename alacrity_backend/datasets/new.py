@@ -1,3 +1,15 @@
+"""
+This module provides API views for handling datasets, including loading,
+analyzing, and downloading datasets. It also includes functionality for managing dataset access and caching.
+
+it is a continuaon of the view.py and it handles the dataset worspace page for the analysis   and download of the datasets
+and the dataset detail page for the dataset detail and overview of the datasets.
+
+"""
+
+
+
+
 import uuid
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -64,6 +76,19 @@ def get_jwt_hash(request):
     return None
 
 def load_dataset_into_cache(request, dataset_id, normalize=False):
+    """
+    Load a dataset into cache and return the connection object.
+    If the dataset is already in cache and normalization is not requested,
+    return the existing connection object.
+    Args:
+        request: Django request object
+        dataset_id: ID of the dataset to load
+        normalize: Boolean indicating whether to normalize the dataset
+
+    returns:
+        duckdb connection object for the loaded dataset
+
+    """
     has_access = has_access_to_dataset(request.user.id, dataset_id)
     if not has_access:
         return Response({"error": "You do not have access to this dataset"}, status=403)
@@ -114,6 +139,20 @@ def load_dataset_into_cache(request, dataset_id, normalize=False):
             raise
 
 def has_access_to_dataset(user_id, dataset_id):
+
+    """
+    
+    Check if the user has access to the specified dataset.
+    Access is granted if the user has an approved request for the dataset
+    or if the dataset is free or the user has purchased it.
+
+    Args:
+        user_id: ID of the user
+        dataset_id: ID of the dataset
+    returns:
+        bool: True if the user has access, False otherwise
+
+    """
     from dataset_requests.models import DatasetRequest
     try:
         approved_request_exists = DatasetRequest.objects.filter(
@@ -142,6 +181,16 @@ def has_access_to_dataset(user_id, dataset_id):
 
 
 def generate_pie_chart(series):
+
+    """
+    Generate a pie chart from a pandas Series and return it as a base64-encoded string.
+    Args:
+
+        series: pandas Series to generate the pie chart from
+        
+    Returns:
+        str: Base64-encoded string of the pie chart image
+    """
     plt.figure(figsize=(6, 6))
     value_counts = series.value_counts()
     plt.pie(value_counts, labels=value_counts.index, autopct='%1.1f%%', startangle=90)
@@ -156,6 +205,16 @@ def generate_pie_chart(series):
 
 @api_view(['GET'])
 def dataset_detail(request, dataset_id):
+
+    """
+    Get detailed information about a dataset, including schema and overview.
+    The overview includes basic statistics and a pie chart for categorical columns.
+    Args:
+        request: Django request object
+        dataset_id: ID of the dataset to get details for
+    returns:
+        Response: JSON response containing dataset details and overview
+    """
     has_access = has_access_to_dataset(request.user.id, dataset_id)
     if not has_access:
         return Response({"error": "You do not have access to this dataset"}, status=403)
@@ -193,6 +252,21 @@ def dataset_detail(request, dataset_id):
 
 @api_view(['POST'])
 def clear_dataset_cache(request, dataset_id):
+
+    """
+    Clear the cache for a specific dataset.
+    This will close the connection and remove the dataset from the cache.
+    Args:
+
+        request: Django request object
+
+        dataset_id: ID of the dataset to clear cache for
+
+
+    Returns:
+
+        Response: JSON response indicating success or failure   
+    """
     try:
         jwt_hash = get_jwt_hash(request)
         if not jwt_hash:
@@ -211,6 +285,16 @@ def clear_dataset_cache(request, dataset_id):
 
 
 def calculate_mean(con, column, filter_query):
+    """"
+    Calculate the mean of a column in the dataset.
+    Args:
+        con: DuckDB connection object
+        column: Column name to calculate mean for
+        filter_query: Optional filter query to apply to the dataset
+    Returns:
+        dict: Dictionary containing the mean value and column name
+
+    """
     query = f"SELECT AVG({column}) FROM temp"
     if filter_query:
         query += f" WHERE {filter_query}"
@@ -218,6 +302,16 @@ def calculate_mean(con, column, filter_query):
     return {"operation": "mean", "value": float(result) if result is not None else None, "column": column}
 
 def calculate_median(con, column, filter_query):
+    """
+    Calculate the median of a column in the dataset.
+    Args:
+        con: DuckDB connection object
+        column: Column name to calculate median for
+        filter_query: Optional filter query to apply to the dataset
+    Returns:
+
+        dict: Dictionary containing the median value and column name
+    """
     query = f"SELECT MEDIAN({column}) FROM temp"
     if filter_query:
         query += f" WHERE {filter_query}"
@@ -225,6 +319,15 @@ def calculate_median(con, column, filter_query):
     return {"operation": "median", "value": float(result) if result is not None else None, "column": column}
 
 def calculate_mode(con, column, filter_query):
+    """
+    Calculate the mode of a column in the dataset.
+    Args:
+        con: DuckDB connection object
+        column: Column name to calculate mode for
+        filter_query: Optional filter query to apply to the dataset
+    Returns:
+        dict: Dictionary containing the mode value and column name
+    """
     query = f"SELECT MODE({column}) FROM temp"
     if filter_query:
         query += f" WHERE {filter_query}"
@@ -232,6 +335,17 @@ def calculate_mode(con, column, filter_query):
     return {"operation": "mode", "value": result, "column": column}
 
 def calculate_t_test(con, column1, column2, filter_query):
+
+    """
+    Perform a t-test between two columns in the dataset.
+    Args:
+        con: DuckDB connection object
+        column1: First column name for t-test
+        column2: Second column name for t-test
+        filter_query: Optional filter query to apply to the dataset
+        \Returns:
+        dict: Dictionary containing t-statistic, p-value, and image of boxplot
+    """
     query = f"SELECT {column1}, {column2} FROM temp"
     if filter_query:
         query += f" WHERE {filter_query}"
@@ -268,6 +382,19 @@ def calculate_t_test(con, column1, column2, filter_query):
     }
 
 def calculate_chi_square(con, column1, column2, filter_query):
+    """
+    Perform a Chi-Square test of independence between two categorical columns.
+    Args:
+        con: DuckDB connection object
+        column1: First categorical column name
+        column2: Second categorical column name
+        filter_query: Optional filter query to apply to the dataset
+    R   eturns:
+
+        dict: Dictionary containing chi-square statistic, p-value, degrees of freedom,
+        contingency table, image of heatmap, and accuracy note
+
+        """
     query = f"SELECT {column1}, {column2} FROM temp"
     if filter_query:
         query += f" WHERE {filter_query}"
@@ -303,6 +430,18 @@ def calculate_chi_square(con, column1, column2, filter_query):
     }
 
 def calculate_anova(con, column1, column2, filter_query):
+    """
+    Perform ANOVA test between two columns in the dataset.
+    Args:
+        con: DuckDB connection object
+        column1: Numeric column name for ANOVA
+        column2: Categorical column name for ANOVA
+        filter_query: Optional filter query to apply to the dataset
+    Returns:
+
+        dict: Dictionary containing F-statistic, p-value, image of boxplot, and accuracy note
+
+    """
     query = f"SELECT {column1}, {column2} FROM temp"
     if filter_query:
         query += f" WHERE {filter_query}"
@@ -340,6 +479,22 @@ def calculate_anova(con, column1, column2, filter_query):
     }
 
 def calculate_correlation(con, column1, column2, filter_query, method="pearson"):
+
+    """"
+    Calculate correlation between two columns in the dataset.
+    Args:
+        con: DuckDB connection object
+        column1: First column name for correlation
+        column2: Second column name for correlation
+        filter_query: Optional filter query to apply to the dataset
+        method: Correlation method ('pearson' or 'spearman')
+
+    Returns:
+    
+            dict: Dictionary containing correlation coefficient, p-value, image of scatter plot,
+            slope, intercept, and columns involved in the correlation   
+    """
+
     query = f"SELECT {column1}, {column2} FROM temp"
     if filter_query:
         query += f" WHERE {filter_query}"
@@ -376,6 +531,19 @@ def calculate_correlation(con, column1, column2, filter_query, method="pearson")
 
 @api_view(['GET'])
 def analyze_dataset(request, dataset_id):
+    """
+    Analyze a dataset based on the specified operation and columns.
+    Supported operations include mean, median, mode, t-test, chi-square, ANOVA,
+    and correlation (Pearson/Spearman).
+    Args:
+        
+        request: Django request object
+        dataset_id: ID of the dataset to analyze
+    returns:
+        Response: JSON response containing analysis results
+
+
+        """
     operation = request.GET.get("operation")
     column = request.GET.get("column")
     column1 = request.GET.get("column1")
@@ -461,6 +629,13 @@ def analyze_dataset(request, dataset_id):
 
 @api_view(['GET'])
 def all_datasets_view(request):
+    """
+    Get a list of all datasets with their details.
+    Args:
+        request: Django request object
+    Returns:
+        Response: JSON response containing dataset details
+    """
     datasets = Dataset.objects.select_related('contributor_id__organization').all()
     serializer = DatasetSerializer(datasets, many=True, context={"request": request})
     return Response({"datasets": serializer.data}, status=status.HTTP_200_OK)
@@ -472,6 +647,16 @@ def all_datasets_view(request):
 
 @api_view(['GET'])
 def dataset_view(request, dataset_id):
+    """
+    Get detailed information about a specific dataset.
+    
+    Args:
+        request: Django request object
+        dataset_id: ID of the dataset to retrieve
+
+    Returns:
+        Response: JSON response containing dataset details
+    """
     try:
         dataset = Dataset.objects.select_related('contributor_id__organization').get(dataset_id=dataset_id)
         serializer = DatasetSerializer(dataset)
@@ -505,7 +690,15 @@ import threading
 
 
 def encode_column(values: List, col_type: str) -> List[float]:
-    """Encode values based on type for HE compatibility with improved efficiency."""
+
+    """Encode values based on type for HE compatibility with improved efficiency.
+
+    Args:
+        values: List of values to encode
+        col_type: Data type of the column (e.g., 'object', 'int64', 'float64')
+    returns:
+        List of encoded values as floats
+    """
     if col_type.startswith("object") or any(isinstance(v, str) for v in values[:100] if not pd.isna(v)):
         unique_vals = pd.Series(values).dropna().unique()
         mapping = {val: float(i) for i, val in enumerate(sorted(unique_vals))}
@@ -519,6 +712,8 @@ def encode_column(values: List, col_type: str) -> List[float]:
 @api_view(['GET'])
 def download_dataset(request, dataset_id):
     """Download entire dataset with HE encryption, 
+    TODO: ADD MULTITHREADING FOR ENCRYPTION AND COMPRESSION   IT IT VERY SLOW
+
 
     Args:
         request: Django request object
@@ -609,6 +804,9 @@ def download_dataset(request, dataset_id):
         
        
         def process_column(column):
+            """
+            Process a single column for encryption and encoding.
+            """
             values = df[column].tolist()
             col_type = str(df[column].dtype)
             encoded_values = encode_column(values, col_type)

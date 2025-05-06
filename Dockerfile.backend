@@ -1,13 +1,16 @@
 
 
 
-
+# Dockerfile for Building and Deploying Alacrity Backend
 #
+# This Dockerfile defines the steps for creating a container image for the 
+# Alacrity backend. It uses multi-stage builds to reduce the final image size 
+# by separating the build process and the runtime environment.
 FROM python:3.10-slim AS build
 
 WORKDIR /app
 
-# Install build dependencies (including pkg-config)
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libmariadb-dev \
