@@ -24,9 +24,9 @@ alacrity_frontend/node_modules
 *.log
 /venv
 
-
-/alacrity_backend/.env
-/alacrity_backend/alacrity_backend/.env
+# for zipping purposes
+# /alacrity_backend/.env
+# /alacrity_backend/alacrity_backend/.env
 /alacrity_frontend/node_modules
 /alacrity_backend/background_task.log
 /alacrity_backend/users/serializer.py
