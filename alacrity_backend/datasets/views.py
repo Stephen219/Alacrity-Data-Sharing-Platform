@@ -160,8 +160,6 @@ class CreateDatasetView(APIView):
                 file_buffer = io.BytesIO(local_file.read())
                 base_name = local_file.name.split('.')[0]
                 file_size = convert_to_mbs(local_file.size)
-                
-                
                 logger.info(f"Local file size: {file_size} bytes")
             elif file_url:
                 logger.info(f"Processing cloud URL: {file_url}")

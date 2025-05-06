@@ -57,7 +57,7 @@ pipeline {
             sourceBranchRegex: 'main',
             secretToken: '5tSVKGBSYUGBcJcAVUvt'       
             // ideally this should be a secret token, but for testing purposes, it's hardcoded here. 
-            // i mean we can easily upload it to jenkins as a secret and use it here.
+            // i mean we can easily upload it to jenkins as a secret and use it here. ( it is not fuctional )
           
 
         )
@@ -112,8 +112,8 @@ pipeline {
                         echo "Creating backend .env file..."
                         cp "\${ENV_FILE_PATH}" alacrity_backend/alacrity_backend/.env
                         echo "Backend .env file created."
-                        echo "Contents of .env file:"
-                        cat alacrity_backend/alacrity_backend/.env
+                      
+                        
                         echo "success"
                     """
                 }
