@@ -1,5 +1,0 @@
-{
-    "python.analysis.extraPaths": [
-        "./alacrity_backend/alacrity_backend"
-    ]
-}
