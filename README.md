@@ -156,7 +156,7 @@ python manage.py migrate
 ```
 
 ## Deployment (Production)
-The application is deployed using Docker Compose on a production server, with a Jenkins CI/CD pipeline triggered by pushes to the `main` branch. For detailed instructions, refer to the [Deployment Guide](https://git.cardiff.ac.uk/c2051028/alacrity/-/wikis/deployment).
+The application is deployed using Docker Compose on a production server, with a Jenkins CI/CD pipeline triggered by pushes to the `main` branch. For detailed instructions, refer to the [Deployment Guide](https://git.cardiff.ac.uk/c2051028/alacrity/-/wikis/deployment). or the widki directory
 
 ### Key Deployment Steps
 1. Merge changes from `dev` to `deploy` branch.
@@ -199,7 +199,9 @@ To contribute to the project:
    python manage.py migrate
    ```
 
-## Guides
+## Guides 
+
+( this are in the wiki directory in the root folder if the link returns 403)
 - [Authentication Implementation](https://git.cardiff.ac.uk/c2051028/alacrity/-/wikis/authentication)
 - [MinIO Object Storage](https://git.cardiff.ac.uk/c2051028/alacrity/-/wikis/Minio-object-storage)
 - [Deployment Process](https://git.cardiff.ac.uk/c2051028/alacrity/-/wikis/deployment)
@@ -207,7 +209,7 @@ To contribute to the project:
 - [Backend API Endpoints](https://git.cardiff.ac.uk/c2051028/alacrity/-/wikis/API-Endpoints)
 
 ## Authors
-- KariukiSM (kariukism1@cardiff.ac.uk)
+- KariukiSM (kariukism1@cardi)
 - Mahi MS (mahi@m)
 - Gikinyi (gikinyi@e)
 
@@ -215,6 +217,5 @@ To contribute to the project:
 For support, open an issue on GitLab or contact the maintainers via email.
 
 ## Project Status
-this was a thesis project 
 
 ## License
