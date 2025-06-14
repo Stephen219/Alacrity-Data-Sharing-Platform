@@ -124,8 +124,8 @@ python manage.py migrate
 3. Create a `.env.local` file with:
    ```env
 
-   NEXT_PUBLIC_GOOGLE_API_KEY=AIzaSyBWcKrF7a7AcVKdG-F4WjM4mBEP-UZWKN8   # / DO NOT COMMIT THIS KEY   IT CAN USE MONEY
-   NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id_here
+   NEXT_PUBLIC_GOOGLE_API_KEY=Abad key and deactivate so cant workWjM4mBEP-UZWKN8   
+   NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google cleint key
    NEXT_PUBLIC_DROPBOX_APP_KEY=your_dropbox_app_key_here
    NEXT_PUBLIC_ONEDRIVE_CLIENT_ID=your_onedrive_client_id_here
    ```
@@ -201,7 +201,7 @@ To contribute to the project:
 
 ## Guides 
 
-( this are in the wiki directory in the root folder if the link returns 403)
+( this are in the wiki directory in the root folder if the link returns 403 login page)
 - [Authentication Implementation](https://git.cardiff.ac.uk/c2051028/alacrity/-/wikis/authentication)
 - [MinIO Object Storage](https://git.cardiff.ac.uk/c2051028/alacrity/-/wikis/Minio-object-storage)
 - [Deployment Process](https://git.cardiff.ac.uk/c2051028/alacrity/-/wikis/deployment)
