@@ -144,6 +144,7 @@ python manage.py migrate
 ```
 ├── alacrity_backend/       # Django backend
 ├── alacrity_frontend/      # Next.js frontend
+├── alacrity.wiki/          # all the necessary docs (in form of wiki) as referenced in the project or this read me
 ├── dockerfile-frontend             # Dockerfile for frontend
 ├── dockerfile-backend              # Dockerfile for backend
 ├── dockerfile-database               # Dockerfile for MySQL
